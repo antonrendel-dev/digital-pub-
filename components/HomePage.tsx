@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Navbar from './Navbar'
+import Hero from './Hero'
 import LeftSidebar from './LeftSidebar'
 import Feed from './feed/Feed'
 import RightSidebar from './RightSidebar'
@@ -29,6 +30,7 @@ export default function HomePage() {
   return (
     <>
       <Navbar onSearch={setSearchQuery} onDarkToggle={toggleDark} isDark={isDark} />
+      <Hero />
       <div className="wrap layout">
         <LeftSidebar />
         <Feed

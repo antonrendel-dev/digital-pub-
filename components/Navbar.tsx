@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 interface NavbarProps {
   onSearch: (query: string) => void
@@ -20,36 +21,21 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
 
   return (
     <nav className="nav-main">
-      {/* Left: logo + tagline */}
+      {/* Left: logo image + text */}
       <div className="nav-brand">
+        <Image src="/logo.png" alt="Диджитал Паб" width={36} height={36} className="nav-logo-img" />
         <div className="logo">
           диджитал<em>паб</em>
         </div>
-        <div className="nav-tagline">Место, где встречаются хорошие люди</div>
       </div>
 
-      {/* Center: search */}
-      <div className="nav-search">
-        <div className="sbar">
-          <input
-            type="text"
-            placeholder="Должность, компания или навык..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <button onClick={handleSearch}>Найти</button>
-        </div>
-      </div>
-
-      {/* Right: nav links + buttons */}
-      <div className="nav-right">
+      {/* Center: nav links */}
+      <div className="nav-center">
         <div className="nav-links">
           <a href="/" className="on">
             Главная
           </a>
 
-          {/* Вакансии dropdown */}
           <div className="nav-dropdown">
             <a href="/vacancies">
               Вакансии <span className="nav-arrow">▾</span>
@@ -63,7 +49,6 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
             </div>
           </div>
 
-          {/* Резюме dropdown */}
           <div className="nav-dropdown">
             <a href="/resumes">
               Резюме <span className="nav-arrow">▾</span>
@@ -79,14 +64,25 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
 
           <a href="/articles">Статьи</a>
         </div>
+      </div>
 
-        <div className="nav-r">
-          <button className="btn-g">Войти</button>
-          <button className="btn-b">+ Разместить</button>
-          <button className="btn-theme" onClick={onDarkToggle} title="Сменить тему">
-            {isDark ? '☀️' : '🌙'}
-          </button>
+      {/* Right: search + buttons + theme toggle */}
+      <div className="nav-right">
+        <div className="sbar nav-sbar">
+          <input
+            type="text"
+            placeholder="Поиск..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button onClick={handleSearch}>Найти</button>
         </div>
+        <button className="btn-g">Войти</button>
+        <button className="btn-b">+ Разместить</button>
+        <button className="btn-theme" onClick={onDarkToggle} title="Сменить тему">
+          {isDark ? '☀️' : '🌙'}
+        </button>
       </div>
     </nav>
   )
