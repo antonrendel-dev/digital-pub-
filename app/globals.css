@@ -135,10 +135,10 @@ body {
   gap: 2px;
 }
 .logo {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text);
-  letter-spacing: -1px;
+  letter-spacing: -0.7px;
   line-height: 1.1;
 }
 .logo em {
@@ -146,9 +146,9 @@ body {
   color: #ffcc3e; /* always yellow — brand constant */
 }
 .nav-brand-slogan {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
 }
@@ -158,12 +158,12 @@ body {
   flex-shrink: 0;
   padding-left: 16px;
   border-left: 1px solid var(--border);
-  max-width: 220px;
 }
 .nav-slogan-sub {
   font-size: 11px;
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.55;
+  white-space: nowrap;
 }
 
 .nav-center {
@@ -281,7 +281,8 @@ body {
 }
 .btn-g {
   font-size: 12px;
-  padding: 7px 14px;
+  height: 34px;
+  padding: 0 14px;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -289,6 +290,7 @@ body {
   cursor: pointer;
   font-family: inherit;
   transition: all 0.18s;
+  white-space: nowrap;
 }
 .btn-g:hover {
   border-color: #999;
@@ -296,7 +298,8 @@ body {
 }
 .btn-b {
   font-size: 12px;
-  padding: 7px 14px;
+  height: 34px;
+  padding: 0 14px;
   border-radius: 6px;
   border: none;
   background: var(--accent);
@@ -305,6 +308,7 @@ body {
   font-family: inherit;
   font-weight: 600;
   transition: background 0.18s;
+  white-space: nowrap;
 }
 .btn-b:hover {
   background: var(--accent-hover);
@@ -321,10 +325,11 @@ body {
 /* ─── Search bar ─────────────────────────────────────────── */
 .sbar {
   display: flex;
-  border: 1.5px solid var(--border);
+  height: 34px; /* matches .btn-g / .btn-b height */
+  border: 1px solid var(--border);
   border-radius: 8px;
   transition: border-color 0.2s;
-  overflow: visible; /* prevent button clipping */
+  overflow: hidden;
 }
 .sbar:focus-within {
   border-color: var(--accent);
@@ -334,18 +339,19 @@ body {
   min-width: 0;
   border: none;
   outline: none;
-  padding: 9px 14px;
-  font-size: 13px;
+  padding: 0 12px;
+  font-size: 12px;
   font-family: inherit;
   color: var(--text);
   background: var(--bg-card);
-  border-radius: 7px 0 0 7px;
+  height: 100%;
 }
 .sbar input::placeholder {
   color: var(--text-light);
 }
 .sbar button {
-  padding: 9px 14px;
+  padding: 0 14px;
+  height: 100%;
   background: var(--accent);
   color: var(--accent-text);
   border: none;

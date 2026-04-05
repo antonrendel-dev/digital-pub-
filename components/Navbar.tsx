@@ -34,9 +34,8 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
 
       {/* Sub-slogan — between brand block and nav links */}
       <div className="nav-slogan-block">
-        <div className="nav-slogan-sub">
-          Вакансии и резюме из Telegram-каналов.&nbsp;Находи быстро, откликайся легко.
-        </div>
+        <div className="nav-slogan-sub">Вакансии и резюме из Telegram-каналов.</div>
+        <div className="nav-slogan-sub">Находи быстро, откликайся легко.</div>
       </div>
 
       {/* Center: nav links */}
