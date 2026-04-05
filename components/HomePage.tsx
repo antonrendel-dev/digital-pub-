@@ -11,12 +11,18 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [externalTag, setExternalTag] = useState<string | undefined>()
   const [isDark, setIsDark] = useState(false)
+  const [isBlue, setIsBlue] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme')
-    if (saved === 'dark') {
+    const theme = localStorage.getItem('theme')
+    const accent = localStorage.getItem('accent')
+    if (theme === 'dark') {
       setIsDark(true)
       document.documentElement.setAttribute('data-theme', 'dark')
+    }
+    if (accent === 'blue') {
+      setIsBlue(true)
+      document.documentElement.setAttribute('data-accent', 'blue')
     }
   }, [])
 
@@ -27,9 +33,22 @@ export default function HomePage() {
     localStorage.setItem('theme', next ? 'dark' : 'light')
   }
 
+  const toggleAccent = () => {
+    const next = !isBlue
+    setIsBlue(next)
+    document.documentElement.setAttribute('data-accent', next ? 'blue' : 'yellow')
+    localStorage.setItem('accent', next ? 'blue' : 'yellow')
+  }
+
   return (
     <>
-      <Navbar onSearch={setSearchQuery} onDarkToggle={toggleDark} isDark={isDark} />
+      <Navbar
+        onSearch={setSearchQuery}
+        onDarkToggle={toggleDark}
+        isDark={isDark}
+        onAccentToggle={toggleAccent}
+        isBlue={isBlue}
+      />
       <Hero />
       <div className="wrap layout">
         <LeftSidebar />

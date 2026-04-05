@@ -55,6 +55,27 @@
   --tag-sp-border: #402010;
 }
 
+/* ─── Blue Accent Override ──────────────────────────────── */
+[data-accent='blue'] {
+  --accent: #5b87e0;
+  --accent-hover: #4a76ce;
+  --accent-text: #ffffff;
+}
+[data-accent='blue'] .chip.on {
+  border-color: #5b87e0;
+  background: #eef2fc;
+  color: #3a6acc;
+}
+[data-theme='dark'][data-accent='blue'] {
+  --accent: #5b87e0;
+  --accent-hover: #4a76ce;
+  --accent-text: #ffffff;
+}
+[data-theme='dark'][data-accent='blue'] .chip.on {
+  background: #1a2a50;
+  color: #7aabf0;
+}
+
 /* ─── Reset & Base ─────────────────────────────────────── */
 * {
   box-sizing: border-box;

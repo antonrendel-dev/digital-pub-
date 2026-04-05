@@ -7,11 +7,19 @@ interface NavbarProps {
   onSearch: (query: string) => void
   onDarkToggle: () => void
   isDark: boolean
+  onAccentToggle: () => void
+  isBlue: boolean
 }
 
 const CATEGORIES = ['Разработка', 'Маркетинг', 'Дизайн', 'Продажи', 'Аналитика', 'Финансы', 'HR']
 
-export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) {
+export default function Navbar({
+  onSearch,
+  onDarkToggle,
+  isDark,
+  onAccentToggle,
+  isBlue,
+}: NavbarProps) {
   const [query, setQuery] = useState('')
 
   const handleSearch = () => onSearch(query.trim())
@@ -80,6 +88,14 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
         </div>
         <button className="btn-g">Войти</button>
         <button className="btn-b">+ Разместить</button>
+        <button
+          className="btn-theme"
+          onClick={onAccentToggle}
+          title={isBlue ? 'Переключить на жёлтый' : 'Переключить на синий'}
+          style={{ fontSize: 14 }}
+        >
+          {isBlue ? '🟡' : '🔵'}
+        </button>
         <button className="btn-theme" onClick={onDarkToggle} title="Сменить тему">
           {isDark ? '☀️' : '🌙'}
         </button>
