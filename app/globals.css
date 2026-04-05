@@ -448,7 +448,8 @@ body {
   background: #2aabee;
 }
 .sub-icon.mx-ic {
-  background: #6c4ecb;
+  background: transparent;
+  padding: 0;
 }
 .sub-icon.vk-ic {
   background: #0077ff;

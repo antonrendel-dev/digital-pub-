@@ -40,7 +40,7 @@ const TgIcon = () => (
 )
 
 const MxIcon = () => (
-  <Image src="/max-app.webp" alt="Макс" width={20} height={20} style={{ borderRadius: 4 }} />
+  <Image src="/max-app.webp" alt="Макс" width={32} height={32} style={{ borderRadius: 6 }} />
 )
 
 const VkIcon = () => (
