@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# 1. Scan for secrets
+gitleaks protect --staged --no-banner
+if [ $? -ne 0 ]; then
+  echo "❌ gitleaks: secrets detected — commit blocked"
+  exit 1
+fi
+
+# 2. Lint + format staged files
+npx lint-staged

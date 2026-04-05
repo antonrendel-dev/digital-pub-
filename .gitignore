@@ -2,18 +2,20 @@
 node_modules/
 .pnp
 .pnp.js
+.yarn/install-state.gz
 
 # Next.js
-.next/
-out/
-build/
+/.next/
+/out/
+/build
 
-# Environment variables
+# Testing
+/coverage
+
+# Secrets & Environment — NEVER COMMIT
 .env
 .env.*
 !.env.example
-
-# Secrets
 *.key
 *.pem
 credentials.json
@@ -44,3 +46,6 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Vercel (not used, but just in case)
+.vercel

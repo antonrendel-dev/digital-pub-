@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PostType {
+  vacancy
+  resume
+}
+
+enum PostStatus {
+  pending
+  published
+  rejected
+}
+
+enum PostSource {
+  telegram
+  user
+}
+
+enum TagType {
+  format
+  level
+  specialization
+}
+
+model Post {
+  id                  Int        @id @default(autoincrement())
+  type                PostType
+  title               String
+  description         String?
+  company             String?
+  salary              String?
+  status              PostStatus @default(pending)
+  source              PostSource @default(telegram)
+  telegramMessageId   String?
+  channelUsername     String?
+  categoryId          Int?
+  category            Category?  @relation(fields: [categoryId], references: [id])
+  tags                PostTag[]
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@unique([telegramMessageId, channelUsername])
+}
+
+model Tag {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique
+  tagType TagType
+  posts   PostTag[]
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  slug  String @unique
+  posts Post[]
+}
+
+model Article {
+  id          Int       @id @default(autoincrement())
+  title       String
+  slug        String    @unique
+  content     String
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}

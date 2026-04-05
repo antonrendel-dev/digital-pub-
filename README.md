@@ -1,6 +1,6 @@
 # Диджитал Паб
 
-*Место, где встречаются хорошие люди* — [d-pub.ru](https://d-pub.ru)
+_Место, где встречаются хорошие люди_ — [d-pub.ru](https://d-pub.ru)
 
 > **Это README для владельца проекта**, а не для AI-агентов.
 > Инструкции для агентов находятся в CLAUDE.md и .claude/skills/project-knowledge/references/
@@ -15,20 +15,28 @@
 .claude/                    # База знаний для AI-агентов
 ├── skills/
 │   └── project-knowledge/  # Project docs (architecture, patterns, etc.)
-└── ...
 
-backlog.md        # Идеи фич и баги (что делать потом)
-work/             # Активные фичи и баги (что делаем сейчас)
-└── completed/    # Завершённые задачи
+app/                        # Next.js App Router страницы
+components/                 # UI компоненты
+lib/                        # Бизнес-логика (db, sync, auth)
+prisma/                     # Схема БД и миграции
+work/                       # Активные фичи
+└── completed/              # Завершённые задачи
+```
 
-src/              # Исходный код
+## Запуск локально
+
+```bash
+npm install
+cp .env.example .env        # заполни переменные
+npm run dev                 # http://localhost:3000
 ```
 
 ## Методология разработки
 
 Проект использует **spec-driven подход** с AI-агентами:
 
-1. **User Spec** (русский) → описываем ЧТО и ЗАЧЕМ нужно
-2. **Tech Spec** (английский) → описываем КАК реализовать
+1. **User Spec** → описываем ЧТО и ЗАЧЕМ
+2. **Tech Spec** → описываем КАК реализовать
 3. **Tasks** → декомпозиция на задачи
-4. **Implementation** → AI-агент делает код
+4. **Implementation** → AI-агент пишет код
