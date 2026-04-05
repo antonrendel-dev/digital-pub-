@@ -37,6 +37,14 @@ export default function Navbar({
         </div>
       </div>
 
+      {/* Slogan block — sits between logo and nav links */}
+      <div className="nav-slogan-block">
+        <div className="nav-slogan-title">Место, где встречаются хорошие люди</div>
+        <div className="nav-slogan-sub">
+          Вакансии и резюме из Telegram-каналов.&nbsp;Находи быстро, откликайся легко.
+        </div>
+      </div>
+
       {/* Center: nav links */}
       <div className="nav-center">
         <div className="nav-links">

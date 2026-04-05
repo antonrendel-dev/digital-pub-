@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Navbar from './Navbar'
-import Hero from './Hero'
 import LeftSidebar from './LeftSidebar'
 import Feed from './feed/Feed'
 import RightSidebar from './RightSidebar'
@@ -15,7 +14,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const theme = localStorage.getItem('theme')
-    const accent = localStorage.getItem('accent')
+    const accent = localStorage.getItem('accent') ?? 'blue' // default blue
     if (theme === 'dark') {
       setIsDark(true)
       document.documentElement.setAttribute('data-theme', 'dark')
@@ -49,7 +48,6 @@ export default function HomePage() {
         onAccentToggle={toggleAccent}
         isBlue={isBlue}
       />
-      <Hero />
       <div className="wrap layout">
         <LeftSidebar />
         <Feed

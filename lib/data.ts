@@ -18,6 +18,7 @@ export interface Job {
   tags: JobTag[]
   isNew: boolean
   init: string
+  image?: string
 }
 
 export interface CloudTag {
@@ -45,6 +46,7 @@ export const JOBS: Job[] = [
     ],
     isNew: true,
     init: 'Я',
+    image: '/sample-vacancy.png',
   },
   {
     id: 2,
@@ -63,6 +65,7 @@ export const JOBS: Job[] = [
     ],
     isNew: true,
     init: 'А',
+    image: '/sample-vacancy2.png',
   },
   {
     id: 3,

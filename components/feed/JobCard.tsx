@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Job } from '@/lib/data'
 
 interface JobCardProps {
@@ -13,6 +14,12 @@ export default function JobCard({ job, onTagClick }: JobCardProps) {
 
   return (
     <div className="jcard">
+      {job.image && (
+        <div className="jcard-img">
+          <Image src={job.image} alt={job.title} fill style={{ objectFit: 'cover' }} />
+        </div>
+      )}
+
       <div className="jcard-head">
         <div className="jtitle">
           {job.title}
