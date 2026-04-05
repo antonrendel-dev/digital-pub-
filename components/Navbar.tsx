@@ -71,6 +71,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
             </div>
           </div>
 
+          <a href="/reviews">Отзывы</a>
           <a href="/articles">Статьи</a>
           <a href="/courses">Курсы</a>
           <a href="/useful">Полезное</a>
