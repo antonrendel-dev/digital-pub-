@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import Hero from './Hero'
+import { useState, useEffect } from 'react'
+import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
 import Feed from './feed/Feed'
 import RightSidebar from './RightSidebar'
@@ -9,10 +9,26 @@ import RightSidebar from './RightSidebar'
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [externalTag, setExternalTag] = useState<string | undefined>()
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved === 'dark') {
+      setIsDark(true)
+      document.documentElement.setAttribute('data-theme', 'dark')
+    }
+  }, [])
+
+  const toggleDark = () => {
+    const next = !isDark
+    setIsDark(next)
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
+    localStorage.setItem('theme', next ? 'dark' : 'light')
+  }
 
   return (
     <>
-      <Hero onSearch={setSearchQuery} />
+      <Navbar onSearch={setSearchQuery} onDarkToggle={toggleDark} isDark={isDark} />
       <div className="wrap layout">
         <LeftSidebar />
         <Feed
