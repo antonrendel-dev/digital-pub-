@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Secrets
+*.key
+*.pem
+credentials.json
+secrets/
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# PM2
+.pm2/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
