@@ -156,12 +156,8 @@ body {
 /* Sub-slogan block inside navbar */
 .nav-slogan-block {
   flex-shrink: 0;
-  padding-left: 16px;
+  padding: 6px 0 6px 16px;
   border-left: 1px solid var(--border);
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 .nav-slogan-sub {
   font-size: 11px;
