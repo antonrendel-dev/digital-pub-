@@ -10,18 +10,14 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [externalTag, setExternalTag] = useState<string | undefined>()
   const [isDark, setIsDark] = useState(false)
-  const [isBlue, setIsBlue] = useState(false)
 
   useEffect(() => {
     const theme = localStorage.getItem('theme')
-    const accent = localStorage.getItem('accent') ?? 'blue' // default blue
+    // Blue accent is the permanent default — apply it on mount
+    document.documentElement.setAttribute('data-accent', 'blue')
     if (theme === 'dark') {
       setIsDark(true)
       document.documentElement.setAttribute('data-theme', 'dark')
-    }
-    if (accent === 'blue') {
-      setIsBlue(true)
-      document.documentElement.setAttribute('data-accent', 'blue')
     }
   }, [])
 
@@ -32,22 +28,9 @@ export default function HomePage() {
     localStorage.setItem('theme', next ? 'dark' : 'light')
   }
 
-  const toggleAccent = () => {
-    const next = !isBlue
-    setIsBlue(next)
-    document.documentElement.setAttribute('data-accent', next ? 'blue' : 'yellow')
-    localStorage.setItem('accent', next ? 'blue' : 'yellow')
-  }
-
   return (
     <>
-      <Navbar
-        onSearch={setSearchQuery}
-        onDarkToggle={toggleDark}
-        isDark={isDark}
-        onAccentToggle={toggleAccent}
-        isBlue={isBlue}
-      />
+      <Navbar onSearch={setSearchQuery} onDarkToggle={toggleDark} isDark={isDark} />
       <div className="wrap layout">
         <LeftSidebar />
         <Feed

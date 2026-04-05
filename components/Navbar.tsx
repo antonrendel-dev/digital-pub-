@@ -7,19 +7,11 @@ interface NavbarProps {
   onSearch: (query: string) => void
   onDarkToggle: () => void
   isDark: boolean
-  onAccentToggle: () => void
-  isBlue: boolean
 }
 
 const CATEGORIES = ['Разработка', 'Маркетинг', 'Дизайн', 'Продажи', 'Аналитика', 'Финансы', 'HR']
 
-export default function Navbar({
-  onSearch,
-  onDarkToggle,
-  isDark,
-  onAccentToggle,
-  isBlue,
-}: NavbarProps) {
+export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) {
   const [query, setQuery] = useState('')
 
   const handleSearch = () => onSearch(query.trim())
@@ -29,17 +21,19 @@ export default function Navbar({
 
   return (
     <nav className="nav-main">
-      {/* Left: logo image + text */}
+      {/* Left: logo + brand name + slogan under name */}
       <div className="nav-brand">
-        <Image src="/logo.png" alt="Диджитал Паб" width={36} height={36} className="nav-logo-img" />
-        <div className="logo">
-          диджитал<em>паб</em>
+        <Image src="/logo.png" alt="Диджитал Паб" width={45} height={45} className="nav-logo-img" />
+        <div className="nav-brand-text">
+          <div className="logo">
+            диджитал<em>паб</em>
+          </div>
+          <div className="nav-brand-slogan">Место, где встречаются хорошие люди</div>
         </div>
       </div>
 
-      {/* Slogan block — sits between logo and nav links */}
+      {/* Sub-slogan — between brand block and nav links */}
       <div className="nav-slogan-block">
-        <div className="nav-slogan-title">Место, где встречаются хорошие люди</div>
         <div className="nav-slogan-sub">
           Вакансии и резюме из Telegram-каналов.&nbsp;Находи быстро, откликайся легко.
         </div>
@@ -87,7 +81,7 @@ export default function Navbar({
         <div className="sbar nav-sbar">
           <input
             type="text"
-            placeholder="Поиск..."
+            placeholder="Поиск вакансий и резюме..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -96,14 +90,6 @@ export default function Navbar({
         </div>
         <button className="btn-g">Войти</button>
         <button className="btn-b">+ Разместить</button>
-        <button
-          className="btn-theme"
-          onClick={onAccentToggle}
-          title={isBlue ? 'Переключить на жёлтый' : 'Переключить на синий'}
-          style={{ fontSize: 14 }}
-        >
-          {isBlue ? '🟡' : '🔵'}
-        </button>
         <button className="btn-theme" onClick={onDarkToggle} title="Сменить тему">
           {isDark ? '☀️' : '🌙'}
         </button>

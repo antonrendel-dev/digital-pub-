@@ -46,7 +46,7 @@ export const JOBS: Job[] = [
     ],
     isNew: true,
     init: 'Я',
-    image: '/sample-vacancy.png',
+    image: '/vac1.jpg',
   },
   {
     id: 2,
@@ -65,7 +65,7 @@ export const JOBS: Job[] = [
     ],
     isNew: true,
     init: 'А',
-    image: '/sample-vacancy2.png',
+    image: '/vac2.jpg',
   },
   {
     id: 3,
@@ -84,6 +84,7 @@ export const JOBS: Job[] = [
     ],
     isNew: false,
     init: 'Т',
+    image: '/vac3.jpg',
   },
   {
     id: 4,
