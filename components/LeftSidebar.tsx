@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 interface SubCardProps {
   type: 'tg' | 'mx' | 'vk'
@@ -39,9 +40,7 @@ const TgIcon = () => (
 )
 
 const MxIcon = () => (
-  <svg viewBox="0 0 24 24">
-    <path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-  </svg>
+  <Image src="/max-app.webp" alt="Макс" width={20} height={20} style={{ borderRadius: 4 }} />
 )
 
 const VkIcon = () => (
