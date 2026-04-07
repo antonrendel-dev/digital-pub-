@@ -35,7 +35,9 @@ export default function JobCard({ post }: JobCardProps) {
           {post.title}
           {post.isNew && <span className="nbadge">Новое</span>}
         </div>
-        <div className="jdate">{formatDate(post.createdAt)}</div>
+        <div className="jdate" suppressHydrationWarning>
+          {formatDate(post.createdAt)}
+        </div>
       </div>
 
       {(post.company || source) && (
