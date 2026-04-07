@@ -1,61 +1,63 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
-import { Job } from '@/lib/data'
+import { FeedPost } from '@/lib/posts'
 
 interface JobCardProps {
-  job: Job
-  onTagClick: (tag: string) => void
+  post: FeedPost
 }
 
-export default function JobCard({ job, onTagClick }: JobCardProps) {
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diff = Math.floor((now.getTime() - d.getTime()) / 1000 / 60 / 60)
+  if (diff < 1) return 'Только что'
+  if (diff < 24) return `${diff} ч. назад`
+  const days = Math.floor(diff / 24)
+  if (days === 1) return 'Вчера'
+  if (days < 7) return `${days} дня назад`
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+}
+
+function initials(title: string): string {
+  return title.trim().charAt(0).toUpperCase()
+}
+
+export default function JobCard({ post }: JobCardProps) {
   const [saved, setSaved] = useState(false)
+
+  const source = post.channelUsername ? `@${post.channelUsername}` : null
 
   return (
     <div className="jcard">
-      {job.image && (
-        <div className="jcard-img">
-          <Image src={job.image} alt={job.title} fill style={{ objectFit: 'cover' }} />
+      <div className="jcard-head">
+        <div className="jtitle">
+          {post.title}
+          {post.isNew && <span className="nbadge">Новое</span>}
+        </div>
+        <div className="jdate">{formatDate(post.createdAt)}</div>
+      </div>
+
+      {(post.company || source) && (
+        <div className="jmeta">
+          {post.company ?? source}
+          {post.company && source && (
+            <>
+              <span className="dot" />
+              {source}
+            </>
+          )}
         </div>
       )}
 
-      <div className="jcard-head">
-        <div className="jtitle">
-          {job.title}
-          {job.isNew && <span className="nbadge">Новое</span>}
-        </div>
-        <div className="jdate">{job.date}</div>
-      </div>
+      {post.salary && <div className="jsalary">{post.salary}</div>}
 
-      <div className="jmeta">
-        {job.co}
-        <span className="dot" />
-        {job.city}
-      </div>
-
-      <div className="jsalary">{job.salary}</div>
-      <div className="jdesc">{job.desc}</div>
-
-      <div className="jtags">
-        {job.tags.map((tag) => (
-          <span
-            key={tag.t}
-            className={`jtag ${tag.tp}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              onTagClick(tag.t)
-            }}
-          >
-            {tag.t}
-          </span>
-        ))}
-      </div>
+      {post.description && <div className="jdesc">{post.description}</div>}
 
       <div className="jcard-foot">
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="jco-logo">{job.init}</div>
-          <span className="jco-name">{job.co}</span>
+          <div className="jco-logo">{initials(post.title)}</div>
+          <span className="jco-name">{post.type === 'vacancy' ? 'Вакансия' : 'Резюме'}</span>
         </div>
         <button className="jsave" onClick={() => setSaved(!saved)}>
           {saved ? '♥ Сохранено' : '♡ Сохранить'}

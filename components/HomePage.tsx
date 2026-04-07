@@ -5,8 +5,13 @@ import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
 import Feed from './feed/Feed'
 import RightSidebar from './RightSidebar'
+import { FeedPost } from '@/lib/posts'
 
-export default function HomePage() {
+interface HomePageProps {
+  posts: FeedPost[]
+}
+
+export default function HomePage({ posts }: HomePageProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [externalTag, setExternalTag] = useState<string | undefined>()
   const [isDark, setIsDark] = useState(false)
@@ -34,6 +39,7 @@ export default function HomePage() {
       <div className="wrap layout">
         <LeftSidebar />
         <Feed
+          posts={posts}
           searchQuery={searchQuery}
           externalTag={externalTag}
           onExternalTagConsumed={() => setExternalTag(undefined)}

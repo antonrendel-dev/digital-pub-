@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { JOBS, filterJobs, sortJobs, SortOrder } from '@/lib/data'
+import { FeedPost } from '@/lib/posts'
 import JobCard from './JobCard'
 
 const FILTER_CHIPS = [
-  'Полная занятость',
-  'Частичная',
   'Удалённо',
   'Офис',
   'Гибрид',
@@ -15,22 +13,27 @@ const FILTER_CHIPS = [
   'Маркетинг',
   'Финансы',
   'Аналитика',
+  'HR',
 ]
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 10
 
 interface FeedProps {
+  posts: FeedPost[]
   searchQuery: string
   externalTag?: string
   onExternalTagConsumed: () => void
 }
 
-export default function Feed({ searchQuery, externalTag, onExternalTagConsumed }: FeedProps) {
+export default function Feed({
+  posts,
+  searchQuery,
+  externalTag,
+  onExternalTagConsumed,
+}: FeedProps) {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set())
-  const [sortOrder, setSortOrder] = useState<SortOrder>('date')
   const [visible, setVisible] = useState(PAGE_SIZE)
 
-  // Consume external tag clicks (from tag cloud / job card tags)
   useEffect(() => {
     if (externalTag && !activeFilters.has(externalTag)) {
       setActiveFilters((prev) => new Set([...prev, externalTag]))
@@ -67,45 +70,41 @@ export default function Feed({ searchQuery, externalTag, onExternalTagConsumed }
     setVisible(PAGE_SIZE)
   }, [])
 
-  // Apply search → filter → sort
-  let jobs = JOBS
+  // Search + filter
+  let filtered = posts
 
   if (searchQuery) {
     const q = searchQuery.toLowerCase()
-    jobs = jobs.filter(
-      (j) =>
-        j.title.toLowerCase().includes(q) ||
-        j.co.toLowerCase().includes(q) ||
-        j.tags.some((t) => t.t.toLowerCase().includes(q))
+    filtered = filtered.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        (p.description?.toLowerCase().includes(q) ?? false) ||
+        (p.company?.toLowerCase().includes(q) ?? false)
     )
   }
 
-  jobs = filterJobs(jobs, activeFilters)
-  jobs = sortJobs(jobs, sortOrder)
+  if (activeFilters.size > 0) {
+    filtered = filtered.filter((p) =>
+      [...activeFilters].some(
+        (f) =>
+          p.title.toLowerCase().includes(f.toLowerCase()) ||
+          (p.description?.toLowerCase().includes(f.toLowerCase()) ?? false)
+      )
+    )
+  }
 
-  const handleTagClick = useCallback((tag: string) => {
-    setActiveFilters((prev) => new Set([...prev, tag]))
-    setVisible(PAGE_SIZE)
-  }, [])
+  const vacancies = filtered.filter((p) => p.type === 'vacancy')
+  const resumes = filtered.filter((p) => p.type === 'resume')
+  const sorted = [...vacancies, ...resumes] // vacancies first
 
   return (
     <div className="feed-col">
       <div className="feed-top">
         <span className="feed-count">
-          {searchQuery ? `${jobs.length} результатов` : `${jobs.length} актуальных вакансий`}
+          {searchQuery
+            ? `${sorted.length} результатов`
+            : `${vacancies.length} вакансий · ${resumes.length} резюме`}
         </span>
-        <select
-          className="sort-sel"
-          value={sortOrder}
-          onChange={(e) => {
-            setSortOrder(e.target.value as SortOrder)
-            setVisible(PAGE_SIZE)
-          }}
-        >
-          <option value="date">Сначала новые</option>
-          <option value="salary">По зарплате</option>
-          <option value="az">По названию А–Я</option>
-        </select>
       </div>
 
       {/* Filter chips */}
@@ -135,18 +134,17 @@ export default function Feed({ searchQuery, externalTag, onExternalTagConsumed }
         </div>
       )}
 
-      {/* Job cards */}
-      {jobs.length === 0 ? (
+      {/* Posts */}
+      {sorted.length === 0 ? (
         <div className="empty-state">По вашему запросу ничего не найдено</div>
       ) : (
         <>
-          {jobs.slice(0, visible).map((job) => (
-            <JobCard key={job.id} job={job} onTagClick={handleTagClick} />
+          {sorted.slice(0, visible).map((post) => (
+            <JobCard key={post.id} post={post} />
           ))}
-
-          {visible < jobs.length && (
-            <button className="load-btn" onClick={() => setVisible((v) => v + 4)}>
-              Показать ещё вакансии
+          {visible < sorted.length && (
+            <button className="load-btn" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
+              Показать ещё
             </button>
           )}
         </>

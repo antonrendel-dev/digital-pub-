@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>НайдиРаботу — главная</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#fff;color:#111}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+nav{background:#fff;border-bottom:1px solid #ebebeb;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:99}
+.logo{font-size:18px;font-weight:700;color:#111;letter-spacing:-0.5px}.logo em{font-style:normal;color:#5b87e0}
+.nav-links{display:flex;gap:26px}
+.nav-links a{font-size:13px;color:#777;text-decoration:none;transition:color .18s}
+.nav-links a:hover,.nav-links a.on{color:#111;font-weight:500}
+.nav-r{display:flex;gap:8px}
+.btn-g{font-size:12px;padding:7px 14px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#555;cursor:pointer;font-family:inherit;transition:all .18s}
+.btn-g:hover{border-color:#999;color:#111}
+.btn-b{font-size:12px;padding:7px 14px;border-radius:6px;border:none;background:#5b87e0;color:#fff;cursor:pointer;font-family:inherit;transition:background .18s}
+.btn-b:hover{background:#4a76ce}
+.hero{background:#fff;border-bottom:1px solid #ebebeb;padding:36px 28px 30px}
+.hero h1{font-size:28px;font-weight:700;letter-spacing:-0.5px;line-height:1.25;margin-bottom:8px}
+.hero p{font-size:13.5px;color:#888;line-height:1.65;margin-bottom:20px;max-width:480px}
+.sbar{display:flex;border:1.5px solid #ddd;border-radius:8px;overflow:hidden;max-width:500px;transition:border-color .2s}
+.sbar:focus-within{border-color:#5b87e0}
+.sbar input{flex:1;border:none;outline:none;padding:10px 14px;font-size:13px;font-family:inherit;color:#111;background:#fff}
+.sbar input::placeholder{color:#bbb}
+.sbar button{padding:10px 18px;background:#5b87e0;color:#fff;border:none;cursor:pointer;font-size:12px;font-family:inherit;font-weight:500;transition:background .18s}
+.sbar button:hover{background:#4a76ce}
+
+.layout{display:grid;grid-template-columns:210px 1fr 220px;gap:0;min-height:600px}
+.left-col{border-right:1px solid #ebebeb;padding:22px 18px 24px 20px;background:#fff}
+.feed-col{padding:22px 32px 24px 32px;background:#fff}
+.right-col{border-left:1px solid #ebebeb;padding:22px 20px 24px 18px;background:#fff}
+
+.s-lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:#c0c0c0;margin-bottom:10px;font-weight:600}
+.s-sec{margin-bottom:24px}
+
+/* Плашки подписки */
+.sub-card{border-radius:10px;padding:13px;margin-bottom:10px}
+.sub-card.tg{background:#f0f8ff;border:1px solid #cce5f8}
+.sub-card.mx{background:#f4f0ff;border:1px solid #ddd4f8}
+.sub-card-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.sub-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sub-icon.tg-ic{background:#2aabee}
+.sub-icon.mx-ic{background:#6c4ecb}
+.sub-card.vk{background:#f0f4ff;border:1px solid #c8d8f8}
+.sub-icon.vk-ic{background:#0077ff}
+.sub-btn.vk-btn{background:#0077ff;color:#fff}
+.sub-btn.vk-btn:hover{opacity:.85}
+.sub-icon svg{width:17px;height:17px;fill:#fff}
+.sub-title{font-size:12.5px;font-weight:600;color:#111;line-height:1.3}
+.sub-num{font-size:10.5px;color:#aaa;margin-top:1px}
+.sub-desc{font-size:11.5px;color:#888;line-height:1.55;margin-bottom:9px}
+.sub-btn{display:block;width:100%;text-align:center;padding:7px;border-radius:7px;font-size:11.5px;font-weight:600;border:none;font-family:inherit;cursor:pointer;transition:opacity .18s}
+.sub-btn.tg-btn{background:#2aabee;color:#fff}
+.sub-btn.tg-btn:hover{opacity:.85}
+.sub-btn.mx-btn{background:#6c4ecb;color:#fff}
+.sub-btn.mx-btn:hover{opacity:.85}
+
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f7f7f7;font-size:12px}
+.stat-row:last-child{border:none}
+.stat-row .n{font-size:14px;font-weight:700;color:#111}
+.stat-row .lb{color:#aaa}
+
+.art-item{padding:7px 0;border-bottom:1px solid #f5f5f5}
+.art-item a{font-size:11.5px;color:#555;text-decoration:none;line-height:1.5;display:block;transition:color .15s}
+.art-item a:hover{color:#5b87e0}
+.art-item .dt{font-size:10px;color:#ccc;margin-top:2px}
+
+/* Лента */
+.feed-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.feed-count{font-size:12px;color:#aaa}
+.sort-sel{font-size:12px;border:1px solid #e0e0e0;border-radius:5px;padding:4px 8px;background:#fff;color:#555;cursor:pointer;outline:none;font-family:inherit}
+.filters{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.chip{font-size:11.5px;padding:5px 11px;border-radius:20px;border:1px solid #e2e2e2;background:#fff;color:#666;cursor:pointer;transition:all .18s;user-select:none}
+.chip:hover{border-color:#aaa;color:#111}
+.chip.on{border-color:#5b87e0;background:#eef2fc;color:#3a6acc}
+.af-bar{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.af-pill{font-size:11px;padding:3px 9px;border-radius:20px;background:#111;color:#fff;cursor:pointer;display:flex;align-items:center;gap:4px}
+.af-pill:hover{background:#333}
+.af-clr{font-size:11px;color:#aaa;cursor:pointer;text-decoration:underline;margin-left:2px}
+
+.jcard{background:#fff;border:1px solid #ebebeb;border-radius:10px;padding:18px 20px;margin-bottom:10px;cursor:pointer;transition:border-color .18s,box-shadow .18s}
+.jcard:hover{border-color:#c5c5c5;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.jcard-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px}
+.jtitle{font-size:15px;font-weight:600;color:#111;letter-spacing:-0.2px;line-height:1.3}
+.jdate{font-size:11px;color:#c8c8c8;margin-left:10px;flex-shrink:0;padding-top:2px}
+.jmeta{font-size:12px;color:#999;margin-bottom:6px;display:flex;align-items:center}
+.dot{width:3px;height:3px;border-radius:50%;background:#ddd;display:inline-block;margin:0 7px;flex-shrink:0}
+.jsalary{font-size:14.5px;font-weight:700;color:#1f8a50;margin-bottom:8px}
+.jdesc{font-size:12.5px;color:#777;line-height:1.6;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.jtags{display:flex;flex-wrap:wrap;gap:5px}
+.jtag{font-size:11px;padding:3px 9px;border-radius:5px;cursor:pointer;border:1px solid transparent;transition:all .15s;user-select:none}
+.jtag.tp{background:#f0f5ff;color:#4470c4;border-color:#d5e2f8}.jtag.tp:hover{background:#deeaff}
+.jtag.lv{background:#f0faf3;color:#2d8a50;border-color:#c8e8d4}.jtag.lv:hover{background:#ddf5e5}
+.jtag.sp{background:#fff8f0;color:#c07030;border-color:#f0d8b8}.jtag.sp:hover{background:#ffe8d0}
+.jcard-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid #f5f5f5}
+.jco-logo{width:26px;height:26px;border-radius:6px;background:#f2f2f2;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#999;flex-shrink:0;margin-right:8px}
+.jco-name{font-size:12px;color:#999}
+.jsave{font-size:11px;color:#ccc;background:none;border:none;cursor:pointer;font-family:inherit;transition:color .15s;padding:0}
+.jsave:hover{color:#5b87e0}
+.load-btn{width:100%;padding:10px;border:1px solid #e8e8e8;border-radius:8px;background:#fff;font-size:12px;color:#999;cursor:pointer;font-family:inherit;margin-top:4px;transition:all .18s}
+.load-btn:hover{border-color:#bbb;color:#111}
+.nbadge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:4px;background:#e84545;color:#fff;margin-left:6px;vertical-align:middle;font-weight:700}
+
+/* Правый сайдбар */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:4px}
+.ctag{font-size:11px;padding:4px 9px;border-radius:5px;border:1px solid #ebebeb;background:#fff;color:#666;cursor:pointer;transition:all .15s}
+.ctag:hover{border-color:#5b87e0;color:#3a6acc;background:#f4f7ff}
+.ctag.lg{font-size:13px;padding:5px 11px}
+.ctag.sm{font-size:10px}
+.cat-link{font-size:12px;color:#555;text-decoration:none;display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;transition:color .15s}
+.cat-link:hover{color:#5b87e0}
+.cat-link span{font-size:11px;color:#d0d0d0}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">найди<em>работу</em></div>
+  <div class="nav-links">
+    <a href="#" class="on">Главная</a>
+    <a href="#">Вакансии</a>
+    <a href="#">Резюме</a>
+    <a href="#">Статьи</a>
+  </div>
+  <div class="nav-r">
+    <button class="btn-g">Войти</button>
+    <button class="btn-b">+ Разместить вакансию</button>
+  </div>
+</nav>
+
+<div class="hero wrap">
+  <h1>Работа, которая<br>подходит именно тебе</h1>
+  <p>Честные вакансии без лишней воды — от проверенных компаний.<br>Находи быстро, откликайся легко.</p>
+  <div class="sbar">
+    <input type="text" placeholder="Должность, компания или навык..." id="si">
+    <button onclick="doSearch()">Найти</button>
+  </div>
+</div>
+
+<div class="wrap layout">
+
+  <!-- ЛЕВЫЙ САЙДБАР: соцсети -->
+  <div class="left-col">
+    <div class="s-sec">
+      <div class="s-lbl">Вакансии в соцсетях</div>
+      <div class="sub-card tg">
+        <div class="sub-card-head">
+          <div class="sub-icon tg-ic">
+            <svg viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+          </div>
+          <div>
+            <div class="sub-title">Telegram</div>
+            <div class="sub-num">14 200 подписчиков</div>
+          </div>
+        </div>
+        <div class="sub-desc">Свежие вакансии каждый день прямо в Telegram.</div>
+        <button class="sub-btn tg-btn" onclick="this.textContent='✓ Подписан'">Подписаться</button>
+      </div>
+      <div class="sub-card mx">
+        <div class="sub-card-head">
+          <div class="sub-icon mx-ic">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4C2.9 4 2 4.9 2 6v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          </div>
+          <div>
+            <div class="sub-title">Макс</div>
+            <div class="sub-num">6 800 подписчиков</div>
+          </div>
+        </div>
+        <div class="sub-desc">Те же вакансии в экосистеме ВКонтакте.</div>
+        <button class="sub-btn mx-btn" onclick="this.textContent='✓ Подписан'">Подписаться</button>
+      </div>
+      <div class="sub-card vk">
+        <div class="sub-card-head">
+          <div class="sub-icon vk-ic">
+            <svg viewBox="0 0 24 24"><path d="M21.547 7h-3.29a.743.743 0 0 0-.655.392s-1.312 2.416-1.734 3.23C14.734 12.813 14 12.126 14 11.11V7.603A1.104 1.104 0 0 0 12.896 6.5h-2.474a1.982 1.982 0 0 0-1.75.813s1.255-.204 1.255 1.49c0 .42.022 1.626.04 2.64a.73.73 0 0 1-1.272.503 21.54 21.54 0 0 1-2.498-4.543.693.693 0 0 0-.63-.403h-2.99a.508.508 0 0 0-.48.685C3.005 10.175 6.918 18 11.38 18h1.878a.742.742 0 0 0 .742-.742v-1.135a.73.73 0 0 1 1.23-.53l2.247 2.112a1.1 1.1 0 0 0 .746.295h2.953c1.424 0 1.424-.988.647-1.753-.546-.538-2.518-2.617-2.518-2.617a1.02 1.02 0 0 1-.078-1.323c.637-.84 1.68-2.212 2.122-2.8.603-.804 1.697-2.507.197-2.507z"/></svg>
+          </div>
+          <div>
+            <div class="sub-title">ВКонтакте</div>
+            <div class="sub-num">9 300 подписчиков</div>
+          </div>
+        </div>
+        <div class="sub-desc">Вакансии и карьерные советы в вашей ленте ВК.</div>
+        <button class="sub-btn vk-btn" onclick="this.textContent='✓ Подписан'">Подписаться</button>
+      </div>
+    </div>
+
+    <div class="s-sec">
+      <div class="s-lbl">Платформа</div>
+      <div class="stat-row"><span class="lb">Вакансий</span><span class="n">248</span></div>
+      <div class="stat-row"><span class="lb">Резюме</span><span class="n">1 204</span></div>
+      <div class="stat-row"><span class="lb">Компаний</span><span class="n">87</span></div>
+      <div class="stat-row"><span class="lb">Новых сегодня</span><span class="n" style="color:#1f8a50">14</span></div>
+    </div>
+
+  </div>
+
+  <!-- ЦЕНТР: лента -->
+  <div class="feed-col">
+    <div class="feed-top">
+      <span class="feed-count" id="cntLbl">248 актуальных вакансий</span>
+      <select class="sort-sel" onchange="doSort(this.value)">
+        <option value="date">Сначала новые</option>
+        <option value="salary">По зарплате</option>
+        <option value="az">По названию А–Я</option>
+      </select>
+    </div>
+    <div class="filters" id="chips">
+      <span class="chip" onclick="tc(this,'Полная занятость')">Полная занятость</span>
+      <span class="chip" onclick="tc(this,'Частичная')">Частичная</span>
+      <span class="chip" onclick="tc(this,'Удалённо')">Удалённо</span>
+      <span class="chip" onclick="tc(this,'Офис')">Офис</span>
+      <span class="chip" onclick="tc(this,'Гибрид')">Гибрид</span>
+      <span class="chip" onclick="tc(this,'IT')">IT</span>
+      <span class="chip" onclick="tc(this,'Дизайн')">Дизайн</span>
+      <span class="chip" onclick="tc(this,'Маркетинг')">Маркетинг</span>
+      <span class="chip" onclick="tc(this,'Финансы')">Финансы</span>
+      <span class="chip" onclick="tc(this,'Аналитика')">Аналитика</span>
+    </div>
+    <div class="af-bar" id="afbar"></div>
+    <div id="feed"></div>
+    <button class="load-btn" onclick="loadMore()">Показать ещё вакансии</button>
+  </div>
+
+  <!-- ПРАВЫЙ САЙДБАР: теги и категории -->
+  <div class="right-col">
+    <div class="s-sec">
+      <div class="s-lbl">Популярные теги</div>
+      <div class="tag-cloud" id="tcloud"></div>
+    </div>
+    <div class="s-sec">
+      <div class="s-lbl">Категории</div>
+      <a href="#" class="cat-link">Разработка <span>94</span></a>
+      <a href="#" class="cat-link">Маркетинг <span>41</span></a>
+      <a href="#" class="cat-link">Дизайн <span>37</span></a>
+      <a href="#" class="cat-link">Продажи <span>31</span></a>
+      <a href="#" class="cat-link">Аналитика <span>28</span></a>
+      <a href="#" class="cat-link">Финансы <span>22</span></a>
+      <a href="#" class="cat-link">HR <span>18</span></a>
+    </div>
+    <div class="s-sec">
+      <div class="s-lbl">Статьи</div>
+      <div class="art-item"><a href="#">Как пройти техническое собеседование в 2025 году</a><div class="dt">3 дня назад</div></div>
+      <div class="art-item"><a href="#">Резюме на одну страницу: за и против</a><div class="dt">5 дней назад</div></div>
+      <div class="art-item"><a href="#">Зарплатные ожидания: как не продешевить</a><div class="dt">1 неделю назад</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const jobs=[
+  {id:1,title:'Senior Frontend Developer',co:'Яндекс',city:'Москва',salary:'280 000 – 380 000 ₽',sal:380000,desc:'Ищем опытного фронтенд-разработчика в команду Поиска. Работа с высоконагруженными интерфейсами, современным стеком и сильной командой.',date:'Сегодня',dord:0,tags:[{t:'Удалённо',tp:'tp'},{t:'Senior',tp:'lv'},{t:'IT',tp:'sp'}],isNew:true,init:'Я'},
+  {id:2,title:'Product Designer',co:'Авито',city:'Москва / Удалённо',salary:'200 000 – 270 000 ₽',sal:270000,desc:'Проектируем будущее крупнейшего маркетплейса страны. Тебе предстоит работать над ключевыми пользовательскими сценариями и развивать дизайн-систему.',date:'Сегодня',dord:0,tags:[{t:'Гибрид',tp:'tp'},{t:'Middle',tp:'lv'},{t:'Дизайн',tp:'sp'}],isNew:true,init:'А'},
+  {id:3,title:'Data Analyst',co:'Тинькофф',city:'Санкт-Петербург',salary:'150 000 – 200 000 ₽',sal:200000,desc:'Анализируешь данные о поведении клиентов, строишь дашборды в Redash и Tableau, участвуешь в A/B-тестированиях.',date:'Вчера',dord:1,tags:[{t:'Офис',tp:'tp'},{t:'Junior / Middle',tp:'lv'},{t:'Аналитика',tp:'sp'}],isNew:false,init:'Т'},
+  {id:4,title:'Backend Engineer (Python)',co:'Ozon',city:'Москва',salary:'250 000 – 320 000 ₽',sal:320000,desc:'Разрабатываешь микросервисы для платёжной инфраструктуры. Важны знание Python на уровне middle+, опыт с PostgreSQL.',date:'Вчера',dord:1,tags:[{t:'Удалённо',tp:'tp'},{t:'Middle+',tp:'lv'},{t:'IT',tp:'sp'}],isNew:false,init:'O'},
+  {id:5,title:'Marketing Lead',co:'СберМаркет',city:'Москва',salary:'160 000 – 220 000 ₽',sal:220000,desc:'Берёшь на себя стратегию привлечения пользователей: performance, CRM, контент. Нужен опыт управления командой и понимание unit-экономики.',date:'2 дня назад',dord:2,tags:[{t:'Гибрид',tp:'tp'},{t:'Senior',tp:'lv'},{t:'Маркетинг',tp:'sp'}],isNew:false,init:'С'},
+  {id:6,title:'iOS Developer',co:'Kaspersky',city:'Москва',salary:'220 000 – 300 000 ₽',sal:300000,desc:'Разрабатываешь новые функции в flagship-приложении. Стек: Swift, UIKit + SwiftUI, архитектура MVVM+C.',date:'2 дня назад',dord:2,tags:[{t:'Удалённо',tp:'tp'},{t:'Middle',tp:'lv'},{t:'IT',tp:'sp'}],isNew:false,init:'K'},
+  {id:7,title:'Финансовый аналитик',co:'ВТБ Капитал',city:'Москва',salary:'120 000 – 170 000 ₽',sal:170000,desc:'Участвуешь в оценке компаний и подготовке инвестиционных меморандумов. Работа в команде M&A с интересными сделками.',date:'3 дня назад',dord:3,tags:[{t:'Офис',tp:'tp'},{t:'Junior',tp:'lv'},{t:'Финансы',tp:'sp'}],isNew:false,init:'В'},
+  {id:8,title:'UI/UX Designer',co:'Wildberries',city:'Удалённо',salary:'180 000 – 240 000 ₽',sal:240000,desc:'Проектируешь интерфейсы для сотен миллионов покупателей. Глубокий опыт в Figma, понимание CJM.',date:'3 дня назад',dord:3,tags:[{t:'Удалённо',tp:'tp'},{t:'Middle',tp:'lv'},{t:'Дизайн',tp:'sp'}],isNew:false,init:'W'},
+  {id:9,title:'DevOps Engineer',co:'Selectel',city:'Санкт-Петербург',salary:'230 000 – 290 000 ₽',sal:290000,desc:'Обслуживаешь инфраструктуру облачных продуктов: Kubernetes, Terraform, CI/CD. DevOps здесь — культура, а не должность.',date:'4 дня назад',dord:4,tags:[{t:'Гибрид',tp:'tp'},{t:'Senior',tp:'lv'},{t:'IT',tp:'sp'}],isNew:false,init:'S'},
+  {id:10,title:'ML Engineer',co:'Сбер AI',city:'Москва',salary:'300 000 – 450 000 ₽',sal:450000,desc:'Разрабатываешь и деплоишь модели в прод. Нужны опыт с PyTorch, понимание архитектур трансформеров.',date:'5 дней назад',dord:5,tags:[{t:'Удалённо',tp:'tp'},{t:'Senior',tp:'lv'},{t:'IT',tp:'sp'}],isNew:false,init:'С'},
+  {id:11,title:'Контент-маркетолог',co:'Skillbox',city:'Удалённо',salary:'90 000 – 130 000 ₽',sal:130000,desc:'Пишешь экспертный контент об образовании и карьере. Сильный текстовый бэкграунд и умение работать с SEO.',date:'6 дней назад',dord:6,tags:[{t:'Удалённо',tp:'tp'},{t:'Middle',tp:'lv'},{t:'Маркетинг',tp:'sp'}],isNew:false,init:'S'},
+  {id:12,title:'HR Business Partner',co:'VK',city:'Москва',salary:'130 000 – 180 000 ₽',sal:180000,desc:'Сопровождаешь бизнес-подразделения в вопросах найма, развития и удержания команды. Опыт HRBP в IT.',date:'6 дней назад',dord:6,tags:[{t:'Гибрид',tp:'tp'},{t:'Middle',tp:'lv'},{t:'HR',tp:'sp'}],isNew:false,init:'V'},
+];
+const ctags=[{t:'Python',s:'lg'},{t:'React',s:'lg'},{t:'Удалённо',s:'lg'},{t:'SQL',s:'lg'},{t:'Гибрид',s:''},{t:'Senior',s:''},{t:'Figma',s:''},{t:'Аналитика',s:''},{t:'Swift',s:'sm'},{t:'Node.js',s:''},{t:'Middle',s:''},{t:'Go',s:'sm'},{t:'TypeScript',s:''},{t:'Дизайн',s:''},{t:'Маркетинг',s:''},{t:'Junior',s:'sm'},{t:'HR',s:'sm'},{t:'Vue.js',s:'sm'},{t:'Финансы',s:'sm'}];
+let af=new Set(),vis=5,fj=[...jobs];
+function rcloud(){document.getElementById('tcloud').innerHTML=ctags.map(c=>`<span class="ctag ${c.s}" onclick="fbt('${c.t}')">${c.t}</span>`).join('')}
+function fbt(t){af.add(t);apply();document.querySelectorAll('.chip').forEach(c=>{if(c.dataset.tag===t)c.classList.add('on')})}
+function tc(el,t){el.dataset.tag=t;el.classList.toggle('on');af.has(t)?af.delete(t):af.add(t);apply()}
+function apply(){fj=af.size===0?[...jobs]:jobs.filter(j=>j.tags.some(tg=>af.has(tg.t)));vis=5;rafbar();rjobs();document.getElementById('cntLbl').textContent=fj.length+' актуальных вакансий'}
+function rafbar(){const b=document.getElementById('afbar');if(!af.size){b.innerHTML='';return;}b.innerHTML=[...af].map(f=>`<span class="af-pill" onclick="rmf('${f}')">${f} ×</span>`).join('')+`<span class="af-clr" onclick="clrf()">Сбросить всё</span>`}
+function rmf(t){af.delete(t);document.querySelectorAll('.chip').forEach(c=>{if(c.dataset.tag===t)c.classList.remove('on')});apply()}
+function clrf(){af.clear();document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));apply()}
+function doSort(v){if(v==='salary')fj.sort((a,b)=>b.sal-a.sal);else if(v==='az')fj.sort((a,b)=>a.title.localeCompare(b.title,'ru'));else fj.sort((a,b)=>a.dord-b.dord);vis=5;rjobs()}
+function doSearch(){const q=document.getElementById('si').value.trim().toLowerCase();if(!q)return;fj=jobs.filter(j=>j.title.toLowerCase().includes(q)||j.co.toLowerCase().includes(q)||j.tags.some(t=>t.t.toLowerCase().includes(q)));vis=5;document.getElementById('cntLbl').textContent=fj.length+' результатов';rjobs()}
+function loadMore(){vis+=4;rjobs()}
+function rjobs(){
+  const f=document.getElementById('feed');
+  const list=fj.slice(0,vis);
+  if(!list.length){f.innerHTML='<div style="padding:36px;text-align:center;color:#ccc;font-size:13px;border:1px dashed #eee;border-radius:8px">По вашему запросу ничего не найдено</div>';return}
+  f.innerHTML=list.map(j=>`
+    <div class="jcard">
+      <div class="jcard-head">
+        <div class="jtitle">${j.title}${j.isNew?'<span class="nbadge">Новое</span>':''}</div>
+        <div class="jdate">${j.date}</div>
+      </div>
+      <div class="jmeta">${j.co}<span class="dot"></span>${j.city}</div>
+      <div class="jsalary">${j.salary}</div>
+      <div class="jdesc">${j.desc}</div>
+      <div class="jtags">${j.tags.map(tg=>`<span class="jtag ${tg.tp}" onclick="event.stopPropagation();fbt('${tg.t}')">${tg.t}</span>`).join('')}</div>
+      <div class="jcard-foot">
+        <div style="display:flex;align-items:center">
+          <div class="jco-logo">${j.init}</div>
+          <span class="jco-name">${j.co}</span>
+        </div>
+        <button class="jsave" onclick="this.textContent=this.textContent.includes('Сохранить')?'♥ Сохранено':'♡ Сохранить'">♡ Сохранить</button>
+      </div>
+    </div>
+  `).join('')
+}
+rcloud();rjobs();
+</script>
+</body>
+</html>
