@@ -29,7 +29,11 @@ export default function JobCard({ post }: JobCardProps) {
   const source = post.channelUsername ? `@${post.channelUsername}` : null
 
   return (
-    <div className="jcard">
+    <a
+      href={`/post/${post.id}`}
+      className="jcard"
+      style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
+    >
       <div className="jcard-head">
         <div className="jtitle">
           {post.title}
@@ -65,6 +69,6 @@ export default function JobCard({ post }: JobCardProps) {
           {saved ? '♥ Сохранено' : '♡ Сохранить'}
         </button>
       </div>
-    </div>
+    </a>
   )
 }

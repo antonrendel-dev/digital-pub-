@@ -23,6 +23,7 @@ interface FeedProps {
   searchQuery: string
   externalTag?: string
   onExternalTagConsumed: () => void
+  pageTitle?: string
 }
 
 export default function Feed({
@@ -30,6 +31,7 @@ export default function Feed({
   searchQuery,
   externalTag,
   onExternalTagConsumed,
+  pageTitle,
 }: FeedProps) {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set())
   const [visible, setVisible] = useState(PAGE_SIZE)
@@ -99,11 +101,14 @@ export default function Feed({
 
   return (
     <div className="feed-col">
+      {pageTitle && <h1 className="feed-page-title">{pageTitle}</h1>}
       <div className="feed-top">
         <span className="feed-count">
           {searchQuery
             ? `${sorted.length} результатов`
-            : `${vacancies.length} вакансий · ${resumes.length} резюме`}
+            : pageTitle
+              ? `${sorted.length} объявлений`
+              : `${vacancies.length} вакансий · ${resumes.length} резюме`}
         </span>
       </div>
 
