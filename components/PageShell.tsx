@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Navbar from './Navbar'
+import Footer from './Footer'
 
 export default function PageShell({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(false)
@@ -18,14 +19,21 @@ export default function PageShell({ children }: { children: React.ReactNode }) {
   const toggleDark = () => {
     const next = !isDark
     setIsDark(next)
-    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
-    localStorage.setItem('theme', next ? 'dark' : 'light')
+    document.documentElement.classList.add('theme-switching')
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
+        localStorage.setItem('theme', next ? 'dark' : 'light')
+        setTimeout(() => document.documentElement.classList.remove('theme-switching'), 450)
+      })
+    })
   }
 
   return (
-    <>
+    <div className="page-wrapper">
       <Navbar onSearch={() => {}} onDarkToggle={toggleDark} isDark={isDark} />
-      {children}
-    </>
+      <main className="page-content">{children}</main>
+      <Footer />
+    </div>
   )
 }

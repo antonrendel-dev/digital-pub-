@@ -5,13 +5,12 @@ interface RightSidebarProps {
 }
 
 const CATEGORIES = [
-  { name: 'Разработка', count: 94 },
-  { name: 'Маркетинг', count: 41 },
-  { name: 'Дизайн', count: 37 },
-  { name: 'Продажи', count: 31 },
-  { name: 'Аналитика', count: 28 },
-  { name: 'Финансы', count: 22 },
-  { name: 'HR', count: 18 },
+  { name: 'SMM и маркетинг', count: 10 },
+  { name: 'Дизайн', count: 3 },
+  { name: 'SEO', count: 3 },
+  { name: 'Менеджмент', count: 2 },
+  { name: 'Разработка', count: 2 },
+  { name: 'Таргет и реклама', count: 2 },
 ]
 
 const ARTICLES = [

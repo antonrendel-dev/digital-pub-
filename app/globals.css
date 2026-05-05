@@ -86,9 +86,16 @@ body {
   font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-  transition:
-    background 0.2s,
-    color 0.2s;
+}
+/* Smooth theme switch — transition all colors */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: background-color 0.35s ease,
+              color 0.35s ease,
+              border-color 0.35s ease,
+              box-shadow 0.35s ease !important;
 }
 
 /* ─── Layout ────────────────────────────────────────────── */
@@ -118,6 +125,9 @@ body {
   z-index: 99;
   transition: background 0.2s;
 }
+/* Also act as positioning context for .nav-center absolute centering.
+   Note: sticky already creates a containing block, but we add relative
+   explicitly for clarity. Sticky elements are implicitly position:relative. */
 
 .nav-brand {
   display: flex;
@@ -167,9 +177,16 @@ body {
 }
 
 .nav-center {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   justify-content: center;
+  transition: transform 0.3s ease;
+}
+/* When search is open, shift nav links toward the left */
+.nav-main:has(.nav-search-wrap.open) .nav-center {
+  transform: translateX(calc(-50% - 120px));
 }
 
 .nav-right {
@@ -177,10 +194,58 @@ body {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
-.nav-sbar {
-  width: 330px;
+.nav-search-wrap {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
+.nav-search-field {
+  overflow: hidden;
+  width: 0;
+  opacity: 0;
+  transition: width 0.3s ease, opacity 0.2s ease;
+}
+.nav-search-wrap.open .nav-search-field {
+  width: 240px;
+  opacity: 1;
+  margin-right: 6px;
+}
+.nav-search-field input {
+  width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.nav-search-field input:focus {
+  border-color: var(--accent);
+}
+.nav-search-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.nav-search-icon:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* ─── Hero strip ─────────────────────────────────────────── */
@@ -315,12 +380,20 @@ body {
   background: var(--accent-hover);
 }
 .btn-theme {
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   background: none;
-  border: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   cursor: pointer;
-  padding: 4px;
-  line-height: 1;
+  padding: 0;
+  transition: border-color 0.2s;
+}
+.btn-theme:hover {
+  border-color: #F4C44E;
 }
 
 /* ─── Search bar ─────────────────────────────────────────── */
@@ -708,6 +781,18 @@ body {
 }
 [data-theme='dark'] .jsalary {
   color: #4dbb78;
+}
+.jimage {
+  margin-bottom: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.jimage img {
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
 }
 .jdesc {
   font-size: 12.5px;
@@ -1167,4 +1252,108 @@ body {
 .post-related-meta {
   font-size: 11px;
   color: var(--text-light);
+}
+
+/* ─── Page Wrapper (sticky footer) ─────────────────── */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.page-content {
+  flex: 1;
+}
+
+/* ─── Footer ───────────────────────────────────────── */
+.footer {
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+  padding-top: 40px;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 32px;
+  padding-bottom: 32px;
+}
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.footer-brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+.footer-brand-name em {
+  font-style: normal;
+  color: #ffcc3e; /* always yellow — brand constant */
+}
+.footer-slogan {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.4;
+}
+.footer-desc-block {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+.footer-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.footer-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.footer-link {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.footer-link:hover {
+  color: var(--accent);
+}
+.footer-bottom {
+  border-top: 1px solid var(--border-light);
+  padding: 16px 0;
+}
+.footer-bottom-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-light);
+}
+.footer-legal {
+  display: flex;
+  gap: 20px;
+}
+.footer-legal-link {
+  font-size: 12px;
+  color: var(--text-light);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.footer-legal-link:hover {
+  color: var(--text-muted);
 }

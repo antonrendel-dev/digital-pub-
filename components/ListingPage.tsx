@@ -5,6 +5,7 @@ import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
 import RightSidebar from './RightSidebar'
 import Feed from './feed/Feed'
+import Footer from './Footer'
 import { FeedPost } from '@/lib/posts'
 
 const CATEGORIES = ['Разработка', 'Маркетинг', 'Дизайн', 'Продажи', 'Аналитика', 'Финансы', 'HR']
@@ -35,8 +36,14 @@ export default function ListingPage({ posts, type }: ListingPageProps) {
   const toggleDark = () => {
     const next = !isDark
     setIsDark(next)
-    document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
-    localStorage.setItem('theme', next ? 'dark' : 'light')
+    document.documentElement.classList.add('theme-switching')
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
+        localStorage.setItem('theme', next ? 'dark' : 'light')
+        setTimeout(() => document.documentElement.classList.remove('theme-switching'), 450)
+      })
+    })
   }
 
   // Filter by category (simple text match in title/description)
@@ -51,38 +58,42 @@ export default function ListingPage({ posts, type }: ListingPageProps) {
   const pageTitle = type === 'vacancy' ? 'Вакансии' : 'Резюме'
 
   return (
-    <>
+    <div className="page-wrapper">
       <Navbar onSearch={setSearchQuery} onDarkToggle={toggleDark} isDark={isDark} />
 
-      {/* Category tabs */}
-      <div className="listing-cats wrap">
-        <button
-          className={`listing-cat ${!activeCategory ? 'on' : ''}`}
-          onClick={() => setActiveCategory(null)}
-        >
-          Все
-        </button>
-        {CATEGORIES.map((cat) => (
+      <main className="page-content">
+        {/* Category tabs */}
+        <div className="listing-cats wrap">
           <button
-            key={cat}
-            className={`listing-cat ${activeCategory === cat ? 'on' : ''}`}
-            onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+            className={`listing-cat ${!activeCategory ? 'on' : ''}`}
+            onClick={() => setActiveCategory(null)}
           >
-            {cat}
+            Все
           </button>
-        ))}
-      </div>
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              className={`listing-cat ${activeCategory === cat ? 'on' : ''}`}
+              onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
-      <div className="wrap layout">
-        <LeftSidebar />
-        <Feed
-          posts={filtered}
-          searchQuery={searchQuery}
-          onExternalTagConsumed={() => {}}
-          pageTitle={pageTitle}
-        />
-        <RightSidebar onTagClick={() => {}} />
-      </div>
-    </>
+        <div className="wrap layout">
+          <LeftSidebar />
+          <Feed
+            posts={filtered}
+            searchQuery={searchQuery}
+            onExternalTagConsumed={() => {}}
+            pageTitle={pageTitle}
+          />
+          <RightSidebar onTagClick={() => {}} />
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   )
 }

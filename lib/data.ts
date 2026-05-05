@@ -248,25 +248,21 @@ export const JOBS: Job[] = [
 ]
 
 export const CLOUD_TAGS: CloudTag[] = [
-  { t: 'Python', s: 'lg' },
-  { t: 'React', s: 'lg' },
-  { t: 'Удалённо', s: 'lg' },
-  { t: 'SQL', s: 'lg' },
-  { t: 'Гибрид', s: '' },
-  { t: 'Senior', s: '' },
+  { t: 'SMM', s: 'lg' },
+  { t: 'SEO', s: 'lg' },
+  { t: 'Дизайнер', s: 'lg' },
+  { t: 'Удалёнка', s: 'lg' },
+  { t: 'Маркетолог', s: '' },
+  { t: 'Менеджер', s: '' },
+  { t: 'Директ', s: '' },
   { t: 'Figma', s: '' },
-  { t: 'Аналитика', s: '' },
-  { t: 'Swift', s: 'sm' },
-  { t: 'Node.js', s: '' },
-  { t: 'Middle', s: '' },
-  { t: 'Go', s: 'sm' },
-  { t: 'TypeScript', s: '' },
-  { t: 'Дизайн', s: '' },
-  { t: 'Маркетинг', s: '' },
+  { t: 'WordPress', s: '' },
+  { t: 'Таргетолог', s: 'sm' },
+  { t: 'Контекстолог', s: 'sm' },
+  { t: 'Фриланс', s: '' },
+  { t: 'ВКонтакте', s: 'sm' },
   { t: 'Junior', s: 'sm' },
-  { t: 'HR', s: 'sm' },
-  { t: 'Vue.js', s: 'sm' },
-  { t: 'Финансы', s: 'sm' },
+  { t: 'Проджект', s: 'sm' },
 ]
 
 export function filterJobs(jobs: Job[], filters: Set<string>): Job[] {

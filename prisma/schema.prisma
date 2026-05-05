@@ -33,11 +33,13 @@ model Post {
   id                  Int        @id @default(autoincrement())
   type                PostType
   title               String
+  slug                String?   @unique
   description         String?
   company             String?
   salary              String?
   status              PostStatus @default(pending)
   source              PostSource @default(telegram)
+  imageUrl            String?
   telegramMessageId   String?
   channelUsername     String?
   categoryId          Int?

@@ -13,10 +13,18 @@ const CATEGORIES = ['Разработка', 'Маркетинг', 'Дизайн'
 
 export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) {
   const [query, setQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
 
-  const handleSearch = () => onSearch(query.trim())
+  const handleSearch = () => {
+    if (query.trim()) onSearch(query.trim())
+  }
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleSearch()
+    if (e.key === 'Escape') {
+      setSearchOpen(false)
+      setQuery('')
+      onSearch('')
+    }
   }
 
   return (
@@ -80,20 +88,47 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
 
       {/* Right: search + buttons + theme toggle */}
       <div className="nav-right">
-        <div className="sbar nav-sbar">
-          <input
-            type="text"
-            placeholder="Поиск вакансий и резюме..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <button onClick={handleSearch}>Найти</button>
+        <div className={`nav-search-wrap ${searchOpen ? 'open' : ''}`}>
+          <div className="nav-search-field">
+            <input
+              type="text"
+              placeholder="Поиск вакансий и резюме..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <button
+            className="nav-search-icon"
+            onClick={() => {
+              if (searchOpen && query.trim()) {
+                handleSearch()
+              } else {
+                setSearchOpen(!searchOpen)
+                if (searchOpen) { setQuery(''); onSearch(''); }
+              }
+            }}
+            title="Поиск"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
         </div>
         <button className="btn-g">Войти</button>
         <button className="btn-b">+ Разместить</button>
         <button className="btn-theme" onClick={onDarkToggle} title="Сменить тему">
-          {isDark ? '☀️' : '🌙'}
+          {isDark ? (
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <circle cx="12" cy="12" r="4" fill="#FFAC33" />
+              <path stroke="#FFAC33" strokeWidth="2" strokeLinecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="#F4C44E" />
+            </svg>
+          )}
         </button>
       </div>
     </nav>

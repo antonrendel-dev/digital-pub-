@@ -5,15 +5,15 @@ import { FeedPost } from '@/lib/posts'
 import JobCard from './JobCard'
 
 const FILTER_CHIPS = [
-  'Удалённо',
-  'Офис',
-  'Гибрид',
-  'IT',
+  'Удалёнка',
+  'SMM',
+  'SEO',
   'Дизайн',
   'Маркетинг',
-  'Финансы',
-  'Аналитика',
-  'HR',
+  'Менеджер',
+  'Директ',
+  'Таргет',
+  'WordPress',
 ]
 
 const PAGE_SIZE = 10

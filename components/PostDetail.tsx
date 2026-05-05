@@ -65,6 +65,13 @@ export default function PostDetail({ post, related }: PostDetailProps) {
 
             {post.salary && <div className="post-salary">{post.salary}</div>}
 
+            {/* Post image */}
+            {post.imageUrl && (
+              <div className="jimage">
+                <img src={post.imageUrl} alt={post.title} />
+              </div>
+            )}
+
             {/* Full post text */}
             <div className="post-body">
               {paragraphs.map((line, i) => (
@@ -127,7 +134,7 @@ export default function PostDetail({ post, related }: PostDetailProps) {
             <div className="post-related">
               <div className="s-lbl">Похожие</div>
               {related.map((r) => (
-                <a key={r.id} href={`/post/${r.id}`} className="post-related-item">
+                <a key={r.id} href={r.slug ? `/vacancies/${r.slug}` : `/post/${r.id}`} className="post-related-item">
                   <div className="post-related-title">{r.title}</div>
                   <div className="post-related-meta">
                     {formatDateShort(r.createdAt)}

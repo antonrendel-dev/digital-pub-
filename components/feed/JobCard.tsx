@@ -30,7 +30,7 @@ export default function JobCard({ post }: JobCardProps) {
 
   return (
     <a
-      href={`/post/${post.id}`}
+      href={post.slug ? `/vacancies/${post.slug}` : `/post/${post.id}`}
       className="jcard"
       style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}
     >

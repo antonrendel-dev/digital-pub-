@@ -54,33 +54,39 @@ export default function LeftSidebar() {
     <div className="left-col">
       <div className="s-sec">
         <div className="s-lbl">Вакансии в соцсетях</div>
-        <SubCard
-          type="tg"
-          icon={<TgIcon />}
-          title="Telegram"
-          subscribers="14 200 подписчиков"
-          desc="Свежие вакансии каждый день прямо в Telegram."
-          btnClass="tg-btn"
-          btnText="Подписаться"
-        />
-        <SubCard
-          type="mx"
-          icon={<MxIcon />}
-          title="Макс"
-          subscribers="6 800 подписчиков"
-          desc="Те же вакансии в экосистеме ВКонтакте."
-          btnClass="mx-btn"
-          btnText="Подписаться"
-        />
-        <SubCard
-          type="vk"
-          icon={<VkIcon />}
-          title="ВКонтакте"
-          subscribers="9 300 подписчиков"
-          desc="Вакансии и карьерные советы в вашей ленте ВК."
-          btnClass="vk-btn"
-          btnText="Подписаться"
-        />
+        <a href="https://t.me/web_vacancy" target="_blank" rel="noopener noreferrer">
+          <SubCard
+            type="tg"
+            icon={<TgIcon />}
+            title="Telegram"
+            subscribers="14 200 подписчиков"
+            desc="Свежие вакансии каждый день прямо в Telegram."
+            btnClass="tg-btn"
+            btnText="Подписаться"
+          />
+        </a>
+        <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" rel="noopener noreferrer">
+          <SubCard
+            type="mx"
+            icon={<MxIcon />}
+            title="Макс"
+            subscribers="6 800 подписчиков"
+            desc="Те же вакансии в экосистеме ВКонтакте."
+            btnClass="mx-btn"
+            btnText="Подписаться"
+          />
+        </a>
+        <a href="https://vk.com/digital_pub_vacancies" target="_blank" rel="noopener noreferrer">
+          <SubCard
+            type="vk"
+            icon={<VkIcon />}
+            title="ВКонтакте"
+            subscribers="9 300 подписчиков"
+            desc="Вакансии и карьерные советы в вашей ленте ВК."
+            btnClass="vk-btn"
+            btnText="Подписаться"
+          />
+        </a>
       </div>
 
       <div className="s-sec">

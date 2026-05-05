@@ -2,7 +2,7 @@ import { getPostsByType } from '@/lib/posts'
 import ListingPage from '@/components/ListingPage'
 import type { Metadata } from 'next'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Вакансии — Диджитал Паб',
