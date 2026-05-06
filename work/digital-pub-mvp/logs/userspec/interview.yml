@@ -1,0 +1,463 @@
+# Interview Plan for Feature Planning
+#
+# Tracks progress of adaptive discovery interview for a new feature/bug/refactoring.
+# Updated after EACH user response with scoring, values, and remaining gaps.
+#
+# Scoring: 0-100% (how well we understand this aspect)
+# Status: pending → partial → complete
+# Required: true = must reach threshold, false = cover if relevant
+
+# ============================================================================
+# Interview Metadata (Session Recovery)
+# ============================================================================
+interview_metadata:
+  started: "2026-05-06 09:00:00"
+  last_updated: "2026-05-06 09:00:00"
+  status: "in_progress"
+  can_resume: true
+  current_question_num: 0
+  feature_size: "L"
+
+# ============================================================================
+# Conversation History (for session recovery)
+# ============================================================================
+# Preserves complete Q&A. Update after EVERY user response.
+#
+conversation_history:
+  - question_num: 1
+    timestamp: "2026-05-06 09:05:00"
+    topic: "user_problem, target_users, success_criteria, feature_description"
+    agent_question: |
+      1. Какую конкретную проблему решает? Агрегатор чужих каналов или витрина своих?
+      2. Кто ЦА — соискатели или работодатели?
+      3. Чем отличается от hh.ru, Habr Career?
+      4. Что значит MVP готов?
+    user_answer: |
+      1. Агрегатор вакансий в нише диджитал фриланса с 10 отобранных каналов. Парсинг через бота @vacancy_bot_ren по ключевым словам. Кросспост в @web_vacancy, @pub_resume, Макс, ВК и на сайт.
+      2. ЦА — и соискатели и работодатели. Главная — лента, но сайт многостраничный: разделы Вакансий и Резюме по тегам, статьи по трудоустройству (SEO), форма подачи, рейтинг фрилансеров и работодателей.
+      3. Более человечный подход, фокус на надёжных фрилансеров. Позиционирование в процессе.
+      4. MVP: сайт запущен, вакансии/резюме из парсинга, фрилансеры откликаются и шлют резюме. Работающие теги-фильтры, поиск, счётчики, отдельные разделы по тегам, SEO статьи.
+    summary: "Агрегатор диджитал-фриланса из 10 TG-каналов. ЦА — обе стороны. MVP = чтение + отклик + резюме + теги + SEO статьи."
+
+  - question_num: 2
+    timestamp: "2026-05-06 09:15:00"
+    topic: "feature_description, constraints, testing_strategy"
+    agent_question: |
+      1. Отклик — на сайте или ведёт в Telegram?
+      2. Рейтинг — в MVP или позже?
+      3. Ресурсы, сроки, домен?
+      4. Тестирование — автотесты или ручная проверка?
+    user_answer: |
+      1. MVP — прямой отклик по ссылке на работодателя (Telegram).
+      2. Рейтинг — следующая итерация, но зафиксировать в спеке.
+      3. Ты + я. Срок MVP — макс 1 месяц. Домен d-pub.ru привяжем когда основной функционал и дизайн готовы.
+      4. Автотесты + ручная проверка.
+    summary: "Отклик через TG-ссылку. Рейтинг — post-MVP. Срок 1 мес. Автотесты на критический путь."
+
+  - question_num: 3
+    timestamp: "2026-05-06 09:25:00"
+    topic: "user_problem, success_criteria, target_users"
+    agent_question: |
+      1. Человечный подход — курированный job board с фокусом на качество?
+      2. Критерии успеха MVP — конкретный список.
+      3. Специальности — маркетинг или разработка тоже?
+    user_answer: |
+      1. Да, согласен — курированный job board для digital-фриланса с фокусом на качество.
+      2. Согласен, только 10 SEO-статей вместо 3-5.
+      3. Вся разработка тоже в скоупе, просто вакансий меньше — но они тоже парсятся и будут.
+    summary: "Позиционирование: курированный качественный job board. 10 SEO-статей. Все digital-специальности включая разработку."
+
+  - question_num: 4
+    timestamp: "2026-05-06 09:40:00"
+    topic: "user_stories, integration_points, ui_ux_requirements"
+    agent_question: |
+      1. Разделы по тегам — фильтры или отдельные страницы?
+      2. Страницы-призраки — убрать лишние из навбара?
+      3. Форма подачи резюме — что минимально?
+      4. Статьи — кто пишет и как публикует?
+    user_answer: |
+      1. На главной — фильтры, на боковой панели справа — ведут на отдельные страницы-разделы со своими SEO-тегами и SEO-текстом внизу.
+      2. Да, согласен — Главная, Вакансии, Резюме, Статьи для MVP.
+      3. Бот @resume_vac_bot уже есть для подачи. Через сайт — аналогичные шаги как в боте (submission_bot в проекте).
+      4. Банда агентов (Marketer, SEO, Копирайтер) подбирает семантику, пишет статьи, публикует после утверждения. От меня только ТЗ и апрув.
+    summary: "Теги: фильтры на главной + отдельные SEO-страницы. Навбар сокращаем. Подача через бота. Статьи пишут агенты по ТЗ."
+
+  - question_num: 5
+    timestamp: "2026-05-06 09:55:00"
+    topic: "user_stories, edge_cases, error_scenarios, ui_ux_requirements, integration_points"
+    agent_question: |
+      1. Работодатель — какой его путь?
+      2. Агенты и статьи — где промежуточные этапы ТЗ и апрув?
+      3. Edge cases: без зарплаты/описания, пустой тег, парсинг упал.
+      4. Мобильная адаптация — responsive или минимум?
+    user_answer: |
+      1. Работодатель размещает вакансию, потом смотрит резюме.
+      2. Агенты — Claude Code. API ок, но где ТЗ и апрув? Непонятен workflow.
+      3. Без зарплаты — показываем. Без описания — не показываем. Пустых тегов не должно быть (динамические). Ошибка парсинга — сигнал в боте @web_vacancy_bot.
+      4. Полноценный responsive.
+    summary: "Работодатель: разместить вакансию → смотреть резюме. Нужен workflow ТЗ→агенты→апрув. Без описания не показываем. Полный responsive."
+
+  - question_num: 6
+    timestamp: "2026-05-06 10:10:00"
+    topic: "verification_strategy, risks, acceptance_criteria, integration_points"
+    agent_question: |
+      1. Verification чеклист после деплоя — годится?
+      2. Риски — что ещё беспокоит?
+      3. Кнопка «Разместить» — через бота или убираем?
+    user_answer: |
+      1. Годится.
+      2. Всё ок, нужно попотеть.
+      3. Кнопку оставляем в хэдере и футере, в MVP ведёт на бота. В следующей итерации — форма на сайте. Зафиксировать план по итерациям.
+    summary: "Verification ок. Кнопка Разместить → бот в MVP, форма на сайте в след. итерации. Зафиксировать roadmap."
+
+  - question_num: 7
+    timestamp: "2026-05-06 10:25:00"
+    topic: "acceptance_criteria, roadmap"
+    agent_question: |
+      Итерации — правильно ли разбивка? MVP, Итерация 2, Итерация 3+.
+    user_answer: |
+      MVP — ок, но что такое «Динамическая статистика из БД»?
+      Итерация 2: админка нужна полноценная, не только модерация. В MVP модерация статей через TG-бота. ≥12 статей ежемесячно.
+      Итерация 3+ — ок.
+    summary: "MVP согласован. Статистика = счётчики из БД. Админка полноценная в итерации 2. 12 статей/мес."
+# Format:
+# - question_num: 1
+#   timestamp: "2025-11-12 15:20:33"
+#   topic: "user_problem"
+#   agent_question: |
+#     [Full question text]
+#   user_answer: |
+#     [Full answer text]
+#   summary: "Brief summary"
+
+# ============================================================================
+# Phase 1: High-Level Feature Understanding
+# ============================================================================
+# Interview Cycle 1 scope
+phase1_feature_overview:
+
+  feature_name:
+    score: 90
+    status: "complete"
+    value: "digital-pub-mvp — полный user-spec продукта Диджитал Паб"
+    gaps: ""
+    required: true
+
+  feature_description:
+    score: 85
+    status: "complete"
+    value: "Job board для диджитал-фрилансеров. Агрегация вакансий из 10 TG-каналов через бота @vacancy_bot_ren. Кросспост в TG(@web_vacancy)/Макс/ВК/сайт. MVP: лента + разделы по тегам + отклик через TG-ссылку + форма подачи резюме + SEO-статьи. Post-MVP: рейтинг фрилансеров/работодателей."
+    gaps: "Уточнить: статьи — кто пишет? Форма подачи резюме — какие поля?"
+    required: true
+
+  work_type:
+    score: 90
+    status: "complete"
+    value: "feature — полный product spec"
+    gaps: ""
+    required: true
+
+  user_problem:
+    score: 90
+    status: "complete"
+    value: "Вакансии разбросаны по 10+ TG-каналам, фрилансерам сложно мониторить. Работодателям сложно найти надёжного фрилансера. Диджитал Паб — курированный job board для digital-фриланса с фокусом на качество, а не количество. Вакансии отобраны из проверенных каналов, прошли фильтрацию."
+    gaps: ""
+    required: true
+
+  target_users:
+    score: 90
+    status: "complete"
+    value: "Соискатели (фрилансеры в digital) и работодатели. Все digital-специальности: SMM, SEO, таргет, дизайн, разработка (React, Python и др.), менеджмент, аналитика. Фокус на маркетинг/digital, но разработка тоже в скоупе."
+    gaps: ""
+    required: false
+
+  success_criteria:
+    score: 90
+    status: "complete"
+    value: |
+      - Сайт доступен по домену d-pub.ru
+      - ≥50 вакансий и ≥20 резюме в базе (из парсинга)
+      - Автоматическое обновление ленты из Telegram
+      - Работающие фильтры по тегам, поиск по ключевым словам
+      - Отдельные разделы /vacancies и /resumes с подразделами по тегам
+      - Форма отправки резюме
+      - 10 SEO-статей опубликованы
+      - Мобильная адаптация
+    gaps: ""
+    required: true
+
+  constraints:
+    score: 85
+    status: "complete"
+    value: "Команда: 1 человек + AI. Срок MVP: 1 месяц. Стек: Next.js 14 + PostgreSQL (уже есть). VPS на NetAngels. Домен d-pub.ru привяжем после готовности MVP. Бюджет на внешние сервисы — не обсуждался, предположительно минимальный."
+    gaps: ""
+    required: true
+
+  testing_strategy:
+    score: 85
+    status: "complete"
+    value: "E2E тест на критический путь (зашёл → нашёл вакансию → откликнулся). Интеграционный тест на парсинг Telegram. Ручная проверка UI/UX перед деплоем."
+    gaps: ""
+    required: true
+
+# ============================================================================
+# Phase 2: User Experience & Scenarios
+# ============================================================================
+# Interview Cycle 2 scope (together with Phase 3)
+phase2_user_experience:
+
+  user_stories:
+    score: 85
+    status: "complete"
+    value: |
+      US1 (Фрилансер — поиск): Заходит → видит ленту → фильтрует по тегу → открывает вакансию → откликается через TG-ссылку.
+      US2 (Фрилансер — раздел): Нажимает тег в правой панели → SEO-страница раздела с вакансиями по тегу + SEO-текст внизу.
+      US3 (Фрилансер — резюме): Хочет разместить резюме → идёт в TG-бота @resume_vac_bot → заполняет → после модерации публикуется на сайте.
+      US4 (Работодатель — вакансия): Хочет разместить вакансию → идёт в TG-бота → заполняет → после модерации публикуется.
+      US5 (Работодатель — поиск): Заходит → раздел Резюме → фильтрует → находит фрилансера → связывается через контакт.
+      US6 (SEO-статьи): Тони даёт ТЗ → агенты (SEO/Marketer/Writer) подбирают семантику, пишут → Тони апрувит → статья публикуется на /articles/{slug}.
+      US7 (Читатель): Приходит из поиска на статью → читает → видит вакансии/резюме → переходит в ленту.
+    gaps: ""
+    required: true
+
+  acceptance_criteria:
+    score: 90
+    status: "complete"
+    value: |
+      - Главная: лента вакансий+резюме, фильтр-чипы работают, поиск по ключевым словам
+      - Теги в правой панели ведут на /vacancies/{tag-slug} с SEO-meta и SEO-текстом
+      - Отдельные разделы /vacancies и /resumes с фильтрацией
+      - Кнопка отклика ведёт в Telegram работодателя
+      - Кнопка «Разместить» (хэдер + футер) ведёт на бота @resume_vac_bot
+      - Раздел /articles отображает статьи из БД, ≥10 статей
+      - Статистика (кол-во вакансий/резюме) из БД, не захардкожена
+      - Полноценный responsive (бургер-меню, 1 колонка, сайдбары скрыты)
+      - Dark/Light тема
+      - Посты без описания не показываются
+      - Автосинхронизация из Telegram работает
+      - E2E тест критического пути проходит
+      - Домен d-pub.ru привязан
+    gaps: ""
+    required: true
+
+  edge_cases:
+    score: 85
+    status: "complete"
+    value: |
+      - Без зарплаты — показываем карточку, поле зарплаты скрыто
+      - Без описания — НЕ показываем (фильтруем при синхронизации или отображении)
+      - Пустой тег (0 вакансий) — не должен существовать, теги динамические (из реальных постов)
+      - Пустой поиск — показываем «Ничего не найдено»
+    gaps: ""
+    required: true
+
+  error_scenarios:
+    score: 85
+    status: "complete"
+    value: |
+      - Telegram парсинг упал — сигнал об ошибке в боте @web_vacancy_bot (уже реализовано)
+      - БД недоступна — fallback на mock-данные (уже реализовано в lib/posts.ts)
+      - Битая TG-ссылка — пост без channelUsername/messageId не показывает кнопку «Откликнуться»
+    gaps: ""
+    required: true
+
+  verification_strategy:
+    score: 90
+    status: "complete"
+    value: |
+      Post-deploy чеклист:
+      - Открыть главную — лента грузится, фильтры работают
+      - Открыть /vacancies/smm — SEO-страница с тегом
+      - Открыть вакансию → «Откликнуться» ведёт в TG
+      - Проверить с мобильного — адаптация работает
+      - Открыть /articles/{slug} — статья отображается
+      - Запустить sync → новые посты появляются
+      Автотесты: E2E на критический путь + интеграционный на парсинг
+    gaps: ""
+    required: true
+
+  ui_ux_requirements:
+    score: 60
+    status: "partial"
+    value: |
+      - Навбар: Главная, Вакансии, Резюме, Статьи (убрать Отзывы/Курсы/Полезное)
+      - Полноценный responsive: сайдбары прячутся, бургер-меню, карточки в 1 колонку
+      - Dark/Light тема с плавным переключением
+      - SEO-страницы тегов: /vacancies/{tag-slug} с SEO-текстом внизу
+    gaps: "Breakpoints? Бургер-меню дизайн? Страница статьи — layout?"
+    required: false
+
+  risks:
+    score: 85
+    status: "complete"
+    value: |
+      - Мобильная адаптация: 1360 строк CSS без media queries — значительный объём работы
+      - Сроки: 1 месяц при одном разработчике + AI — плотно, но реально
+      - 10 SEO-статей: плотный график, но агенты ускоряют
+      - Telegram парсинг: может быть заблокирован — мониторинг через бота
+      - SEO-страницы тегов: нужна семантика (meta, h1, тексты) — без них нет SEO-эффекта
+    gaps: ""
+    required: true
+
+  technical_decisions:
+    score: 60
+    status: "partial"
+    value: |
+      - Отклик через TG-ссылку (без формы на сайте в MVP)
+      - Подача резюме через TG-бота (не через сайт в MVP)
+      - Статьи пишут агенты, публикация после апрува
+      - Рейтинг — post-MVP
+      - Навбар сокращён до 4 пунктов
+    gaps: ""
+    required: false
+
+  deploy_approach:
+    score: 70
+    status: "partial"
+    value: "CI/CD через GitHub Actions → git pull → prisma migrate → pm2 restart. VPS NetAngels. Nginx reverse proxy."
+    gaps: "Домен d-pub.ru привяжем после MVP ready"
+    required: false
+
+  manual_user_actions:
+    score: 70
+    status: "partial"
+    value: "Привязка домена d-pub.ru, SSL через Certbot, настройка cron для auto-sync"
+    gaps: ""
+    required: false
+
+# ============================================================================
+# Phase 3: Integration & Technical Context
+# ============================================================================
+# Interview Cycle 2 scope (together with Phase 2)
+phase3_integration:
+
+  integration_points:
+    score: 85
+    status: "complete"
+    value: |
+      - Telegram: парсинг через t.me/s/, кросспост в @web_vacancy и @pub_resume
+      - Бот @vacancy_bot_ren: парсит 10 каналов по ключевым словам → кросспостит
+      - Бот @resume_vac_bot: форма подачи резюме/вакансий через TG (кнопка «Разместить» ведёт сюда в MVP)
+      - Кросспост: Макс, ВКонтакте
+      - Агенты (Marketer/SEO/Writer): workflow статей:
+        1. Тони даёт ТЗ
+        2. SEO-агент подбирает семантику
+        3. Writer пишет статью → markdown в work/articles/
+        4. Тони апрувит
+        5. Публикация через API POST /api/articles → БД → /articles/{slug}
+    gaps: ""
+    required: true
+
+  dependencies:
+    score: 80
+    status: "partial"
+    value: "PostgreSQL, Node.js 20+, PM2, Nginx, Telegram Bot API (через отдельный проект), VPS NetAngels"
+    gaps: ""
+    required: false
+
+  technical_constraints:
+    score: 60
+    status: "partial"
+    value: "VPS с ограниченными ресурсами, .next/ от root создаёт проблемы с dev-сервером, парсинг t.me/s/ может быть заблокирован"
+    gaps: ""
+    required: false
+
+  data_requirements:
+    score: 70
+    status: "partial"
+    value: "Посты из TG (title, description, salary, image, slug), статьи (title, slug, content, SEO meta), теги и категории для фильтрации"
+    gaps: "Нужны ли SEO meta fields в модели Article? Open Graph?"
+    required: false
+
+  migration_needs:
+    score: 80
+    status: "partial"
+    value: "Текущие данные сохраняются. Нужны миграции: привязка тегов к постам, возможно расширение Article для SEO."
+    gaps: ""
+    required: false
+
+# ============================================================================
+# Phase 4: Completion
+# ============================================================================
+phase4_completion:
+  userspec_file: ""  # work/{feature}/user-spec.md
+  status: "pending"  # pending | created | approved
+
+# ============================================================================
+# Decision Rules
+# ============================================================================
+decision_rules:
+
+  required_threshold: 85
+  optional_threshold: 50
+
+  # Stop criteria (BOTH must be true to exit a cycle)
+  stop_criteria:
+    - "All required items in current cycle scope score >= 85%"
+    - "Structural: every required item has non-empty value, no TBD, gaps empty or conscious limitations"
+
+  priority_order:
+    - "Required items with score < 85% (lowest score first)"
+    - "Optional items mentioned by user in context"
+    - "Other optional items if user seems knowledgeable"
+
+  question_strategy:
+    - "3-4 questions per batch about different gaps"
+    - "Run as many batches as needed — batch size is NOT cycle limit"
+    - "Propose solutions based on PK, not just ask questions"
+    - "Challenge with substance: counterexamples, code references, unexplored scenarios"
+    - "After each response: update scores, values, gaps, conversation_history, save"
+
+# ============================================================================
+# Interview Progress
+# ============================================================================
+progress:
+  current_phase: "phase1_feature_overview"
+  questions_asked: 0
+  last_question: ""
+  total_required_score: 0
+  total_optional_score: 0
+  completion_estimate: "0%"
+  user_detail_level: "unknown"  # brief | moderate | detailed
+
+# ============================================================================
+# Notes
+# ============================================================================
+notes: |
+  Free-form notes:
+  - Important insights
+  - Areas of uncertainty
+  - Pivot points
+  - Scope changes
+
+# ============================================================================
+# USAGE INSTRUCTIONS
+# ============================================================================
+#
+# 1. INIT: Created by init-feature-folder.sh at work/{feature}/logs/userspec/interview.yml
+#    Set metadata.started, metadata.status: in_progress
+#
+# 2. INITIAL SCORING: After user's free-form description, score ALL items
+#    Detailed 80-95%, brief 50-70%, vague 20-40%, not mentioned 0%
+#
+# 3. INTERVIEW LOOP (save after EVERY response):
+#    a) Find required items with score < 85% in current cycle scope
+#    b) Ask 3-4 questions about different gaps
+#    c) Propose solutions based on PK
+#    d) User answers
+#    e) Update: conversation_history, scores, values, gaps, metadata
+#    f) Save immediately
+#    g) Check stop criteria (score >= 85% AND structural: value filled, no TBD, gaps resolved)
+#    h) Not done → repeat. Done → next cycle.
+#
+# 4. CYCLES:
+#    Cycle 1: phase1_feature_overview items
+#    Cycle 2: phase2_user_experience + phase3_integration items
+#    Cycle 3: ALL items still below threshold (cleanup pass)
+#
+# 5. RESUME: If metadata.status is "in_progress"
+#    Load, show conversation summary, resume from current state
+#
+# 6. COMPLETION: After user approves user-spec.md
+#    Set phase4_completion.status: approved
+#    Set metadata.status: completed
