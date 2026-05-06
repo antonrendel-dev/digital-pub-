@@ -1,6 +1,6 @@
 ---
 created: 2026-05-06
-status: approved
+status: draft
 branch: dev
 size: L
 ---
@@ -278,11 +278,11 @@ tags: ["SMM", "карьера"]
 
 ## User-Spec Deviations
 
-- **SEO tag pages URL:** user-spec says `/vacancies/{tag-slug}`, tech-spec uses `/vacancies/tag/{tag-slug}`. Reason: avoiding route collision with existing `/vacancies/{post-slug}` (Decision 6). The SEO value is identical — the URL still contains the tag keyword. --> [APPROVED]
+- **SEO tag pages URL:** user-spec says `/vacancies/{tag-slug}`, tech-spec uses `/vacancies/tag/{tag-slug}`. Reason: avoiding route collision with existing `/vacancies/{post-slug}` (Decision 6). The SEO value is identical — the URL still contains the tag keyword. --> [PENDING USER APPROVAL]
 
-- **Remove unused packages:** user-spec doesn't mention this, tech-spec proposes removing `next-auth` and `node-cron`. Reason: dead dependencies add confusion and security surface. `zod` is kept and activated for input validation. --> [APPROVED]
+- **Remove unused packages:** user-spec doesn't mention this, tech-spec proposes removing `next-auth` and `node-cron`. Reason: dead dependencies add confusion and security surface. `zod` is kept and activated for input validation. --> [PENDING USER APPROVAL]
 
-- **Added: /resumes/tag/{tagSlug} pages** (not in user-spec, which only mentions /vacancies/{tag}). Reason: minimal extra effort, symmetric with vacancies, better UX for resume seekers. --> [APPROVED]
+- **Added: /resumes/tag/{tagSlug} pages** (not in user-spec, which only mentions /vacancies/{tag}). Reason: minimal extra effort, symmetric with vacancies, better UX for resume seekers. --> [PENDING USER APPROVAL]
 
 - **Articles "из БД" vs MDX:** user-spec acceptance criterion says "листинг статей из БД", but technical decision section says MDX files. Tech-spec follows MDX approach per user-spec technical decisions section. Existing Article Prisma model is unused in MVP. --> [INFORMATIONAL]
 
