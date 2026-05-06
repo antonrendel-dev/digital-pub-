@@ -23,10 +23,18 @@ function initials(title: string): string {
   return title.trim().charAt(0).toUpperCase()
 }
 
+/** Remove @channel mentions and surrounding boilerplate from description */
+function cleanDescription(text: string): string {
+  return text
+    .replace(/@\w+/g, '')
+    .replace(/Администрация не несет ответственност[^\n]*/gi, '')
+    .replace(/Смотри вакансии →[^\n]*/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 export default function JobCard({ post }: JobCardProps) {
   const [saved, setSaved] = useState(false)
-
-  const source = post.channelUsername ? `@${post.channelUsername}` : null
 
   return (
     <a
@@ -44,21 +52,15 @@ export default function JobCard({ post }: JobCardProps) {
         </div>
       </div>
 
-      {(post.company || source) && (
+      {post.company && (
         <div className="jmeta">
-          {post.company ?? source}
-          {post.company && source && (
-            <>
-              <span className="dot" />
-              {source}
-            </>
-          )}
+          {post.company}
         </div>
       )}
 
       {post.salary && <div className="jsalary">{post.salary}</div>}
 
-      {post.description && <div className="jdesc">{post.description}</div>}
+      {post.description && <div className="jdesc">{cleanDescription(post.description)}</div>}
 
       <div className="jcard-foot">
         <div style={{ display: 'flex', alignItems: 'center' }}>

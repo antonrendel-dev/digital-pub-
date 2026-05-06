@@ -32,7 +32,11 @@ export default function PostDetail({ post, related }: PostDetailProps) {
       ? `https://t.me/${post.channelUsername}/${post.telegramMessageId}`
       : null
 
-  const paragraphs = (post.description ?? '').split('\n').filter((l) => l.trim())
+  const cleanText = (post.description ?? '')
+    .replace(/@\w+/g, '')
+    .replace(/Администрация не несет ответственност[^\n]*/gi, '')
+    .replace(/Смотри вакансии →[^\n]*/gi, '')
+  const paragraphs = cleanText.split('\n').filter((l) => l.trim())
 
   return (
     <div className="wrap post-wrap">
@@ -57,9 +61,6 @@ export default function PostDetail({ post, related }: PostDetailProps) {
             {/* Meta row */}
             <div className="post-meta-row">
               {post.company && <span className="post-company">{post.company}</span>}
-              {post.channelUsername && (
-                <span className="post-channel">@{post.channelUsername}</span>
-              )}
               <span className="post-date">{formatDate(post.createdAt)}</span>
             </div>
 
