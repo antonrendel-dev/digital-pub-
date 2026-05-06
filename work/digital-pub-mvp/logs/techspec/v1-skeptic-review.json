@@ -1,0 +1,173 @@
+{
+  "status": "approved",
+  "summary": "Tech-spec accurately describes the current codebase state and proposed changes. Zero critical findings — all referenced files, patterns, and architectures exist as claimed. 5 major and 4 minor findings identified, mostly around precise naming/values in the spec vs reality. The spec is a solid plan document with correct understanding of what exists and what needs to be built.",
+  "findings": [
+    {
+      "severity": "major",
+      "type": "incorrect_claim",
+      "claim": "Tech-spec says 'custom CSS with zero media queries' and '1359 lines of custom CSS'",
+      "reality": "The CSS file is exactly 1359 lines (confirmed via wc -l) and indeed has zero @media queries (confirmed via grep). However, the first 3 lines are Tailwind directives (@tailwind base/components/utilities), so it's 1356 lines of custom CSS plus 3 lines of Tailwind directives. This is a minor inaccuracy — the claim of '1359 lines' counts the Tailwind import lines.",
+      "source": "app/globals.css",
+      "fix": "No fix needed — the claim is essentially correct (1359 total lines, ~1356 custom CSS lines)."
+    },
+    {
+      "severity": "major",
+      "type": "schema_mismatch",
+      "claim": "Tech-spec says Tag model needs NEW fields: slug, seoTitle, seoDescription, seoText. Shows Tag model without these fields currently.",
+      "reality": "Confirmed: current Tag model in prisma/schema.prisma has only id, name, tagType, posts. No slug or SEO fields. The spec correctly identifies these as fields to ADD. This is not a mirage — it's correct future state description.",
+      "source": "prisma/schema.prisma:54-59",
+      "fix": "No fix needed — spec correctly describes what needs to be added."
+    },
+    {
+      "severity": "major",
+      "type": "incorrect_claim",
+      "claim": "Tech-spec says existing route is app/vacancies/[slug]/page.tsx for individual vacancy pages",
+      "reality": "The directory app/vacancies/[slug]/ exists (confirmed via ls) and contains page.tsx. However, it's listed as untracked in git status (?? app/vacancies/[slug]/), meaning it's a new uncommitted file. The spec treats it as 'existing' — this is slightly misleading but the file does physically exist in the working tree.",
+      "source": "app/vacancies/[slug]/page.tsx",
+      "fix": "Acknowledge in spec that this route exists in working tree but is uncommitted."
+    },
+    {
+      "severity": "major",
+      "type": "interface_mismatch",
+      "claim": "Tech-spec says FeedPost currently does NOT have tags field, and proposes adding 'tags: { id: number; name: string; slug: string }[]'",
+      "reality": "Confirmed: current FeedPost interface in lib/posts.ts (lines 4-17) does NOT include a tags field. The Prisma queries also don't include tag relations. The spec correctly identifies this as something to ADD. Note: the proposed tag type includes 'slug' which doesn't exist on the Tag model yet — this is consistent with the planned schema extension.",
+      "source": "lib/posts.ts:4-17",
+      "fix": "No fix needed — correctly describes planned extension."
+    },
+    {
+      "severity": "major",
+      "type": "incorrect_claim",
+      "claim": "Tech-spec says Feed component does 'text-based filtering' currently, and proposes replacing with tag-based filtering",
+      "reality": "Confirmed: Feed.tsx (lines 88-96) filters by checking if post title/description includes the filter text (activeFilters) using .toLowerCase().includes(). This IS text-based filtering, not tag-based. The spec is correct.",
+      "source": "components/feed/Feed.tsx:88-96",
+      "fix": "No fix needed — claim is accurate."
+    },
+    {
+      "severity": "minor",
+      "type": "version_mismatch",
+      "claim": "Tech-spec says 'next (14.2.35)' and 'tailwindcss (3.4)'",
+      "reality": "package.json confirms next: '14.2.35' and tailwindcss: '^3.4.1'. Both correct.",
+      "source": "package.json",
+      "fix": "No fix needed."
+    },
+    {
+      "severity": "minor",
+      "type": "unused_packages_claim",
+      "claim": "Tech-spec proposes removing next-auth, node-cron, zod as 'Not imported anywhere'",
+      "reality": "Confirmed: grep for 'next-auth|node-cron|zod' across all .ts files found ZERO imports. These packages exist only in package.json dependencies. The claim is accurate — they are indeed unused dead dependencies.",
+      "source": "package.json:19-21, grep results",
+      "fix": "No fix needed — claim is accurate."
+    },
+    {
+      "severity": "minor",
+      "type": "file_reference",
+      "claim": "Tech-spec references lib/prisma.ts as singleton Prisma Client owner",
+      "reality": "Confirmed: lib/prisma.ts exists, uses globalForPrisma pattern for singleton reuse across hot-reloads. Uses PrismaPg adapter with pg Pool. This is exactly as described.",
+      "source": "lib/prisma.ts",
+      "fix": "No fix needed."
+    },
+    {
+      "severity": "minor",
+      "type": "component_state",
+      "claim": "Tech-spec says Navbar has 'Войти' button and '+ Разместить' button, plans to remove Войти and link Разместить to bot",
+      "reality": "Confirmed: Navbar.tsx line 119 has <button className='btn-g'>Войти</button> and line 120 has <button className='btn-b'>+ Разместить</button>. The '+ Разместить' is currently a plain button (not a link to the bot). Navbar also has dead links: Отзывы (line 82), Курсы (line 84), Полезное (line 85). All claims accurate.",
+      "source": "components/Navbar.tsx:82-120",
+      "fix": "No fix needed — claims match reality."
+    },
+    {
+      "severity": "minor",
+      "type": "sidebar_state",
+      "claim": "Tech-spec says LeftSidebar statistics are hardcoded, need to be replaced with real DB counts",
+      "reality": "Confirmed: LeftSidebar.tsx lines 94-112 show hardcoded values: Вакансий=248, Резюме=1204, Компаний=87, Новых сегодня=14. These are static numbers, not from DB queries.",
+      "source": "components/LeftSidebar.tsx:94-112",
+      "fix": "No fix needed — claim is accurate."
+    },
+    {
+      "severity": "minor",
+      "type": "sidebar_state",
+      "claim": "Tech-spec says RightSidebar categories and articles are hardcoded",
+      "reality": "Confirmed: RightSidebar.tsx has hardcoded CATEGORIES array (lines 7-14) and ARTICLES array (lines 16-20) with static data. Tags come from lib/data.ts CLOUD_TAGS which are also static mock data.",
+      "source": "components/RightSidebar.tsx:7-20",
+      "fix": "No fix needed — claim is accurate."
+    },
+    {
+      "severity": "minor",
+      "type": "tailwind_config_state",
+      "claim": "Tech-spec proposes configuring darkMode: ['selector', '[data-theme=\"dark\"]'] in tailwind.config.ts",
+      "reality": "Confirmed: current tailwind.config.ts has NO darkMode configuration. It only has basic content paths and a minimal theme extension with background/foreground color vars. The spec correctly identifies this as something to ADD.",
+      "source": "tailwind.config.ts",
+      "fix": "No fix needed — correctly describes current state."
+    },
+    {
+      "severity": "minor",
+      "type": "new_files",
+      "claim": "Tech-spec says lib/tags.ts, lib/articles.ts, content/articles/ are NEW (to be created)",
+      "reality": "Confirmed: none of these files/directories exist currently. lib/tags.ts — not found. lib/articles.ts — not found. content/articles/ — not found. All correctly identified as new.",
+      "source": "Glob search results",
+      "fix": "No fix needed."
+    },
+    {
+      "severity": "minor",
+      "type": "article_model_inconsistency",
+      "claim": "Tech-spec Decision 5 says 'No DB storage for articles in MVP' and proposes MDX filesystem approach. User-spec line 92 says 'Раздел /articles — листинг статей из БД'",
+      "reality": "There is an Article model in prisma/schema.prisma (lines 77-85) with id, title, slug, content, publishedAt, createdAt, updatedAt. Tech-spec proposes MDX files instead of using this existing DB model. User-spec mentions 'из БД' but tech-spec explicitly chose filesystem MDX approach. This contradiction between user-spec and tech-spec is already noted in user-spec line 139 ('Статьи хранятся как MDX-файлы в репо'). The existing Article DB model is unused.",
+      "source": "prisma/schema.prisma:77-85, user-spec line 92 vs 139",
+      "fix": "Clarify in tech-spec that the existing Article Prisma model will be ignored/removed in MVP in favor of MDX files. Or reconcile with user-spec DB references."
+    },
+    {
+      "severity": "minor",
+      "type": "post_query_filter",
+      "claim": "Tech-spec Decision 9 says to add 'AND description IS NOT NULL AND description != \"\"' to all post queries in lib/posts.ts",
+      "reality": "Confirmed: current getPublishedPosts() and getPostsByType() queries in lib/posts.ts do NOT filter out posts with null/empty descriptions. The where clause only has { status: 'published' } (or with type). The spec correctly identifies this as something to ADD.",
+      "source": "lib/posts.ts:70-74, 84-88",
+      "fix": "No fix needed — correctly describes planned change."
+    },
+    {
+      "severity": "minor",
+      "type": "user_spec_inconsistency",
+      "claim": "User-spec line 162 says 'curl http://localhost:3100' for testing, tech-spec line 240 says 'curl http://localhost:3001'",
+      "reality": "Port mismatch between user-spec (3100) and tech-spec (3001). Neither is set in next.config.mjs (default Next.js port is 3000). The package.json 'dev' script is just 'next dev' (no port specified).",
+      "source": "user-spec line 162, tech-spec line 240, package.json",
+      "fix": "Align port numbers between user-spec and tech-spec, and ensure the dev/start scripts use the chosen port."
+    }
+  ],
+  "stats": {
+    "total_claims_checked": 32,
+    "confirmed": 30,
+    "mirages_found": 0,
+    "verified_claims": [
+      "prisma/schema.prisma exists with Tag, PostTag, Post, Category, Article models",
+      "Tag model lacks slug and SEO fields (correct — spec says to add them)",
+      "PostTag M:N relationship exists between Post and Tag",
+      "TagType enum exists with format/level/specialization values",
+      "lib/posts.ts exists with FeedPost interface (without tags field)",
+      "lib/posts.ts has getPublishedPosts, getPostsByType, getPostById, getPostBySlug functions",
+      "lib/prisma.ts exists with singleton pattern using PrismaPg adapter",
+      "scripts/sync-telegram.ts exists with fetchChannelPosts, savePost, main functions",
+      "sync-telegram.ts saves posts with status: 'published' directly",
+      "sync-telegram.ts does NOT have tag auto-assignment logic (correct — spec plans to add it)",
+      "components/feed/Feed.tsx uses text-based filtering (title/description includes)",
+      "Feed.tsx has FILTER_CHIPS hardcoded array, not from DB",
+      "components/Navbar.tsx has dead links: Отзывы, Курсы, Полезное",
+      "Navbar has 'Войти' button and non-linked '+ Разместить' button",
+      "components/LeftSidebar.tsx has hardcoded statistics",
+      "components/RightSidebar.tsx has hardcoded CATEGORIES and ARTICLES",
+      "components/Footer.tsx exists with dead link to /reviews and /useful",
+      "components/HomePage.tsx uses data-theme attribute toggling with localStorage",
+      "components/ListingPage.tsx exists with text-based category filtering",
+      "components/PageShell.tsx exists as wrapper component",
+      "components/PostDetail.tsx exists with breadcrumbs and related posts",
+      "components/feed/JobCard.tsx exists",
+      "app/globals.css has 1359 lines, zero @media queries",
+      "CSS variables defined in :root and [data-theme='dark'] blocks",
+      "tailwind.config.ts exists with basic config, no darkMode setting",
+      "Tailwind @tailwind directives present in globals.css",
+      "next-auth, node-cron, zod in package.json but not imported anywhere",
+      "next version is 14.2.35, tailwindcss ^3.4.1 — matches spec",
+      "lib/tags.ts does NOT exist (correctly marked as new in spec)",
+      "lib/articles.ts does NOT exist (correctly marked as new in spec)",
+      "content/articles/ directory does NOT exist (correctly marked as new in spec)",
+      "app/vacancies/[slug]/ exists in working tree (uncommitted)"
+    ]
+  }
+}

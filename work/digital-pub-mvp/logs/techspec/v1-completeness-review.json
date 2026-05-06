@@ -1,0 +1,55 @@
+{
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "gap",
+      "requirement": "Поиск в навбаре ищет по title, description, company",
+      "issue": "Search functionality is completely absent from the tech-spec. No task, no data layer function, no UI component addresses the navbar search. User-spec explicitly lists it as an acceptance criterion.",
+      "recommendation": "Add a task (likely Wave 2 or 3) for implementing search: server action or API route querying posts with ILIKE on title/description/company, search input in Navbar component with debounced query, results display. Could be client-side filtering for MVP if dataset is small enough."
+    },
+    {
+      "severity": "critical",
+      "category": "gap",
+      "requirement": "≥10 статей опубликовано к моменту запуска",
+      "issue": "No task covers creating the 10 required articles. Task 3 creates only one sample article. The user-spec states '≥10 статей опубликовано к моменту запуска' as an acceptance criterion. The tech-spec mentions agents creating articles but includes no concrete task for it.",
+      "recommendation": "Add a task (post Wave 2, after Task 7) for agents to create ≥10 MDX articles in content/articles/. Alternatively, document this as a parallel workstream outside the tech-spec scope and add a dependency note in Task 16 (deploy) that 10 articles must exist before launch."
+    },
+    {
+      "severity": "major",
+      "category": "gap",
+      "requirement": "Пагинация «Показать ещё» на главной",
+      "issue": "User-spec requires 'лента вакансий + резюме из PostgreSQL, пагинация «Показать ещё»'. The tech-spec does not mention any pagination mechanism — no 'load more' button, no cursor-based or offset-based pagination, no task addresses this.",
+      "recommendation": "Add pagination logic to Task 9 (Feed filtering) or create a sub-task: implement 'Показать ещё' button with offset-based loading (e.g., load 20 posts initially, fetch next 20 on click). Server action or client-side fetch to /api/posts with offset param."
+    },
+    {
+      "severity": "major",
+      "category": "gap",
+      "requirement": "Dark/Light тема с анимированным переключением (transition ≥200ms) через Tailwind dark: модификатор",
+      "issue": "Tech-spec mentions dark mode support via Tailwind dark: modifier (Decision 1) and E2E test for theme toggle, but does not specify the ≥200ms transition animation requirement from the user-spec. No task explicitly handles adding CSS transitions for theme switching.",
+      "recommendation": "Add to Task 2 (Tailwind config) or Task 4 (layout migration): ensure body/root element has 'transition-colors duration-200' or equivalent, so theme switches animate smoothly. Mention the ≥200ms requirement explicitly."
+    },
+    {
+      "severity": "minor",
+      "category": "scope_creep",
+      "requirement": "SEO-страницы по тегам: /vacancies/{tag-slug}",
+      "issue": "Tech-spec Task 8 creates /resumes/tag/{tagSlug} SEO pages, but user-spec only mentions /vacancies/{tag-slug} SEO pages. The user-spec does not request separate SEO tag pages for resumes.",
+      "recommendation": "Either remove /resumes/tag/{tagSlug} from Task 8 scope to match user-spec, or document it as a deliberate enhancement in User-Spec Deviations section. Given the low additional effort, keeping it is reasonable but should be documented."
+    },
+    {
+      "severity": "minor",
+      "category": "shallow_solution",
+      "requirement": "Ссылки «Разместить вакансию» и «Реклама» в футере — ведут на бота",
+      "issue": "Task 10 mentions 'Link + Разместить to @resume_vac_bot' but does not explicitly mention the footer links for 'Разместить вакансию' and 'Реклама' that user-spec requires. The description says 'Same for Footer' regarding dead link removal but doesn't specify adding these bot links.",
+      "recommendation": "Explicitly mention in Task 10 description: Footer must include 'Разместить вакансию' and 'Реклама' links pointing to https://t.me/resume_vac_bot."
+    },
+    {
+      "severity": "minor",
+      "category": "shallow_solution",
+      "requirement": "Модерация статей через TG-бота (MVP roadmap)",
+      "issue": "User-spec MVP roadmap includes 'Модерация статей через TG-бота' but tech-spec describes articles as MDX files committed to git with no moderation flow mentioned. The actual flow (agents create → Тони approves → commit) is described in user-spec but not reflected in tech-spec tasks.",
+      "recommendation": "This is likely acceptable as the 'moderation' is the manual git approval process. Add a note in the Articles section of tech-spec clarifying that moderation = Тони reviews MDX drafts before they're committed to the repo."
+    }
+  ],
+  "summary": "Tech-spec has 2 critical gaps: (1) navbar search functionality is completely missing despite being an explicit user-spec acceptance criterion, (2) no task covers creating the required ≥10 launch articles. Additionally, pagination ('Показать ещё') and theme transition animation (≥200ms) are not addressed. The overall architecture is sound — Tailwind migration strategy, tag system design, MDX articles approach, and SEO pages are well thought out. The /vacancies/tag/ URL deviation is properly documented. After addressing the 2 critical and 2 major findings, the tech-spec will have full bidirectional traceability with the user-spec."
+}

@@ -1,0 +1,48 @@
+{
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "coverage",
+      "issue": "Unit tests are defined in the Testing Strategy section but not assigned to any implementation task. Task 11 only covers E2E and integration tests. The acceptance criteria require `npm test` to pass, but no task creates the 5 listed unit tests (tag keyword matching, frontmatter parsing, slug generation, description cleaning, statistics queries).",
+      "recommendation": "Either expand Task 11 to explicitly include writing all unit tests, or distribute unit tests to the tasks that implement the corresponding logic: tag keyword matching unit tests in Task 6, frontmatter parsing in Task 3, slug generation in Task 1, description cleaning in Task 10, statistics queries in Task 9. The latter approach (co-locating tests with implementation) is preferred for TDD workflow."
+    },
+    {
+      "severity": "major",
+      "category": "edge_cases",
+      "issue": "No edge cases specified for tag keyword matching — the highest-risk logic in the system. Missing: posts with no text, posts matching multiple tags, case sensitivity (Cyrillic uppercase/lowercase), partial word matches (e.g. 'seotext' should not match 'seo'), empty keyword list.",
+      "recommendation": "Add explicit edge case unit tests for tag keyword matching: empty post text, multi-tag match, case-insensitive Cyrillic, partial word boundary handling, post with only title (no description)."
+    },
+    {
+      "severity": "major",
+      "category": "coverage",
+      "issue": "No test coverage for the articles section E2E flow. User-spec lists articles as a core section with its own verification steps (curl /articles, curl /articles/{slug}), but E2E tests only cover the vacancy critical path, responsive, SEO tag page, and theme toggle. Articles are verified only in Agent Verification Plan via curl, not in automated E2E tests.",
+      "recommendation": "Add an E2E test for articles: navigate to /articles → article listing rendered → click article → full MDX content visible with correct heading and formatting."
+    },
+    {
+      "severity": "major",
+      "category": "coverage",
+      "issue": "No integration test for the sitemap generation. The sitemap must include all dynamic routes (vacancies, resumes, tag pages, articles). Broken sitemaps directly impact SEO — a core project goal.",
+      "recommendation": "Add an integration test that verifies sitemap.xml contains entries for: homepage, /vacancies, /resumes, /articles, at least one /vacancies/tag/{slug}, and at least one /articles/{slug}."
+    },
+    {
+      "severity": "minor",
+      "category": "edge_cases",
+      "issue": "No edge case for MDX article parsing with malformed frontmatter (missing required fields, invalid date format, duplicate slugs).",
+      "recommendation": "Add unit tests for: MDX file with missing 'title' field, MDX with invalid date in 'publishedAt', two articles with the same slug, MDX with empty body content."
+    },
+    {
+      "severity": "minor",
+      "category": "coverage",
+      "issue": "No test for the 'hide posts without description' filter (Decision 9). This is a data integrity rule that affects all post queries.",
+      "recommendation": "Add a unit or integration test verifying that posts with null or empty description are excluded from query results in lib/posts.ts."
+    },
+    {
+      "severity": "minor",
+      "category": "specificity",
+      "issue": "E2E responsive test says 'no horizontal scroll' but doesn't specify how this is verified programmatically.",
+      "recommendation": "Specify the assertion: `expect(page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy()`."
+    }
+  ],
+  "summary": "The testing strategy covers all three required levels (unit, integration, E2E) for a size L feature, and the test pyramid is reasonably balanced. However, there is one critical gap: unit tests are defined in the strategy but not assigned to any implementation task — Task 11 only creates E2E and integration tests, leaving unit tests orphaned. Additionally, there are major coverage gaps for articles E2E flow, sitemap integration test, and tag matching edge cases. Recommend: (1) distribute unit tests to their respective implementation tasks for TDD workflow, (2) add articles E2E test, (3) add sitemap integration test, (4) expand tag matching edge cases."
+}

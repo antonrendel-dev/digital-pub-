@@ -1,0 +1,72 @@
+{
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "xss",
+      "issue": "MDX rendering via next-mdx-remote executes arbitrary JSX/JS from content/articles/ MDX files. If an agent or contributor commits a malicious MDX file (e.g., containing <script> or importing dangerous components), it will execute server-side and render client-side without sanitization. The tech-spec does not mention any allowlist of MDX components or sandboxing.",
+      "recommendation": "Pass an explicit `components` allowlist to MDXRemote (e.g., only allow h1-h6, p, ul, ol, li, a, img, code, pre, blockquote, table). Never pass custom React components unless explicitly reviewed. Add a pre-commit hook or CI check that scans MDX files for disallowed elements (<script>, <iframe>, import statements, export statements with executable code)."
+    },
+    {
+      "severity": "major",
+      "category": "path_traversal",
+      "issue": "The proposed lib/articles.ts reads MDX files from the filesystem using the slug from the URL (/articles/[slug]). If the slug parameter is passed directly to fs.readFileSync or path.join without validation (e.g., slug='../../etc/passwd' or slug='../prisma/schema'), an attacker could read arbitrary files from the server.",
+      "recommendation": "Validate article slugs against a strict regex (e.g., /^[a-z0-9-]+$/) before constructing file paths. Use path.resolve() and verify the resolved path starts with the content/articles/ directory (path prefix check). Never pass raw URL params to filesystem operations. Consider listing valid slugs at build time via fs.readdirSync and only accepting slugs that match existing filenames."
+    },
+    {
+      "severity": "major",
+      "category": "input_validation",
+      "issue": "Tag slug parameters in /vacancies/tag/[tagSlug] and /resumes/tag/[tagSlug] are passed to Prisma queries (findUnique by slug). While Prisma parameterizes queries preventing SQL injection, there is no validation on the slug format. Malformed slugs (very long strings, special characters, null bytes) could cause unexpected behavior or verbose error messages that leak information.",
+      "recommendation": "Validate tagSlug against a strict regex (e.g., /^[a-z0-9-]{1,50}$/) at the page component level before querying. Return 404 immediately for invalid slugs. This also prevents potential ReDoS if slug is used in any regex matching downstream."
+    },
+    {
+      "severity": "major",
+      "category": "xss",
+      "issue": "Telegram post content (title, description) is stored raw in the database and rendered in JSX. The sync script strips HTML tags from Telegram's t.me/s/ HTML, but the regex-based stripping (.replace(/<[^>]+>/g, '')) is not robust — edge cases like malformed tags, attribute injection, or encoded payloads could bypass it. If any HTML survives into description and is rendered via dangerouslySetInnerHTML or similar, it becomes an XSS vector.",
+      "recommendation": "1) Use a proper HTML sanitization library (e.g., sanitize-html or DOMPurify on server) in the sync script instead of regex-based tag stripping. 2) Ensure all post content is rendered via React's default JSX escaping (never dangerouslySetInnerHTML). 3) Add a Content-Security-Policy header to mitigate impact of any XSS that slips through."
+    },
+    {
+      "severity": "major",
+      "category": "info_disclosure",
+      "issue": "The tech-spec shows error handling with try/catch blocks that fall back to mock data (lib/posts.ts). In production, if the database is unavailable, the site silently serves mock/fake data instead of showing an error. This is a data integrity issue — users see fabricated job listings. Additionally, console.warn messages may leak database connection details in server logs.",
+      "recommendation": "In production, do NOT fall back to mock data — return an empty state or a proper error page. Remove mock data fallback from production builds (use environment variable check). Ensure console.warn/error messages do not include connection strings or stack traces in production."
+    },
+    {
+      "severity": "major",
+      "category": "other",
+      "issue": "The sync script reads BOT_TOKEN from /opt/bots/telegram-bot-vac/.env via raw filesystem read. This token is then embedded in API URLs (TG_API, TG_FILE). If error messages or logs expose these URLs, the bot token is compromised. The token also appears in memory as a global constant.",
+      "recommendation": "Read BOT_TOKEN via environment variable (process.env.BOT_TOKEN) passed at runtime, not by reading another service's .env file. Ensure no error handler or log statement can print the TG_API URL. Never include bot token in error messages or stack traces."
+    },
+    {
+      "severity": "minor",
+      "category": "input_validation",
+      "issue": "Post slug lookups (getPostBySlug in /vacancies/[slug]) accept any string from the URL without validation. While Prisma prevents SQL injection, extremely long slugs or slugs with special characters could cause unnecessary database load.",
+      "recommendation": "Add slug format validation (regex: /^[a-z0-9-_]{1,80}$/) before querying. Return 404 for malformed slugs without hitting the database."
+    },
+    {
+      "severity": "minor",
+      "category": "other",
+      "issue": "The tech-spec proposes removing zod (unused), but zod would be valuable for input validation of URL parameters (tag slugs, article slugs, post slugs). Removing it reduces the toolkit for implementing proper validation.",
+      "recommendation": "Keep zod as a dependency and use it for validating all dynamic route parameters (tagSlug, articleSlug, postSlug). Create a shared validation schema for slug formats."
+    },
+    {
+      "severity": "minor",
+      "category": "other",
+      "issue": "No Content-Security-Policy (CSP), X-Frame-Options, or other security headers are mentioned in the tech-spec. The site is vulnerable to clickjacking (embedding in iframes) and has no CSP to mitigate XSS impact.",
+      "recommendation": "Add security headers via next.config.mjs headers() config: Content-Security-Policy (restrict script-src, disallow unsafe-inline), X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy: strict-origin-when-cross-origin. At minimum, add X-Frame-Options: SAMEORIGIN to prevent clickjacking."
+    },
+    {
+      "severity": "minor",
+      "category": "other",
+      "issue": "The sitemap.xml (app/sitemap.ts) will dynamically generate all URLs including tag pages and article slugs. If tag SEO text or article slugs contain sensitive information (draft slugs, internal naming), it could be exposed to search engines and crawlers.",
+      "recommendation": "Only include published/active tags with post count > 0 in sitemap. Only include published articles (publishedAt is set and in the past). Review sitemap output before production deploy."
+    },
+    {
+      "severity": "minor",
+      "category": "dependency",
+      "issue": "next-mdx-remote allows arbitrary component rendering from MDX content. The package itself is well-maintained, but its power is a double-edged sword. gray-matter parses YAML frontmatter which could be vulnerable to YAML deserialization issues in edge cases.",
+      "recommendation": "Pin next-mdx-remote and gray-matter to specific versions. Run npm audit after installation. For gray-matter, ensure it uses safe YAML parsing (it uses js-yaml with safeLoad by default in recent versions, but verify)."
+    }
+  ],
+  "summary": "1 critical and 5 major findings identified. The critical finding is unrestricted MDX rendering that could execute arbitrary code — an explicit component allowlist is mandatory. Major findings include: path traversal risk in article slug-to-filesystem mapping, insufficient HTML sanitization of Telegram content (regex-based instead of library-based), missing input validation on URL parameters, mock data fallback in production, and bot token handling via cross-service .env file reading. Recommend addressing all critical and major findings before implementation. Minor findings (security headers, zod retention, sitemap filtering) should be incorporated into the implementation tasks."
+}

@@ -1,0 +1,60 @@
+{
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "wave-conflict",
+      "issue": "Wave 2: Task 4 and Task 5 both modify `app/globals.css`. Parallel agents will produce merge conflicts.",
+      "fix": "Move globals.css CSS removal to a single task (e.g., Task 5 removes all remaining CSS after Task 4 is done), or move Task 5's globals.css changes into Wave 3 after Task 4 completes."
+    },
+    {
+      "severity": "critical",
+      "category": "wave-conflict",
+      "issue": "Wave 3: Task 8 and Task 9 both modify `components/RightSidebar.tsx`. Parallel agents will produce merge conflicts.",
+      "fix": "Consolidate RightSidebar changes into one task. Either Task 8 handles all RightSidebar modifications (tag links + dynamic counts), or move Task 9's RightSidebar work into Task 8."
+    },
+    {
+      "severity": "critical",
+      "category": "task-count",
+      "issue": "17 tasks exceeds the maximum limit of 15.",
+      "fix": "Merge related tasks. Suggestions: (1) Merge Task 16 (Deploy) and Task 17 (Post-deploy verification) into one task. (2) Merge Task 10 (Navbar/Footer cleanup + static pages) with Task 4 (Navbar Tailwind migration) since Task 10 already depends on Task 4."
+    },
+    {
+      "severity": "major",
+      "category": "port-inconsistency",
+      "issue": "User-spec verification table uses port 3100 (`curl http://localhost:3100`), but tech-spec AVP uses port 3001 (`curl http://localhost:3001`). Agents will use the wrong port.",
+      "fix": "Align to one port. Check next.config.mjs or package.json for the actual dev port and use that consistently in the AVP section."
+    },
+    {
+      "severity": "major",
+      "category": "pk-deviation",
+      "issue": "Patterns.md states all content starts as `pending` and requires admin approval. Tech-spec (and user-spec) say sync writes `published` directly. This contradicts Project Knowledge without documenting it as a deviation.",
+      "fix": "Add a Decision entry documenting the choice to skip moderation in MVP (sync → published directly). Or add it to User-Spec Deviations section noting the PK override."
+    },
+    {
+      "severity": "major",
+      "category": "reviewers-incomplete",
+      "issue": "Tasks 2, 3, 4, 5, 7, 9, 11 use `code-writing` skill but omit `security-auditor` from reviewers. Per skills-and-reviewers.md, the default reviewer set for `code-writing` is [code-reviewer, security-auditor, test-reviewer].",
+      "fix": "Add `security-auditor` to reviewers for these tasks, or explicitly justify the omission (e.g., no user input handling, no DB queries)."
+    },
+    {
+      "severity": "minor",
+      "category": "verify-field-name",
+      "issue": "Tasks 4 and 5 use `Verify-user` instead of `Verify-smoke`. Inconsistent field naming may confuse automation.",
+      "fix": "Rename to `Verify-smoke` for consistency, or define both field types explicitly if `Verify-user` is intentional (manual check vs automated smoke)."
+    },
+    {
+      "severity": "minor",
+      "category": "pk-update-needed",
+      "issue": "Architecture.md references `lib/db.ts` as Prisma singleton, but project actually uses `lib/prisma.ts`. Tech-spec correctly references `lib/prisma.ts`, but PK is outdated.",
+      "fix": "Update architecture.md to reference `lib/prisma.ts` (separate task or note for documentation)."
+    },
+    {
+      "severity": "minor",
+      "category": "missing-files-to-read",
+      "issue": "Tasks 12-14 (audit tasks) lack `Files to read` field. Auditors need to know which files were created/modified to review.",
+      "fix": "Add `Files to read: all files modified/created in Tasks 1-11` or list them explicitly."
+    }
+  ],
+  "summary": "Tech-spec has 3 critical findings blocking approval: two wave conflicts (globals.css in Wave 2, RightSidebar in Wave 3) and task count exceeding the 15-task limit (currently 17). Additionally, there are 3 major findings: port mismatch between user-spec and tech-spec AVP, undocumented PK deviation on content moderation flow, and missing security-auditor reviewer on 7 code-writing tasks. Fix the 3 critical issues to reach approved status."
+}
