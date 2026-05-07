@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { z } from 'zod'
 import { getPostById, getPostsByType } from '@/lib/posts'
+import { getTagsWithCounts } from '@/lib/tags'
 import PageShell from '@/components/PageShell'
 import PostDetail from '@/components/PostDetail'
 
@@ -19,12 +20,14 @@ export default async function PostPage({ params }: Props) {
   const post = await getPostById(id)
   if (!post) notFound()
 
-  // Related posts: same type, excluding current
-  const related = (await getPostsByType(post.type)).filter((p) => p.id !== post.id).slice(0, 5)
+  const [related, allTags] = await Promise.all([
+    getPostsByType(post.type).then((posts) => posts.filter((p) => p.id !== post.id).slice(0, 5)),
+    getTagsWithCounts(),
+  ])
 
   return (
     <PageShell>
-      <PostDetail post={post} related={related} />
+      <PostDetail post={post} related={related} allTags={allTags} />
     </PageShell>
   )
 }

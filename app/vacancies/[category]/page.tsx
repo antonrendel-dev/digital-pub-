@@ -3,7 +3,8 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
 import PageShell from '@/components/PageShell'
-import JobCard from '@/components/feed/JobCard'
+import TileCard from '@/components/feed/TileCard'
+import TagsSidebar from '@/components/TagsSidebar'
 
 interface Props {
   params: { category: string }
@@ -27,7 +28,6 @@ export default async function CategoryPage({ params }: Props) {
 
   const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
   const allTags = await getTagsWithCounts()
-  const relatedTags = allTags.filter((t) => t.slug !== category && t.count > 0).slice(0, 8)
 
   return (
     <PageShell>
@@ -48,11 +48,11 @@ export default async function CategoryPage({ params }: Props) {
               {tag.name}-вакансии
             </h1>
             <p className="text-text-muted mb-6">
-              Актуальные вакансии по категории {tag.name}
+              Актуальные вакансии в сфере {tag.name}: удалённая работа, фриланс, полная занятость
             </p>
 
             {/* Count */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-5">
               <span className="text-sm text-text-muted">
                 Найдено <strong className="text-text">{posts.length}</strong> вакансий
               </span>
@@ -63,10 +63,19 @@ export default async function CategoryPage({ params }: Props) {
                 Пока нет вакансий в категории {tag.name}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {posts.map((post) => (
-                  <JobCard key={post.id} post={post} />
+                  <TileCard key={post.id} post={post} />
                 ))}
+              </div>
+            )}
+
+            {/* Load more placeholder */}
+            {posts.length > 20 && (
+              <div className="mt-6 text-center">
+                <button className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 rounded-full cursor-pointer transition border-none">
+                  Показать ещё
+                </button>
               </div>
             )}
 
@@ -83,23 +92,7 @@ export default async function CategoryPage({ params }: Props) {
 
           {/* Sidebar */}
           <aside className="hidden lg:block space-y-6">
-            {/* Related tags */}
-            {relatedTags.length > 0 && (
-              <div className="bg-bg-card border border-border rounded-xl p-4">
-                <h3 className="text-sm font-semibold text-text-muted mb-3">Похожие теги</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {relatedTags.map((t) => (
-                    <Link
-                      key={t.slug}
-                      href={`/vacancies/${t.slug}/`}
-                      className="tag-orange px-2.5 py-1 rounded-full text-xs font-medium no-underline hover:opacity-80 transition"
-                    >
-                      {t.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
+            <TagsSidebar tags={allTags} activeSlug={category} />
 
             {/* CTA */}
             <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4 text-center">

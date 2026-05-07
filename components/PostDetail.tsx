@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { FeedPost } from '@/lib/posts'
+import TagsSidebar, { TagData } from './TagsSidebar'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('ru-RU', {
@@ -24,9 +25,10 @@ interface PostDetailProps {
   related: FeedPost[]
   categorySlug?: string
   categoryName?: string
+  allTags?: TagData[]
 }
 
-export default function PostDetail({ post, related, categorySlug, categoryName }: PostDetailProps) {
+export default function PostDetail({ post, related, categorySlug, categoryName, allTags }: PostDetailProps) {
   const typeLabel = post.type === 'vacancy' ? 'Вакансия' : 'Резюме'
   const typeHref = post.type === 'vacancy' ? '/vacancies' : '/resumes'
 
@@ -152,6 +154,9 @@ export default function PostDetail({ post, related, categorySlug, categoryName }
               </div>
             </div>
           </div>
+
+          {/* Categories & Tags */}
+          {allTags && <TagsSidebar tags={allTags} activeSlug={effectiveCategorySlug} />}
 
           {/* Related */}
           {related.length > 0 && (

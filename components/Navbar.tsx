@@ -143,11 +143,11 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="lg:hidden bg-bg-card border-t border-border px-4 py-4 space-y-1">
-            <Link href="/" className="block py-3 px-3 text-sm font-medium text-text rounded-lg hover:bg-border-light transition-colors" onClick={() => setMenuOpen(false)}>Главная</Link>
-            <Link href="/vacancies" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-border-light transition-colors" onClick={() => setMenuOpen(false)}>Вакансии</Link>
-            <Link href="/resumes" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-border-light transition-colors" onClick={() => setMenuOpen(false)}>Резюме</Link>
-            <Link href="/articles" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-border-light transition-colors" onClick={() => setMenuOpen(false)}>Статьи</Link>
+          <div className="lg:hidden mobile-menu border-t border-border px-4 py-4 space-y-1 shadow-lg">
+            <Link href="/" className="block py-3 px-3 text-sm font-medium text-text rounded-lg hover:bg-white/60 transition-colors" onClick={() => setMenuOpen(false)}>Главная</Link>
+            <Link href="/vacancies" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors" onClick={() => setMenuOpen(false)}>Вакансии</Link>
+            <Link href="/resumes" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors" onClick={() => setMenuOpen(false)}>Резюме</Link>
+            <Link href="/articles" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors" onClick={() => setMenuOpen(false)}>Статьи</Link>
             <div className="pt-3 border-t border-border mt-3">
               <a
                 href="https://t.me/resume_vac_bot"
