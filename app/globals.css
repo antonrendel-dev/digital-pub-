@@ -86,24 +86,6 @@ body {
               box-shadow 0.35s ease !important;
 }
 
-/* Section label */
-.s-lbl {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-light);
-  margin-bottom: 10px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.s-lbl::before {
-  content: '';
-  display: inline-block;
-  width: 3px;
-  height: 11px;
-  background: #ffcc3e;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
+/* Section label with yellow bar */
+.s-lbl { font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-light); margin-bottom:10px; font-weight:600; display:flex; align-items:center; gap:7px; }
+.s-lbl::before { content:''; display:inline-block; width:3px; height:11px; background:#ffcc3e; border-radius:2px; flex-shrink:0; }
