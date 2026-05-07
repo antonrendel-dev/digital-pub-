@@ -19,7 +19,7 @@ export interface FeedPost {
   tags: { id: number; name: string; slug: string }[]
 }
 
-function toFeedPost(p: {
+export function toFeedPost(p: {
   id: number
   type: 'vacancy' | 'resume'
   title: string

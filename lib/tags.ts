@@ -1,7 +1,5 @@
 import { prisma } from './prisma'
-import { z } from 'zod'
-
-export const slugSchema = z.string().regex(/^[a-z0-9-_]{1,80}$/)
+import { slugSchema, toFeedPost } from './posts'
 
 export interface TagWithCount {
   id: number
@@ -74,42 +72,18 @@ export async function getPostsByTag(tagSlug: string) {
       description: { not: null },
       tags: {
         some: {
-          tag: {
-            slug: tagSlug,
-          },
+          tag: { slug: tagSlug },
         },
       },
     },
     include: {
-      tags: {
-        include: { tag: true },
-      },
+      tags: { include: { tag: true } },
     },
     orderBy: { createdAt: 'desc' },
     take: 100,
   })
 
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000)
-
-  return posts.map((p) => ({
-    id: p.id,
-    type: p.type as 'vacancy' | 'resume',
-    title: p.title,
-    slug: p.slug,
-    description: p.description,
-    company: p.company,
-    salary: p.salary,
-    imageUrl: p.imageUrl,
-    channelUsername: p.channelUsername,
-    telegramMessageId: p.telegramMessageId,
-    createdAt: p.createdAt.toISOString(),
-    isNew: p.createdAt > cutoff,
-    tags: p.tags.map((pt) => ({
-      id: pt.tag.id,
-      name: pt.tag.name,
-      slug: pt.tag.slug,
-    })),
-  }))
+  return posts.map(toFeedPost)
 }
 
 /** Get DB statistics for sidebar */

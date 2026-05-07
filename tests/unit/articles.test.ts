@@ -48,6 +48,7 @@ describe('articles', () => {
     it('rejects invalid slug formats', () => {
       expect(getArticleBySlug('UPPERCASE')).toBeNull()
       expect(getArticleBySlug('has spaces')).toBeNull()
+      // Note: underscores are rejected by article slugSchema (only allows a-z0-9 and hyphens)
       expect(getArticleBySlug('has_underscores')).toBeNull()
       expect(getArticleBySlug('')).toBeNull()
       expect(getArticleBySlug('slug/with/slashes')).toBeNull()
@@ -58,6 +59,16 @@ describe('articles', () => {
       expect(getArticleBySlug('valid-slug-format')).toBeNull()
       // Actually existing file
       expect(getArticleBySlug('sample')).not.toBeNull()
+    })
+  })
+
+  describe('formatArticleDate', () => {
+    it('formats date in Russian locale', async () => {
+      const { formatArticleDate } = await import('@/lib/articles')
+      const result = formatArticleDate('2026-05-01')
+      expect(result).toContain('2026')
+      // Should contain a Russian month name
+      expect(result).toMatch(/\d+\s+\S+\s+2026/)
     })
   })
 })

@@ -105,4 +105,28 @@ describe('matchTags', () => {
     const tags = matchTags('Chrome developer needed')
     expect(tags).not.toContain('hr')
   })
+
+  it('handles Cyrillic word boundaries correctly', () => {
+    // "дизайнерский" contains "дизайнер" but has no boundary after
+    // Cyrillic chars are NOT in the boundary regex, so partial matches are correctly rejected
+    const tags = matchTags('Дизайнерский подход к работе')
+    expect(tags).not.toContain('dizajn')
+
+    // But "дизайнер" as a standalone word should match
+    const tags2 = matchTags('Нужен дизайнер на проект')
+    expect(tags2).toContain('dizajn')
+  })
+
+  it('matches keywords separated by punctuation', () => {
+    const tags = matchTags('Вакансия: SMM, удалённо!')
+    expect(tags).toContain('smm')
+    expect(tags).toContain('udalyonka')
+  })
+
+  it('does not match partial English words', () => {
+    // "performer" should not match "performance"
+    // but "performance" IS a keyword for marketing
+    const tags = matchTags('Performance маркетинг для бренда')
+    expect(tags).toContain('marketing')
+  })
 })

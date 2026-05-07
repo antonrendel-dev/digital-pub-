@@ -1,15 +1,20 @@
 import { notFound } from 'next/navigation'
+import { z } from 'zod'
 import { getPostById, getPostsByType } from '@/lib/posts'
 import PageShell from '@/components/PageShell'
 import PostDetail from '@/components/PostDetail'
 
+const idSchema = z.string().regex(/^\d{1,10}$/)
+
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function PostPage({ params }: Props) {
-  const id = parseInt(params.id, 10)
-  if (isNaN(id)) notFound()
+  const { id: rawId } = await params
+  const parsed = idSchema.safeParse(rawId)
+  if (!parsed.success) notFound()
+  const id = parseInt(parsed.data, 10)
 
   const post = await getPostById(id)
   if (!post) notFound()

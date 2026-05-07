@@ -92,6 +92,15 @@ export function getArticleBySlug(slug: string): Article | null {
   }
 }
 
+/** Format date for article display */
+export function formatArticleDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 /**
  * Allowlist of safe HTML element names for MDX rendering.
  * Only these elements are allowed when rendering MDX content.

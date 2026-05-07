@@ -340,8 +340,14 @@ async function main() {
 // Export for testing
 export { matchTags, TAG_KEYWORDS }
 
+/** Sanitize error messages to prevent bot token leakage */
+function sanitizeError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e)
+  return msg.replace(/bot[0-9]+:[A-Za-z0-9_-]+/g, 'bot***:***')
+}
+
 main().catch(async (e) => {
-  console.error(e)
+  console.error('Sync failed:', sanitizeError(e))
   await prisma.$disconnect()
   process.exit(1)
 })

@@ -1,19 +1,11 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { getArticles } from '@/lib/articles'
+import { getArticles, formatArticleDate } from '@/lib/articles'
 import PageShell from '@/components/PageShell'
 
 export const metadata: Metadata = {
   title: 'Статьи — Диджитал Паб',
   description: 'Полезные статьи о карьере в digital: поиск работы, резюме, собеседования, зарплаты.',
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
 }
 
 export default function ArticlesPage() {
@@ -48,7 +40,7 @@ export default function ArticlesPage() {
                 </h2>
                 <p className="text-sm text-text-muted line-clamp-3 mb-3">{article.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-text-light">{formatDate(article.publishedAt)}</span>
+                  <span className="text-xs text-text-light">{formatArticleDate(article.publishedAt)}</span>
                   {article.tags.length > 0 && (
                     <div className="flex gap-1">
                       {article.tags.slice(0, 2).map((tag) => (
