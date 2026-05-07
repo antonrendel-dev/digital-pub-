@@ -49,3 +49,4 @@ next-env.d.ts
 
 # Vercel (not used, but just in case)
 .vercel
+generated/prisma/

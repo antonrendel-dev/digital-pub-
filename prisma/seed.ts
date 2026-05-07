@@ -1,0 +1,193 @@
+import { PrismaClient } from '../generated/prisma'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
+
+const connectionString =
+  process.env.DATABASE_URL ?? 'postgresql://antonrendel@localhost:5432/digital_pub'
+const pool = new Pool({ connectionString })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
+
+interface TagSeed {
+  name: string
+  slug: string
+  tagType: 'specialization' | 'level' | 'format'
+  seoTitle: string
+  seoDescription: string
+  seoText: string
+}
+
+const TAGS: TagSeed[] = [
+  // Formats
+  {
+    name: 'Удалёнка',
+    slug: 'udalyonka',
+    tagType: 'format',
+    seoTitle: 'Удалённая работа — вакансии и резюме | Диджитал Паб',
+    seoDescription: 'Актуальные вакансии и резюме с удалённым форматом работы в digital-сфере. SMM, дизайн, маркетинг, разработка — всё удалённо.',
+    seoText: 'Удалённая работа становится стандартом в digital-индустрии. На этой странице собраны вакансии и резюме специалистов, работающих удалённо. Здесь вы найдёте предложения от компаний, которые предлагают полностью дистанционный формат, а также резюме специалистов, ищущих удалённую занятость.',
+  },
+  {
+    name: 'Офис',
+    slug: 'ofis',
+    tagType: 'format',
+    seoTitle: 'Работа в офисе — вакансии и резюме | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме для работы в офисе. Digital-специалисты в Москве, Петербурге и других городах.',
+    seoText: 'Офисный формат работы по-прежнему востребован во многих digital-компаниях. На этой странице — вакансии с работой в офисе и резюме специалистов, предпочитающих офисный формат.',
+  },
+  {
+    name: 'Гибрид',
+    slug: 'gibrid',
+    tagType: 'format',
+    seoTitle: 'Гибридная работа — вакансии и резюме | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме с гибридным форматом работы — офис + удалёнка. Гибкий график в digital.',
+    seoText: 'Гибридный формат сочетает преимущества офисной и удалённой работы. Здесь собраны вакансии компаний, предлагающих гибкий формат, и резюме специалистов, готовых к гибридному графику.',
+  },
+  // Specializations
+  {
+    name: 'SMM',
+    slug: 'smm',
+    tagType: 'specialization',
+    seoTitle: 'SMM-вакансии и резюме — работа в соцсетях | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме SMM-специалистов. Работа с социальными сетями, контент-планы, продвижение брендов.',
+    seoText: 'SMM-специалисты — одни из самых востребованных в digital. На этой странице — вакансии для SMM-менеджеров, контент-мейкеров и специалистов по продвижению в социальных сетях, а также резюме профессионалов в этой области.',
+  },
+  {
+    name: 'SEO',
+    slug: 'seo',
+    tagType: 'specialization',
+    seoTitle: 'SEO-вакансии и резюме — поисковая оптимизация | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме SEO-специалистов. Поисковая оптимизация, продвижение сайтов, аналитика трафика.',
+    seoText: 'SEO-оптимизация остаётся ключевым каналом привлечения органического трафика. Здесь собраны вакансии для SEO-специалистов и резюме профессионалов, занимающихся продвижением сайтов в поисковых системах.',
+  },
+  {
+    name: 'Дизайн',
+    slug: 'dizajn',
+    tagType: 'specialization',
+    seoTitle: 'Дизайн-вакансии и резюме — UI/UX, графика | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме дизайнеров: UI/UX, графический дизайн, веб-дизайн, Figma, брендинг.',
+    seoText: 'Дизайн в digital — это не только красивые картинки, но и продуманные интерфейсы. На этой странице — вакансии для дизайнеров всех направлений и резюме специалистов с опытом в UI/UX, графическом дизайне и веб-дизайне.',
+  },
+  {
+    name: 'Маркетинг',
+    slug: 'marketing',
+    tagType: 'specialization',
+    seoTitle: 'Маркетинг-вакансии и резюме — digital-маркетинг | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме маркетологов. Performance, контент-маркетинг, CRM, email-маркетинг.',
+    seoText: 'Digital-маркетинг объединяет множество направлений: от performance и контент-маркетинга до CRM и email-кампаний. Здесь — вакансии для маркетологов и резюме специалистов с опытом в digital-маркетинге.',
+  },
+  {
+    name: 'Менеджер',
+    slug: 'menedzher',
+    tagType: 'specialization',
+    seoTitle: 'Менеджер — вакансии и резюме | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме менеджеров: проджект, продакт, аккаунт-менеджеры в digital.',
+    seoText: 'Менеджеры в digital — это проджекты, продакты, аккаунт-менеджеры и тимлиды. На этой странице собраны вакансии для менеджеров различных направлений и резюме управленцев с опытом в digital-проектах.',
+  },
+  {
+    name: 'Таргет',
+    slug: 'target',
+    tagType: 'specialization',
+    seoTitle: 'Таргетированная реклама — вакансии и резюме | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме таргетологов. Настройка рекламы в VK, Яндексе, MyTarget.',
+    seoText: 'Таргетированная реклама — важнейший инструмент digital-маркетинга. Здесь — вакансии для таргетологов, специалистов по настройке рекламы, и резюме профессионалов с опытом в VK Ads, Яндекс Директ и других платформах.',
+  },
+  {
+    name: 'Разработка',
+    slug: 'razrabotka',
+    tagType: 'specialization',
+    seoTitle: 'Разработка — вакансии и резюме разработчиков | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме разработчиков: фронтенд, бэкенд, фулстек, мобильная разработка.',
+    seoText: 'Разработка — основа любого digital-продукта. На этой странице — вакансии для разработчиков всех направлений: фронтенд, бэкенд, фулстек, мобильная разработка. А также резюме программистов, ищущих новые проекты.',
+  },
+  {
+    name: 'Аналитика',
+    slug: 'analitika',
+    tagType: 'specialization',
+    seoTitle: 'Аналитика — вакансии и резюме аналитиков | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме аналитиков: веб-аналитика, data analytics, BI, продуктовая аналитика.',
+    seoText: 'Аналитика данных помогает бизнесу принимать обоснованные решения. Здесь — вакансии для аналитиков разных направлений и резюме специалистов с опытом в веб-аналитике, data-аналитике и работе с BI-инструментами.',
+  },
+  {
+    name: 'Финансы',
+    slug: 'finansy',
+    tagType: 'specialization',
+    seoTitle: 'Финансы — вакансии и резюме | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме финансовых специалистов в digital-компаниях.',
+    seoText: 'Финансовые специалисты в digital-компаниях отвечают за бюджетирование, unit-экономику и финансовое планирование. На этой странице — вакансии и резюме в сфере финансов и экономики.',
+  },
+  {
+    name: 'HR',
+    slug: 'hr',
+    tagType: 'specialization',
+    seoTitle: 'HR-вакансии и резюме — управление персоналом | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме HR-специалистов: рекрутеры, HR BP, People Partners в digital.',
+    seoText: 'HR-специалисты помогают digital-компаниям находить и удерживать таланты. Здесь — вакансии для рекрутеров, HR-менеджеров, HR Business Partners и резюме специалистов по управлению персоналом.',
+  },
+  {
+    name: 'WordPress',
+    slug: 'wordpress',
+    tagType: 'specialization',
+    seoTitle: 'WordPress — вакансии и резюме | Диджитал Паб',
+    seoDescription: 'Вакансии и резюме WordPress-разработчиков и специалистов.',
+    seoText: 'WordPress — самая популярная CMS в мире. На этой странице собраны вакансии для WordPress-разработчиков, верстальщиков и администраторов сайтов, а также резюме специалистов по WordPress.',
+  },
+  // Levels
+  {
+    name: 'Junior',
+    slug: 'junior',
+    tagType: 'level',
+    seoTitle: 'Junior-вакансии и резюме — начало карьеры | Диджитал Паб',
+    seoDescription: 'Вакансии для junior-специалистов и резюме начинающих профессионалов в digital.',
+    seoText: 'Начало карьеры в digital — это возможность быстро расти и набираться опыта. Здесь — вакансии для junior-специалистов, стажёров и начинающих профессионалов, а также резюме тех, кто ищет первую работу в отрасли.',
+  },
+  {
+    name: 'Middle',
+    slug: 'middle',
+    tagType: 'level',
+    seoTitle: 'Middle-вакансии и резюме — опытные специалисты | Диджитал Паб',
+    seoDescription: 'Вакансии для middle-специалистов и резюме профессионалов с 2-5 годами опыта в digital.',
+    seoText: 'Middle-уровень — это специалисты с уверенным опытом и самостоятельностью. На этой странице — вакансии для middle-специалистов и резюме профессионалов с 2-5 годами опыта в digital-индустрии.',
+  },
+  {
+    name: 'Senior',
+    slug: 'senior',
+    tagType: 'level',
+    seoTitle: 'Senior-вакансии и резюме — эксперты digital | Диджитал Паб',
+    seoDescription: 'Вакансии для senior-специалистов и резюме экспертов с большим опытом в digital.',
+    seoText: 'Senior-специалисты — это эксперты, которые определяют техническое и стратегическое направление проектов. Здесь — вакансии для senior-профессионалов и резюме экспертов с обширным опытом в digital.',
+  },
+]
+
+async function main() {
+  console.log('Seeding tags...')
+
+  for (const tag of TAGS) {
+    await prisma.tag.upsert({
+      where: { slug: tag.slug },
+      update: {
+        seoTitle: tag.seoTitle,
+        seoDescription: tag.seoDescription,
+        seoText: tag.seoText,
+      },
+      create: {
+        name: tag.name,
+        slug: tag.slug,
+        tagType: tag.tagType,
+        seoTitle: tag.seoTitle,
+        seoDescription: tag.seoDescription,
+        seoText: tag.seoText,
+      },
+    })
+    console.log(`  Upserted tag: ${tag.name} (${tag.slug})`)
+  }
+
+  console.log(`\nSeeded ${TAGS.length} tags.`)
+  await prisma.$disconnect()
+}
+
+main().catch(async (e) => {
+  console.error(e)
+  await prisma.$disconnect()
+  process.exit(1)
+})

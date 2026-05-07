@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -52,10 +53,14 @@ model Post {
 }
 
 model Tag {
-  id      Int       @id @default(autoincrement())
-  name    String    @unique
-  tagType TagType
-  posts   PostTag[]
+  id              Int       @id @default(autoincrement())
+  name            String    @unique
+  slug            String    @unique
+  tagType         TagType
+  seoTitle        String?
+  seoDescription  String?
+  seoText         String?
+  posts           PostTag[]
 }
 
 model PostTag {

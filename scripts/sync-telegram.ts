@@ -8,7 +8,7 @@ import 'dotenv/config'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { PostType } from '@prisma/client'
+import { PostType } from '../generated/prisma'
 import { prisma } from '../lib/prisma'
 
 // Read bot token from the bot's .env
