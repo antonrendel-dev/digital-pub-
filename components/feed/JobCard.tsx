@@ -44,7 +44,8 @@ function getTagColorClass(tagName: string): string {
 export default function JobCard({ post }: JobCardProps) {
   const [saved, setSaved] = useState(false)
 
-  const href = post.slug ? `/vacancies/${post.slug}` : `/post/${post.id}`
+  const categorySlug = post.tags?.find(t => t.tagType === 'specialization')?.slug || post.tags?.[0]?.slug || 'other'
+  const href = post.slug ? `/vacancies/${categorySlug}/${post.slug}` : `/post/${post.id}`
 
   return (
     <a

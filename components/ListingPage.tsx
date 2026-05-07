@@ -11,9 +11,10 @@ import { FeedPost } from '@/lib/posts'
 interface ListingPageProps {
   posts: FeedPost[]
   type: 'vacancy' | 'resume'
+  tags?: { name: string; slug: string; tagType: string; count: number }[]
 }
 
-export default function ListingPage({ posts, type }: ListingPageProps) {
+export default function ListingPage({ posts, type, tags }: ListingPageProps) {
   const [isDark, setIsDark] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -57,7 +58,7 @@ export default function ListingPage({ posts, type }: ListingPageProps) {
               pageTitle={pageTitle}
             />
             <aside className="hidden lg:block">
-              <RightSidebar onTagClick={() => {}} />
+              <RightSidebar tags={tags} />
             </aside>
           </div>
         </div>

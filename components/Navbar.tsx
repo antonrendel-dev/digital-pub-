@@ -53,7 +53,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
           {/* Right: Search + Buttons */}
           <div className="flex items-center gap-2">
             {/* Expanding search - desktop */}
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center gap-2">
               <div
                 className="overflow-hidden transition-all duration-300 ease-in-out"
                 style={{ width: searchOpen ? 220 : 0, opacity: searchOpen ? 1 : 0 }}
@@ -64,7 +64,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full h-9 px-3 border border-border rounded-lg bg-bg-card text-text text-sm outline-none focus:border-accent transition-colors mr-1.5"
+                  className="w-full h-9 px-3 border border-border rounded-full bg-bg-card text-text text-sm outline-none focus:border-accent transition-colors"
                 />
               </div>
               <button
@@ -77,7 +77,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
                   }
                 }}
                 title="Поиск"
-                className="flex items-center justify-center w-9 h-9 border border-border rounded-lg bg-bg-card text-text-light hover:text-accent hover:border-accent cursor-pointer transition-all flex-shrink-0"
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-border-light hover:bg-border text-text-light hover:text-accent cursor-pointer transition-all flex-shrink-0"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />

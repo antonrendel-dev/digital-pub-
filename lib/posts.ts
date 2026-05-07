@@ -16,7 +16,7 @@ export interface FeedPost {
   telegramMessageId: string | null
   createdAt: string
   isNew: boolean
-  tags: { id: number; name: string; slug: string }[]
+  tags: { id: number; name: string; slug: string; tagType: string }[]
 }
 
 export function toFeedPost(p: {
@@ -31,13 +31,13 @@ export function toFeedPost(p: {
   channelUsername: string | null
   telegramMessageId: string | null
   createdAt: Date
-  tags: { tag: { id: number; name: string; slug: string } }[]
+  tags: { tag: { id: number; name: string; slug: string; tagType: string } }[]
 }): FeedPost {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000)
   return {
     id: p.id,
     type: p.type,
-    title: p.title,
+    title: p.title.replace(/^#+\s*/, ''),
     slug: p.slug,
     description: p.description,
     company: p.company,
@@ -51,8 +51,15 @@ export function toFeedPost(p: {
       id: pt.tag.id,
       name: pt.tag.name,
       slug: pt.tag.slug,
+      tagType: pt.tag.tagType,
     })),
   }
+}
+
+export function getPrimaryCategorySlug(post: FeedPost): string {
+  if (!post.tags || post.tags.length === 0) return 'other'
+  const specTag = post.tags.find(t => t.tagType === 'specialization')
+  return specTag ? specTag.slug : post.tags[0].slug
 }
 
 export async function getPublishedPosts(): Promise<FeedPost[]> {

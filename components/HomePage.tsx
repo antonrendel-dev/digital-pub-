@@ -10,11 +10,13 @@ import { FeedPost } from '@/lib/posts'
 
 interface HomePageProps {
   posts: FeedPost[]
+  stats?: { vacancyCount: number; resumeCount: number; companyCount: number; newToday: number }
+  articles?: { title: string; slug: string; date: string }[]
+  tags?: { name: string; slug: string; tagType: string; count: number }[]
 }
 
-export default function HomePage({ posts }: HomePageProps) {
+export default function HomePage({ posts, stats, articles, tags }: HomePageProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [externalTag, setExternalTag] = useState<string | undefined>()
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
@@ -46,16 +48,15 @@ export default function HomePage({ posts }: HomePageProps) {
         <div className="max-w-wrap mx-auto px-4 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-layout gap-0 lg:gap-6">
             <aside className="hidden lg:block">
-              <LeftSidebar />
+              <LeftSidebar stats={stats} />
             </aside>
             <Feed
               posts={posts}
               searchQuery={searchQuery}
-              externalTag={externalTag}
-              onExternalTagConsumed={() => setExternalTag(undefined)}
+              onExternalTagConsumed={() => {}}
             />
             <aside className="hidden lg:block">
-              <RightSidebar onTagClick={setExternalTag} />
+              <RightSidebar tags={tags} articles={articles} />
             </aside>
           </div>
         </div>

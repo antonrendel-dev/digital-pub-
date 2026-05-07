@@ -22,11 +22,18 @@ function formatDateShort(iso: string): string {
 interface PostDetailProps {
   post: FeedPost
   related: FeedPost[]
+  categorySlug?: string
+  categoryName?: string
 }
 
-export default function PostDetail({ post, related }: PostDetailProps) {
+export default function PostDetail({ post, related, categorySlug, categoryName }: PostDetailProps) {
   const typeLabel = post.type === 'vacancy' ? 'Вакансия' : 'Резюме'
   const typeHref = post.type === 'vacancy' ? '/vacancies' : '/resumes'
+
+  // Determine primary category for breadcrumb
+  const primaryTag = post.tags?.find(t => t.tagType === 'specialization') || post.tags?.[0]
+  const effectiveCategorySlug = categorySlug || primaryTag?.slug || 'other'
+  const effectiveCategoryName = categoryName || primaryTag?.name || (post.type === 'vacancy' ? 'Вакансии' : 'Резюме')
 
   const tgLink =
     post.channelUsername && post.telegramMessageId
@@ -48,6 +55,14 @@ export default function PostDetail({ post, related }: PostDetailProps) {
         <Link href={typeHref} className="text-text-muted no-underline hover:text-accent transition-colors">
           {post.type === 'vacancy' ? 'Вакансии' : 'Резюме'}
         </Link>
+        {post.type === 'vacancy' && (
+          <>
+            <span className="text-text-light">&rsaquo;</span>
+            <Link href={`/vacancies/${effectiveCategorySlug}/`} className="text-text-muted no-underline hover:text-accent transition-colors">
+              {effectiveCategoryName}
+            </Link>
+          </>
+        )}
         <span className="text-text-light">&rsaquo;</span>
         <span className="text-text-light truncate">{post.title}</span>
       </div>
@@ -143,21 +158,24 @@ export default function PostDetail({ post, related }: PostDetailProps) {
             <div className="bg-bg-card border border-border rounded-xl p-5 transition-colors duration-200">
               <h3 className="text-sm font-semibold text-text mb-4">Похожие вакансии</h3>
               <div className="space-y-4">
-                {related.map((r) => (
-                  <a
-                    key={r.id}
-                    href={r.slug ? `/vacancies/${r.slug}` : `/post/${r.id}`}
-                    className="block no-underline group"
-                  >
-                    <div className="text-sm font-medium text-text-muted group-hover:text-text transition-colors">
-                      {r.title}
-                    </div>
-                    <div className="text-xs text-text-light mt-0.5">
-                      {r.company && <>{r.company} &middot; </>}
-                      {r.salary || formatDateShort(r.createdAt)}
-                    </div>
-                  </a>
-                ))}
+                {related.map((r) => {
+                  const rCatSlug = r.tags?.find(t => t.tagType === 'specialization')?.slug || r.tags?.[0]?.slug || 'other'
+                  return (
+                    <Link
+                      key={r.id}
+                      href={r.slug ? `/vacancies/${rCatSlug}/${r.slug}` : `/post/${r.id}`}
+                      className="block no-underline group"
+                    >
+                      <div className="text-sm font-medium text-text-muted group-hover:text-text transition-colors">
+                        {r.title}
+                      </div>
+                      <div className="text-xs text-text-light mt-0.5">
+                        {r.company && <>{r.company} &middot; </>}
+                        {r.salary || formatDateShort(r.createdAt)}
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           )}

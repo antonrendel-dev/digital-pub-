@@ -1,100 +1,109 @@
 import Link from 'next/link'
 
-interface RightSidebarProps {
-  onTagClick: (tag: string) => void
+interface TagData {
+  name: string
+  slug: string
+  tagType: string
+  count: number
 }
 
-const TAG_GROUPS = [
-  {
-    label: 'Специализация',
-    colorClass: 'tag-orange',
-    tags: ['SMM', 'SEO', 'Дизайнер', 'Маркетолог', 'Менеджер', 'Директ', 'Figma', 'Таргетолог', 'Контекстолог', 'Проджект'],
-  },
-  {
-    label: 'Формат работы',
-    colorClass: 'tag-blue',
-    tags: ['Удалёнка', 'Офис', 'Гибрид', 'Фриланс'],
-  },
-  {
-    label: 'Уровень',
-    colorClass: 'tag-green',
-    tags: ['Junior', 'Middle', 'Senior'],
-  },
-]
+interface RightSidebarProps {
+  tags?: TagData[]
+  articles?: { title: string; slug: string; date: string }[]
+}
 
-const CATEGORIES = [
-  { name: 'SMM и маркетинг', count: 10 },
-  { name: 'Дизайн', count: 3 },
-  { name: 'SEO', count: 3 },
-  { name: 'Менеджмент', count: 2 },
-  { name: 'Разработка', count: 2 },
-  { name: 'Таргет и реклама', count: 2 },
-]
+const TAG_TYPE_LABELS: Record<string, { label: string; colorClass: string; order: number }> = {
+  specialization: { label: 'Специализация', colorClass: 'tag-orange', order: 1 },
+  format: { label: 'Формат работы', colorClass: 'tag-blue', order: 2 },
+  level: { label: 'Уровень', colorClass: 'tag-green', order: 3 },
+}
 
-const ARTICLES = [
-  { title: 'Как пройти техническое собеседование в 2025 году', date: '3 дня назад' },
-  { title: 'Резюме на одну страницу: за и против', date: '5 дней назад' },
-  { title: 'Зарплатные ожидания: как не продешевить', date: '1 неделю назад' },
-]
+export default function RightSidebar({ tags, articles }: RightSidebarProps) {
+  // Group tags by tagType
+  const grouped = (tags ?? []).reduce<Record<string, TagData[]>>((acc, tag) => {
+    if (!acc[tag.tagType]) acc[tag.tagType] = []
+    acc[tag.tagType].push(tag)
+    return acc
+  }, {})
 
-export default function RightSidebar({ onTagClick }: RightSidebarProps) {
+  const sortedGroups = Object.entries(grouped)
+    .map(([type, items]) => ({
+      type,
+      label: TAG_TYPE_LABELS[type]?.label ?? type,
+      colorClass: TAG_TYPE_LABELS[type]?.colorClass ?? 'tag-orange',
+      order: TAG_TYPE_LABELS[type]?.order ?? 99,
+      items: items.sort((a, b) => b.count - a.count),
+    }))
+    .sort((a, b) => a.order - b.order)
+
+  // Categories = specialization tags with posts
+  const categories = (tags ?? [])
+    .filter(t => t.tagType === 'specialization' && t.count > 0)
+    .sort((a, b) => b.count - a.count)
+
   return (
     <div className="space-y-6">
       {/* Tag cloud - grouped by type */}
-      <div className="bg-bg-card border border-border rounded-xl p-4">
-        <h3 className="s-lbl">Популярные теги</h3>
+      {sortedGroups.length > 0 && (
+        <div className="bg-bg-card border border-border rounded-xl p-4">
+          <h3 className="s-lbl">Популярные теги</h3>
 
-        {TAG_GROUPS.map((group) => (
-          <div key={group.label} className="mb-3 last:mb-0">
-            <div className="text-[9px] uppercase tracking-wide text-text-light font-medium mb-1">
-              {group.label}
+          {sortedGroups.map((group) => (
+            <div key={group.type} className="mb-3 last:mb-0">
+              <div className="text-[9px] uppercase tracking-wide text-text-light font-medium mb-1">
+                {group.label}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {group.items.map((tag) => (
+                  <Link
+                    key={tag.slug}
+                    href={`/vacancies/${tag.slug}/`}
+                    className={`${group.colorClass} px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition no-underline`}
+                  >
+                    {tag.name}
+                  </Link>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {group.tags.map((tag) => (
-                <button
-                  key={tag}
-                  className={`${group.colorClass} px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition cursor-pointer border-none`}
-                  onClick={() => onTagClick(tag)}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Categories */}
-      <div className="bg-bg-card border border-border rounded-xl p-4">
-        <h3 className="s-lbl">Категории</h3>
-        <div className="space-y-2">
-          {CATEGORIES.map((cat) => (
-            <a
-              key={cat.name}
-              href="#"
-              className="flex justify-between text-sm text-text-muted no-underline hover:text-text transition-colors"
-            >
-              <span>{cat.name}</span>
-              <span className="text-text-light">{cat.count}</span>
-            </a>
-          ))}
+      {categories.length > 0 && (
+        <div className="bg-bg-card border border-border rounded-xl p-4">
+          <h3 className="s-lbl">Категории</h3>
+          <div className="space-y-2">
+            {categories.map((cat) => (
+              <Link
+                key={cat.slug}
+                href={`/vacancies/${cat.slug}/`}
+                className="flex justify-between text-sm text-text-muted no-underline hover:text-text transition-colors"
+              >
+                <span>{cat.name}</span>
+                <span className="text-text-light">{cat.count}</span>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Articles */}
-      <div className="bg-bg-card border border-border rounded-xl p-4">
-        <h3 className="s-lbl">Статьи</h3>
-        <div className="space-y-3">
-          {ARTICLES.map((article) => (
-            <Link key={article.title} href="/articles" className="block group no-underline">
-              <div className="text-sm text-text-muted group-hover:text-text font-medium transition-colors">
-                {article.title}
-              </div>
-              <div className="text-xs text-text-light mt-0.5">{article.date}</div>
-            </Link>
-          ))}
+      {articles && articles.length > 0 && (
+        <div className="bg-bg-card border border-border rounded-xl p-4">
+          <h3 className="s-lbl">Статьи</h3>
+          <div className="space-y-3">
+            {articles.map((article) => (
+              <Link key={article.slug} href={`/articles/${article.slug}`} className="block group no-underline">
+                <div className="text-sm text-text-muted group-hover:text-text font-medium transition-colors">
+                  {article.title}
+                </div>
+                <div className="text-xs text-text-light mt-0.5">{article.date}</div>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

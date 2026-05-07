@@ -11,16 +11,17 @@ import * as path from 'path'
 import { PostType } from '../generated/prisma'
 import { prisma } from '../lib/prisma'
 
-// Read bot token from the bot's .env
+// Read bot config from the bot's .env
 const BOT_ENV_PATH = '/opt/bots/telegram-bot-vac/.env'
-function getBotToken(): string {
+function readBotEnv(key: string): string {
   const envContent = fs.readFileSync(BOT_ENV_PATH, 'utf-8')
-  const match = envContent.match(/^BOT_TOKEN=(.+)$/m)
-  if (!match) throw new Error('BOT_TOKEN not found in bot .env')
+  const match = envContent.match(new RegExp(`^${key}=(.+)$`, 'm'))
+  if (!match) throw new Error(`${key} not found in bot .env`)
   return match[1].trim()
 }
 
-const BOT_TOKEN = getBotToken()
+const BOT_TOKEN = readBotEnv('BOT_TOKEN')
+const ADMIN_CHAT_ID = readBotEnv('ADMIN_ID') // Used as temp chat for forwardMessage
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`
 const TG_FILE = `https://api.telegram.org/file/bot${BOT_TOKEN}`
 
@@ -39,22 +40,99 @@ interface TelegramPost {
   type: PostType
 }
 
-// ─── Bot API: download full-quality photo ───
+// ─── Bot API: download full-quality photo via forwardMessage trick ───
 
-async function downloadPhoto(chatId: string, messageId: number): Promise<string | null> {
+interface TgPhoto {
+  file_id: string
+  file_unique_id: string
+  file_size: number
+  width: number
+  height: number
+}
+
+/**
+ * Download full-quality photo from a channel message using Bot API.
+ *
+ * Strategy: forward the message to ADMIN_CHAT_ID (silently), extract the
+ * largest photo size from the response, download it via getFile, then
+ * delete the forwarded message to keep the chat clean.
+ *
+ * Returns local path like `/images/posts/{channel}_{msgId}.jpg` or null.
+ */
+async function downloadPhotoViaBotAPI(
+  channelUsername: string,
+  messageId: string,
+): Promise<string | null> {
+  let forwardedMsgId: number | null = null
+
   try {
-    // Forward message to get file_id (we'll use copyMessage to a saved messages-like approach)
-    // Actually, we can use getChat + channel history isn't available via Bot API easily
-    // Instead, we'll use the approach: get file from the channel message directly
-    // Bot API doesn't support getChatHistory, so we use t.me/s/ for text
-    // but download the photo via Bot API using forwardMessage trick
+    // 1. Forward message to admin chat (silently) to get photo metadata
+    const fwdRes = await fetch(`${TG_API}/forwardMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: ADMIN_CHAT_ID,
+        from_chat_id: `@${channelUsername}`,
+        message_id: Number(messageId),
+        disable_notification: true,
+      }),
+    })
+    const fwdData = await fwdRes.json() as {
+      ok: boolean
+      result?: { message_id: number; photo?: TgPhoto[] }
+    }
 
-    // Alternative: use the Telegram CDN URL but request higher quality
-    // The t.me/s/ page actually serves reasonable quality images
-    // Let's download and store them locally for best results
+    if (!fwdData.ok || !fwdData.result?.photo?.length) {
+      // Message has no photo or forward failed
+      return null
+    }
+
+    forwardedMsgId = fwdData.result.message_id
+    const photos = fwdData.result.photo
+
+    // 2. Pick the largest photo (last in array = largest, but sort to be safe)
+    const largest = photos.reduce((a, b) => (a.file_size > b.file_size ? a : b))
+
+    // 3. Get the file path on Telegram servers
+    const fileRes = await fetch(`${TG_API}/getFile?file_id=${largest.file_id}`)
+    const fileData = await fileRes.json() as {
+      ok: boolean
+      result?: { file_path: string }
+    }
+
+    if (!fileData.ok || !fileData.result?.file_path) {
+      return null
+    }
+
+    // 4. Download the actual file
+    const downloadUrl = `${TG_FILE}/${fileData.result.file_path}`
+    const localFilename = `${channelUsername}_${messageId}.jpg`
+    const localPath = await downloadImageLocally(downloadUrl, localFilename)
+
+    if (localPath) {
+      console.log(`    ✓ Bot API photo: ${largest.width}x${largest.height} (${Math.round(largest.file_size / 1024)} KB)`)
+    }
+
+    return localPath
+  } catch (e) {
+    console.error(`    Bot API photo download failed: ${sanitizeError(e)}`)
     return null
-  } catch {
-    return null
+  } finally {
+    // 5. Always clean up: delete the forwarded message
+    if (forwardedMsgId) {
+      try {
+        await fetch(`${TG_API}/deleteMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: ADMIN_CHAT_ID,
+            message_id: forwardedMsgId,
+          }),
+        })
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
   }
 }
 
@@ -101,24 +179,34 @@ async function fetchChannelPosts(channelUsername: string, type: PostType): Promi
     if (!idMatch) continue
     const messageId = idMatch[1]
 
-    // Extract image URL from background-image style
-    let imageUrl: string | null = null
-    const bgImageMatch = block.match(/background-image:\s*url\('([^']+)'\)/)
-    if (bgImageMatch) {
-      imageUrl = bgImageMatch[1]
-    } else {
-      const imgMatch = block.match(/tgme_widget_message_photo_wrap[^>]*>[\s\S]*?<img[^>]+src="([^"]+)"/)
-      if (imgMatch) imageUrl = imgMatch[1]
-    }
+    // Check if this message has a photo (look for photo_wrap with CDN background-image)
+    const hasPhoto = /tgme_widget_message_photo_wrap[^>]*style="[^"]*background-image:\s*url\('https?:\/\/cdn/.test(block)
 
-    // Download image locally for better quality/reliability
-    if (imageUrl) {
-      const ext = imageUrl.match(/\.(jpg|jpeg|png|webp)/i)?.[1] || 'jpg'
-      const localFilename = `${channelUsername}_${messageId}.${ext}`
-      const localPath = await downloadImageLocally(imageUrl, localFilename)
-      if (localPath) {
-        imageUrl = localPath
+    let imageUrl: string | null = null
+
+    if (hasPhoto) {
+      // Try Bot API first for full-quality (1200x628) images
+      const botApiPath = await downloadPhotoViaBotAPI(channelUsername, messageId)
+      if (botApiPath) {
+        imageUrl = botApiPath
+      } else {
+        // Fallback: use the background-image URL from t.me/s/ (800x419)
+        const bgImageMatch = block.match(
+          /tgme_widget_message_photo_wrap[^>]*style="[^"]*background-image:\s*url\('([^']+)'\)/
+        )
+        if (bgImageMatch) {
+          console.log(`    ⚠ Bot API failed, falling back to t.me/s/ thumbnail`)
+          const fallbackUrl = bgImageMatch[1]
+          const localFilename = `${channelUsername}_${messageId}.jpg`
+          const localPath = await downloadImageLocally(fallbackUrl, localFilename)
+          if (localPath) {
+            imageUrl = localPath
+          }
+        }
       }
+
+      // Rate limit: small delay between Bot API calls to avoid 429
+      await new Promise((r) => setTimeout(r, 300))
     }
 
     // Extract text
@@ -149,7 +237,7 @@ function parseTitle(text: string): string {
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
-  return lines[0]?.slice(0, 200) ?? 'Без названия'
+  return (lines[0]?.replace(/^#+\s*/, '') ?? 'Без названия').slice(0, 200)
 }
 
 const TRANSLIT: Record<string, string> = {
@@ -310,6 +398,55 @@ async function backfillTags() {
   console.log(`  Backfilled tags for ${tagged} out of ${posts.length} untagged posts`)
 }
 
+/** Backfill images: re-download low-quality photos via Bot API */
+async function backfillImages() {
+  console.log('\nBackfilling low-quality images via Bot API...')
+  const MIN_QUALITY_SIZE = 60_000 // Files under 60KB are likely 800x419 thumbnails
+
+  const posts = await prisma.post.findMany({
+    where: {
+      status: 'published',
+      imageUrl: { not: null },
+      channelUsername: { not: null },
+      telegramMessageId: { not: null },
+    },
+    select: { id: true, imageUrl: true, channelUsername: true, telegramMessageId: true },
+  })
+
+  let upgraded = 0
+  for (const post of posts) {
+    if (!post.imageUrl || !post.channelUsername || !post.telegramMessageId) continue
+
+    // Check if local file exists and is small (low quality)
+    const localFile = path.join(process.cwd(), 'public', post.imageUrl)
+    if (!fs.existsSync(localFile)) continue
+
+    const stat = fs.statSync(localFile)
+    if (stat.size >= MIN_QUALITY_SIZE) continue // Already good quality
+
+    console.log(`  Upgrading ${post.imageUrl} (${Math.round(stat.size / 1024)} KB)...`)
+
+    const newPath = await downloadPhotoViaBotAPI(post.channelUsername, post.telegramMessageId)
+    if (newPath) {
+      // Verify the new file is actually larger
+      const newFile = path.join(process.cwd(), 'public', newPath)
+      const newStat = fs.statSync(newFile)
+      if (newStat.size > stat.size) {
+        await prisma.post.update({
+          where: { id: post.id },
+          data: { imageUrl: newPath },
+        })
+        upgraded++
+      }
+    }
+
+    // Rate limit
+    await new Promise((r) => setTimeout(r, 300))
+  }
+
+  console.log(`  Upgraded ${upgraded} images to full quality`)
+}
+
 async function main() {
   console.log('Starting Telegram sync...')
   console.log(`Images will be saved to: ${IMAGES_DIR}`)
@@ -332,6 +469,9 @@ async function main() {
 
   // Backfill tags for existing untagged posts
   await backfillTags()
+
+  // Backfill low-quality images with full-quality via Bot API
+  await backfillImages()
 
   console.log(`\nSync complete. Total new posts: ${totalNew}`)
   await prisma.$disconnect()

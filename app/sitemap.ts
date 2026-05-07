@@ -22,9 +22,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ]
 
-  // Tag pages
+  // Category pages (vacancies)
   const tagRoutes: MetadataRoute.Sitemap = TAG_SLUGS.flatMap((slug) => [
-    { url: `${BASE_URL}/vacancies/tag/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.8 },
+    { url: `${BASE_URL}/vacancies/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.8 },
     { url: `${BASE_URL}/resumes/tag/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.7 },
   ])
 

@@ -12,7 +12,6 @@ const FILTER_CHIPS = [
   'Маркетинг',
   'Менеджер',
   'Таргет',
-  'WordPress',
 ]
 
 const PAGE_SIZE = 10

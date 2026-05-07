@@ -57,7 +57,16 @@ const VkIcon = () => (
   </div>
 )
 
-export default function LeftSidebar() {
+interface LeftSidebarProps {
+  stats?: {
+    vacancyCount: number
+    resumeCount: number
+    companyCount: number
+    newToday: number
+  }
+}
+
+export default function LeftSidebar({ stats }: LeftSidebarProps) {
   return (
     <div className="space-y-6">
       {/* Subscribe cards - wrapped in border container per mockup */}
@@ -78,10 +87,10 @@ export default function LeftSidebar() {
       <div className="bg-bg-card border border-border rounded-xl p-4">
         <h3 className="s-lbl">Платформа</h3>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-text-muted">Вакансий</span><span className="font-semibold text-text">248</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">Резюме</span><span className="font-semibold text-text">1 204</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">Компаний</span><span className="font-semibold text-text">87</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">Новых сегодня</span><span className="font-semibold text-green-600">14</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">Вакансий</span><span className="font-semibold text-text">{stats?.vacancyCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">Резюме</span><span className="font-semibold text-text">{stats?.resumeCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">Компаний</span><span className="font-semibold text-text">{stats?.companyCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">Новых сегодня</span><span className="font-semibold text-green-600">{stats?.newToday?.toLocaleString('ru-RU') ?? '—'}</span></div>
         </div>
       </div>
     </div>

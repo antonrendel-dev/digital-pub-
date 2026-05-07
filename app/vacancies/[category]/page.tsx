@@ -6,28 +6,28 @@ import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
 
 interface Props {
-  params: { tagSlug: string }
+  params: { category: string }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { tagSlug } = params
-  const tag = await getTagBySlug(tagSlug)
-  if (!tag) return { title: 'Тег не найден' }
+  const { category } = params
+  const tag = await getTagBySlug(category)
+  if (!tag) return { title: 'Категория не найдена' }
 
   return {
     title: tag.seoTitle ?? `${tag.name} — вакансии | Диджитал Паб`,
-    description: tag.seoDescription ?? `Вакансии по тегу ${tag.name} на Диджитал Паб.`,
+    description: tag.seoDescription ?? `Вакансии по категории ${tag.name} на Диджитал Паб.`,
   }
 }
 
-export default async function TagPage({ params }: Props) {
-  const { tagSlug } = params
-  const tag = await getTagBySlug(tagSlug)
+export default async function CategoryPage({ params }: Props) {
+  const { category } = params
+  const tag = await getTagBySlug(category)
   if (!tag) notFound()
 
-  const posts = (await getPostsByTag(tagSlug)).filter((p) => p.type === 'vacancy')
+  const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
   const allTags = await getTagsWithCounts()
-  const relatedTags = allTags.filter((t) => t.slug !== tagSlug && t.count > 0).slice(0, 8)
+  const relatedTags = allTags.filter((t) => t.slug !== category && t.count > 0).slice(0, 8)
 
   return (
     <PageShell>
@@ -48,10 +48,10 @@ export default async function TagPage({ params }: Props) {
               {tag.name}-вакансии
             </h1>
             <p className="text-text-muted mb-6">
-              Актуальные вакансии по тегу {tag.name}
+              Актуальные вакансии по категории {tag.name}
             </p>
 
-            {/* Count + sort */}
+            {/* Count */}
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm text-text-muted">
                 Найдено <strong className="text-text">{posts.length}</strong> вакансий
@@ -60,7 +60,7 @@ export default async function TagPage({ params }: Props) {
 
             {posts.length === 0 ? (
               <div className="py-9 text-center text-text-light text-sm border border-dashed border-border rounded-lg">
-                Пока нет вакансий с тегом {tag.name}
+                Пока нет вакансий в категории {tag.name}
               </div>
             ) : (
               <div className="space-y-4">
@@ -91,7 +91,7 @@ export default async function TagPage({ params }: Props) {
                   {relatedTags.map((t) => (
                     <Link
                       key={t.slug}
-                      href={`/vacancies/tag/${t.slug}`}
+                      href={`/vacancies/${t.slug}/`}
                       className="tag-orange px-2.5 py-1 rounded-full text-xs font-medium no-underline hover:opacity-80 transition"
                     >
                       {t.name}
