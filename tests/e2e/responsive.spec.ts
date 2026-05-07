@@ -12,13 +12,14 @@ test.describe('Responsive Design', () => {
   test('mobile: burger menu works', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
     await page.goto('/')
-    // Burger button should be visible
-    const burgerBtn = page.locator('nav button').filter({ has: page.locator('svg path[d*="M4 6h16"]') })
-    if (await burgerBtn.isVisible()) {
-      await burgerBtn.click()
-      // Menu links should appear
-      await expect(page.getByText('Вакансии').first()).toBeVisible()
-    }
+    // Burger button — the last button in nav that's visible on mobile (lg:hidden)
+    const burgerBtn = page.locator('nav button.lg\\:hidden').last()
+    await expect(burgerBtn).toBeVisible()
+    await burgerBtn.click()
+    // Mobile menu should appear with links
+    const mobileMenu = page.locator('.lg\\:hidden.bg-bg-card')
+    await expect(mobileMenu).toBeVisible()
+    await expect(mobileMenu.getByText('Вакансии')).toBeVisible()
   })
 
   test('mobile: sidebars hidden', async ({ page }) => {

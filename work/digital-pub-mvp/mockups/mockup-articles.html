@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Статьи о работе в digital — Диджитал Паб</title>
+  <meta name="description" content="Полезные статьи для фрилансеров и digital-специалистов: карьера, резюме, собеседования, зарплаты.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '#ffcc3e',
+            'accent-hover': '#e6b835',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    .logo-brand em { font-style: italic; font-weight: 700; }
+    .article-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+  </style>
+</head>
+<body class="bg-white text-gray-900 font-sans">
+
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-accent rounded-lg flex items-center justify-center font-bold text-sm">DP</div>
+        <div class="text-lg font-semibold logo-brand">диджитал<em>паб</em></div>
+      </div>
+      <div class="hidden md:flex items-center gap-6">
+        <a href="/" class="text-sm font-medium text-gray-600 hover:text-gray-900">Главная</a>
+        <a href="/vacancies" class="text-sm font-medium text-gray-600 hover:text-gray-900">Вакансии</a>
+        <a href="/resumes" class="text-sm font-medium text-gray-600 hover:text-gray-900">Резюме</a>
+        <a href="/articles" class="text-sm font-medium text-gray-900 border-b-2 border-accent pb-0.5">Статьи</a>
+      </div>
+      <a href="https://t.me/resume_vac_bot" target="_blank" class="bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-4 py-2 rounded-full transition">+ Разместить</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Статьи</h1>
+    <p class="text-gray-500 mb-8">Полезные материалы для фрилансеров и digital-специалистов</p>
+
+    <!-- Articles grid -->
+    <div class="space-y-5">
+      <!-- Article 1 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-6 article-card transition-all duration-200">
+        <div class="flex flex-col md:flex-row md:items-start gap-4">
+          <div class="w-full md:w-48 h-32 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex-shrink-0 flex items-center justify-center text-blue-300 text-xs">[Изображение]</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full">Карьера</span>
+              <span class="text-xs text-gray-400">3 мая 2026</span>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Как пройти техническое собеседование в 2025 году</h2>
+            <p class="text-sm text-gray-600 line-clamp-2">Разбираем основные этапы технических собеседований в IT-компаниях: от скрининга до финального оффера. Что спрашивают, как готовиться, типичные ошибки кандидатов.</p>
+            <div class="mt-3 text-sm text-accent-hover font-medium">Читать &rarr;</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Article 2 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-6 article-card transition-all duration-200">
+        <div class="flex flex-col md:flex-row md:items-start gap-4">
+          <div class="w-full md:w-48 h-32 bg-gradient-to-br from-green-100 to-green-50 rounded-lg flex-shrink-0 flex items-center justify-center text-green-300 text-xs">[Изображение]</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 bg-green-50 text-green-600 text-xs font-medium rounded-full">Резюме</span>
+              <span class="text-xs text-gray-400">1 мая 2026</span>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Резюме на одну страницу: за и против</h2>
+            <p class="text-sm text-gray-600 line-clamp-2">Стоит ли ограничивать резюме одной страницей? Разбираем когда это работает, а когда вредит. Примеры для junior и senior специалистов.</p>
+            <div class="mt-3 text-sm text-accent-hover font-medium">Читать &rarr;</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Article 3 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-6 article-card transition-all duration-200">
+        <div class="flex flex-col md:flex-row md:items-start gap-4">
+          <div class="w-full md:w-48 h-32 bg-gradient-to-br from-amber-100 to-amber-50 rounded-lg flex-shrink-0 flex items-center justify-center text-amber-300 text-xs">[Изображение]</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">Зарплата</span>
+              <span class="text-xs text-gray-400">28 апреля 2026</span>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Зарплатные ожидания: как не продешевить</h2>
+            <p class="text-sm text-gray-600 line-clamp-2">Как определить свою рыночную стоимость, когда называть цифру и что делать, если предлагают меньше. Инструменты для анализа зарплат.</p>
+            <div class="mt-3 text-sm text-accent-hover font-medium">Читать &rarr;</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Article 4 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-6 article-card transition-all duration-200">
+        <div class="flex flex-col md:flex-row md:items-start gap-4">
+          <div class="w-full md:w-48 h-32 bg-gradient-to-br from-purple-100 to-purple-50 rounded-lg flex-shrink-0 flex items-center justify-center text-purple-300 text-xs">[Изображение]</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 bg-purple-50 text-purple-600 text-xs font-medium rounded-full">Фриланс</span>
+              <span class="text-xs text-gray-400">25 апреля 2026</span>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Фриланс в 2026: с чего начать и где искать заказы</h2>
+            <p class="text-sm text-gray-600 line-clamp-2">Полное руководство для начинающих фрилансеров: выбор ниши, создание портфолио, первые клиенты, финансовая подушка и самодисциплина.</p>
+            <div class="mt-3 text-sm text-accent-hover font-medium">Читать &rarr;</div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Article 5 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-6 article-card transition-all duration-200">
+        <div class="flex flex-col md:flex-row md:items-start gap-4">
+          <div class="w-full md:w-48 h-32 bg-gradient-to-br from-rose-100 to-rose-50 rounded-lg flex-shrink-0 flex items-center justify-center text-rose-300 text-xs">[Изображение]</div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-0.5 bg-rose-50 text-rose-600 text-xs font-medium rounded-full">SMM</span>
+              <span class="text-xs text-gray-400">22 апреля 2026</span>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Как составить портфолио SMM-специалисту</h2>
+            <p class="text-sm text-gray-600 line-clamp-2">Что включить в портфолио, как оформить кейсы, какие метрики показывать. Шаблон и примеры успешных портфолио.</p>
+            <div class="mt-3 text-sm text-accent-hover font-medium">Читать &rarr;</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-8 flex items-center justify-center gap-2">
+      <span class="w-9 h-9 flex items-center justify-center bg-accent text-gray-900 font-semibold text-sm rounded-full">1</span>
+      <a href="#" class="w-9 h-9 flex items-center justify-center bg-gray-100 text-gray-600 text-sm rounded-full hover:bg-gray-200 transition">2</a>
+      <a href="#" class="w-9 h-9 flex items-center justify-center bg-gray-100 text-gray-600 text-sm rounded-full hover:bg-gray-200 transition">3</a>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-12 bg-gray-50 border-t border-gray-200 py-6">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 bg-accent rounded-lg flex items-center justify-center font-bold text-[10px]">DP</div>
+        <span class="font-semibold text-gray-700 logo-brand">диджитал<em>паб</em></span>
+      </div>
+      <span class="mt-2 sm:mt-0">&copy; 2026 Диджитал Паб</span>
+    </div>
+  </footer>
+
+</body>
+</html>

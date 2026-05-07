@@ -19,7 +19,7 @@ export default function HomePage({ posts }: HomePageProps) {
 
   useEffect(() => {
     const theme = localStorage.getItem('theme')
-    document.documentElement.setAttribute('data-accent', 'blue')
+    // accent is always yellow per mockups
     if (theme === 'dark') {
       setIsDark(true)
       document.documentElement.setAttribute('data-theme', 'dark')

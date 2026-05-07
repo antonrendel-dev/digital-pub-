@@ -32,6 +32,15 @@ function cleanDescription(text: string): string {
     .trim()
 }
 
+const FORMAT_TAGS = ['Удалёнка', 'Офис', 'Гибрид', 'Фриланс', 'Удалённо']
+const LEVEL_TAGS = ['Junior', 'Middle', 'Senior', 'Junior / Middle', 'Middle+']
+
+function getTagColorClass(tagName: string): string {
+  if (FORMAT_TAGS.some(t => tagName.toLowerCase().includes(t.toLowerCase()))) return 'tag-blue'
+  if (LEVEL_TAGS.some(t => tagName.toLowerCase() === t.toLowerCase())) return 'tag-green'
+  return 'tag-orange'
+}
+
 export default function JobCard({ post }: JobCardProps) {
   const [saved, setSaved] = useState(false)
 
@@ -40,7 +49,7 @@ export default function JobCard({ post }: JobCardProps) {
   return (
     <a
       href={href}
-      className={`block no-underline text-inherit bg-bg-card border border-border rounded-xl p-5 transition-all duration-200 hover:border-text-light hover:shadow-md ${
+      className={`block no-underline text-inherit bg-bg-card border border-border rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
         post.type === 'resume' ? 'border-l-4 border-l-blue-400' : ''
       }`}
     >
@@ -48,7 +57,7 @@ export default function JobCard({ post }: JobCardProps) {
         <h3 className="text-[15px] font-semibold text-text leading-tight tracking-tight">
           {post.title}
           {post.isNew && (
-            <span className="inline-block ml-2 px-2 py-0.5 bg-brand-yellow text-[#111] text-[9px] font-bold rounded align-middle">
+            <span className="inline-block ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full align-middle">
               Новое
             </span>
           )}
@@ -63,7 +72,7 @@ export default function JobCard({ post }: JobCardProps) {
       )}
 
       {post.salary && (
-        <div className="text-sm font-bold text-brand-green mb-2">{post.salary}</div>
+        <div className="text-sm font-semibold text-amber-600 mb-2">{post.salary}</div>
       )}
 
       {post.description && (
@@ -74,11 +83,11 @@ export default function JobCard({ post }: JobCardProps) {
 
       {/* Tags */}
       {post.tags && post.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2">
+        <div className="flex flex-wrap gap-1.5 mb-2">
           {post.tags.map((tag) => (
             <span
               key={tag.id}
-              className="text-[11px] px-2 py-0.5 rounded border border-tag-tp-border bg-tag-tp-bg text-tag-tp-color"
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${getTagColorClass(tag.name)}`}
             >
               {tag.name}
             </span>
@@ -86,17 +95,17 @@ export default function JobCard({ post }: JobCardProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-border-light">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-border-light rounded-md flex items-center justify-center text-[10px] font-bold text-text-light flex-shrink-0">
+          <div className="w-7 h-7 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold">
             {initials(post.title)}
           </div>
-          <span className="text-xs text-text-light">
+          <span className="text-xs text-text-muted">
             {post.type === 'vacancy' ? 'Вакансия' : 'Резюме'}
           </span>
         </div>
         <button
-          className="text-xs text-text-light hover:text-accent bg-transparent border-none cursor-pointer transition-colors"
+          className="text-xs text-text-light hover:text-red-400 bg-transparent border-none cursor-pointer transition-colors"
           onClick={(e) => { e.preventDefault(); setSaved(!saved) }}
         >
           {saved ? '\u2665 Сохранено' : '\u2661 Сохранить'}

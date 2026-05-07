@@ -52,15 +52,15 @@ export default function PostDetail({ post, related }: PostDetailProps) {
         <span className="text-text-light truncate">{post.title}</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-post-layout gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
         {/* Main content */}
         <main className="min-w-0">
-          <div className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
-            <span className="inline-block text-[11px] font-semibold px-2.5 py-1 rounded bg-accent text-accent-text mb-3.5 tracking-wide">
+          <div className="bg-bg-card border border-border rounded-xl p-6 md:p-8 transition-colors duration-200">
+            <span className="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full mb-4">
               {typeLabel}
             </span>
 
-            <h1 className="text-[22px] font-bold text-text tracking-tight leading-snug mb-2.5">{post.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-text mb-3">{post.title}</h1>
 
             <div className="flex items-center gap-3 flex-wrap mb-3.5">
               {post.company && <span className="text-sm font-semibold text-text">{post.company}</span>}
@@ -68,7 +68,9 @@ export default function PostDetail({ post, related }: PostDetailProps) {
             </div>
 
             {post.salary && (
-              <div className="text-xl font-bold text-brand-green mb-5">{post.salary}</div>
+              <div className="inline-block bg-green-50 border border-green-200 rounded-lg px-4 py-2 mb-6">
+                <span className="text-lg font-bold text-green-700">{post.salary}</span>
+              </div>
             )}
 
             {post.imageUrl && (
@@ -83,24 +85,25 @@ export default function PostDetail({ post, related }: PostDetailProps) {
               ))}
             </div>
 
-            <div className="flex gap-2.5 flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border">
               {tgLink ? (
                 <a
                   href={tgLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text rounded-lg text-sm font-semibold no-underline transition-colors"
+                  className="inline-flex items-center justify-center bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-6 py-3 rounded-full no-underline transition-colors min-h-[44px]"
                 >
-                  {post.type === 'vacancy' ? 'Откликнуться в Telegram' : 'Написать в Telegram'}
+                  Откликнуться в Telegram
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                 </a>
               ) : (
-                <button className="inline-flex items-center px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text rounded-lg text-sm font-semibold border-none cursor-pointer transition-colors">
+                <button className="inline-flex items-center justify-center bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-6 py-3 rounded-full border-none cursor-pointer transition-colors min-h-[44px]">
                   {post.type === 'vacancy' ? 'Откликнуться' : 'Написать'}
                 </button>
               )}
               <Link
                 href={typeHref}
-                className="inline-flex items-center px-4 py-2.5 border border-border bg-bg-card text-text-muted rounded-lg text-sm no-underline hover:border-accent hover:text-text transition-all"
+                className="inline-flex items-center justify-center bg-bg-card border border-border hover:bg-border-light text-text-muted font-medium text-sm px-6 py-3 rounded-full no-underline transition-colors min-h-[44px]"
               >
                 &larr; Все {post.type === 'vacancy' ? 'вакансии' : 'резюме'}
               </Link>
@@ -111,53 +114,60 @@ export default function PostDetail({ post, related }: PostDetailProps) {
         {/* Sidebar */}
         <aside className="flex flex-col gap-4">
           {/* Info card */}
-          <div className="bg-bg-card border border-border rounded-xl p-4.5 transition-colors duration-200">
-            <div className="s-lbl mb-3">Информация</div>
-            <div className="space-y-0">
-              <div className="flex justify-between items-start gap-2 py-2 border-b border-border-light text-[12.5px]">
-                <span className="text-text-light flex-shrink-0">Тип</span>
-                <span className="text-text font-medium text-right">{typeLabel}</span>
+          <div className="bg-bg-card border border-border rounded-xl p-5 transition-colors duration-200">
+            <h3 className="text-sm font-semibold text-text mb-4">Информация</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-muted">Тип</span>
+                <span className="font-medium text-text">{typeLabel}</span>
               </div>
               {post.salary && (
-                <div className="flex justify-between items-start gap-2 py-2 border-b border-border-light text-[12.5px]">
-                  <span className="text-text-light flex-shrink-0">Зарплата</span>
-                  <span className="text-brand-green font-bold text-right">{post.salary}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-muted">Зарплата</span>
+                  <span className="font-medium text-green-600">{post.salary}</span>
                 </div>
               )}
-              {post.channelUsername && (
-                <div className="flex justify-between items-start gap-2 py-2 border-b border-border-light text-[12.5px]">
-                  <span className="text-text-light flex-shrink-0">Источник</span>
-                  <span className="text-text font-medium text-right">@{post.channelUsername}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-start gap-2 py-2 text-[12.5px]">
-                <span className="text-text-light flex-shrink-0">Опубликовано</span>
-                <span className="text-text font-medium text-right">{formatDate(post.createdAt)}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-text-muted">Формат</span>
+                <span className="font-medium text-text">Удалённо</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-text-muted">Опубликовано</span>
+                <span className="font-medium text-text">{formatDate(post.createdAt)}</span>
               </div>
             </div>
           </div>
 
           {/* Related */}
           {related.length > 0 && (
-            <div className="bg-bg-card border border-border rounded-xl p-4.5 transition-colors duration-200">
-              <div className="s-lbl mb-3">Похожие</div>
-              {related.map((r) => (
-                <a
-                  key={r.id}
-                  href={r.slug ? `/vacancies/${r.slug}` : `/post/${r.id}`}
-                  className="block py-2.5 border-b border-border-light last:border-none last:pb-0 no-underline group"
-                >
-                  <div className="text-[12.5px] text-text font-medium leading-snug mb-0.5 group-hover:text-accent transition-colors">
-                    {r.title}
-                  </div>
-                  <div className="text-[11px] text-text-light">
-                    {formatDateShort(r.createdAt)}
-                    {r.salary && <> &middot; {r.salary}</>}
-                  </div>
-                </a>
-              ))}
+            <div className="bg-bg-card border border-border rounded-xl p-5 transition-colors duration-200">
+              <h3 className="text-sm font-semibold text-text mb-4">Похожие вакансии</h3>
+              <div className="space-y-4">
+                {related.map((r) => (
+                  <a
+                    key={r.id}
+                    href={r.slug ? `/vacancies/${r.slug}` : `/post/${r.id}`}
+                    className="block no-underline group"
+                  >
+                    <div className="text-sm font-medium text-text-muted group-hover:text-text transition-colors">
+                      {r.title}
+                    </div>
+                    <div className="text-xs text-text-light mt-0.5">
+                      {r.company && <>{r.company} &middot; </>}
+                      {r.salary || formatDateShort(r.createdAt)}
+                    </div>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
+
+          {/* CTA */}
+          <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4 text-center">
+            <div className="text-sm font-semibold text-text mb-2">Вы работодатель?</div>
+            <p className="text-xs text-text-muted mb-3">Разместите вакансию через нашего бота</p>
+            <a href="https://t.me/resume_vac_bot" target="_blank" rel="noopener noreferrer" className="inline-block bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-xs px-4 py-2 rounded-full transition no-underline">Разместить вакансию</a>
+          </div>
         </aside>
       </div>
     </div>

@@ -18,7 +18,7 @@ export default function ListingPage({ posts, type }: ListingPageProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-accent', 'blue')
+    // accent is always yellow per mockups
     const theme = localStorage.getItem('theme')
     if (theme === 'dark') {
       setIsDark(true)

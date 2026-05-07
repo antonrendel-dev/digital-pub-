@@ -6,11 +6,11 @@ import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
 
 interface Props {
-  params: Promise<{ tagSlug: string }>
+  params: { tagSlug: string }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { tagSlug } = await params
+  const { tagSlug } = params
   const tag = await getTagBySlug(tagSlug)
   if (!tag) return { title: 'Тег не найден' }
 
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TagPage({ params }: Props) {
-  const { tagSlug } = await params
+  const { tagSlug } = params
   const tag = await getTagBySlug(tagSlug)
   if (!tag) notFound()
 
@@ -33,51 +33,68 @@ export default async function TagPage({ params }: Props) {
     <PageShell>
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
-          <Link href="/" className="text-text-muted no-underline hover:text-accent transition-colors">Главная</Link>
-          <span className="text-text-light">&rsaquo;</span>
-          <Link href="/vacancies" className="text-text-muted no-underline hover:text-accent transition-colors">Вакансии</Link>
-          <span className="text-text-light">&rsaquo;</span>
-          <span className="text-text-light">{tag.name}</span>
-        </div>
+        <nav className="flex items-center gap-2 text-sm text-text-muted mb-6">
+          <Link href="/" className="no-underline hover:text-text transition-colors">Главная</Link>
+          <span>&#8250;</span>
+          <Link href="/vacancies" className="no-underline hover:text-text transition-colors">Вакансии</Link>
+          <span>&#8250;</span>
+          <span className="text-text">{tag.name}</span>
+        </nav>
 
-        <h1 className="text-2xl font-bold text-text tracking-tight mb-2">
-          Вакансии: {tag.name}
-        </h1>
-        <p className="text-sm text-text-muted mb-6">
-          {posts.length} {posts.length === 1 ? 'вакансия' : 'вакансий'} по тегу {tag.name}
-        </p>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-          {/* Main content */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
+          {/* Content */}
           <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">
+              {tag.name}-вакансии
+            </h1>
+            <p className="text-text-muted mb-6">
+              Актуальные вакансии по тегу {tag.name}
+            </p>
+
+            {/* Count + sort */}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-text-muted">
+                Найдено <strong className="text-text">{posts.length}</strong> вакансий
+              </span>
+            </div>
+
             {posts.length === 0 ? (
               <div className="py-9 text-center text-text-light text-sm border border-dashed border-border rounded-lg">
                 Пока нет вакансий с тегом {tag.name}
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {posts.map((post) => (
                   <JobCard key={post.id} post={post} />
                 ))}
               </div>
             )}
+
+            {/* SEO text */}
+            {tag.seoText && (
+              <article className="mt-12 pt-8 border-t border-border">
+                <h2 className="text-xl font-bold text-text mb-4">Работа в {tag.name}</h2>
+                <div className="prose prose-sm text-text-muted space-y-3">
+                  <p>{tag.seoText}</p>
+                </div>
+              </article>
+            )}
           </div>
 
           {/* Sidebar */}
-          <aside className="hidden lg:flex flex-col gap-4">
+          <aside className="hidden lg:block space-y-6">
             {/* Related tags */}
             {relatedTags.length > 0 && (
               <div className="bg-bg-card border border-border rounded-xl p-4">
-                <div className="s-lbl mb-3">Связанные теги</div>
+                <h3 className="text-sm font-semibold text-text-muted mb-3">Похожие теги</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {relatedTags.map((t) => (
                     <Link
                       key={t.slug}
                       href={`/vacancies/tag/${t.slug}`}
-                      className="px-2.5 py-1 rounded text-xs border border-border bg-bg-card text-text-muted no-underline hover:border-accent hover:text-text transition-all"
+                      className="tag-orange px-2.5 py-1 rounded-full text-xs font-medium no-underline hover:opacity-80 transition"
                     >
-                      {t.name} ({t.count})
+                      {t.name}
                     </Link>
                   ))}
                 </div>
@@ -85,26 +102,20 @@ export default async function TagPage({ params }: Props) {
             )}
 
             {/* CTA */}
-            <div className="bg-bg-card border border-border rounded-xl p-4 text-center">
-              <p className="text-sm text-text-muted mb-3">Хотите разместить вакансию?</p>
+            <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4 text-center">
+              <div className="text-sm font-semibold text-text mb-2">Ищете {tag.name}-специалиста?</div>
+              <p className="text-xs text-text-muted mb-3">Разместите вакансию через нашего бота и получите отклики из сообщества</p>
               <a
                 href="https://t.me/resume_vac_bot"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-sm font-semibold rounded-full transition-colors no-underline"
+                className="inline-block bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-4 py-2 rounded-full transition no-underline"
               >
-                + Разместить
+                Разместить вакансию
               </a>
             </div>
           </aside>
         </div>
-
-        {/* SEO text */}
-        {tag.seoText && (
-          <div className="mt-8 pt-6 border-t border-border-light">
-            <p className="text-sm text-text-muted leading-relaxed">{tag.seoText}</p>
-          </div>
-        )}
       </div>
     </PageShell>
   )

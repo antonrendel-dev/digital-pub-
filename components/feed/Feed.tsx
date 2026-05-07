@@ -162,18 +162,20 @@ export default function Feed({
         </div>
       ) : (
         <>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {sorted.slice(0, visible).map((post) => (
               <JobCard key={post.id} post={post} />
             ))}
           </div>
           {visible < sorted.length && (
-            <button
-              className="w-full mt-4 py-2.5 border border-border rounded-full bg-bg-card text-sm text-text-light hover:border-text-light hover:text-text cursor-pointer transition-all"
-              onClick={() => setVisible((v) => v + PAGE_SIZE)}
-            >
-              Показать ещё
-            </button>
+            <div className="mt-6 text-center">
+              <button
+                className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 rounded-full cursor-pointer transition border-none"
+                onClick={() => setVisible((v) => v + PAGE_SIZE)}
+              >
+                Показать ещё
+              </button>
+            </div>
           )}
         </>
       )}

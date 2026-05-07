@@ -7,11 +7,11 @@ import PostDetail from '@/components/PostDetail'
 const idSchema = z.string().regex(/^\d{1,10}$/)
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: { id: string }
 }
 
 export default async function PostPage({ params }: Props) {
-  const { id: rawId } = await params
+  const { id: rawId } = params
   const parsed = idSchema.safeParse(rawId)
   if (!parsed.success) notFound()
   const id = parseInt(parsed.data, 10)

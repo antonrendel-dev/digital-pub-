@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=800, initial-scale=1.0">
+  <title>Как пройти техническое собеседование в 2025 году — Диджитал Паб (Планшет)</title>
+  <meta name="description" content="Разбираем основные этапы технических собеседований в IT-компаниях: от скрининга до финального оффера.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '#ffcc3e',
+            'accent-hover': '#e6b835',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { max-width: 800px; margin: 0 auto; }
+    .logo-brand em { font-style: italic; font-weight: 700; color: #ffcc3e; }
+
+    /* Search animation */
+    .search-field {
+      overflow: hidden;
+      width: 0;
+      opacity: 0;
+      transition: width 0.3s ease, opacity 0.2s ease;
+    }
+    .search-wrap.open .search-field {
+      width: 200px;
+      opacity: 1;
+      margin-right: 6px;
+    }
+    .search-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #d4d4d4;
+      border-radius: 8px;
+      background: #fff;
+      color: #777;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .search-icon-btn:hover { color: #ffcc3e; border-color: #ffcc3e; }
+    .search-field input {
+      width: 100%;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid #d4d4d4;
+      border-radius: 8px;
+      background: #fff;
+      color: #111;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-field input:focus { border-color: #ffcc3e; }
+
+    /* TOC sticky bar */
+    .toc-bar {
+      position: sticky;
+      top: 57px;
+      z-index: 40;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      overflow-x: auto;
+    }
+    .toc-link-h {
+      white-space: nowrap;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .toc-link-h:hover { color: #111; }
+    .toc-link-h.active { color: #111; border-bottom-color: #ffcc3e; font-weight: 500; }
+
+    /* Prose styling */
+    .prose h2 { scroll-margin-top: 110px; }
+    .prose blockquote { border-left: 3px solid #ffcc3e; background: #fffbeb; padding: 12px 16px; border-radius: 0 8px 8px 0; }
+    .prose code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    .prose pre { background: #1f2937; color: #e5e7eb; padding: 16px; border-radius: 8px; overflow-x: auto; }
+    .prose pre code { background: none; padding: 0; color: inherit; }
+
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 font-sans">
+
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <img src="logo.png" alt="Диджитал Паб" class="w-10 h-10 rounded-lg" style="object-fit: contain;">
+        <span class="text-base font-semibold logo-brand">диджитал<em>паб</em></span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Главная</a>
+        <a href="/vacancies" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Вакансии</a>
+        <a href="/resumes" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Резюме</a>
+        <a href="/articles" class="text-sm font-medium text-gray-900 border-b-2 border-accent pb-0.5">Статьи</a>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <div class="search-wrap flex items-center" id="searchWrap">
+          <div class="search-field">
+            <input type="text" placeholder="Поиск статей..." id="searchInput">
+          </div>
+          <button class="search-icon-btn" id="searchToggle" title="Поиск">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </div>
+        <a href="https://t.me/resume_vac_bot" target="_blank" class="bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-3.5 py-2 rounded-full transition whitespace-nowrap">+ Разместить</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Table of Contents (sticky horizontal bar) -->
+  <div class="toc-bar">
+    <div class="flex px-4 scrollbar-hide overflow-x-auto">
+      <a href="#section-1" class="toc-link-h active">1. Этапы собеседования</a>
+      <a href="#section-2" class="toc-link-h">2. Подготовка к скринингу</a>
+      <a href="#section-3" class="toc-link-h">3. Алгоритмические задачи</a>
+      <a href="#section-4" class="toc-link-h">4. Тестовое задание</a>
+      <a href="#section-5" class="toc-link-h">5. Типичные ошибки</a>
+      <a href="#section-6" class="toc-link-h">Заключение</a>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <main class="px-4 py-6">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+      <a href="/" class="hover:text-gray-700">Главная</a>
+      <span>&#8250;</span>
+      <a href="/articles" class="hover:text-gray-700">Статьи</a>
+      <span>&#8250;</span>
+      <span class="text-gray-900 truncate max-w-[400px]">Как пройти техническое собеседование в 2025 году</span>
+    </nav>
+
+    <!-- Article content (full width, no sidebar) -->
+    <article>
+      <div class="bg-white border border-gray-200 rounded-xl p-6">
+        <!-- Category badge -->
+        <span class="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full mb-4">Карьера</span>
+
+        <!-- Title -->
+        <h1 class="text-2xl font-bold text-gray-900 mb-4 leading-tight">Как пройти техническое собеседование в 2025 году</h1>
+
+        <!-- Meta -->
+        <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-6">
+          <span class="font-medium text-gray-700">Алексей Петров</span>
+          <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+          <span>3 мая 2026</span>
+          <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+          <span>8 мин чтения</span>
+        </div>
+
+        <!-- Hero image placeholder -->
+        <div class="w-full h-48 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg mb-8 flex items-center justify-center text-blue-300 text-sm">[Изображение статьи]</div>
+
+        <!-- Article body -->
+        <div class="prose max-w-none text-gray-700 space-y-4" style="max-width: 680px;">
+          <p class="text-lg text-gray-600 leading-relaxed">Техническое собеседование в IT-компании — это многоступенчатый процесс, который требует серьёзной подготовки. В этой статье разберём каждый этап и дадим конкретные рекомендации.</p>
+
+          <h2 id="section-1" class="text-xl font-bold text-gray-900 mt-8 mb-3">1. Этапы технического собеседования</h2>
+          <p>Большинство компаний используют стандартную воронку из 3-5 этапов. Понимание каждого из них поможет правильно распределить силы при подготовке.</p>
+          <ul class="list-disc pl-5 space-y-1.5 text-gray-600">
+            <li><strong>Скрининг HR</strong> — первичный созвон на 15-20 минут для оценки soft skills и мотивации</li>
+            <li><strong>Техническое интервью</strong> — разговор с тимлидом или senior-разработчиком о технологиях</li>
+            <li><strong>Тестовое задание</strong> — практическая задача на 2-8 часов работы</li>
+            <li><strong>Live coding</strong> — решение алгоритмических задач в режиме реального времени</li>
+            <li><strong>Финальное собеседование</strong> — встреча с руководителем, обсуждение условий</li>
+          </ul>
+
+          <h2 id="section-2" class="text-xl font-bold text-gray-900 mt-8 mb-3">2. Подготовка к скринингу</h2>
+          <p>На этапе скрининга HR оценивает вашу адекватность, мотивацию и совпадение по зарплатным ожиданиям. Ключевые вопросы:</p>
+          <blockquote>
+            <p><strong>Совет:</strong> Подготовьте короткий рассказ о себе на 2-3 минуты. Включите текущую роль, ключевые достижения и причину поиска новой работы.</p>
+          </blockquote>
+
+          <h2 id="section-3" class="text-xl font-bold text-gray-900 mt-8 mb-3">3. Как решать алгоритмические задачи</h2>
+          <p>Live coding — самый стрессовый этап для большинства кандидатов. Вот проверенный фреймворк:</p>
+          <ol class="list-decimal pl-5 space-y-1.5 text-gray-600">
+            <li>Уточните условие задачи и граничные случаи</li>
+            <li>Проговорите подход вслух перед кодированием</li>
+            <li>Начните с brute-force решения, затем оптимизируйте</li>
+            <li>Протестируйте на примерах</li>
+          </ol>
+
+          <p>Пример решения задачи на Python:</p>
+          <pre><code>def two_sum(nums, target):
+    seen = {}
+    for i, num in enumerate(nums):
+        complement = target - num
+        if complement in seen:
+            return [seen[complement], i]
+        seen[num] = i
+    return []</code></pre>
+
+          <h2 id="section-4" class="text-xl font-bold text-gray-900 mt-8 mb-3">4. Тестовое задание: что оценивают</h2>
+          <p>Работодатели обращают внимание не только на работающий код, но и на:</p>
+          <ul class="list-disc pl-5 space-y-1.5 text-gray-600">
+            <li>Структуру проекта и организацию файлов</li>
+            <li>Качество кода: именование, комментарии, DRY-принцип</li>
+            <li>Наличие тестов (хотя бы базовых)</li>
+            <li>README с инструкцией по запуску</li>
+            <li>Git-историю с осмысленными коммитами</li>
+          </ul>
+
+          <h2 id="section-5" class="text-xl font-bold text-gray-900 mt-8 mb-3">5. Типичные ошибки кандидатов</h2>
+          <p>За годы проведения собеседований мы выделили главные ошибки:</p>
+          <ul class="list-disc pl-5 space-y-1.5 text-gray-600">
+            <li>Молчание при решении задачи — всегда проговаривайте мысли</li>
+            <li>Завышенные зарплатные ожидания без аргументации</li>
+            <li>Негатив о предыдущих работодателях</li>
+            <li>Отсутствие вопросов к интервьюеру</li>
+          </ul>
+
+          <blockquote>
+            <p><strong>Важно:</strong> Собеседование — это двусторонний процесс. Вы тоже оцениваете компанию. Подготовьте 3-5 вопросов о команде, процессах и культуре.</p>
+          </blockquote>
+
+          <h2 id="section-6" class="text-xl font-bold text-gray-900 mt-8 mb-3">Заключение</h2>
+          <p>Успех на техническом собеседовании — это 70% подготовки и 30% спокойствия. Практикуйтесь на mock-интервью, изучайте типовые вопросы и помните: отказ — это не приговор, а обратная связь для роста.</p>
+        </div>
+
+        <!-- Tags -->
+        <div class="flex flex-wrap gap-2 mt-8 pt-6 border-t border-gray-200">
+          <a href="#" class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-full hover:bg-blue-100 transition">Карьера</a>
+          <a href="#" class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-200 transition">Собеседование</a>
+          <a href="#" class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-200 transition">IT</a>
+          <a href="#" class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-200 transition">Советы</a>
+        </div>
+
+        <!-- Share / back -->
+        <div class="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
+          <a href="/articles" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Все статьи
+          </a>
+          <div class="flex items-center gap-2 text-sm text-gray-500">
+            <span>Поделиться:</span>
+            <a href="#" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+            </a>
+            <a href="#" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M18.4 8.2h-2.07a.47.47 0 0 0-.41.24s-.82 1.52-1.09 2.03c-.71 1.37-1.17.94-1.17.31V8.55a.69.69 0 0 0-.69-.69h-1.55a1.24 1.24 0 0 0-1.1.51s.79-.13.79.93c0 .26.01 1.02.03 1.65a.46.46 0 0 1-.8.32A13.46 13.46 0 0 1 8.78 8.4a.43.43 0 0 0-.4-.25H6.64a.32.32 0 0 0-.3.43c.56 1.57 3.01 6.45 5.8 6.45h1.17a.47.47 0 0 0 .47-.47v-.71a.46.46 0 0 1 .77-.33l1.4 1.33a.69.69 0 0 0 .47.18h1.85c.89 0 .89-.62.4-1.1-.34-.33-1.57-1.63-1.57-1.63a.64.64 0 0 1-.05-.83c.4-.52 1.05-1.38 1.33-1.75.38-.5 1.06-1.57.12-1.57z" fill="white"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Related articles (2-column grid, below article) -->
+    <div class="mt-8">
+      <h3 class="text-lg font-bold text-gray-900 mb-4">Похожие статьи</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <a href="#" class="block bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <span class="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-semibold rounded-full mb-2">Карьера</span>
+          <div class="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">Резюме на одну страницу: за и против</div>
+          <p class="text-xs text-gray-500 line-clamp-2 mb-2">Как уместить весь опыт в одну страницу и стоит ли это делать. Мнения HR-специалистов.</p>
+          <div class="text-xs text-gray-400">1 мая 2026 &middot; 5 мин</div>
+        </a>
+        <a href="#" class="block bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <span class="inline-block px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-semibold rounded-full mb-2">Зарплаты</span>
+          <div class="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">Зарплатные ожидания: как не продешевить</div>
+          <p class="text-xs text-gray-500 line-clamp-2 mb-2">Стратегии переговоров о зарплате и типичные ошибки, которые стоят кандидатам денег.</p>
+          <div class="text-xs text-gray-400">28 апреля 2026 &middot; 6 мин</div>
+        </a>
+        <a href="#" class="block bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <span class="inline-block px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-semibold rounded-full mb-2">Фриланс</span>
+          <div class="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">Фриланс в 2026: с чего начать</div>
+          <p class="text-xs text-gray-500 line-clamp-2 mb-2">Пошаговый план выхода на фриланс: от первого проекта до стабильного дохода.</p>
+          <div class="text-xs text-gray-400">25 апреля 2026 &middot; 10 мин</div>
+        </a>
+        <a href="#" class="block bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <span class="inline-block px-2 py-0.5 bg-purple-50 text-purple-600 text-[10px] font-semibold rounded-full mb-2">Навыки</span>
+          <div class="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">Топ-10 навыков для digital-маркетолога</div>
+          <p class="text-xs text-gray-500 line-clamp-2 mb-2">Какие hard и soft skills искать в вакансиях и как прокачать каждый из них.</p>
+          <div class="text-xs text-gray-400">20 апреля 2026 &middot; 7 мин</div>
+        </a>
+      </div>
+    </div>
+
+    <!-- CTA Telegram block -->
+    <div class="mt-8 bg-amber-50 border border-amber-200/50 rounded-xl p-6 text-center">
+      <div class="text-lg font-semibold text-gray-900 mb-2">Новые статьи в Telegram</div>
+      <p class="text-sm text-gray-600 mb-4">Подпишитесь на канал, чтобы получать полезные материалы о карьере в digital первыми</p>
+      <a href="https://t.me/web_vacancy" target="_blank" class="inline-block bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-6 py-2.5 rounded-full transition">Подписаться на канал</a>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-12 bg-gray-50 border-t border-gray-200">
+    <div class="px-4 py-10">
+      <div class="grid grid-cols-2 gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <img src="logo.png" alt="Диджитал Паб" class="w-9 h-9 rounded-lg" style="object-fit: contain;">
+            <span class="font-semibold logo-brand">диджитал<em>паб</em></span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Место, где встречаются хорошие люди</p>
+          <p class="text-xs text-gray-400 mt-1">Вакансии и резюме из Telegram-каналов. Находи быстро, откликайся легко.</p>
+        </div>
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-3">Навигация</div>
+          <div class="space-y-2">
+            <a href="#" class="block text-sm text-gray-500 hover:text-gray-700">Вакансии</a>
+            <a href="#" class="block text-sm text-gray-500 hover:text-gray-700">Резюме</a>
+            <a href="#" class="block text-sm text-gray-500 hover:text-gray-700">Статьи</a>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-3">Мы в соцсетях</div>
+          <div class="flex items-center gap-3">
+            <a href="https://t.me/web_vacancy" target="_blank" rel="noopener noreferrer" aria-label="Telegram" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#26A5E4'" onmouseleave="this.style.color='#9ca3af'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+            </a>
+            <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" rel="noopener noreferrer" aria-label="Макс" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#8B5CF6'" onmouseleave="this.style.color='#9ca3af'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M7 9.5C7 8.12 8.12 7 9.5 7h5C15.88 7 17 8.12 17 9.5v3c0 1.38-1.12 2.5-2.5 2.5H13l-2.5 2v-2H9.5C8.12 15 7 13.88 7 12.5v-3z" fill="white"/></svg>
+            </a>
+            <a href="https://vk.com/digital_pub_vacancies" target="_blank" rel="noopener noreferrer" aria-label="ВКонтакте" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#0077FF'" onmouseleave="this.style.color='#9ca3af'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M18.4 8.2h-2.07a.47.47 0 0 0-.41.24s-.82 1.52-1.09 2.03c-.71 1.37-1.17.94-1.17.31V8.55a.69.69 0 0 0-.69-.69h-1.55a1.24 1.24 0 0 0-1.1.51s.79-.13.79.93c0 .26.01 1.02.03 1.65a.46.46 0 0 1-.8.32A13.46 13.46 0 0 1 8.78 8.4a.43.43 0 0 0-.4-.25H6.64a.32.32 0 0 0-.3.43c.56 1.57 3.01 6.45 5.8 6.45h1.17a.47.47 0 0 0 .47-.47v-.71a.46.46 0 0 1 .77-.33l1.4 1.33a.69.69 0 0 0 .47.18h1.85c.89 0 .89-.62.4-1.1-.34-.33-1.57-1.63-1.57-1.63a.64.64 0 0 1-.05-.83c.4-.52 1.05-1.38 1.33-1.75.38-.5 1.06-1.57.12-1.57z" fill="white"/></svg>
+            </a>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-3">Работодателям</div>
+          <div class="space-y-2">
+            <a href="https://t.me/resume_vac_bot" target="_blank" class="block text-sm text-gray-500 hover:text-gray-700">Разместить вакансию</a>
+            <a href="https://t.me/resume_vac_bot" target="_blank" class="block text-sm text-gray-500 hover:text-gray-700">Реклама</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="border-t border-gray-200 py-4">
+      <div class="px-4 flex items-center justify-between text-xs text-gray-400">
+        <span>&copy; 2026 Диджитал Паб</span>
+        <div class="flex gap-4">
+          <a href="#" class="hover:text-gray-600">Политика конфиденциальности</a>
+          <a href="#" class="hover:text-gray-600">Условия использования</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Search toggle script -->
+  <script>
+    (function() {
+      const wrap = document.getElementById('searchWrap');
+      const btn = document.getElementById('searchToggle');
+      const input = document.getElementById('searchInput');
+
+      btn.addEventListener('click', function() {
+        const isOpen = wrap.classList.contains('open');
+        if (isOpen) {
+          if (input.value.trim()) {
+            console.log('Search:', input.value.trim());
+          } else {
+            wrap.classList.remove('open');
+          }
+        } else {
+          wrap.classList.add('open');
+          setTimeout(function() { input.focus(); }, 300);
+        }
+      });
+
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { wrap.classList.remove('open'); input.value = ''; }
+        if (e.key === 'Enter' && input.value.trim()) { console.log('Search:', input.value.trim()); }
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!wrap.contains(e.target) && wrap.classList.contains('open')) { wrap.classList.remove('open'); input.value = ''; }
+      });
+    })();
+
+    // TOC active state on scroll
+    (function() {
+      const sections = document.querySelectorAll('.prose h2[id]');
+      const tocLinks = document.querySelectorAll('.toc-link-h');
+
+      window.addEventListener('scroll', function() {
+        let current = '';
+        sections.forEach(function(section) {
+          const sectionTop = section.offsetTop;
+          if (pageYOffset >= sectionTop - 120) {
+            current = section.getAttribute('id');
+          }
+        });
+
+        tocLinks.forEach(function(link) {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + current) {
+            link.classList.add('active');
+          }
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>

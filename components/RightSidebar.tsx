@@ -1,8 +1,26 @@
-import { CLOUD_TAGS } from '@/lib/data'
+import Link from 'next/link'
 
 interface RightSidebarProps {
   onTagClick: (tag: string) => void
 }
+
+const TAG_GROUPS = [
+  {
+    label: 'Специализация',
+    colorClass: 'tag-orange',
+    tags: ['SMM', 'SEO', 'Дизайнер', 'Маркетолог', 'Менеджер', 'Директ', 'Figma', 'Таргетолог', 'Контекстолог', 'Проджект'],
+  },
+  {
+    label: 'Формат работы',
+    colorClass: 'tag-blue',
+    tags: ['Удалёнка', 'Офис', 'Гибрид', 'Фриланс'],
+  },
+  {
+    label: 'Уровень',
+    colorClass: 'tag-green',
+    tags: ['Junior', 'Middle', 'Senior'],
+  },
+]
 
 const CATEGORIES = [
   { name: 'SMM и маркетинг', count: 10 },
@@ -22,52 +40,58 @@ const ARTICLES = [
 export default function RightSidebar({ onTagClick }: RightSidebarProps) {
   return (
     <div className="space-y-6">
-      {/* Tag cloud */}
-      <div>
+      {/* Tag cloud - grouped by type */}
+      <div className="bg-bg-card border border-border rounded-xl p-4">
         <h3 className="s-lbl">Популярные теги</h3>
-        <div className="flex flex-wrap gap-1">
-          {CLOUD_TAGS.map((tag) => (
-            <button
-              key={tag.t}
-              className={`px-2.5 py-1 rounded border border-border bg-bg-card text-text-muted cursor-pointer transition-all hover:border-accent hover:text-text ${
-                tag.s === 'lg' ? 'text-[13px]' : tag.s === 'sm' ? 'text-[10px]' : 'text-[11px]'
-              }`}
-              onClick={() => onTagClick(tag.t)}
-            >
-              {tag.t}
-            </button>
-          ))}
-        </div>
+
+        {TAG_GROUPS.map((group) => (
+          <div key={group.label} className="mb-3 last:mb-0">
+            <div className="text-[9px] uppercase tracking-wide text-text-light font-medium mb-1">
+              {group.label}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {group.tags.map((tag) => (
+                <button
+                  key={tag}
+                  className={`${group.colorClass} px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition cursor-pointer border-none`}
+                  onClick={() => onTagClick(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Categories */}
-      <div>
+      <div className="bg-bg-card border border-border rounded-xl p-4">
         <h3 className="s-lbl">Категории</h3>
-        <div className="space-y-0">
+        <div className="space-y-2">
           {CATEGORIES.map((cat) => (
             <a
               key={cat.name}
               href="#"
-              className="flex justify-between items-center py-1.5 border-b border-border-light text-sm text-text-muted no-underline hover:text-accent transition-colors"
+              className="flex justify-between text-sm text-text-muted no-underline hover:text-text transition-colors"
             >
               <span>{cat.name}</span>
-              <span className="text-[11px] text-text-light">{cat.count}</span>
+              <span className="text-text-light">{cat.count}</span>
             </a>
           ))}
         </div>
       </div>
 
       {/* Articles */}
-      <div>
+      <div className="bg-bg-card border border-border rounded-xl p-4">
         <h3 className="s-lbl">Статьи</h3>
-        <div className="space-y-0">
+        <div className="space-y-3">
           {ARTICLES.map((article) => (
-            <div key={article.title} className="py-2 border-b border-border-light">
-              <a href="#" className="text-[11.5px] text-text-muted no-underline leading-snug block hover:text-accent transition-colors">
+            <Link key={article.title} href="/articles" className="block group no-underline">
+              <div className="text-sm text-text-muted group-hover:text-text font-medium transition-colors">
                 {article.title}
-              </a>
-              <div className="text-[10px] text-text-light mt-0.5">{article.date}</div>
-            </div>
+              </div>
+              <div className="text-xs text-text-light mt-0.5">{article.date}</div>
+            </Link>
           ))}
         </div>
       </div>

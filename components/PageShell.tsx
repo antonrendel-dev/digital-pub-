@@ -8,7 +8,7 @@ export default function PageShell({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-accent', 'blue')
+    // accent is always yellow per mockups
     const theme = localStorage.getItem('theme')
     if (theme === 'dark') {
       setIsDark(true)

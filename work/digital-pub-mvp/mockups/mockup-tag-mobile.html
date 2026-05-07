@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0">
+  <title>SMM-вакансии — Диджитал Паб</title>
+  <meta name="description" content="Свежие SMM-вакансии: удалённая работа, фриланс, полная занятость.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '#ffcc3e',
+            'accent-hover': '#e6b835',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { max-width: 375px; margin: 0 auto; }
+    .logo-brand em { font-style: italic; font-weight: 700; }
+    .burger-menu { display: none; }
+    .burger-menu.open { display: block; }
+    .search-overlay { display: none; position: fixed; inset: 0; z-index: 100; background: white; }
+    .search-overlay.open { display: block; }
+    .tag-blue { background: #e8f4fd; color: #1a73e8; }
+    .tag-green { background: #e6f7ed; color: #1f8a50; }
+    .tag-orange { background: #fff3e0; color: #e65100; }
+    .tile-card:active { transform: scale(0.98); }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+
+  <!-- Mobile Navbar -->
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 bg-accent rounded-lg flex items-center justify-center font-bold text-sm">DP</div>
+        <div class="text-base font-semibold logo-brand">диджитал<em>паб</em></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="document.getElementById('searchOverlay').classList.add('open'); document.getElementById('searchInput').focus();" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+        <button onclick="document.getElementById('mobileMenu').classList.toggle('open')" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobileMenu" class="burger-menu bg-white border-t border-gray-100 px-4 py-4 space-y-1">
+      <a href="#" class="block py-3 px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Главная</a>
+      <a href="#" class="block py-3 px-3 text-sm font-medium text-gray-900 bg-accent/10 rounded-lg">Вакансии</a>
+      <a href="#" class="block py-3 px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Резюме</a>
+      <a href="#" class="block py-3 px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Статьи</a>
+      <div class="pt-3 border-t border-gray-100 mt-3">
+        <a href="https://t.me/resume_vac_bot" target="_blank" class="block w-full text-center bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm py-3 rounded-full transition">+ Разместить</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="px-4 py-4">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
+      <a href="/" class="hover:text-gray-700">Главная</a>
+      <span>&#8250;</span>
+      <a href="/vacancies" class="hover:text-gray-700">Вакансии</a>
+      <span>&#8250;</span>
+      <span class="text-gray-700">SMM</span>
+    </nav>
+
+    <!-- H1 -->
+    <h1 class="text-xl font-bold text-gray-900 mb-1">SMM-вакансии</h1>
+    <p class="text-xs text-gray-500 mb-4">Актуальные вакансии в сфере SMM</p>
+
+    <!-- Count + sort -->
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-xs text-gray-500">Найдено <strong>10</strong></span>
+      <select class="text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 min-h-[36px]">
+        <option>По дате</option>
+        <option>По зарплате</option>
+      </select>
+    </div>
+
+    <!-- Compact tile cards (1 column, more compact than homepage) -->
+    <div class="space-y-2.5">
+      <!-- Tile 1 -->
+      <a href="#" class="tile-card block bg-white border border-gray-200 rounded-xl p-3.5 transition-all duration-150">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">T</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <h2 class="text-sm font-semibold text-gray-900 truncate">SMM-менеджер в IT-стартап</h2>
+              <span class="px-1.5 py-0.5 bg-green-100 text-green-700 text-[9px] font-medium rounded-full flex-shrink-0">Новое</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <span>TechVibe Agency</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>2 ч.</span>
+            </div>
+            <div class="text-sm font-semibold text-amber-600 mb-1.5">80-120k &#8381;</div>
+            <div class="flex flex-wrap gap-1">
+              <span class="tag-orange px-2 py-0.5 rounded-full text-[10px]">SMM</span>
+              <span class="tag-blue px-2 py-0.5 rounded-full text-[10px]">Удалёнка</span>
+              <span class="tag-green px-2 py-0.5 rounded-full text-[10px]">Middle</span>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Tile 2 -->
+      <a href="#" class="tile-card block bg-white border border-gray-200 rounded-xl p-3.5 transition-all duration-150">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">C</div>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-sm font-semibold text-gray-900 truncate mb-0.5">SMM-специалист (Telegram + ВК)</h2>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <span>ContentHub</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>5 ч.</span>
+            </div>
+            <div class="text-sm font-semibold text-amber-600 mb-1.5">60-90k &#8381;</div>
+            <div class="flex flex-wrap gap-1">
+              <span class="tag-orange px-2 py-0.5 rounded-full text-[10px]">SMM</span>
+              <span class="tag-blue px-2 py-0.5 rounded-full text-[10px]">Гибрид</span>
+              <span class="tag-green px-2 py-0.5 rounded-full text-[10px]">Junior</span>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Tile 3 -->
+      <a href="#" class="tile-card block bg-white border border-gray-200 rounded-xl p-3.5 transition-all duration-150">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">O</div>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-sm font-semibold text-gray-900 truncate mb-0.5">Head of SMM</h2>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <span>Ozon Fresh</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>Вчера</span>
+            </div>
+            <div class="text-sm font-semibold text-amber-600 mb-1.5">150-220k &#8381;</div>
+            <div class="flex flex-wrap gap-1">
+              <span class="tag-orange px-2 py-0.5 rounded-full text-[10px]">SMM</span>
+              <span class="tag-blue px-2 py-0.5 rounded-full text-[10px]">Офис</span>
+              <span class="tag-green px-2 py-0.5 rounded-full text-[10px]">Senior</span>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Tile 4 -->
+      <a href="#" class="tile-card block bg-white border border-gray-200 rounded-xl p-3.5 transition-all duration-150">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-pink-100 text-pink-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">B</div>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-sm font-semibold text-gray-900 truncate mb-0.5">Контент-мейкер для Instagram</h2>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <span>Beauty Brand</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>2 дня</span>
+            </div>
+            <div class="text-sm font-semibold text-amber-600 mb-1.5">50-80k &#8381;</div>
+            <div class="flex flex-wrap gap-1">
+              <span class="tag-orange px-2 py-0.5 rounded-full text-[10px]">SMM</span>
+              <span class="tag-blue px-2 py-0.5 rounded-full text-[10px]">Удалёнка</span>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Tile 5 -->
+      <a href="#" class="tile-card block bg-white border border-gray-200 rounded-xl p-3.5 transition-all duration-150">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">S</div>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-sm font-semibold text-gray-900 truncate mb-0.5">SMM-менеджер (B2B SaaS)</h2>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+              <span>SalesForce.ru</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>3 дня</span>
+            </div>
+            <div class="text-sm font-semibold text-amber-600 mb-1.5">90-130k &#8381;</div>
+            <div class="flex flex-wrap gap-1">
+              <span class="tag-orange px-2 py-0.5 rounded-full text-[10px]">SMM</span>
+              <span class="tag-blue px-2 py-0.5 rounded-full text-[10px]">Гибрид</span>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Load more -->
+    <div class="mt-5 mb-6">
+      <button class="w-full py-3 bg-white border border-gray-200 text-sm font-medium text-gray-700 rounded-full min-h-[44px]">Показать ещё</button>
+    </div>
+  </main>
+
+  <!-- Mobile Footer -->
+  <footer class="bg-gray-50 border-t border-gray-200 px-4 py-8">
+    <div class="flex items-center gap-2 mb-2">
+      <img src="logo.png" alt="Диджитал Паб" class="w-9 h-9 rounded-lg" style="object-fit: contain;">
+      <span class="text-sm font-semibold logo-brand">диджитал<em>паб</em></span>
+    </div>
+    <p class="text-xs text-gray-500 mb-1">Место, где встречаются хорошие люди</p>
+    <p class="text-[11px] text-gray-400 mb-5">Вакансии и резюме из Telegram-каналов. Находи быстро, откликайся легко.</p>
+
+    <div class="grid grid-cols-3 gap-4 mb-5">
+      <div>
+        <div class="text-xs font-semibold text-gray-700 mb-2">Навигация</div>
+        <div class="space-y-1.5 text-xs text-gray-500">
+          <a href="#" class="block hover:text-gray-700">Вакансии</a>
+          <a href="#" class="block hover:text-gray-700">Резюме</a>
+          <a href="#" class="block hover:text-gray-700">Статьи</a>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs font-semibold text-gray-700 mb-2">Соцсети</div>
+        <div class="flex items-center gap-2.5">
+          <a href="https://t.me/web_vacancy" target="_blank" aria-label="Telegram" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#26A5E4'" onmouseleave="this.style.color='#9ca3af'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+          </a>
+          <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" aria-label="Макс" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#8B5CF6'" onmouseleave="this.style.color='#9ca3af'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M7 9.5C7 8.12 8.12 7 9.5 7h5C15.88 7 17 8.12 17 9.5v3c0 1.38-1.12 2.5-2.5 2.5H13l-2.5 2v-2H9.5C8.12 15 7 13.88 7 12.5v-3z" fill="white"/></svg>
+          </a>
+          <a href="https://vk.com/digital_pub_vacancies" target="_blank" aria-label="ВКонтакте" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#0077FF'" onmouseleave="this.style.color='#9ca3af'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M18.4 8.2h-2.07a.47.47 0 0 0-.41.24s-.82 1.52-1.09 2.03c-.71 1.37-1.17.94-1.17.31V8.55a.69.69 0 0 0-.69-.69h-1.55a1.24 1.24 0 0 0-1.1.51s.79-.13.79.93c0 .26.01 1.02.03 1.65a.46.46 0 0 1-.8.32A13.46 13.46 0 0 1 8.78 8.4a.43.43 0 0 0-.4-.25H6.64a.32.32 0 0 0-.3.43c.56 1.57 3.01 6.45 5.8 6.45h1.17a.47.47 0 0 0 .47-.47v-.71a.46.46 0 0 1 .77-.33l1.4 1.33a.69.69 0 0 0 .47.18h1.85c.89 0 .89-.62.4-1.1-.34-.33-1.57-1.63-1.57-1.63a.64.64 0 0 1-.05-.83c.4-.52 1.05-1.38 1.33-1.75.38-.5 1.06-1.57.12-1.57z" fill="white"/></svg>
+          </a>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs font-semibold text-gray-700 mb-2">Работодателям</div>
+        <div class="space-y-1.5 text-xs text-gray-500">
+          <a href="https://t.me/resume_vac_bot" target="_blank" class="block hover:text-gray-700">Разместить вакансию</a>
+          <a href="https://t.me/resume_vac_bot" target="_blank" class="block hover:text-gray-700">Реклама</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-200 pt-4 flex flex-col items-center gap-2 text-[10px] text-gray-400">
+      <span>&copy; 2026 Диджитал Паб</span>
+      <div class="flex gap-3">
+        <a href="#" class="hover:text-gray-600">Политика конфиденциальности</a>
+        <a href="#" class="hover:text-gray-600">Условия использования</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Search Overlay -->
+  <div id="searchOverlay" class="search-overlay">
+    <div class="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
+      <button onclick="document.getElementById('searchOverlay').classList.remove('open')" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 flex-shrink-0">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="flex-1">
+        <input id="searchInput" type="text" placeholder="Поиск вакансий и резюме..." class="w-full py-2.5 px-4 bg-gray-100 rounded-full text-sm outline-none focus:ring-2 focus:ring-amber-300">
+      </div>
+    </div>
+    <div class="px-4 py-6 text-center text-sm text-gray-400">
+      Начните вводить название вакансии, компании или навык
+    </div>
+  </div>
+
+</body>
+</html>

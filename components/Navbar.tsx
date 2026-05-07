@@ -29,14 +29,14 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-bg-nav border-b border-border transition-colors duration-200">
+      <nav className="sticky top-0 z-50 bg-bg-nav border-b border-border shadow-sm transition-colors duration-200">
         <div className="max-w-wrap mx-auto px-4 py-3 flex items-center justify-between">
           {/* Logo + Brand */}
           <Link href="/" className="flex items-center gap-3 no-underline">
             <Image src="/logo.png" alt="Диджитал Паб" width={44} height={44} className="rounded-lg" />
             <div>
-              <div className="text-lg font-bold text-text tracking-tight">
-                диджитал<em className="not-italic text-brand-yellow">паб</em>
+              <div className="text-lg font-semibold text-text logo-brand">
+                диджитал<em>паб</em>
               </div>
               <div className="text-xs text-text-muted hidden sm:block">Место, где встречаются хорошие люди</div>
             </div>
@@ -77,7 +77,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
                   }
                 }}
                 title="Поиск"
-                className="flex items-center justify-center w-9 h-9 border border-border rounded-lg bg-bg-card text-text-muted hover:text-accent hover:border-accent cursor-pointer transition-all flex-shrink-0"
+                className="flex items-center justify-center w-9 h-9 border border-border rounded-lg bg-bg-card text-text-light hover:text-accent hover:border-accent cursor-pointer transition-all flex-shrink-0"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" />
@@ -111,7 +111,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
             <button
               onClick={onDarkToggle}
               title="Сменить тему"
-              className="flex items-center justify-center w-9 h-9 border border-border rounded-lg bg-transparent hover:border-brand-yellow cursor-pointer transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-border-light hover:bg-border cursor-pointer transition-colors"
             >
               {isDark ? (
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
@@ -163,9 +163,9 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
       </nav>
 
       {/* Descriptor bar */}
-      <div className="bg-border-light border-b border-border transition-colors duration-200">
+      <div className="descriptor-bar border-b border-border transition-colors duration-200">
         <div className="max-w-wrap mx-auto px-4 py-1 text-center">
-          <span className="text-xs text-text-light tracking-wide">
+          <span style={{ fontSize: '12px', color: 'var(--text-light)', letterSpacing: '0.2px' }}>
             Вакансии и резюме из Telegram-каналов &middot; Находи быстро, откликайся легко
           </span>
         </div>

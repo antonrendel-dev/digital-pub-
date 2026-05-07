@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0">
+  <title>Статьи о работе в digital — Диджитал Паб</title>
+  <meta name="description" content="Полезные статьи для фрилансеров и digital-специалистов: карьера, резюме, собеседования, зарплаты.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '#ffcc3e',
+            'accent-hover': '#e6b835',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { max-width: 375px; margin: 0 auto; }
+    .logo-brand em { font-style: italic; font-weight: 700; }
+    .burger-menu { display: none; }
+    .burger-menu.open { display: block; }
+    .search-overlay { display: none; position: fixed; inset: 0; z-index: 100; background: white; }
+    .search-overlay.open { display: block; }
+    .article-card:active { transform: scale(0.98); }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+
+  <!-- Mobile Navbar -->
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 bg-accent rounded-lg flex items-center justify-center font-bold text-sm">DP</div>
+        <div class="text-base font-semibold logo-brand">диджитал<em>паб</em></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="document.getElementById('searchOverlay').classList.add('open'); document.getElementById('searchInput').focus();" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+        <button onclick="document.getElementById('mobileMenu').classList.toggle('open')" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobileMenu" class="burger-menu bg-white border-t border-gray-100 px-4 py-4 space-y-1">
+      <a href="#" class="block py-3 px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Главная</a>
+      <a href="#" class="block py-3 px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Вакансии</a>
+      <a href="#" class="block py-3 px-3 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Резюме</a>
+      <a href="#" class="block py-3 px-3 text-sm font-medium text-gray-900 bg-accent/10 rounded-lg">Статьи</a>
+      <div class="pt-3 border-t border-gray-100 mt-3">
+        <a href="https://t.me/resume_vac_bot" target="_blank" class="block w-full text-center bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm py-3 rounded-full transition">+ Разместить</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="px-4 py-4">
+    <h1 class="text-xl font-bold text-gray-900 mb-1">Статьи</h1>
+    <p class="text-xs text-gray-500 mb-5">Полезные материалы для digital-специалистов</p>
+
+    <!-- Articles list -->
+    <div class="space-y-3">
+      <!-- Article 1 -->
+      <a href="#" class="article-card block bg-white border border-gray-200 rounded-xl overflow-hidden transition-all duration-150">
+        <div class="flex gap-3 p-3.5">
+          <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex-shrink-0 flex items-center justify-center text-blue-200 text-[9px]">[Img]</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-medium rounded-full">Карьера</span>
+            </div>
+            <h2 class="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-1">Как пройти техническое собеседование в 2025 году</h2>
+            <p class="text-xs text-gray-500 line-clamp-1 mb-1.5">Разбираем основные этапы от скрининга до оффера</p>
+            <div class="flex items-center gap-2 text-[10px] text-gray-400">
+              <span>3 мая 2026</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>8 мин</span>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Article 2 -->
+      <a href="#" class="article-card block bg-white border border-gray-200 rounded-xl overflow-hidden transition-all duration-150">
+        <div class="flex gap-3 p-3.5">
+          <div class="w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 rounded-lg flex-shrink-0 flex items-center justify-center text-green-200 text-[9px]">[Img]</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">Резюме</span>
+            </div>
+            <h2 class="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-1">Резюме на одну страницу: за и против</h2>
+            <p class="text-xs text-gray-500 line-clamp-1 mb-1.5">Стоит ли ограничивать резюме одной страницей?</p>
+            <div class="flex items-center gap-2 text-[10px] text-gray-400">
+              <span>1 мая 2026</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>5 мин</span>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Article 3 -->
+      <a href="#" class="article-card block bg-white border border-gray-200 rounded-xl overflow-hidden transition-all duration-150">
+        <div class="flex gap-3 p-3.5">
+          <div class="w-20 h-20 bg-gradient-to-br from-amber-100 to-amber-50 rounded-lg flex-shrink-0 flex items-center justify-center text-amber-200 text-[9px]">[Img]</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-1.5 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-medium rounded-full">Зарплата</span>
+            </div>
+            <h2 class="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-1">Зарплатные ожидания: как не продешевить</h2>
+            <p class="text-xs text-gray-500 line-clamp-1 mb-1.5">Как определить свою рыночную стоимость</p>
+            <div class="flex items-center gap-2 text-[10px] text-gray-400">
+              <span>28 апр 2026</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>6 мин</span>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Article 4 -->
+      <a href="#" class="article-card block bg-white border border-gray-200 rounded-xl overflow-hidden transition-all duration-150">
+        <div class="flex gap-3 p-3.5">
+          <div class="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-50 rounded-lg flex-shrink-0 flex items-center justify-center text-purple-200 text-[9px]">[Img]</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-1.5 py-0.5 bg-purple-50 text-purple-600 text-[10px] font-medium rounded-full">Фриланс</span>
+            </div>
+            <h2 class="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-1">Фриланс в 2026: с чего начать и где искать заказы</h2>
+            <p class="text-xs text-gray-500 line-clamp-1 mb-1.5">Полное руководство для начинающих фрилансеров</p>
+            <div class="flex items-center gap-2 text-[10px] text-gray-400">
+              <span>25 апр 2026</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>10 мин</span>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- Article 5 -->
+      <a href="#" class="article-card block bg-white border border-gray-200 rounded-xl overflow-hidden transition-all duration-150">
+        <div class="flex gap-3 p-3.5">
+          <div class="w-20 h-20 bg-gradient-to-br from-rose-100 to-rose-50 rounded-lg flex-shrink-0 flex items-center justify-center text-rose-200 text-[9px]">[Img]</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-1.5 py-0.5 bg-rose-50 text-rose-600 text-[10px] font-medium rounded-full">SMM</span>
+            </div>
+            <h2 class="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-1">Как составить портфолио SMM-специалисту</h2>
+            <p class="text-xs text-gray-500 line-clamp-1 mb-1.5">Что включить, как оформить кейсы, какие метрики</p>
+            <div class="flex items-center gap-2 text-[10px] text-gray-400">
+              <span>22 апр 2026</span>
+              <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <span>7 мин</span>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-6 mb-6 flex items-center justify-center gap-2">
+      <span class="w-9 h-9 flex items-center justify-center bg-accent text-gray-900 font-semibold text-sm rounded-full min-h-[44px] min-w-[44px]">1</span>
+      <a href="#" class="w-9 h-9 flex items-center justify-center bg-white border border-gray-200 text-gray-600 text-sm rounded-full min-h-[44px] min-w-[44px]">2</a>
+      <a href="#" class="w-9 h-9 flex items-center justify-center bg-white border border-gray-200 text-gray-600 text-sm rounded-full min-h-[44px] min-w-[44px]">3</a>
+    </div>
+  </main>
+
+  <!-- Mobile Footer -->
+  <footer class="bg-gray-50 border-t border-gray-200 px-4 py-8">
+    <div class="flex items-center gap-2 mb-2">
+      <img src="logo.png" alt="Диджитал Паб" class="w-9 h-9 rounded-lg" style="object-fit: contain;">
+      <span class="text-sm font-semibold logo-brand">диджитал<em>паб</em></span>
+    </div>
+    <p class="text-xs text-gray-500 mb-1">Место, где встречаются хорошие люди</p>
+    <p class="text-[11px] text-gray-400 mb-5">Вакансии и резюме из Telegram-каналов. Находи быстро, откликайся легко.</p>
+
+    <div class="grid grid-cols-3 gap-4 mb-5">
+      <div>
+        <div class="text-xs font-semibold text-gray-700 mb-2">Навигация</div>
+        <div class="space-y-1.5 text-xs text-gray-500">
+          <a href="#" class="block hover:text-gray-700">Вакансии</a>
+          <a href="#" class="block hover:text-gray-700">Резюме</a>
+          <a href="#" class="block hover:text-gray-700">Статьи</a>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs font-semibold text-gray-700 mb-2">Соцсети</div>
+        <div class="flex items-center gap-2.5">
+          <a href="https://t.me/web_vacancy" target="_blank" aria-label="Telegram" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#26A5E4'" onmouseleave="this.style.color='#9ca3af'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+          </a>
+          <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" aria-label="Макс" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#8B5CF6'" onmouseleave="this.style.color='#9ca3af'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M7 9.5C7 8.12 8.12 7 9.5 7h5C15.88 7 17 8.12 17 9.5v3c0 1.38-1.12 2.5-2.5 2.5H13l-2.5 2v-2H9.5C8.12 15 7 13.88 7 12.5v-3z" fill="white"/></svg>
+          </a>
+          <a href="https://vk.com/digital_pub_vacancies" target="_blank" aria-label="ВКонтакте" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#0077FF'" onmouseleave="this.style.color='#9ca3af'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M18.4 8.2h-2.07a.47.47 0 0 0-.41.24s-.82 1.52-1.09 2.03c-.71 1.37-1.17.94-1.17.31V8.55a.69.69 0 0 0-.69-.69h-1.55a1.24 1.24 0 0 0-1.1.51s.79-.13.79.93c0 .26.01 1.02.03 1.65a.46.46 0 0 1-.8.32A13.46 13.46 0 0 1 8.78 8.4a.43.43 0 0 0-.4-.25H6.64a.32.32 0 0 0-.3.43c.56 1.57 3.01 6.45 5.8 6.45h1.17a.47.47 0 0 0 .47-.47v-.71a.46.46 0 0 1 .77-.33l1.4 1.33a.69.69 0 0 0 .47.18h1.85c.89 0 .89-.62.4-1.1-.34-.33-1.57-1.63-1.57-1.63a.64.64 0 0 1-.05-.83c.4-.52 1.05-1.38 1.33-1.75.38-.5 1.06-1.57.12-1.57z" fill="white"/></svg>
+          </a>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs font-semibold text-gray-700 mb-2">Работодателям</div>
+        <div class="space-y-1.5 text-xs text-gray-500">
+          <a href="https://t.me/resume_vac_bot" target="_blank" class="block hover:text-gray-700">Разместить вакансию</a>
+          <a href="https://t.me/resume_vac_bot" target="_blank" class="block hover:text-gray-700">Реклама</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-200 pt-4 flex flex-col items-center gap-2 text-[10px] text-gray-400">
+      <span>&copy; 2026 Диджитал Паб</span>
+      <div class="flex gap-3">
+        <a href="#" class="hover:text-gray-600">Политика конфиденциальности</a>
+        <a href="#" class="hover:text-gray-600">Условия использования</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Search Overlay -->
+  <div id="searchOverlay" class="search-overlay">
+    <div class="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
+      <button onclick="document.getElementById('searchOverlay').classList.remove('open')" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 flex-shrink-0">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="flex-1">
+        <input id="searchInput" type="text" placeholder="Поиск вакансий и резюме..." class="w-full py-2.5 px-4 bg-gray-100 rounded-full text-sm outline-none focus:ring-2 focus:ring-amber-300">
+      </div>
+    </div>
+    <div class="px-4 py-6 text-center text-sm text-gray-400">
+      Начните вводить название вакансии, компании или навык
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,16 +1,20 @@
 # Dependencies
 node_modules/
+node_modules_old/
 .pnp
 .pnp.js
 .yarn/install-state.gz
 
 # Next.js
 /.next/
+/.next-*/
 /out/
 /build
 
 # Testing
 /coverage
+/test-results/
+/playwright-report/
 
 # Secrets & Environment — NEVER COMMIT
 .env

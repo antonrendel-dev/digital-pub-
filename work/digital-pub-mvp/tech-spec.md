@@ -301,7 +301,7 @@ Technical acceptance criteria (complement user-spec criteria):
 - [ ] Dark mode: all text readable, theme transition ≥200ms
 - [ ] globals.css reduced to <100 lines (CSS variables + minimal base styles only)
 - [ ] All components use Tailwind classes — no custom CSS class selectors in JSX
-- [ ] ≥10 articles published in content/articles/
+- [ ] Articles pages functional with sample article (real ≥10 articles created post-launch by agent team: marketer → seo → writer)
 - [ ] Security headers present (X-Frame-Options, X-Content-Type-Options)
 - [ ] All URL slugs validated with zod before DB queries
 
@@ -370,11 +370,11 @@ Technical acceptance criteria (complement user-spec criteria):
 - **Files to read:** `lib/tags.ts`, `lib/posts.ts`, `app/vacancies/page.tsx`
 
 #### Task 8: Articles Pages, Navbar/Footer Cleanup, Static Pages, Sitemap
-- **Description:** Create /articles listing and /articles/{slug} detail pages. Create ≥10 MDX articles in content/articles/. Remove dead links from Navbar/Footer. Link "+ Разместить" to bot. Create /privacy, /terms pages. Create app/sitemap.ts. Depends on Tasks 3, 4.
+- **Description:** Create /articles listing and /articles/{slug} detail pages. Create 1 sample MDX article for testing. Remove dead links from Navbar/Footer. Link "+ Разместить" to bot. Create /privacy, /terms pages. Create app/sitemap.ts. Depends on Tasks 3, 4. NOTE: Real articles (≥10) will be created separately by agent team (marketer → seo → writer) after the site is fully deployed.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewer, security-auditor, test-reviewer
-- **Verify-smoke:** `curl localhost:3000/articles` → 200, ≥10 articles. `curl localhost:3000/privacy` → 200. `curl localhost:3000/sitemap.xml` → valid XML. Navbar has 4 links.
-- **Files to modify:** `app/articles/page.tsx` (new), `app/articles/[slug]/page.tsx` (new), `content/articles/*.mdx` (10+ new), `components/Navbar.tsx`, `components/Footer.tsx`, `app/privacy/page.tsx` (new), `app/terms/page.tsx` (new), `app/sitemap.ts` (new)
+- **Verify-smoke:** `curl localhost:3000/articles` → 200, sample article listed. `curl localhost:3000/privacy` → 200. `curl localhost:3000/sitemap.xml` → valid XML. Navbar has 4 links.
+- **Files to modify:** `app/articles/page.tsx` (new), `app/articles/[slug]/page.tsx` (new), `content/articles/sample.mdx` (new), `components/Navbar.tsx`, `components/Footer.tsx`, `app/privacy/page.tsx` (new), `app/terms/page.tsx` (new), `app/sitemap.ts` (new)
 - **Files to read:** `lib/articles.ts`, `components/Navbar.tsx`, `components/Footer.tsx`
 
 ### Wave 4 (зависит от Wave 3)

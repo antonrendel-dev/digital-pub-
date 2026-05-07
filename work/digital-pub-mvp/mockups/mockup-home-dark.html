@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Диджитал Паб — Главная (Dark Mode)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '#ffcc3e',
+            'accent-hover': '#e6b835',
+            dbg: '#060e24',
+            dcard: '#0d1a3a',
+            dborder: '#1a2d5a',
+            dtext: '#eef0f5',
+            dsub: '#8a9bc0',
+            dlight: '#5a6480',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background: #060e24; color: #eef0f5; }
+
+    /* Brand logo text */
+    .logo-brand em { font-style: italic; font-weight: 700; color: #ffcc3e; }
+
+    /* Section labels - yellow bar + muted text */
+    .s-lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #5a6480;
+      margin-bottom: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .s-lbl::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 11px;
+      background: #ffcc3e;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Tag colors by type - dark mode */
+    .tag-blue { background: rgba(26,115,232,0.15); color: #6db3f8; }
+    .tag-green { background: rgba(31,138,80,0.15); color: #5dd39e; }
+    .tag-orange { background: rgba(230,81,0,0.15); color: #ffab70; }
+
+    /* Tag group labels */
+    .tag-group-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #5a6480;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .chip-active { background: #ffcc3e !important; color: #111 !important; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+    .nav-dropdown:hover .dropdown-menu { display: block; }
+    .dropdown-menu { display: none; }
+
+    /* Search animation */
+    .search-field {
+      overflow: hidden;
+      width: 0;
+      opacity: 0;
+      transition: width 0.3s ease, opacity 0.2s ease;
+    }
+    .search-wrap.open .search-field {
+      width: 220px;
+      opacity: 1;
+      margin-right: 6px;
+    }
+    .search-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #1a2d5a;
+      border-radius: 8px;
+      background: #0d1a3a;
+      color: #8a9bc0;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .search-icon-btn:hover {
+      color: #ffcc3e;
+      border-color: #ffcc3e;
+    }
+    .search-field input {
+      width: 100%;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid #1a2d5a;
+      border-radius: 8px;
+      background: #0d1a3a;
+      color: #eef0f5;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-field input:focus {
+      border-color: #ffcc3e;
+    }
+    .search-field input::placeholder {
+      color: #5a6480;
+    }
+  </style>
+</head>
+<body class="font-sans">
+
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 bg-dcard border-b border-dborder">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <!-- Logo + Brand -->
+      <div class="flex items-center gap-3">
+        <img src="logo.png" alt="Диджитал Паб" class="w-11 h-11 rounded-lg" style="object-fit: contain;">
+        <div>
+          <div class="text-lg font-semibold logo-brand text-dtext">диджитал<em>паб</em></div>
+          <div class="text-xs text-dsub">Место, где встречаются хорошие люди</div>
+        </div>
+      </div>
+
+      <!-- Nav Links -->
+      <div class="hidden lg:flex items-center gap-6">
+        <a href="#" class="text-sm font-medium text-dtext border-b-2 border-accent pb-0.5">Главная</a>
+        <div class="nav-dropdown relative">
+          <a href="#" class="text-sm font-medium text-dsub hover:text-dtext transition">Вакансии <span class="text-xs">&#9662;</span></a>
+          <div class="dropdown-menu absolute top-full left-0 mt-1 bg-dcard border border-dborder rounded-lg shadow-lg py-2 min-w-[160px]">
+            <a href="#" class="block px-4 py-2 text-sm text-dsub hover:bg-dbg hover:text-dtext transition">Разработка</a>
+            <a href="#" class="block px-4 py-2 text-sm text-dsub hover:bg-dbg hover:text-dtext transition">Маркетинг</a>
+            <a href="#" class="block px-4 py-2 text-sm text-dsub hover:bg-dbg hover:text-dtext transition">Дизайн</a>
+            <a href="#" class="block px-4 py-2 text-sm text-dsub hover:bg-dbg hover:text-dtext transition">Аналитика</a>
+          </div>
+        </div>
+        <a href="#" class="text-sm font-medium text-dsub hover:text-dtext transition">Резюме</a>
+        <a href="#" class="text-sm font-medium text-dsub hover:text-dtext transition">Статьи</a>
+      </div>
+
+      <!-- Right: Search + Buttons -->
+      <div class="flex items-center gap-3">
+        <!-- Animated search -->
+        <div class="search-wrap flex items-center" id="searchWrap">
+          <div class="search-field">
+            <input type="text" placeholder="Поиск вакансий и резюме..." id="searchInput">
+          </div>
+          <button class="search-icon-btn" id="searchToggle" title="Поиск">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </div>
+        <!-- Post button -->
+        <a href="https://t.me/resume_vac_bot" target="_blank" class="bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-4 py-2 rounded-full transition">+ Разместить</a>
+        <!-- Theme toggle (sun for dark mode) -->
+        <button class="w-9 h-9 flex items-center justify-center rounded-full bg-dbg border border-dborder hover:border-dsub transition">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="#FFAC33"/><path stroke="#FFAC33" stroke-width="2" stroke-linecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Sub-header descriptor bar -->
+  <div style="background: #0a1530; border-bottom: 1px solid #1a2d5a;">
+    <div class="max-w-7xl mx-auto px-4 py-1 text-center">
+      <span style="font-size: 12px; color: #8b95b0; letter-spacing: 0.2px;">Вакансии и резюме из Telegram-каналов &middot; Находи быстро, откликайся легко</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-[240px_1fr_260px] gap-6">
+
+      <!-- Left Sidebar -->
+      <aside class="hidden lg:block space-y-6">
+        <!-- Subscribe cards -->
+        <div class="bg-dcard border border-dborder rounded-xl p-4 space-y-3">
+          <h3 class="s-lbl">Вакансии в соцсетях</h3>
+
+          <!-- Telegram -->
+          <a href="https://t.me/web_vacancy" target="_blank" class="block p-3 bg-blue-900/30 border border-blue-800/30 rounded-lg hover:bg-blue-900/50 transition">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-dtext">Telegram</div>
+                <div class="text-xs text-dsub">14 200 подписчиков</div>
+              </div>
+            </div>
+            <div class="text-xs text-dsub mb-2">Свежие вакансии каждый день прямо в Telegram.</div>
+            <div class="block text-center text-xs font-medium bg-blue-500 text-white py-1.5 rounded-md hover:bg-blue-600 transition">Подписаться</div>
+          </a>
+
+          <!-- Макс -->
+          <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" class="block p-3 bg-purple-900/30 border border-purple-800/30 rounded-lg hover:bg-purple-900/50 transition">
+            <div class="flex items-center gap-2 mb-1">
+              <img src="max-app.webp" alt="Макс" width="36" height="36" style="border-radius: 8px; object-fit: cover;" onerror="this.style.display='none'; this.outerHTML='<div class=&quot;w-9 h-9 rounded-lg flex items-center justify-center bg-purple-900/50&quot;><span style=&quot;font-size:11px;font-weight:700;color:#a78bfa&quot;>M</span></div>'">
+              <div>
+                <div class="text-sm font-medium text-dtext">Макс</div>
+                <div class="text-xs text-dsub">6 800 подписчиков</div>
+              </div>
+            </div>
+            <div class="text-xs text-dsub mb-2">Те же вакансии в экосистеме ВКонтакте.</div>
+            <div class="block text-center text-xs font-medium text-white py-1.5 rounded-md transition" style="background: #6c4ecb;">Подписаться</div>
+          </a>
+
+          <!-- ВКонтакте -->
+          <a href="https://vk.com/digital_pub_vacancies" target="_blank" class="block p-3 bg-indigo-900/30 border border-indigo-800/30 rounded-lg hover:bg-indigo-900/50 transition">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: #0077ff;">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="#fff"><path d="M21.547 7h-3.29a.743.743 0 0 0-.655.392s-1.312 2.416-1.734 3.23C14.734 12.813 14 12.126 14 11.11V7.603A1.104 1.104 0 0 0 12.896 6.5h-2.474a1.982 1.982 0 0 0-1.75.813s1.255-.204 1.255 1.49c0 .42.022 1.626.04 2.64a.73.73 0 0 1-1.272.503 21.54 21.54 0 0 1-2.498-4.543.693.693 0 0 0-.63-.403h-2.99a.508.508 0 0 0-.48.685C3.005 10.175 6.918 18 11.38 18h1.878a.742.742 0 0 0 .742-.742v-1.135a.73.73 0 0 1 1.23-.53l2.247 2.112a1.1 1.1 0 0 0 .746.295h2.953c1.424 0 1.424-.988.647-1.753-.546-.538-2.518-2.617-2.518-2.617a1.02 1.02 0 0 1-.078-1.323c.637-.84 1.68-2.212 2.122-2.8.603-.804 1.697-2.507.197-2.507z"/></svg>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-dtext">ВКонтакте</div>
+                <div class="text-xs text-dsub">9 300 подписчиков</div>
+              </div>
+            </div>
+            <div class="text-xs text-dsub mb-2">Вакансии и карьерные советы в вашей ленте ВК.</div>
+            <div class="block text-center text-xs font-medium text-white py-1.5 rounded-md transition" style="background: #0077ff;">Подписаться</div>
+          </a>
+        </div>
+
+        <!-- Stats -->
+        <div class="bg-dcard border border-dborder rounded-xl p-4">
+          <h3 class="s-lbl">Платформа</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between"><span class="text-dsub">Вакансий</span><span class="font-semibold text-dtext">248</span></div>
+            <div class="flex justify-between"><span class="text-dsub">Резюме</span><span class="font-semibold text-dtext">1 204</span></div>
+            <div class="flex justify-between"><span class="text-dsub">Компаний</span><span class="font-semibold text-dtext">87</span></div>
+            <div class="flex justify-between"><span class="text-dsub">Новых сегодня</span><span class="font-semibold text-green-400">14</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Feed -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-sm text-dsub">248 вакансий &middot; 1 204 резюме</span>
+        </div>
+
+        <!-- Filter chips -->
+        <div class="flex flex-wrap gap-2 mb-5">
+          <button class="chip-active px-3.5 py-1.5 rounded-full text-sm font-medium transition">Удалёнка</button>
+          <button class="px-3.5 py-1.5 rounded-full text-sm font-medium bg-dbg border border-dborder text-dsub hover:border-dsub transition">SMM</button>
+          <button class="px-3.5 py-1.5 rounded-full text-sm font-medium bg-dbg border border-dborder text-dsub hover:border-dsub transition">SEO</button>
+          <button class="px-3.5 py-1.5 rounded-full text-sm font-medium bg-dbg border border-dborder text-dsub hover:border-dsub transition">Дизайн</button>
+          <button class="px-3.5 py-1.5 rounded-full text-sm font-medium bg-dbg border border-dborder text-dsub hover:border-dsub transition">Маркетинг</button>
+          <button class="px-3.5 py-1.5 rounded-full text-sm font-medium bg-dbg border border-dborder text-dsub hover:border-dsub transition">Менеджер</button>
+          <button class="px-3.5 py-1.5 rounded-full text-sm font-medium bg-dbg border border-dborder text-dsub hover:border-dsub transition">Таргет</button>
+          <button class="px-3.5 py-1.5 rounded-full text-sm font-medium bg-dbg border border-dborder text-dsub hover:border-dsub transition">WordPress</button>
+        </div>
+
+        <!-- Cards -->
+        <div class="space-y-4">
+          <!-- Card 1 -->
+          <a href="#" class="block bg-dcard border border-dborder rounded-xl p-5 card-hover transition-all duration-200">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="text-base font-semibold text-dtext">SMM-менеджер в IT-стартап <span class="inline-block ml-2 px-2 py-0.5 bg-green-900/40 text-green-400 text-xs font-medium rounded-full">Новое</span></h3>
+              <span class="text-xs text-dsub whitespace-nowrap ml-3">2 ч. назад</span>
+            </div>
+            <div class="text-sm text-dsub mb-1">TechVibe Agency</div>
+            <div class="text-sm font-semibold text-accent mb-2">80 000 - 120 000 &#8381;</div>
+            <p class="text-sm text-dsub line-clamp-2 mb-3">Ищем SMM-менеджера для ведения корпоративных соцсетей. Опыт работы с Telegram, ВКонтакте. Создание контент-плана, написание постов, аналитика.</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-purple-900/50 text-purple-300 rounded-full flex items-center justify-center text-xs font-semibold">T</div>
+                <span class="text-xs text-dsub">Вакансия</span>
+              </div>
+              <button class="text-xs text-dsub hover:text-red-400 transition">&#9825; Сохранить</button>
+            </div>
+          </a>
+
+          <!-- Card 2 -->
+          <a href="#" class="block bg-dcard border border-dborder rounded-xl p-5 card-hover transition-all duration-200">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="text-base font-semibold text-dtext">Таргетолог Facebook/Instagram</h3>
+              <span class="text-xs text-dsub whitespace-nowrap ml-3">5 ч. назад</span>
+            </div>
+            <div class="text-sm text-dsub mb-1">Digital Storm</div>
+            <div class="text-sm font-semibold text-accent mb-2">100 000 - 150 000 &#8381;</div>
+            <p class="text-sm text-dsub line-clamp-2 mb-3">Настройка и ведение рекламных кампаний. Опыт работы с бюджетами от 500к. Знание Facebook Ads Manager, аналитика результатов.</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-blue-900/50 text-blue-300 rounded-full flex items-center justify-center text-xs font-semibold">D</div>
+                <span class="text-xs text-dsub">Вакансия</span>
+              </div>
+              <button class="text-xs text-dsub hover:text-red-400 transition">&#9825; Сохранить</button>
+            </div>
+          </a>
+
+          <!-- Card 3 -->
+          <a href="#" class="block bg-dcard border border-dborder rounded-xl p-5 card-hover transition-all duration-200">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="text-base font-semibold text-dtext">SEO-специалист (удалённо)</h3>
+              <span class="text-xs text-dsub whitespace-nowrap ml-3">Вчера</span>
+            </div>
+            <div class="text-sm text-dsub mb-1">WebPromo</div>
+            <div class="text-sm font-semibold text-accent mb-2">70 000 - 100 000 &#8381;</div>
+            <p class="text-sm text-dsub line-clamp-2 mb-3">Продвижение сайтов клиентов в поисковых системах. Работа с семантикой, техническая оптимизация, линкбилдинг.</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-green-900/50 text-green-300 rounded-full flex items-center justify-center text-xs font-semibold">W</div>
+                <span class="text-xs text-dsub">Вакансия</span>
+              </div>
+              <button class="text-xs text-dsub hover:text-red-400 transition">&#9825; Сохранить</button>
+            </div>
+          </a>
+
+          <!-- Card 4 - Resume -->
+          <a href="#" class="block bg-dcard border border-dborder rounded-xl p-5 card-hover transition-all duration-200 border-l-4 border-l-blue-500">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="text-base font-semibold text-dtext">Дизайнер, Figma, 3 года опыта</h3>
+              <span class="text-xs text-dsub whitespace-nowrap ml-3">Вчера</span>
+            </div>
+            <p class="text-sm text-dsub line-clamp-2 mb-3">Создаю UI/UX дизайн для мобильных приложений и веб-сервисов. Figma, Photoshop. Портфолио по запросу.</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-orange-900/50 text-orange-300 rounded-full flex items-center justify-center text-xs font-semibold">Д</div>
+                <span class="text-xs text-dsub">Резюме</span>
+              </div>
+              <button class="text-xs text-dsub hover:text-red-400 transition">&#9825; Сохранить</button>
+            </div>
+          </a>
+
+          <!-- Card 5 -->
+          <a href="#" class="block bg-dcard border border-dborder rounded-xl p-5 card-hover transition-all duration-200">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="text-base font-semibold text-dtext">Контент-менеджер для Telegram-канала</h3>
+              <span class="text-xs text-dsub whitespace-nowrap ml-3">2 дня назад</span>
+            </div>
+            <div class="text-sm text-dsub mb-1">MediaLab</div>
+            <div class="text-sm font-semibold text-accent mb-2">60 000 - 90 000 &#8381;</div>
+            <p class="text-sm text-dsub line-clamp-2 mb-3">Ведение Telegram-канала: написание постов, подбор визуалов, планирование контент-календаря. Тематика: маркетинг и digital.</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-pink-900/50 text-pink-300 rounded-full flex items-center justify-center text-xs font-semibold">M</div>
+                <span class="text-xs text-dsub">Вакансия</span>
+              </div>
+              <button class="text-xs text-dsub hover:text-red-400 transition">&#9825; Сохранить</button>
+            </div>
+          </a>
+        </div>
+
+        <!-- Load more -->
+        <div class="mt-6 text-center">
+          <button class="px-6 py-2.5 bg-dbg border border-dborder hover:border-dsub text-sm font-medium text-dsub rounded-full transition">Показать ещё</button>
+        </div>
+      </section>
+
+      <!-- Right Sidebar -->
+      <aside class="hidden lg:block space-y-6">
+        <!-- Tags cloud - grouped by type -->
+        <div class="bg-dcard border border-dborder rounded-xl p-4">
+          <h3 class="s-lbl">Популярные теги</h3>
+
+          <!-- Specialization (orange) -->
+          <div class="mb-3">
+            <div class="tag-group-label">Специализация</div>
+            <div class="flex flex-wrap gap-1.5">
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">SMM</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">SEO</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Дизайнер</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Маркетолог</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Менеджер</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Директ</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Figma</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Таргетолог</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Контекстолог</a>
+              <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Проджект</a>
+            </div>
+          </div>
+
+          <!-- Format (blue) -->
+          <div class="mb-3">
+            <div class="tag-group-label">Формат работы</div>
+            <div class="flex flex-wrap gap-1.5">
+              <a href="#" class="tag-blue px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Удалёнка</a>
+              <a href="#" class="tag-blue px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Офис</a>
+              <a href="#" class="tag-blue px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Гибрид</a>
+              <a href="#" class="tag-blue px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Фриланс</a>
+            </div>
+          </div>
+
+          <!-- Level (green) -->
+          <div>
+            <div class="tag-group-label">Уровень</div>
+            <div class="flex flex-wrap gap-1.5">
+              <a href="#" class="tag-green px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Junior</a>
+              <a href="#" class="tag-green px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Middle</a>
+              <a href="#" class="tag-green px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Senior</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="bg-dcard border border-dborder rounded-xl p-4">
+          <h3 class="s-lbl">Категории</h3>
+          <div class="space-y-2">
+            <a href="#" class="flex justify-between text-sm text-dsub hover:text-dtext transition"><span>SMM и маркетинг</span><span class="text-dlight">10</span></a>
+            <a href="#" class="flex justify-between text-sm text-dsub hover:text-dtext transition"><span>Дизайн</span><span class="text-dlight">3</span></a>
+            <a href="#" class="flex justify-between text-sm text-dsub hover:text-dtext transition"><span>SEO</span><span class="text-dlight">3</span></a>
+            <a href="#" class="flex justify-between text-sm text-dsub hover:text-dtext transition"><span>Менеджмент</span><span class="text-dlight">2</span></a>
+            <a href="#" class="flex justify-between text-sm text-dsub hover:text-dtext transition"><span>Разработка</span><span class="text-dlight">2</span></a>
+            <a href="#" class="flex justify-between text-sm text-dsub hover:text-dtext transition"><span>Таргет и реклама</span><span class="text-dlight">2</span></a>
+          </div>
+        </div>
+
+        <!-- Articles -->
+        <div class="bg-dcard border border-dborder rounded-xl p-4">
+          <h3 class="s-lbl">Статьи</h3>
+          <div class="space-y-3">
+            <a href="#" class="block group">
+              <div class="text-sm text-dsub group-hover:text-dtext font-medium transition">Как пройти техническое собеседование в 2025 году</div>
+              <div class="text-xs text-dlight mt-0.5">3 дня назад</div>
+            </a>
+            <a href="#" class="block group">
+              <div class="text-sm text-dsub group-hover:text-dtext font-medium transition">Резюме на одну страницу: за и против</div>
+              <div class="text-xs text-dlight mt-0.5">5 дней назад</div>
+            </a>
+            <a href="#" class="block group">
+              <div class="text-sm text-dsub group-hover:text-dtext font-medium transition">Зарплатные ожидания: как не продешевить</div>
+              <div class="text-xs text-dlight mt-0.5">1 неделю назад</div>
+            </a>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-12 bg-dcard border-t border-dborder">
+    <div class="max-w-7xl mx-auto px-4 py-10">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <!-- Brand -->
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <img src="logo.png" alt="Диджитал Паб" class="w-9 h-9 rounded-lg" style="object-fit: contain;">
+            <span class="font-semibold text-dtext logo-brand">диджитал<em>паб</em></span>
+          </div>
+          <p class="text-sm text-dsub mt-2">Место, где встречаются хорошие люди</p>
+          <p class="text-xs text-dlight mt-1">Вакансии и резюме из Telegram-каналов. Находи быстро, откликайся легко.</p>
+        </div>
+        <!-- Nav -->
+        <div>
+          <div class="text-sm font-semibold text-dsub mb-3">Навигация</div>
+          <div class="space-y-2">
+            <a href="#" class="block text-sm text-dlight hover:text-dtext transition">Вакансии</a>
+            <a href="#" class="block text-sm text-dlight hover:text-dtext transition">Резюме</a>
+            <a href="#" class="block text-sm text-dlight hover:text-dtext transition">Статьи</a>
+          </div>
+        </div>
+        <!-- Social -->
+        <div>
+          <div class="text-sm font-semibold text-dsub mb-3">Мы в соцсетях</div>
+          <div class="flex items-center gap-3">
+            <a href="https://t.me/web_vacancy" target="_blank" rel="noopener noreferrer" aria-label="Telegram" style="color: #5a6480; transition: color 0.2s;" onmouseenter="this.style.color='#ffcc3e'" onmouseleave="this.style.color='#5a6480'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+            </a>
+            <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" rel="noopener noreferrer" aria-label="Макс" style="transition: opacity 0.2s;" onmouseenter="this.style.opacity='0.7'" onmouseleave="this.style.opacity='1'">
+              <img src="max-app.webp" width="24" height="24" alt="Макс" style="border-radius: 4px; display: block;">
+            </a>
+            <a href="https://vk.com/digital_pub_vacancies" target="_blank" rel="noopener noreferrer" aria-label="ВКонтакте" style="color: #5a6480; transition: color 0.2s;" onmouseenter="this.style.color='#ffcc3e'" onmouseleave="this.style.color='#5a6480'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M21.547 7h-3.29a.743.743 0 0 0-.655.392s-1.312 2.416-1.734 3.23C14.734 12.813 14 12.126 14 11.11V7.603A1.104 1.104 0 0 0 12.896 6.5h-2.474a1.982 1.982 0 0 0-1.75.813s1.255-.204 1.255 1.49c0 .42.022 1.626.04 2.64a.73.73 0 0 1-1.272.503 21.54 21.54 0 0 1-2.498-4.543.693.693 0 0 0-.63-.403h-2.99a.508.508 0 0 0-.48.685C3.005 10.175 6.918 18 11.38 18h1.878a.742.742 0 0 0 .742-.742v-1.135a.73.73 0 0 1 1.23-.53l2.247 2.112a1.1 1.1 0 0 0 .746.295h2.953c1.424 0 1.424-.988.647-1.753-.546-.538-2.518-2.617-2.518-2.617a1.02 1.02 0 0 1-.078-1.323c.637-.84 1.68-2.212 2.122-2.8.603-.804 1.697-2.507.197-2.507z"/></svg>
+            </a>
+          </div>
+        </div>
+        <!-- Employers -->
+        <div>
+          <div class="text-sm font-semibold text-dsub mb-3">Работодателям</div>
+          <div class="space-y-2">
+            <a href="https://t.me/resume_vac_bot" target="_blank" class="block text-sm text-dlight hover:text-dtext transition">Разместить вакансию</a>
+            <a href="https://t.me/resume_vac_bot" target="_blank" class="block text-sm text-dlight hover:text-dtext transition">Реклама</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="border-t border-dborder py-4">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-xs text-dlight">
+        <span>&copy; 2026 Диджитал Паб</span>
+        <div class="flex gap-4 mt-2 sm:mt-0">
+          <a href="#" class="hover:text-dtext transition">Политика конфиденциальности</a>
+          <a href="#" class="hover:text-dtext transition">Условия использования</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Search toggle script -->
+  <script>
+    (function() {
+      const wrap = document.getElementById('searchWrap');
+      const btn = document.getElementById('searchToggle');
+      const input = document.getElementById('searchInput');
+
+      btn.addEventListener('click', function() {
+        const isOpen = wrap.classList.contains('open');
+        if (isOpen) {
+          if (input.value.trim()) {
+            console.log('Search:', input.value.trim());
+          } else {
+            wrap.classList.remove('open');
+          }
+        } else {
+          wrap.classList.add('open');
+          setTimeout(function() { input.focus(); }, 300);
+        }
+      });
+
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          wrap.classList.remove('open');
+          input.value = '';
+        }
+        if (e.key === 'Enter' && input.value.trim()) {
+          console.log('Search:', input.value.trim());
+        }
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!wrap.contains(e.target) && wrap.classList.contains('open')) {
+          wrap.classList.remove('open');
+          input.value = '';
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>

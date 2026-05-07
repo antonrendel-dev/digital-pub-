@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=800, initial-scale=1.0">
+  <title>Диджитал Паб — Главная (Планшет 800px)</title>
+  <meta name="description" content="Вакансии и резюме из Telegram-каналов. Находи быстро, откликайся легко.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: '#ffcc3e',
+            'accent-hover': '#e6b835',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { max-width: 800px; margin: 0 auto; }
+    .logo-brand em { font-style: italic; font-weight: 700; color: #ffcc3e; }
+
+    .s-lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #aaa;
+      margin-bottom: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .s-lbl::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 11px;
+      background: #ffcc3e;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .tag-blue { background: #e8f4fd; color: #1a73e8; }
+    .tag-green { background: #e6f7ed; color: #1f8a50; }
+    .tag-orange { background: #fff3e0; color: #e65100; }
+
+    .tag-group-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #999;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .chip-active { background: #ffcc3e !important; color: #111 !important; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+
+    /* Search animation */
+    .search-field {
+      overflow: hidden;
+      width: 0;
+      opacity: 0;
+      transition: width 0.3s ease, opacity 0.2s ease;
+    }
+    .search-wrap.open .search-field {
+      width: 200px;
+      opacity: 1;
+      margin-right: 6px;
+    }
+    .search-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #d4d4d4;
+      border-radius: 8px;
+      background: #fff;
+      color: #777;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .search-icon-btn:hover {
+      color: #ffcc3e;
+      border-color: #ffcc3e;
+    }
+    .search-field input {
+      width: 100%;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid #d4d4d4;
+      border-radius: 8px;
+      background: #fff;
+      color: #111;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-field input:focus {
+      border-color: #ffcc3e;
+    }
+
+    /* Hide scrollbar */
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scroll-fade { position: relative; }
+    .scroll-fade::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 40px; background: linear-gradient(to right, transparent, white); pointer-events: none; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 font-sans">
+
+  <!-- Navbar -->
+  <nav class="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <img src="logo.png" alt="Диджитал Паб" class="w-10 h-10 rounded-lg" style="object-fit: contain;">
+        <span class="text-base font-semibold logo-brand">диджитал<em>паб</em></span>
+      </div>
+
+      <!-- Nav Links (horizontal, condensed) -->
+      <div class="flex items-center gap-4">
+        <a href="#" class="text-sm font-medium text-gray-900 border-b-2 border-accent pb-0.5">Главная</a>
+        <a href="#" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Вакансии</a>
+        <a href="#" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Резюме</a>
+        <a href="#" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">Статьи</a>
+      </div>
+
+      <!-- Right: Search + Button -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <div class="search-wrap flex items-center" id="searchWrap">
+          <div class="search-field">
+            <input type="text" placeholder="Поиск вакансий..." id="searchInput">
+          </div>
+          <button class="search-icon-btn" id="searchToggle" title="Поиск">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+        </div>
+        <a href="https://t.me/resume_vac_bot" target="_blank" class="bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-3.5 py-2 rounded-full transition whitespace-nowrap">+ Разместить</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Descriptor bar -->
+  <div class="bg-gray-50 border-b border-gray-100">
+    <div class="px-4 py-1 text-center">
+      <span style="font-size: 12px; color: #999; letter-spacing: 0.2px;">Вакансии и резюме из Telegram-каналов &middot; Находи быстро, откликайся легко</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="px-4 py-6">
+
+    <!-- Stats row (compact horizontal) -->
+    <div class="flex gap-3 mb-5">
+      <div class="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-center">
+        <div class="text-xl font-bold">248</div>
+        <div class="text-xs text-gray-500">вакансий</div>
+      </div>
+      <div class="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-center">
+        <div class="text-xl font-bold">1 204</div>
+        <div class="text-xs text-gray-500">резюме</div>
+      </div>
+      <div class="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-center">
+        <div class="text-xl font-bold">87</div>
+        <div class="text-xs text-gray-500">компаний</div>
+      </div>
+      <div class="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-center">
+        <div class="text-xl font-bold text-green-600">14</div>
+        <div class="text-xs text-gray-500">новых сегодня</div>
+      </div>
+    </div>
+
+    <!-- Filter chips (horizontal scroll with fade) -->
+    <div class="scroll-fade mb-5">
+      <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <button class="chip-active flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium transition">Удалёнка</button>
+        <button class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">SMM</button>
+        <button class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">SEO</button>
+        <button class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">Дизайн</button>
+        <button class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">Маркетинг</button>
+        <button class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">Менеджер</button>
+        <button class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">Таргет</button>
+        <button class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">WordPress</button>
+      </div>
+    </div>
+
+    <!-- Feed header -->
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-sm text-gray-500">248 вакансий &middot; 1 204 резюме</span>
+    </div>
+
+    <!-- Feed Cards (single column, full width) -->
+    <div class="space-y-4">
+      <!-- Card 1 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-5 card-hover transition-all duration-200">
+        <div class="flex items-start justify-between mb-2">
+          <h3 class="text-base font-semibold text-gray-900">SMM-менеджер в IT-стартап <span class="inline-block ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Новое</span></h3>
+          <span class="text-xs text-gray-400 whitespace-nowrap ml-3">2 ч. назад</span>
+        </div>
+        <div class="text-sm text-gray-500 mb-1">TechVibe Agency</div>
+        <div class="text-sm font-semibold text-amber-600 mb-2">80 000 - 120 000 &#8381;</div>
+        <p class="text-sm text-gray-600 line-clamp-2 mb-3">Ищем SMM-менеджера для ведения корпоративных соцсетей. Опыт работы с Telegram, ВКонтакте. Создание контент-плана, написание постов, аналитика.</p>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-semibold">T</div>
+            <span class="text-xs text-gray-500">Вакансия</span>
+          </div>
+          <button class="text-xs text-gray-400 hover:text-red-400 transition">&#9825; Сохранить</button>
+        </div>
+      </a>
+
+      <!-- Card 2 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-5 card-hover transition-all duration-200">
+        <div class="flex items-start justify-between mb-2">
+          <h3 class="text-base font-semibold text-gray-900">Таргетолог Facebook/Instagram</h3>
+          <span class="text-xs text-gray-400 whitespace-nowrap ml-3">5 ч. назад</span>
+        </div>
+        <div class="text-sm text-gray-500 mb-1">Digital Storm</div>
+        <div class="text-sm font-semibold text-amber-600 mb-2">100 000 - 150 000 &#8381;</div>
+        <p class="text-sm text-gray-600 line-clamp-2 mb-3">Настройка и ведение рекламных кампаний. Опыт работы с бюджетами от 500к. Знание Facebook Ads Manager, аналитика результатов.</p>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-semibold">D</div>
+            <span class="text-xs text-gray-500">Вакансия</span>
+          </div>
+          <button class="text-xs text-gray-400 hover:text-red-400 transition">&#9825; Сохранить</button>
+        </div>
+      </a>
+
+      <!-- Card 3 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-5 card-hover transition-all duration-200">
+        <div class="flex items-start justify-between mb-2">
+          <h3 class="text-base font-semibold text-gray-900">SEO-специалист (удалённо)</h3>
+          <span class="text-xs text-gray-400 whitespace-nowrap ml-3">Вчера</span>
+        </div>
+        <div class="text-sm text-gray-500 mb-1">WebPromo</div>
+        <div class="text-sm font-semibold text-amber-600 mb-2">70 000 - 100 000 &#8381;</div>
+        <p class="text-sm text-gray-600 line-clamp-2 mb-3">Продвижение сайтов клиентов в поисковых системах. Работа с семантикой, техническая оптимизация, линкбилдинг. Отчётность в Google Analytics.</p>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-semibold">W</div>
+            <span class="text-xs text-gray-500">Вакансия</span>
+          </div>
+          <button class="text-xs text-gray-400 hover:text-red-400 transition">&#9825; Сохранить</button>
+        </div>
+      </a>
+
+      <!-- Card 4 - Resume -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-5 card-hover transition-all duration-200 border-l-4 border-l-blue-400">
+        <div class="flex items-start justify-between mb-2">
+          <h3 class="text-base font-semibold text-gray-900">Дизайнер, Figma, 3 года опыта</h3>
+          <span class="text-xs text-gray-400 whitespace-nowrap ml-3">Вчера</span>
+        </div>
+        <p class="text-sm text-gray-600 line-clamp-2 mb-3">Создаю UI/UX дизайн для мобильных приложений и веб-сервисов. Figma, Photoshop. Портфолио по запросу.</p>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-semibold">Д</div>
+            <span class="text-xs text-gray-500">Резюме</span>
+          </div>
+          <button class="text-xs text-gray-400 hover:text-red-400 transition">&#9825; Сохранить</button>
+        </div>
+      </a>
+
+      <!-- Card 5 -->
+      <a href="#" class="block bg-white border border-gray-200 rounded-xl p-5 card-hover transition-all duration-200">
+        <div class="flex items-start justify-between mb-2">
+          <h3 class="text-base font-semibold text-gray-900">Контент-менеджер для Telegram-канала</h3>
+          <span class="text-xs text-gray-400 whitespace-nowrap ml-3">2 дня назад</span>
+        </div>
+        <div class="text-sm text-gray-500 mb-1">MediaLab</div>
+        <div class="text-sm font-semibold text-amber-600 mb-2">60 000 - 90 000 &#8381;</div>
+        <p class="text-sm text-gray-600 line-clamp-2 mb-3">Ведение Telegram-канала: написание постов, подбор визуалов, планирование контент-календаря. Тематика: маркетинг и digital.</p>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 bg-pink-100 text-pink-700 rounded-full flex items-center justify-center text-xs font-semibold">M</div>
+            <span class="text-xs text-gray-500">Вакансия</span>
+          </div>
+          <button class="text-xs text-gray-400 hover:text-red-400 transition">&#9825; Сохранить</button>
+        </div>
+      </a>
+    </div>
+
+    <!-- Load more -->
+    <div class="mt-6 text-center">
+      <button class="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 rounded-full transition">Показать ещё</button>
+    </div>
+
+    <!-- === BELOW FEED: Right sidebar content moved here === -->
+
+    <!-- Social subscribe cards -->
+    <div class="mt-10 grid grid-cols-3 gap-4">
+      <!-- Telegram -->
+      <a href="https://t.me/web_vacancy" target="_blank" class="block p-4 bg-blue-50 rounded-xl hover:bg-blue-100/70 transition">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+          </div>
+          <div>
+            <div class="text-sm font-medium">Telegram</div>
+            <div class="text-xs text-gray-500">14 200</div>
+          </div>
+        </div>
+        <div class="text-center text-xs font-medium bg-blue-500 text-white py-1.5 rounded-md hover:bg-blue-600 transition">Подписаться</div>
+      </a>
+
+      <!-- Макс -->
+      <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" class="block p-4 bg-purple-50 rounded-xl hover:bg-purple-100/70 transition">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: #6c4ecb;">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M7 9.5C7 8.12 8.12 7 9.5 7h5C15.88 7 17 8.12 17 9.5v3c0 1.38-1.12 2.5-2.5 2.5H13l-2.5 2v-2H9.5C8.12 15 7 13.88 7 12.5v-3z" fill="#6c4ecb"/></svg>
+          </div>
+          <div>
+            <div class="text-sm font-medium">Макс</div>
+            <div class="text-xs text-gray-500">6 800</div>
+          </div>
+        </div>
+        <div class="text-center text-xs font-medium text-white py-1.5 rounded-md transition" style="background: #6c4ecb;">Подписаться</div>
+      </a>
+
+      <!-- ВКонтакте -->
+      <a href="https://vk.com/digital_pub_vacancies" target="_blank" class="block p-4 bg-indigo-50 rounded-xl hover:bg-indigo-100/70 transition">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: #0077ff;">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="#fff"><path d="M21.547 7h-3.29a.743.743 0 0 0-.655.392s-1.312 2.416-1.734 3.23C14.734 12.813 14 12.126 14 11.11V7.603A1.104 1.104 0 0 0 12.896 6.5h-2.474a1.982 1.982 0 0 0-1.75.813s1.255-.204 1.255 1.49c0 .42.022 1.626.04 2.64a.73.73 0 0 1-1.272.503 21.54 21.54 0 0 1-2.498-4.543.693.693 0 0 0-.63-.403h-2.99a.508.508 0 0 0-.48.685C3.005 10.175 6.918 18 11.38 18h1.878a.742.742 0 0 0 .742-.742v-1.135a.73.73 0 0 1 1.23-.53l2.247 2.112a1.1 1.1 0 0 0 .746.295h2.953c1.424 0 1.424-.988.647-1.753-.546-.538-2.518-2.617-2.518-2.617a1.02 1.02 0 0 1-.078-1.323c.637-.84 1.68-2.212 2.122-2.8.603-.804 1.697-2.507.197-2.507z"/></svg>
+          </div>
+          <div>
+            <div class="text-sm font-medium">ВКонтакте</div>
+            <div class="text-xs text-gray-500">9 300</div>
+          </div>
+        </div>
+        <div class="text-center text-xs font-medium text-white py-1.5 rounded-md transition" style="background: #0077ff;">Подписаться</div>
+      </a>
+    </div>
+
+    <!-- Tags cloud + Categories side by side -->
+    <div class="mt-6 grid grid-cols-2 gap-4">
+      <!-- Tags cloud -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4">
+        <h3 class="s-lbl">Популярные теги</h3>
+        <div class="mb-3">
+          <div class="tag-group-label">Специализация</div>
+          <div class="flex flex-wrap gap-1.5">
+            <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">SMM</a>
+            <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">SEO</a>
+            <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Дизайнер</a>
+            <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Маркетолог</a>
+            <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Менеджер</a>
+            <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Таргетолог</a>
+            <a href="#" class="tag-orange px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Figma</a>
+          </div>
+        </div>
+        <div class="mb-3">
+          <div class="tag-group-label">Формат работы</div>
+          <div class="flex flex-wrap gap-1.5">
+            <a href="#" class="tag-blue px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Удалёнка</a>
+            <a href="#" class="tag-blue px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Офис</a>
+            <a href="#" class="tag-blue px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Гибрид</a>
+            <a href="#" class="tag-blue px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Фриланс</a>
+          </div>
+        </div>
+        <div>
+          <div class="tag-group-label">Уровень</div>
+          <div class="flex flex-wrap gap-1.5">
+            <a href="#" class="tag-green px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Junior</a>
+            <a href="#" class="tag-green px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Middle</a>
+            <a href="#" class="tag-green px-2.5 py-1 rounded-full text-xs font-medium hover:opacity-80 transition">Senior</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories + Articles -->
+      <div class="space-y-4">
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <h3 class="s-lbl">Категории</h3>
+          <div class="space-y-2">
+            <a href="#" class="flex justify-between text-sm text-gray-600 hover:text-gray-900 transition"><span>SMM и маркетинг</span><span class="text-gray-400">10</span></a>
+            <a href="#" class="flex justify-between text-sm text-gray-600 hover:text-gray-900 transition"><span>Дизайн</span><span class="text-gray-400">3</span></a>
+            <a href="#" class="flex justify-between text-sm text-gray-600 hover:text-gray-900 transition"><span>SEO</span><span class="text-gray-400">3</span></a>
+            <a href="#" class="flex justify-between text-sm text-gray-600 hover:text-gray-900 transition"><span>Менеджмент</span><span class="text-gray-400">2</span></a>
+            <a href="#" class="flex justify-between text-sm text-gray-600 hover:text-gray-900 transition"><span>Разработка</span><span class="text-gray-400">2</span></a>
+          </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <h3 class="s-lbl">Статьи</h3>
+          <div class="space-y-3">
+            <a href="#" class="block group">
+              <div class="text-sm text-gray-700 group-hover:text-gray-900 font-medium transition">Как пройти техническое собеседование в 2025 году</div>
+              <div class="text-xs text-gray-400 mt-0.5">3 дня назад</div>
+            </a>
+            <a href="#" class="block group">
+              <div class="text-sm text-gray-700 group-hover:text-gray-900 font-medium transition">Резюме на одну страницу: за и против</div>
+              <div class="text-xs text-gray-400 mt-0.5">5 дней назад</div>
+            </a>
+            <a href="#" class="block group">
+              <div class="text-sm text-gray-700 group-hover:text-gray-900 font-medium transition">Зарплатные ожидания: как не продешевить</div>
+              <div class="text-xs text-gray-400 mt-0.5">1 неделю назад</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-12 bg-gray-50 border-t border-gray-200">
+    <div class="px-4 py-10">
+      <div class="grid grid-cols-2 gap-8">
+        <!-- Brand -->
+        <div>
+          <div class="flex items-center gap-2 mb-2">
+            <img src="logo.png" alt="Диджитал Паб" class="w-9 h-9 rounded-lg" style="object-fit: contain;">
+            <span class="font-semibold logo-brand">диджитал<em>паб</em></span>
+          </div>
+          <p class="text-sm text-gray-500 mt-2">Место, где встречаются хорошие люди</p>
+          <p class="text-xs text-gray-400 mt-1">Вакансии и резюме из Telegram-каналов. Находи быстро, откликайся легко.</p>
+        </div>
+        <!-- Nav -->
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-3">Навигация</div>
+          <div class="space-y-2">
+            <a href="#" class="block text-sm text-gray-500 hover:text-gray-700">Вакансии</a>
+            <a href="#" class="block text-sm text-gray-500 hover:text-gray-700">Резюме</a>
+            <a href="#" class="block text-sm text-gray-500 hover:text-gray-700">Статьи</a>
+          </div>
+        </div>
+        <!-- Social -->
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-3">Мы в соцсетях</div>
+          <div class="flex items-center gap-3">
+            <a href="https://t.me/web_vacancy" target="_blank" rel="noopener noreferrer" aria-label="Telegram" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#26A5E4'" onmouseleave="this.style.color='#9ca3af'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.16 13.947l-2.954-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.982.612z"/></svg>
+            </a>
+            <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" rel="noopener noreferrer" aria-label="Макс" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#8B5CF6'" onmouseleave="this.style.color='#9ca3af'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M7 9.5C7 8.12 8.12 7 9.5 7h5C15.88 7 17 8.12 17 9.5v3c0 1.38-1.12 2.5-2.5 2.5H13l-2.5 2v-2H9.5C8.12 15 7 13.88 7 12.5v-3z" fill="white"/></svg>
+            </a>
+            <a href="https://vk.com/digital_pub_vacancies" target="_blank" rel="noopener noreferrer" aria-label="ВКонтакте" style="color: #9ca3af; transition: color 0.2s;" onmouseenter="this.style.color='#0077FF'" onmouseleave="this.style.color='#9ca3af'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path d="M18.4 8.2h-2.07a.47.47 0 0 0-.41.24s-.82 1.52-1.09 2.03c-.71 1.37-1.17.94-1.17.31V8.55a.69.69 0 0 0-.69-.69h-1.55a1.24 1.24 0 0 0-1.1.51s.79-.13.79.93c0 .26.01 1.02.03 1.65a.46.46 0 0 1-.8.32A13.46 13.46 0 0 1 8.78 8.4a.43.43 0 0 0-.4-.25H6.64a.32.32 0 0 0-.3.43c.56 1.57 3.01 6.45 5.8 6.45h1.17a.47.47 0 0 0 .47-.47v-.71a.46.46 0 0 1 .77-.33l1.4 1.33a.69.69 0 0 0 .47.18h1.85c.89 0 .89-.62.4-1.1-.34-.33-1.57-1.63-1.57-1.63a.64.64 0 0 1-.05-.83c.4-.52 1.05-1.38 1.33-1.75.38-.5 1.06-1.57.12-1.57z" fill="white"/></svg>
+            </a>
+          </div>
+        </div>
+        <!-- Employers -->
+        <div>
+          <div class="text-sm font-semibold text-gray-700 mb-3">Работодателям</div>
+          <div class="space-y-2">
+            <a href="https://t.me/resume_vac_bot" target="_blank" class="block text-sm text-gray-500 hover:text-gray-700">Разместить вакансию</a>
+            <a href="https://t.me/resume_vac_bot" target="_blank" class="block text-sm text-gray-500 hover:text-gray-700">Реклама</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="border-t border-gray-200 py-4">
+      <div class="px-4 flex items-center justify-between text-xs text-gray-400">
+        <span>&copy; 2026 Диджитал Паб</span>
+        <div class="flex gap-4">
+          <a href="#" class="hover:text-gray-600">Политика конфиденциальности</a>
+          <a href="#" class="hover:text-gray-600">Условия использования</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Search toggle script -->
+  <script>
+    (function() {
+      const wrap = document.getElementById('searchWrap');
+      const btn = document.getElementById('searchToggle');
+      const input = document.getElementById('searchInput');
+
+      btn.addEventListener('click', function() {
+        const isOpen = wrap.classList.contains('open');
+        if (isOpen) {
+          if (input.value.trim()) {
+            console.log('Search:', input.value.trim());
+          } else {
+            wrap.classList.remove('open');
+          }
+        } else {
+          wrap.classList.add('open');
+          setTimeout(function() { input.focus(); }, 300);
+        }
+      });
+
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          wrap.classList.remove('open');
+          input.value = '';
+        }
+        if (e.key === 'Enter' && input.value.trim()) {
+          console.log('Search:', input.value.trim());
+        }
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!wrap.contains(e.target) && wrap.classList.contains('open')) {
+          wrap.classList.remove('open');
+          input.value = '';
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>

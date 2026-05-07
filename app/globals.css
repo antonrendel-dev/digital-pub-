@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,7 +18,7 @@
   --border: #d4d4d4;
   --border-light: #e8e8e8;
   --accent: #ffcc3e;
-  --accent-hover: #e6b800;
+  --accent-hover: #e6b835;
   --accent-text: #111111;
   --tag-tp-bg: #f0f5ff;
   --tag-tp-color: #4470c4;
@@ -42,7 +44,7 @@
   --border: #1e2d50;
   --border-light: #162038;
   --accent: #ffcc3e;
-  --accent-hover: #e6b800;
+  --accent-hover: #e6b835;
   --accent-text: #111111;
   --tag-tp-bg: #0a1830;
   --tag-tp-color: #7aabf0;
@@ -55,22 +57,12 @@
   --tag-sp-border: #402010;
 }
 
-/* ---- Blue Accent Override ---- */
-[data-accent='blue'] {
-  --accent: #5b87e0;
-  --accent-hover: #4a76ce;
-  --accent-text: #ffffff;
-}
-[data-theme='dark'][data-accent='blue'] {
-  --accent: #5b87e0;
-  --accent-hover: #4a76ce;
-  --accent-text: #ffffff;
-}
+/* Yellow accent is the only accent per mockups */
 
 /* ---- Base ---- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -89,3 +81,27 @@ body {
 /* Section label with yellow bar */
 .s-lbl { font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-light); margin-bottom:10px; font-weight:600; display:flex; align-items:center; gap:7px; }
 .s-lbl::before { content:''; display:inline-block; width:3px; height:11px; background:#ffcc3e; border-radius:2px; flex-shrink:0; }
+
+/* Tag colors by type - light mode */
+.tag-blue { background: #e8f4fd; color: #1a73e8; }
+.tag-green { background: #e6f7ed; color: #1f8a50; }
+.tag-orange { background: #fff3e0; color: #e65100; }
+
+/* Tag colors by type - dark mode */
+[data-theme='dark'] .tag-blue { background: rgba(26,115,232,0.15); color: #6db3f8; }
+[data-theme='dark'] .tag-green { background: rgba(31,138,80,0.15); color: #5dd39e; }
+[data-theme='dark'] .tag-orange { background: rgba(230,81,0,0.15); color: #ffab70; }
+
+/* Logo brand styling */
+.logo-brand em { font-style: italic; font-weight: 700; color: #ffcc3e; }
+
+/* Descriptor bar */
+.descriptor-bar { background: #f9fafb; }
+[data-theme='dark'] .descriptor-bar { background: #0a1530; }
+
+/* Card hover animation */
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+[data-theme='dark'] .card-hover:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+
+/* Chip active state */
+.chip-active { background: #ffcc3e !important; color: #111 !important; }

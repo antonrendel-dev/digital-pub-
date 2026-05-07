@@ -6,21 +6,30 @@ test.describe('Critical Path', () => {
     await expect(page).toHaveTitle(/Диджитал Паб/)
     // Should see the navbar
     await expect(page.locator('nav')).toBeVisible()
-    // Should see filter chips
-    await expect(page.getByText('Удалёнка')).toBeVisible()
+    // Should see filter chips (use first() since tag text appears in cards too)
+    await expect(page.getByRole('button', { name: 'Удалёнка' }).first()).toBeVisible()
   })
 
-  test('vacancy detail page renders', async ({ page }) => {
-    await page.goto('/vacancies')
-    // Click first vacancy link if present
-    const firstCard = page.locator('a[href*="/vacancies/"]').first()
-    if (await firstCard.isVisible()) {
-      await firstCard.click()
-      // Should see breadcrumb
-      await expect(page.getByText('Главная')).toBeVisible()
-      // Should have a primary action button
-      const btn = page.locator('a[href*="t.me/"], button').filter({ hasText: /Откликнуться|Написать/ })
-      await expect(btn.first()).toBeVisible()
+  test('vacancy detail page loads directly', async ({ page }) => {
+    // First get a real vacancy slug from the listing
+    const response = await page.goto('/vacancies')
+    const firstLink = page.locator('a[href*="/vacancies/"]').first()
+
+    if (await firstLink.isVisible()) {
+      const href = await firstLink.getAttribute('href')
+
+      // Navigate directly (full page load, not SPA navigation)
+      const detailResponse = await page.goto(href!)
+      expect(detailResponse?.status()).toBe(200)
+
+      // Wait for React hydration to complete
+      await page.waitForFunction(() => document.querySelector('h1') !== null, { timeout: 15000 })
+
+      // Should see the vacancy title (h1)
+      await expect(page.locator('h1')).toBeVisible()
+      // Should have CTA button
+      const cta = page.locator('text=/Откликнуться|Написать/').first()
+      await expect(cta).toBeVisible()
     }
   })
 

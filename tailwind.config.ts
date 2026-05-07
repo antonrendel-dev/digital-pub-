@@ -45,14 +45,14 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['-apple-system', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       maxWidth: {
         wrap: '1280px',
       },
       gridTemplateColumns: {
-        layout: '210px 1fr 220px',
-        'post-layout': '1fr 280px',
+        layout: '240px 1fr 260px',
+        'post-layout': '1fr 320px',
         'footer-grid': '1.5fr 1fr 1fr 1fr',
       },
     },

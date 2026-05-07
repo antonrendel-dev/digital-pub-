@@ -6,11 +6,11 @@ import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
 
 interface Props {
-  params: Promise<{ tagSlug: string }>
+  params: { tagSlug: string }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { tagSlug } = await params
+  const { tagSlug } = params
   const tag = await getTagBySlug(tagSlug)
   if (!tag) return { title: 'Тег не найден' }
 
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TagPage({ params }: Props) {
-  const { tagSlug } = await params
+  const { tagSlug } = params
   const tag = await getTagBySlug(tagSlug)
   if (!tag) notFound()
 
