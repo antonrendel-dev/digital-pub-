@@ -6,11 +6,12 @@ import PostDetail from '@/components/PostDetail'
 export const dynamic = 'force-dynamic'
 
 interface Props {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function VacancyPage({ params }: Props) {
-  const post = await getPostBySlug(params.slug)
+  const { slug } = await params
+  const post = await getPostBySlug(slug)
   if (!post) notFound()
 
   const related = (await getPostsByType(post.type)).filter((p) => p.id !== post.id).slice(0, 5)

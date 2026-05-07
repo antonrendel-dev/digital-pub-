@@ -186,6 +186,73 @@ function parseSalary(text: string): string | null {
   return match ? match[1].trim() : null
 }
 
+// Keyword -> tag slug mapping for auto-assignment
+// Uses word boundary matching (Cyrillic-aware)
+const TAG_KEYWORDS: Record<string, string[]> = {
+  smm: ['smm', 'соцсети', 'social media', 'инстаграм', 'instagram', 'контент-менеджер'],
+  seo: ['seo', 'поисковая оптимизация', 'продвижение сайт'],
+  dizajn: ['дизайн', 'дизайнер', 'figma', 'ui/ux', 'ui ux', 'верстальщик', 'фигма'],
+  marketing: ['маркетинг', 'маркетолог', 'performance', 'контент-маркетинг'],
+  menedzher: ['менеджер', 'проджект', 'продакт', 'project manager', 'product manager', 'аккаунт'],
+  target: ['таргет', 'таргетолог', 'target', 'директ', 'контекстная реклама', 'яндекс директ'],
+  razrabotka: ['разработчик', 'программист', 'developer', 'frontend', 'backend', 'фулстек', 'react', 'python', 'javascript'],
+  analitika: ['аналитик', 'аналитика', 'analytics', 'data analyst', 'bi'],
+  finansy: ['финанс', 'бухгалтер', 'экономист'],
+  hr: ['hr', 'рекрутер', 'кадр', 'hrbp', 'people partner'],
+  wordpress: ['wordpress', 'вордпресс'],
+  udalyonka: ['удалённо', 'удаленно', 'удалёнка', 'удаленка', 'remote', 'дистанционно'],
+  ofis: ['офис', 'office', 'в офисе'],
+  gibrid: ['гибрид', 'гибридный', 'hybrid'],
+  junior: ['junior', 'джуниор', 'стажёр', 'стажер', 'начинающий'],
+  middle: ['middle', 'мидл'],
+  senior: ['senior', 'сеньор', 'ведущий', 'lead'],
+}
+
+/** Match text against tag keywords using word boundary matching */
+function matchTags(text: string): string[] {
+  const lowerText = text.toLowerCase()
+  const matched: string[] = []
+
+  for (const [tagSlug, keywords] of Object.entries(TAG_KEYWORDS)) {
+    for (const keyword of keywords) {
+      // Cyrillic-aware word boundary: check chars before and after the keyword
+      const idx = lowerText.indexOf(keyword.toLowerCase())
+      if (idx === -1) continue
+
+      const before = idx > 0 ? lowerText[idx - 1] : ' '
+      const after = idx + keyword.length < lowerText.length ? lowerText[idx + keyword.length] : ' '
+
+      // Check word boundaries (space, punctuation, start/end)
+      const isBoundary = (ch: string) => /[\s\.,;:!?\-—–()\/\[\]{}«»"'#@\n\r]/.test(ch)
+      if ((idx === 0 || isBoundary(before)) && (idx + keyword.length >= lowerText.length || isBoundary(after))) {
+        matched.push(tagSlug)
+        break // Only match once per tag
+      }
+    }
+  }
+
+  return matched
+}
+
+/** Assign tags to a post based on text content */
+async function assignTags(postId: number, text: string): Promise<number> {
+  const matchedSlugs = matchTags(text)
+  if (matchedSlugs.length === 0) return 0
+
+  const tags = await prisma.tag.findMany({
+    where: { slug: { in: matchedSlugs } },
+  })
+
+  if (tags.length === 0) return 0
+
+  await prisma.postTag.createMany({
+    data: tags.map((tag) => ({ postId, tagId: tag.id })),
+    skipDuplicates: true,
+  })
+
+  return tags.length
+}
+
 async function savePost(post: TelegramPost): Promise<boolean> {
   const existing = await prisma.post.findUnique({
     where: {
@@ -199,7 +266,7 @@ async function savePost(post: TelegramPost): Promise<boolean> {
   if (existing) return false
 
   const title = parseTitle(post.text)
-  await prisma.post.create({
+  const created = await prisma.post.create({
     data: {
       type: post.type,
       title,
@@ -214,7 +281,33 @@ async function savePost(post: TelegramPost): Promise<boolean> {
     },
   })
 
+  // Auto-assign tags
+  const tagCount = await assignTags(created.id, `${title} ${post.text}`)
+  if (tagCount > 0) {
+    console.log(`    Assigned ${tagCount} tags to post ${created.id}`)
+  }
+
   return true
+}
+
+/** Backfill tags for existing posts that have no tags assigned */
+async function backfillTags() {
+  console.log('\nBackfilling tags for existing posts...')
+  const posts = await prisma.post.findMany({
+    where: {
+      status: 'published',
+      tags: { none: {} },
+    },
+    select: { id: true, title: true, description: true },
+  })
+
+  let tagged = 0
+  for (const post of posts) {
+    const text = `${post.title} ${post.description ?? ''}`
+    const count = await assignTags(post.id, text)
+    if (count > 0) tagged++
+  }
+  console.log(`  Backfilled tags for ${tagged} out of ${posts.length} untagged posts`)
 }
 
 async function main() {
@@ -237,9 +330,15 @@ async function main() {
     totalNew += newCount
   }
 
+  // Backfill tags for existing untagged posts
+  await backfillTags()
+
   console.log(`\nSync complete. Total new posts: ${totalNew}`)
   await prisma.$disconnect()
 }
+
+// Export for testing
+export { matchTags, TAG_KEYWORDS }
 
 main().catch(async (e) => {
   console.error(e)

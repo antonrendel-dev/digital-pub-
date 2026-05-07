@@ -19,7 +19,6 @@ export default function HomePage({ posts }: HomePageProps) {
 
   useEffect(() => {
     const theme = localStorage.getItem('theme')
-    // Blue accent is the permanent default — apply it on mount
     document.documentElement.setAttribute('data-accent', 'blue')
     if (theme === 'dark') {
       setIsDark(true)
@@ -30,12 +29,9 @@ export default function HomePage({ posts }: HomePageProps) {
   const toggleDark = () => {
     const next = !isDark
     setIsDark(next)
-    // 1. Навешиваем transitions на все элементы
     document.documentElement.classList.add('theme-switching')
-    // 2. Ждём кадр, чтобы браузер применил transition-правила
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        // 3. Только теперь меняем тему — transitions уже на месте
         document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
         localStorage.setItem('theme', next ? 'dark' : 'light')
         setTimeout(() => document.documentElement.classList.remove('theme-switching'), 450)
@@ -44,18 +40,24 @@ export default function HomePage({ posts }: HomePageProps) {
   }
 
   return (
-    <div className="page-wrapper">
+    <div className="flex flex-col min-h-screen">
       <Navbar onSearch={setSearchQuery} onDarkToggle={toggleDark} isDark={isDark} />
-      <main className="page-content">
-        <div className="wrap layout">
-          <LeftSidebar />
-          <Feed
-            posts={posts}
-            searchQuery={searchQuery}
-            externalTag={externalTag}
-            onExternalTagConsumed={() => setExternalTag(undefined)}
-          />
-          <RightSidebar onTagClick={setExternalTag} />
+      <main className="flex-1">
+        <div className="max-w-wrap mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-layout gap-0 lg:gap-6">
+            <aside className="hidden lg:block">
+              <LeftSidebar />
+            </aside>
+            <Feed
+              posts={posts}
+              searchQuery={searchQuery}
+              externalTag={externalTag}
+              onExternalTagConsumed={() => setExternalTag(undefined)}
+            />
+            <aside className="hidden lg:block">
+              <RightSidebar onTagClick={setExternalTag} />
+            </aside>
+          </div>
         </div>
       </main>
       <Footer />

@@ -30,9 +30,9 @@ export default function PageShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="page-wrapper">
+    <div className="flex flex-col min-h-screen">
       <Navbar onSearch={() => {}} onDarkToggle={toggleDark} isDark={isDark} />
-      <main className="page-content">{children}</main>
+      <main className="flex-1">{children}</main>
       <Footer />
     </div>
   )

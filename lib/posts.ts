@@ -1,5 +1,7 @@
 import { prisma } from './prisma'
-import { JOBS } from './data'
+import { z } from 'zod'
+
+export const slugSchema = z.string().regex(/^[a-z0-9-_]{1,80}$/)
 
 export interface FeedPost {
   id: number
@@ -14,6 +16,7 @@ export interface FeedPost {
   telegramMessageId: string | null
   createdAt: string
   isNew: boolean
+  tags: { id: number; name: string; slug: string }[]
 }
 
 function toFeedPost(p: {
@@ -28,6 +31,7 @@ function toFeedPost(p: {
   channelUsername: string | null
   telegramMessageId: string | null
   createdAt: Date
+  tags: { tag: { id: number; name: string; slug: string } }[]
 }): FeedPost {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000)
   return {
@@ -43,75 +47,86 @@ function toFeedPost(p: {
     telegramMessageId: p.telegramMessageId,
     createdAt: p.createdAt.toISOString(),
     isNew: p.createdAt > cutoff,
+    tags: p.tags.map((pt) => ({
+      id: pt.tag.id,
+      name: pt.tag.name,
+      slug: pt.tag.slug,
+    })),
   }
-}
-
-/** Fallback: convert mock JOBS to FeedPost[] when DB is unavailable */
-function getMockPosts(type?: 'vacancy' | 'resume'): FeedPost[] {
-  const jobs = type ? JOBS.filter((_, i) => (type === 'vacancy' ? i % 2 === 0 : i % 2 !== 0)) : JOBS
-  return jobs.map((j) => ({
-    id: j.id,
-    type: (j.id % 2 === 0 ? 'resume' : 'vacancy') as 'vacancy' | 'resume',
-    title: j.title,
-    slug: null,
-    description: j.desc,
-    company: j.co,
-    salary: j.salary,
-    imageUrl: null,
-    channelUsername: null,
-    telegramMessageId: null,
-    createdAt: new Date(Date.now() - j.dord * 86400000).toISOString(),
-    isNew: j.isNew,
-  }))
 }
 
 export async function getPublishedPosts(): Promise<FeedPost[]> {
   try {
     const posts = await prisma.post.findMany({
-      where: { status: 'published' },
+      where: {
+        status: 'published',
+        description: { not: null },
+      },
+      include: {
+        tags: { include: { tag: true } },
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
     return posts.map(toFeedPost)
   } catch {
-    console.warn('[posts] DB unavailable, using mock data')
-    return getMockPosts()
+    console.warn('[posts] DB unavailable')
+    return []
   }
 }
 
 export async function getPostsByType(type: 'vacancy' | 'resume'): Promise<FeedPost[]> {
   try {
     const posts = await prisma.post.findMany({
-      where: { status: 'published', type },
+      where: {
+        status: 'published',
+        type,
+        description: { not: null },
+      },
+      include: {
+        tags: { include: { tag: true } },
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
     return posts.map(toFeedPost)
   } catch {
-    console.warn(`[posts] DB unavailable, using mock ${type} data`)
-    return getMockPosts(type)
+    console.warn(`[posts] DB unavailable`)
+    return []
   }
 }
 
 export async function getPostById(id: number): Promise<FeedPost | null> {
   try {
-    const post = await prisma.post.findUnique({ where: { id } })
+    const post = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        tags: { include: { tag: true } },
+      },
+    })
     if (!post) return null
     return toFeedPost(post)
   } catch {
-    console.warn('[posts] DB unavailable, using mock data')
-    const mock = getMockPosts().find((p) => p.id === id)
-    return mock ?? null
+    console.warn('[posts] DB unavailable')
+    return null
   }
 }
 
 export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
+  const parsed = slugSchema.safeParse(slug)
+  if (!parsed.success) return null
+
   try {
-    const post = await prisma.post.findUnique({ where: { slug } })
+    const post = await prisma.post.findUnique({
+      where: { slug },
+      include: {
+        tags: { include: { tag: true } },
+      },
+    })
     if (!post) return null
     return toFeedPost(post)
   } catch {
-    console.warn('[posts] DB unavailable, using mock data')
+    console.warn('[posts] DB unavailable')
     return null
   }
 }

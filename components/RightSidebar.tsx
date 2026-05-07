@@ -21,35 +21,55 @@ const ARTICLES = [
 
 export default function RightSidebar({ onTagClick }: RightSidebarProps) {
   return (
-    <div className="right-col">
-      <div className="s-sec">
-        <div className="s-lbl">Популярные теги</div>
-        <div className="tag-cloud">
+    <div className="space-y-6">
+      {/* Tag cloud */}
+      <div>
+        <h3 className="s-lbl">Популярные теги</h3>
+        <div className="flex flex-wrap gap-1">
           {CLOUD_TAGS.map((tag) => (
-            <button key={tag.t} className={`ctag ${tag.s}`} onClick={() => onTagClick(tag.t)}>
+            <button
+              key={tag.t}
+              className={`px-2.5 py-1 rounded border border-border bg-bg-card text-text-muted cursor-pointer transition-all hover:border-accent hover:text-text ${
+                tag.s === 'lg' ? 'text-[13px]' : tag.s === 'sm' ? 'text-[10px]' : 'text-[11px]'
+              }`}
+              onClick={() => onTagClick(tag.t)}
+            >
               {tag.t}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="s-sec">
-        <div className="s-lbl">Категории</div>
-        {CATEGORIES.map((cat) => (
-          <a key={cat.name} href="#" className="cat-link">
-            {cat.name} <span>{cat.count}</span>
-          </a>
-        ))}
+      {/* Categories */}
+      <div>
+        <h3 className="s-lbl">Категории</h3>
+        <div className="space-y-0">
+          {CATEGORIES.map((cat) => (
+            <a
+              key={cat.name}
+              href="#"
+              className="flex justify-between items-center py-1.5 border-b border-border-light text-sm text-text-muted no-underline hover:text-accent transition-colors"
+            >
+              <span>{cat.name}</span>
+              <span className="text-[11px] text-text-light">{cat.count}</span>
+            </a>
+          ))}
+        </div>
       </div>
 
-      <div className="s-sec">
-        <div className="s-lbl">Статьи</div>
-        {ARTICLES.map((article) => (
-          <div key={article.title} className="art-item">
-            <a href="#">{article.title}</a>
-            <div className="dt">{article.date}</div>
-          </div>
-        ))}
+      {/* Articles */}
+      <div>
+        <h3 className="s-lbl">Статьи</h3>
+        <div className="space-y-0">
+          {ARTICLES.map((article) => (
+            <div key={article.title} className="py-2 border-b border-border-light">
+              <a href="#" className="text-[11.5px] text-text-muted no-underline leading-snug block hover:text-accent transition-colors">
+                {article.title}
+              </a>
+              <div className="text-[10px] text-text-light mt-0.5">{article.date}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

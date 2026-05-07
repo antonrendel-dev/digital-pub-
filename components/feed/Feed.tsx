@@ -11,7 +11,6 @@ const FILTER_CHIPS = [
   'Дизайн',
   'Маркетинг',
   'Менеджер',
-  'Директ',
   'Таргет',
   'WordPress',
 ]
@@ -48,11 +47,8 @@ export default function Feed({
   const toggleChip = useCallback((tag: string) => {
     setActiveFilters((prev) => {
       const next = new Set(prev)
-      if (next.has(tag)) {
-        next.delete(tag)
-      } else {
-        next.add(tag)
-      }
+      if (next.has(tag)) next.delete(tag)
+      else next.add(tag)
       return next
     })
     setVisible(PAGE_SIZE)
@@ -86,69 +82,96 @@ export default function Feed({
   }
 
   if (activeFilters.size > 0) {
-    filtered = filtered.filter((p) =>
-      [...activeFilters].some(
+    filtered = filtered.filter((p) => {
+      // Try tag-based filtering first
+      if (p.tags && p.tags.length > 0) {
+        return [...activeFilters].some((f) =>
+          p.tags.some((tag) => tag.name.toLowerCase() === f.toLowerCase())
+        )
+      }
+      // Fallback to text-based
+      return [...activeFilters].some(
         (f) =>
           p.title.toLowerCase().includes(f.toLowerCase()) ||
           (p.description?.toLowerCase().includes(f.toLowerCase()) ?? false)
       )
-    )
+    })
   }
 
   const vacancies = filtered.filter((p) => p.type === 'vacancy')
   const resumes = filtered.filter((p) => p.type === 'resume')
-  const sorted = [...vacancies, ...resumes] // vacancies first
+  const sorted = [...vacancies, ...resumes]
 
   return (
-    <div className="feed-col">
-      {pageTitle && <h1 className="feed-page-title">{pageTitle}</h1>}
-      <div className="feed-top">
-        <span className="feed-count">
+    <div>
+      {pageTitle && (
+        <h1 className="text-xl font-bold text-text tracking-tight mb-4">{pageTitle}</h1>
+      )}
+      <div className="flex items-center justify-between mb-3.5">
+        <span className="text-sm text-text-light">
           {searchQuery
             ? `${sorted.length} результатов`
             : pageTitle
               ? `${sorted.length} объявлений`
-              : `${vacancies.length} вакансий · ${resumes.length} резюме`}
+              : `${vacancies.length} вакансий \u00B7 ${resumes.length} резюме`}
         </span>
       </div>
 
       {/* Filter chips */}
-      <div className="filters">
+      <div className="flex flex-wrap gap-2 mb-4">
         {FILTER_CHIPS.map((chip) => (
-          <span
+          <button
             key={chip}
-            className={`chip ${activeFilters.has(chip) ? 'on' : ''}`}
+            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer select-none ${
+              activeFilters.has(chip)
+                ? 'bg-accent text-accent-text border border-accent'
+                : 'bg-bg-card text-text-muted border border-border hover:border-text-light hover:text-text'
+            }`}
             onClick={() => toggleChip(chip)}
           >
             {chip}
-          </span>
+          </button>
         ))}
       </div>
 
       {/* Active filter pills */}
       {activeFilters.size > 0 && (
-        <div className="af-bar">
+        <div className="flex flex-wrap gap-1.5 mb-3 items-center">
           {[...activeFilters].map((f) => (
-            <span key={f} className="af-pill" onClick={() => removeFilter(f)}>
-              {f} ×
+            <span
+              key={f}
+              className="text-xs px-2.5 py-1 rounded-full bg-accent text-accent-text cursor-pointer flex items-center gap-1 font-semibold hover:bg-accent-hover"
+              onClick={() => removeFilter(f)}
+            >
+              {f} &times;
             </span>
           ))}
-          <button className="af-clr" onClick={clearAll}>
-            Сбросить всё
+          <button
+            className="text-xs text-text-light cursor-pointer underline ml-0.5 bg-transparent border-none"
+            onClick={clearAll}
+          >
+            Сбросить все
           </button>
         </div>
       )}
 
       {/* Posts */}
       {sorted.length === 0 ? (
-        <div className="empty-state">По вашему запросу ничего не найдено</div>
+        <div className="py-9 text-center text-text-light text-sm border border-dashed border-border rounded-lg">
+          По вашему запросу ничего не найдено
+        </div>
       ) : (
         <>
-          {sorted.slice(0, visible).map((post) => (
-            <JobCard key={post.id} post={post} />
-          ))}
+          <div className="space-y-3">
+            {sorted.slice(0, visible).map((post) => (
+              <JobCard key={post.id} post={post} />
+            ))}
+          </div>
           {visible < sorted.length && (
-            <button className="load-btn" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
+            <button
+              className="w-full mt-4 py-2.5 border border-border rounded-full bg-bg-card text-sm text-text-light hover:border-text-light hover:text-text cursor-pointer transition-all"
+              onClick={() => setVisible((v) => v + PAGE_SIZE)}
+            >
               Показать ещё
             </button>
           )}

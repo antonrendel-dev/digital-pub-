@@ -8,8 +8,6 @@ import Feed from './feed/Feed'
 import Footer from './Footer'
 import { FeedPost } from '@/lib/posts'
 
-const CATEGORIES = ['Разработка', 'Маркетинг', 'Дизайн', 'Продажи', 'Аналитика', 'Финансы', 'HR']
-
 interface ListingPageProps {
   posts: FeedPost[]
   type: 'vacancy' | 'resume'
@@ -18,7 +16,6 @@ interface ListingPageProps {
 export default function ListingPage({ posts, type }: ListingPageProps) {
   const [isDark, setIsDark] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-accent', 'blue')
@@ -27,10 +24,6 @@ export default function ListingPage({ posts, type }: ListingPageProps) {
       setIsDark(true)
       document.documentElement.setAttribute('data-theme', 'dark')
     }
-    // Read category from URL
-    const params = new URLSearchParams(window.location.search)
-    const cat = params.get('cat')
-    if (cat) setActiveCategory(cat)
   }, [])
 
   const toggleDark = () => {
@@ -46,53 +39,29 @@ export default function ListingPage({ posts, type }: ListingPageProps) {
     })
   }
 
-  // Filter by category (simple text match in title/description)
-  const filtered = activeCategory
-    ? posts.filter(
-        (p) =>
-          p.title.toLowerCase().includes(activeCategory.toLowerCase()) ||
-          (p.description?.toLowerCase().includes(activeCategory.toLowerCase()) ?? false)
-      )
-    : posts
-
   const pageTitle = type === 'vacancy' ? 'Вакансии' : 'Резюме'
 
   return (
-    <div className="page-wrapper">
+    <div className="flex flex-col min-h-screen">
       <Navbar onSearch={setSearchQuery} onDarkToggle={toggleDark} isDark={isDark} />
-
-      <main className="page-content">
-        {/* Category tabs */}
-        <div className="listing-cats wrap">
-          <button
-            className={`listing-cat ${!activeCategory ? 'on' : ''}`}
-            onClick={() => setActiveCategory(null)}
-          >
-            Все
-          </button>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              className={`listing-cat ${activeCategory === cat ? 'on' : ''}`}
-              onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        <div className="wrap layout">
-          <LeftSidebar />
-          <Feed
-            posts={filtered}
-            searchQuery={searchQuery}
-            onExternalTagConsumed={() => {}}
-            pageTitle={pageTitle}
-          />
-          <RightSidebar onTagClick={() => {}} />
+      <main className="flex-1">
+        <div className="max-w-wrap mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-layout gap-0 lg:gap-6">
+            <aside className="hidden lg:block">
+              <LeftSidebar />
+            </aside>
+            <Feed
+              posts={posts}
+              searchQuery={searchQuery}
+              onExternalTagConsumed={() => {}}
+              pageTitle={pageTitle}
+            />
+            <aside className="hidden lg:block">
+              <RightSidebar onTagClick={() => {}} />
+            </aside>
+          </div>
         </div>
       </main>
-
       <Footer />
     </div>
   )
