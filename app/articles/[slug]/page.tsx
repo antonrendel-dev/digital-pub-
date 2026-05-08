@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!article) return { title: 'Статья не найдена' }
 
   return {
-    title: `${article.title} — Диджитал Паб`,
-    description: article.description,
+    title: article.metaTitle ?? `${article.title} — Диджитал Паб`,
+    description: article.metaDescription ?? article.description,
   }
 }
 

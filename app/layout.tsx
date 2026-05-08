@@ -9,6 +9,10 @@ export const metadata: Metadata = {
     icon: '/logo.png',
     apple: '/logo.png',
   },
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

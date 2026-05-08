@@ -88,9 +88,9 @@ export default function LeftSidebar({ stats }: LeftSidebarProps) {
         <h3 className="s-lbl">Платформа</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between"><span className="text-text-muted">Вакансий</span><span className="font-semibold text-text">{stats?.vacancyCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">Новых сегодня</span><span className="font-semibold text-green-600">{stats?.newToday?.toLocaleString('ru-RU') ?? '—'}</span></div>
           <div className="flex justify-between"><span className="text-text-muted">Резюме</span><span className="font-semibold text-text">{stats?.resumeCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
           <div className="flex justify-between"><span className="text-text-muted">Компаний</span><span className="font-semibold text-text">{stats?.companyCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">Новых сегодня</span><span className="font-semibold text-green-600">{stats?.newToday?.toLocaleString('ru-RU') ?? '—'}</span></div>
         </div>
       </div>
     </div>

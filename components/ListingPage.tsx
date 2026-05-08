@@ -12,9 +12,10 @@ interface ListingPageProps {
   posts: FeedPost[]
   type: 'vacancy' | 'resume'
   tags?: { name: string; slug: string; tagType: string; count: number }[]
+  stats?: { vacancyCount: number; resumeCount: number; companyCount: number; newToday: number }
 }
 
-export default function ListingPage({ posts, type, tags }: ListingPageProps) {
+export default function ListingPage({ posts, type, tags, stats }: ListingPageProps) {
   const [isDark, setIsDark] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -49,7 +50,7 @@ export default function ListingPage({ posts, type, tags }: ListingPageProps) {
         <div className="max-w-wrap mx-auto px-4 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-layout gap-0 lg:gap-6">
             <aside className="hidden lg:block">
-              <LeftSidebar />
+              <LeftSidebar stats={stats} />
             </aside>
             <Feed
               posts={posts}

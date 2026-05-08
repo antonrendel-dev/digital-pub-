@@ -11,6 +11,8 @@ const frontmatterSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   slug: slugSchema,
   description: z.string().min(1, 'Description is required'),
+  metaTitle: z.string().optional(),
+  metaDescription: z.string().optional(),
   publishedAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
   tags: z.array(z.string()).optional().default([]),
 })
@@ -19,6 +21,8 @@ export interface Article {
   title: string
   slug: string
   description: string
+  metaTitle?: string
+  metaDescription?: string
   publishedAt: string
   tags: string[]
   content: string
@@ -28,6 +32,8 @@ export interface ArticleMeta {
   title: string
   slug: string
   description: string
+  metaTitle?: string
+  metaDescription?: string
   publishedAt: string
   tags: string[]
 }
@@ -50,6 +56,8 @@ export function getArticles(): ArticleMeta[] {
         title: parsed.data.title,
         slug: parsed.data.slug,
         description: parsed.data.description,
+        metaTitle: parsed.data.metaTitle,
+        metaDescription: parsed.data.metaDescription,
         publishedAt: parsed.data.publishedAt,
         tags: parsed.data.tags,
       })
@@ -86,6 +94,8 @@ export function getArticleBySlug(slug: string): Article | null {
     title: parsed.data.title,
     slug: parsed.data.slug,
     description: parsed.data.description,
+    metaTitle: parsed.data.metaTitle,
+    metaDescription: parsed.data.metaDescription,
     publishedAt: parsed.data.publishedAt,
     tags: parsed.data.tags,
     content,

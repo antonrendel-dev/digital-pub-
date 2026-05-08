@@ -1,5 +1,5 @@
 import { getPostsByType } from '@/lib/posts'
-import { getTagsWithCounts } from '@/lib/tags'
+import { getTagsWithCounts, getStats } from '@/lib/tags'
 import ListingPage from '@/components/ListingPage'
 import type { Metadata } from 'next'
 
@@ -11,9 +11,10 @@ export const metadata: Metadata = {
 }
 
 export default async function ResumesPage() {
-  const [posts, tags] = await Promise.all([
+  const [posts, tags, stats] = await Promise.all([
     getPostsByType('resume'),
     getTagsWithCounts(),
+    getStats(),
   ])
-  return <ListingPage posts={posts} type="resume" tags={tags} />
+  return <ListingPage posts={posts} type="resume" tags={tags} stats={stats} />
 }
