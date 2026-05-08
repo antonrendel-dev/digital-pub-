@@ -10,8 +10,8 @@ export const metadata: Metadata = {
     apple: '/logo.png',
   },
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
 }
 
