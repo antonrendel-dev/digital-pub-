@@ -50,11 +50,12 @@ export default function HomePage({ posts, stats, articles, tags, seoHtml }: Home
           {/* H1 + intro */}
           <div className="mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-text tracking-tight mb-2">
-              Вакансии и резюме в digital из Telegram-каналов
+              Вакансии и резюме digital-специалистов из Telegram-каналов
             </h1>
             <p className="text-sm text-text-muted leading-relaxed max-w-2xl">
-              Ежедневный агрегатор вакансий для маркетологов, дизайнеров, SMM-специалистов, SEO-специалистов и аналитиков.
-              Удалённая работа и офис — все предложения из профильных Telegram-каналов в одном месте.
+              Диджитал Паб — агрегатор вакансий в маркетинге, дизайне, SMM и IT из профильных Telegram-каналов.
+              Находите работу в digital или размещайте резюме — новые предложения поступают каждый день.
+              Удалённая работа, офис или гибрид — все форматы в одном месте.
             </p>
           </div>
 
