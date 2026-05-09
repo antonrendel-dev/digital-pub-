@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Metadata } from 'next'
 import { getPostBySlug, getPostsByType } from '@/lib/posts'
 import { getTagBySlug, getTagsWithCounts } from '@/lib/tags'
 import PageShell from '@/components/PageShell'
@@ -8,6 +9,19 @@ export const dynamic = 'force-dynamic'
 
 interface Props {
   params: { category: string; slug: string }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const post = await getPostBySlug(params.slug)
+  if (!post) return { title: 'Вакансия не найдена' }
+
+  const rawTitle = `${post.title}${post.salary ? ` (${post.salary})` : ''} — вакансия`
+  const title = rawTitle.length > 60 ? rawTitle.slice(0, 57) + '...' : rawTitle
+
+  const rawDesc = `${post.company ? post.company + ': ' : ''}${post.title}.${post.salary ? ' Зарплата: ' + post.salary + '.' : ''} Смотреть на Диджитал Паб.`
+  const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
+
+  return { title, description }
 }
 
 export default async function VacancyPage({ params }: Props) {

@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!tag) return { title: 'Тег не найден' }
 
   return {
-    title: tag.seoTitle?.replace('вакансии', 'резюме') ?? `${tag.name} — резюме | Диджитал Паб`,
-    description: tag.seoDescription?.replace('Вакансии', 'Резюме') ?? `Резюме по тегу ${tag.name} на Диджитал Паб.`,
+    title: `Резюме специалистов: ${tag.name}`,
+    description: `Резюме ${tag.name}-специалистов из Telegram-сообщества. База кандидатов в digital-сфере на Диджитал Паб.`,
   }
 }
 

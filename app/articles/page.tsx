@@ -4,8 +4,8 @@ import { getArticles, formatArticleDate } from '@/lib/articles'
 import PageShell from '@/components/PageShell'
 
 export const metadata: Metadata = {
-  title: 'Статьи о работе в digital — Диджитал Паб',
-  description: 'Полезные статьи для фрилансеров и digital-специалистов: карьера, резюме, собеседования, зарплаты.',
+  title: 'Карьера в digital: статьи для маркетологов и дизайнеров',
+  description: 'Как составить резюме, пройти собеседование и вырасти в digital. Полезные материалы для SMM, маркетологов, дизайнеров и аналитиков.',
 }
 
 export default function ArticlesPage() {

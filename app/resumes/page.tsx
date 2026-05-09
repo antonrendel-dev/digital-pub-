@@ -6,8 +6,8 @@ import type { Metadata } from 'next'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Резюме — Диджитал Паб',
-  description: 'Резюме специалистов в IT, дизайне, маркетинге и аналитике.',
+  title: 'Резюме дизайнеров, маркетологов и IT-специалистов',
+  description: 'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества для вашего проекта.',
 }
 
 export default async function ResumesPage() {

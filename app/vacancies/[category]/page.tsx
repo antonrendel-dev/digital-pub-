@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!tag) return { title: 'Категория не найдена' }
 
   return {
-    title: tag.seoTitle ?? `${tag.name} — вакансии | Диджитал Паб`,
-    description: tag.seoDescription ?? `Вакансии по категории ${tag.name} на Диджитал Паб.`,
+    title: tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`,
+    description: tag.seoDescription ?? `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`,
   }
 }
 

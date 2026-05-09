@@ -6,8 +6,8 @@ import type { Metadata } from 'next'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Вакансии — Диджитал Паб',
-  description: 'Актуальные вакансии в IT, дизайне, маркетинге и аналитике из Telegram-каналов.',
+  title: 'Вакансии маркетолога, дизайнера, SMM, аналитика',
+  description: 'Актуальные вакансии в digital: маркетинг, дизайн, SMM, аналитика, контент. Удалённая работа и офис. Обновление из Telegram-каналов ежедневно.',
 }
 
 export default async function VacanciesPage() {
