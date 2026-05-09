@@ -26,7 +26,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const rawDesc = `${post.company ? post.company + ': ' : ''}${post.title}.${post.salary ? ' Зарплата: ' + post.salary + '.' : ''} Смотреть на Диджитал Паб.`
   const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
 
-  return { title, description }
+  const url = `https://d-pub.ru/post/${params.id}`
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+      images: post.imageUrl ? [{ url: post.imageUrl, alt: post.title }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  }
 }
 
 export default async function PostPage({ params }: Props) {

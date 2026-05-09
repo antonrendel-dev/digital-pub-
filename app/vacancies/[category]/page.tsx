@@ -2,9 +2,12 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
+import { getArticles } from '@/lib/articles'
 import PageShell from '@/components/PageShell'
 import TileCard from '@/components/feed/TileCard'
 import TagsSidebar from '@/components/TagsSidebar'
+import JsonLd from '@/components/JsonLd'
+import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/components/RelatedArticles'
 
 interface Props {
   params: { category: string }
@@ -15,9 +18,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = await getTagBySlug(category)
   if (!tag) return { title: 'Категория не найдена' }
 
+  const title = tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`
+  const description = tag.seoDescription ?? `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`
+  const url = `https://d-pub.ru/vacancies/${category}`
+
   return {
-    title: tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`,
-    description: tag.seoDescription ?? `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   }
 }
 
@@ -28,9 +47,23 @@ export default async function CategoryPage({ params }: Props) {
 
   const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
   const allTags = await getTagsWithCounts()
+  const allArticles = getArticles()
+  const relatedArticles = getRelatedArticlesForCategory(category, allArticles, 3)
+
+  // BreadcrumbList Schema.org
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
+      { '@type': 'ListItem', position: 2, name: 'Вакансии', item: 'https://d-pub.ru/vacancies' },
+      { '@type': 'ListItem', position: 3, name: tag.name },
+    ],
+  }
 
   return (
     <PageShell>
+      <JsonLd data={breadcrumbLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-text-muted mb-6">
@@ -93,6 +126,9 @@ export default async function CategoryPage({ params }: Props) {
           {/* Sidebar */}
           <aside className="hidden lg:block space-y-6">
             <TagsSidebar tags={allTags} activeSlug={category} />
+
+            {/* Related articles cross-link */}
+            <RelatedArticlesBlock articles={relatedArticles} />
 
             {/* CTA */}
             <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4 text-center">

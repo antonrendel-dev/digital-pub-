@@ -6,6 +6,13 @@ import PageShell from '@/components/PageShell'
 export const metadata: Metadata = {
   title: 'Карьера в digital: статьи для маркетологов и дизайнеров',
   description: 'Как составить резюме, пройти собеседование и вырасти в digital. Полезные материалы для SMM, маркетологов, дизайнеров и аналитиков.',
+  alternates: { canonical: 'https://d-pub.ru/articles' },
+  openGraph: {
+    title: 'Карьера в digital: статьи для маркетологов и дизайнеров',
+    description: 'Как составить резюме, пройти собеседование и вырасти в digital. Полезные материалы для специалистов.',
+    url: 'https://d-pub.ru/articles',
+    type: 'website',
+  },
 }
 
 export default function ArticlesPage() {

@@ -119,6 +119,34 @@ export async function getPostById(id: number): Promise<FeedPost | null> {
   }
 }
 
+export async function getPostsByTypePaginated(
+  type: 'vacancy' | 'resume',
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<{ posts: FeedPost[]; total: number; totalPages: number }> {
+  try {
+    const where = { status: 'published' as const, type, description: { not: null } }
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        include: { tags: { include: { tag: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.post.count({ where }),
+    ])
+    return {
+      posts: posts.map(toFeedPost),
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    }
+  } catch {
+    console.warn(`[posts] DB unavailable`)
+    return { posts: [], total: 0, totalPages: 0 }
+  }
+}
+
 export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
   const parsed = slugSchema.safeParse(slug)
   if (!parsed.success) return null

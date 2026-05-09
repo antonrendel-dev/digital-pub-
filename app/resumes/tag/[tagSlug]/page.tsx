@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
 import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
+import JsonLd from '@/components/JsonLd'
 
 interface Props {
   params: { tagSlug: string }
@@ -14,9 +15,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = await getTagBySlug(tagSlug)
   if (!tag) return { title: 'Тег не найден' }
 
+  const title = `Резюме специалистов: ${tag.name}`
+  const description = `Резюме ${tag.name}-специалистов из Telegram-сообщества. База кандидатов в digital-сфере на Диджитал Паб.`
+  const url = `https://d-pub.ru/resumes/tag/${tagSlug}`
+
   return {
-    title: `Резюме специалистов: ${tag.name}`,
-    description: `Резюме ${tag.name}-специалистов из Telegram-сообщества. База кандидатов в digital-сфере на Диджитал Паб.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   }
 }
 
@@ -29,8 +46,20 @@ export default async function TagPage({ params }: Props) {
   const allTags = await getTagsWithCounts()
   const relatedTags = allTags.filter((t) => t.slug !== tagSlug && t.count > 0).slice(0, 8)
 
+  // BreadcrumbList Schema.org
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
+      { '@type': 'ListItem', position: 2, name: 'Резюме', item: 'https://d-pub.ru/resumes' },
+      { '@type': 'ListItem', position: 3, name: tag.name },
+    ],
+  }
+
   return (
     <PageShell>
+      <JsonLd data={breadcrumbLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
           <Link href="/" className="text-text-muted no-underline hover:text-accent transition-colors">Главная</Link>

@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getArticleBySlug, getArticles, formatArticleDate } from '@/lib/articles'
 import PageShell from '@/components/PageShell'
+import JsonLd from '@/components/JsonLd'
+import { getRelatedCategoriesForArticle, RelatedCategoriesBlock } from '@/components/RelatedArticles'
 
 interface Props {
   params: { slug: string }
@@ -14,9 +16,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = getArticleBySlug(slug)
   if (!article) return { title: 'Статья не найдена' }
 
+  const title = article.metaTitle ?? article.title
+  const description = article.metaDescription ?? article.description
+  const url = `https://d-pub.ru/articles/${slug}`
+
   return {
-    title: article.metaTitle ?? article.title,
-    description: article.metaDescription ?? article.description,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'article',
+      publishedTime: article.publishedAt,
+      authors: ['Диджитал Паб'],
+      tags: article.tags,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   }
 }
 
@@ -27,9 +48,51 @@ export default async function ArticlePage({ params }: Props) {
 
   const allArticles = getArticles()
   const related = allArticles.filter((a) => a.slug !== article.slug).slice(0, 3)
+  const relatedCategories = getRelatedCategoriesForArticle(article.tags)
+
+  // Schema.org Article
+  const articleLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.description,
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    author: {
+      '@type': 'Organization',
+      name: 'Диджитал Паб',
+      url: 'https://d-pub.ru',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Диджитал Паб',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://d-pub.ru/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://d-pub.ru/articles/${slug}`,
+    },
+    keywords: article.tags.join(', '),
+  }
+
+  // BreadcrumbList
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
+      { '@type': 'ListItem', position: 2, name: 'Статьи', item: 'https://d-pub.ru/articles' },
+      { '@type': 'ListItem', position: 3, name: article.title },
+    ],
+  }
 
   return (
     <PageShell>
+      <JsonLd data={articleLd} />
+      <JsonLd data={breadcrumbLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
@@ -72,6 +135,9 @@ export default async function ArticlePage({ params }: Props) {
 
           {/* Sidebar */}
           <aside className="hidden lg:flex flex-col gap-4">
+            {/* Cross-link: related vacancy categories */}
+            <RelatedCategoriesBlock categories={relatedCategories} />
+
             {related.length > 0 && (
               <div className="bg-bg-card border border-border rounded-xl p-4">
                 <div className="s-lbl mb-3">Другие статьи</div>
