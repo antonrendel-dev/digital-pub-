@@ -103,43 +103,106 @@ Staging нет.
 
 ## Known Issues (open)
 
-### 🔴 P0 — Прод на тонкой нитке: `npm run build` падает с `useContext` crash
+### 🔴 P0 — `npm run build` падает с `useContext` crash. Блокирует деплой любых код-изменений.
 
-**Обнаружено:** 2026-05-13 при попытке `/done` финализации digital-pub-mvp.
+**Обнаружено:** 2026-05-13.
 
-**Симптом:** `NODE_ENV=development npm run build` падает с `TypeError: Cannot read properties of null (reading 'useContext')` на prerender всех статических страниц (`/`, `/vacancies`, `/resumes`, `/articles`, `/privacy`, `/terms`, `/_not-found`, `/404`, `/500`). Воспроизводится **и на dev-машине, и на NetAngels-сервере**.
+**Симптом:** `npm run build` падает с `TypeError: Cannot read properties of null (reading 'useContext')` на prerender всех статических страниц (`/`, `/vacancies`, `/resumes`, `/articles`, `/privacy`, `/terms`, `/_not-found`, `/404`, `/500`). Воспроизводится **и на dev-машине, и на NetAngels-сервере**.
 
-**Почему сейчас сайт жив:** запущенный Node-процесс на сервере держит в памяти **старую** рабочую `.next/` сборку из прошлого. SSR-страницы обслуживаются из неё. `curl https://d-pub.ru/*` отвечает 200 OK.
+**Прод сейчас:** **стабилизирован** (2026-05-13 ~15:00). На сервере `.next/` восстановлен из бэкапа NetAngels от 12 мая через узкий restore. Сайт работает с диска, не с памяти. Node-процесс может перезагрузиться — поднимется с этой рабочей сборкой.
 
-**Что произойдёт при любом из событий:**
-- `touch reload` — Passenger перезагрузит Node, подцепит сломанную `.next/`, **сайт ляжет**
-- OOM kill процесса — рестарт уйдёт в сломанную сборку
-- Перезагрузка сервера / Passenger workers recycling — то же
-
-**Workaround'ы, которые НЕ помогли:**
-- `export const dynamic = 'force-dynamic'` на проблемных страницах — фиксит useContext, но `/404` и `/500` тогда падают с `<Html> should not be imported outside of pages/_document` из internal chunk 682 Next.js
-- `pages/_document.tsx` + `pages/_error.tsx` (Pages Router fallback) — не перехватывает Next internal `<Html>` импорт
-- `app/global-error.tsx` (App Router) — не помог
-- `pages/404.tsx` + `pages/500.tsx` — не помогли
-- `eslint.ignoreDuringBuilds` в next.config — не относится к проблеме
-- Upgrade Next: `14.2.35` — уже последняя версия в minor
-
-**Корень проблемы — гипотеза:** Next.js 14.2.35 в App Router режиме генерирует internal `_error` chunk, который импортирует `<Html>` для Pages Router fallback. При нашей конфигурации (App Router only) этот chunk не должен использоваться, но Next пытается его prerender'нуть для `/404` и `/500`. **Не подтверждено**.
-
-**Что НЕ ДЕЛАТЬ до фикса:**
-- `touch reload` на сервере
+**Что НЕ ДЕЛАТЬ:**
 - `npm run build` на сервере (перезапишет рабочую `.next/` сломанной)
-- Trigger Passenger workers recycle
-- Любой rsync/scp с заменой `.next/`
+- `touch reload` после неудачного `npm run build`
 
-**Куда смотреть при следующей сессии:**
-- `node_modules/next/dist/build/index.js` — где Next решает prerender'ить `/404`, `/500`
-- `.next-dev/server/chunks/629.js` (после build) — кто вызывает useContext в client tree
-- `.next-dev/server/chunks/682.js` — Next internal `<Html>` импорт
-- Возможно — переключение на `next@15.x` (App Router там стабильнее), но это major upgrade с риском
-- Альтернатива: переделать `PageShell.tsx` (тема/нав) — убрать `useState` с верхнего уровня, сделать чисто-server-component с тонкой client-prosьадкой только для theme toggle button
+---
 
-**Связано:** этот bug блокирует все pre-deploy QA шаги. До его фикса фича `digital-pub-mvp` формально закрыта (`/done`), но любые новые фичи перед merge в `main` нужно прогонять с осознанием, что build всё равно покажет error exit code, и реально на проде менять код **опасно**.
+#### Диагностика (5+ часов 2026-05-13)
+
+**Стек ошибки:**
+```
+TypeError: Cannot read properties of null (reading 'useContext')
+  at t.useContext (next-server/app-page.runtime.prod.js)
+  at f|d (.next-dev/server/chunks/XXX.js)  // function: usePathname()
+  at h (.next-dev/server/chunks/XXX.js)    // function: auto-generated ErrorBoundary
+```
+
+`h` — это auto-generated Next.js ErrorBoundary который оборачивает каждую App Router страницу при build. Внутри он вызывает `usePathname()` → `useContext(PathnameContext)`. В prerender context отсутствует → null → crash.
+
+**Гипотезы — ОТВЕРГНУТЫ:**
+- ❌ Node v22 несовместимость — на Node v20.20.2 та же ошибка
+- ❌ Наш refactor (postUtils, sitemap, _count) — откат к pre-refactor коммиту `8b3f6fa` → та же ошибка
+- ❌ `export const dynamic = 'force-dynamic'` на pages — не помогает
+- ❌ `pages/_document.tsx`, `pages/_error.tsx`, `app/global-error.tsx`, `pages/404.tsx`, `pages/500.tsx` — не помогают
+- ❌ `PageShell` как server-component (theme в отдельный ThemeWrapper client) — не помогает
+- ❌ `@prisma/adapter-pg` — без него та же ошибка
+- ❌ Prisma v7 → v6 downgrade с custom output — та же ошибка
+- ❌ `serverComponentsExternalPackages: ['@prisma/client']` в next.config — не помогает
+- ❌ Clean reinstall `node_modules` — не помогает
+- ❌ Минимальный `next.config.mjs` — не помогает
+
+**Что РАБОТАЕТ (известный good baseline):**
+- Clean-room Next 14.2.35 + React 18 + Node v20 = **PASS** (доказано в `/tmp/test-next/`)
+- В нашем проекте: schema без `output`, lib/prisma.ts simplified (только `import { PrismaClient } from '@prisma/client'`), все 9 pages stub'ы, layout минимальный → **PASS** (Monitor `bfdxrbwji` 2026-05-13)
+
+**Вывод:** виновник в **наших pages или layout**. Конкретный импорт-триггер не локализован.
+
+---
+
+#### План действий на следующую сессию
+
+**Цель:** найти и устранить конкретный импорт-триггер, выкатить рабочий build на прод.
+
+**Шаг 1 — Baseline.** Установить known-good:
+- `prisma/schema.prisma` — удалить `output = "../generated/prisma"`
+- `lib/prisma.ts` — упростить: `import { PrismaClient } from '@prisma/client'` + singleton, без adapter/Pool
+- `prisma/seed.ts`, `scripts/sync-telegram.ts` — поменять `'../generated/prisma'` → `'@prisma/client'`
+- `npx prisma generate`
+- Все 9 проблемных pages (`/`, `/vacancies`, `/resumes`, `/articles`, `/privacy`, `/terms`, `/not-found`) — заменить на stub `<div>name</div>`
+- `app/layout.tsx` — заменить на минимум `<html><body>{children}</body></html>`
+- Build → должен PASS
+
+**Шаг 2 — Binary search по pages.** Разделить 9 страниц на половины. Сначала вернуть к real: `/`, `/vacancies`, `/resumes`, `/articles`, `/privacy`. Остальные stub. Build → определить в какой половине триггер.
+
+**Шаг 3 — Дальнейшее сужение.** Повторить с найденной половиной (2-3 итерации, ~5 минут на цикл).
+
+**Шаг 4 — Поиск конкретного импорта.** Внутри виновной страницы — закомментировать импорты по одному, найти строку-триггер.
+
+**Шаг 5 — Fix.** Природа фикса зависит от триггера. Варианты:
+- Динамический импорт через `next/dynamic` с `ssr: false`
+- `'use client'` директива на компоненте
+- Заменить пакет на server-safe аналог
+- Wrap в `<Suspense>` с fallback
+
+**Шаг 6 — Deploy на NetAngels (deploy pipeline отсутствует, см. ниже).**
+
+---
+
+#### Backups сохранённых файлов на dev-машине
+
+- `/tmp/layout-original.tsx` — оригинал `app/layout.tsx`
+- `/tmp/pages-backup/*.tsx` — оригиналы всех 9 pages
+- `/tmp/prisma-original.ts` — оригинал `lib/prisma.ts`
+- `/tmp/schema-original.prisma` — оригинал `prisma/schema.prisma`
+- `/tmp/next.config.original.mjs` — оригинал `next.config.mjs`
+- `/tmp/prisma.config.original.ts` — оригинал `prisma.config.ts`
+- `/tmp/test-next/` — clean-room Next 14.2.35 проект для сверочных тестов
+
+**Working tree на момент финиша сессии:** clean (все эксперименты откачены).
+
+**Node на dev-машине:** v20.20.2 через nvm (установлено сегодня в `/home/claude/.nvm/`).
+
+---
+
+#### После фикса build — Deploy на NetAngels
+
+На сервере `~/d-pub.ru/app/` **не git-репо** (rsync установлен, но pipeline не настроен).
+
+Процедура deploy после починки build:
+1. На dev: `NODE_ENV=development npm run build` → exit 0, `.next-dev/` готова
+2. `rsync -avz --delete .next-dev/ c48127@91.201.52.231:~/d-pub.ru/app/.next/`
+3. На сервере: `cd ~/d-pub.ru/ && touch reload`
+4. Smoke: `curl -sI https://d-pub.ru/ | head -3` → 200 OK
 
 ---
 
