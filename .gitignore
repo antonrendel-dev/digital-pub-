@@ -54,3 +54,6 @@ next-env.d.ts
 # Vercel (not used, but just in case)
 .vercel
 generated/prisma/
+
+# Local files / backups (never commit)
+_files/
