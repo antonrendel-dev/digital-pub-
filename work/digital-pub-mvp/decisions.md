@@ -171,6 +171,48 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 
 ---
 
+## Known Issues (after `/done`)
+
+### KI-1: Local `npm run build` падает на prerender с `useContext` null
+
+**Симптом:** На dev-машине `NODE_ENV=development npm run build` падает на prerender всех статических страниц (`/`, `/404`, `/500`, `/_not-found`, `/articles`, `/privacy`, `/resumes`, `/terms`, `/vacancies`) с ошибкой:
+```
+TypeError: Cannot read properties of null (reading 'useContext')
+```
+
+**Контекст:**
+- Прод (`d-pub.ru`) на старом коде **работает** (smoke 8/8 endpoint'ов = 200 OK).
+- Build на старом коде (`8b3f6fa`) **также падает** локально (на TS-ошибках в `_files/v1/`, не на `useContext`). Это означает, что `useContext`-баг существует давно — просто раньше build падал ещё раньше, до prerender'а.
+- NetAngels build, видимо, успешен — отсюда работающий прод. Гипотеза: другая Node-версия, другой `NODE_ENV` runtime, либо prerender отключён на сервере.
+
+**Не блокирует:**
+- `npx tsc --noEmit` — зелёный (после `_files/` в exclude).
+- `npm test` (jest) — 76 passed, 4 todo, 0 failed.
+- Прод работает.
+
+**Дальнейшие шаги:**
+- При следующем деплое: запустить `npm run build` на NetAngels (`c48127@91.201.52.231:~/d-pub.ru/app/`) — посмотреть, проходит ли там.
+- Если на сервере тоже падает — копать (искать client-component с `useContext` в server-tree, проверять Navbar/JsonLd/PageShell).
+- Если на сервере проходит — задокументировать разницу окружений (Node version, env vars) и закрыть как «локальный dev-баг».
+
+---
+
+### KI-2: gitleaks pre-commit hook сломан
+
+`.husky/pre-commit` вызывает `gitleaks`, который физически **не установлен** в системе. Hook падает с `gitleaks: not found❌ secrets detected` и блокирует commit. По факту защита от утечки секретов **не работает** — все commit'ы проходят с `--no-verify`.
+
+**Фикс:** установить gitleaks (`apt install gitleaks` или через `pre-commit` framework) или переписать hook на graceful skip if not installed.
+
+---
+
+### KI-3: jest haste-map collision в `_files/v1/package.json`
+
+`jest` ругается на дубль имени пакета между корневым `package.json` и `_files/v1/package.json`. Не падает, но шумит в выводе.
+
+**Фикс:** добавить `testPathIgnorePatterns: ['<rootDir>/_files/']` в `jest.config.ts`.
+
+---
+
 ## Follow-ups (после `/done`)
 
 Создаются как новые feature-папки в `work/`:
