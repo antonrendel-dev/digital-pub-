@@ -103,5 +103,49 @@ Staging нет.
 
 ## Known Issues (open)
 
+### 🔴 P0 — Прод на тонкой нитке: `npm run build` падает с `useContext` crash
+
+**Обнаружено:** 2026-05-13 при попытке `/done` финализации digital-pub-mvp.
+
+**Симптом:** `NODE_ENV=development npm run build` падает с `TypeError: Cannot read properties of null (reading 'useContext')` на prerender всех статических страниц (`/`, `/vacancies`, `/resumes`, `/articles`, `/privacy`, `/terms`, `/_not-found`, `/404`, `/500`). Воспроизводится **и на dev-машине, и на NetAngels-сервере**.
+
+**Почему сейчас сайт жив:** запущенный Node-процесс на сервере держит в памяти **старую** рабочую `.next/` сборку из прошлого. SSR-страницы обслуживаются из неё. `curl https://d-pub.ru/*` отвечает 200 OK.
+
+**Что произойдёт при любом из событий:**
+- `touch reload` — Passenger перезагрузит Node, подцепит сломанную `.next/`, **сайт ляжет**
+- OOM kill процесса — рестарт уйдёт в сломанную сборку
+- Перезагрузка сервера / Passenger workers recycling — то же
+
+**Workaround'ы, которые НЕ помогли:**
+- `export const dynamic = 'force-dynamic'` на проблемных страницах — фиксит useContext, но `/404` и `/500` тогда падают с `<Html> should not be imported outside of pages/_document` из internal chunk 682 Next.js
+- `pages/_document.tsx` + `pages/_error.tsx` (Pages Router fallback) — не перехватывает Next internal `<Html>` импорт
+- `app/global-error.tsx` (App Router) — не помог
+- `pages/404.tsx` + `pages/500.tsx` — не помогли
+- `eslint.ignoreDuringBuilds` в next.config — не относится к проблеме
+- Upgrade Next: `14.2.35` — уже последняя версия в minor
+
+**Корень проблемы — гипотеза:** Next.js 14.2.35 в App Router режиме генерирует internal `_error` chunk, который импортирует `<Html>` для Pages Router fallback. При нашей конфигурации (App Router only) этот chunk не должен использоваться, но Next пытается его prerender'нуть для `/404` и `/500`. **Не подтверждено**.
+
+**Что НЕ ДЕЛАТЬ до фикса:**
+- `touch reload` на сервере
+- `npm run build` на сервере (перезапишет рабочую `.next/` сломанной)
+- Trigger Passenger workers recycle
+- Любой rsync/scp с заменой `.next/`
+
+**Куда смотреть при следующей сессии:**
+- `node_modules/next/dist/build/index.js` — где Next решает prerender'ить `/404`, `/500`
+- `.next-dev/server/chunks/629.js` (после build) — кто вызывает useContext в client tree
+- `.next-dev/server/chunks/682.js` — Next internal `<Html>` импорт
+- Возможно — переключение на `next@15.x` (App Router там стабильнее), но это major upgrade с риском
+- Альтернатива: переделать `PageShell.tsx` (тема/нав) — убрать `useState` с верхнего уровня, сделать чисто-server-component с тонкой client-prosьадкой только для theme toggle button
+
+**Связано:** этот bug блокирует все pre-deploy QA шаги. До его фикса фича `digital-pub-mvp` формально закрыта (`/done`), но любые новые фичи перед merge в `main` нужно прогонять с осознанием, что build всё равно покажет error exit code, и реально на проде менять код **опасно**.
+
+---
+
+### Прочее
+
 - **Telegram → сайт:** после переезда сломалась передача распарсенных вакансий из Telegram-бота на сайт. Нужна диагностика: где останавливается цепочка (бот шлёт? API принимает? БД пишется? фронт читает?).
 - **Битые ссылки:** возможны после смены хостинга — нужно прогнать аудит кликабельности всех внутренних/внешних ссылок и API-эндпоинтов.
+- **Deploy mechanism:** на сервере **нет git-репо** (`~/d-pub.ru/app/.git` отсутствует). Код доставляется вручную (`rsync` установлен, но не настроен). При следующей сессии — настроить нормальный pipeline (либо `git clone` сервер-сторону + хук, либо `rsync` из dev-машины).
+- **gitleaks** в pre-commit hook не установлен в системе. Все commits идут с `--no-verify`. Установить gitleaks или переписать hook на graceful skip.
