@@ -1,99 +1,107 @@
 # Deployment & Operations
 
+> Last updated: 2026-05-13 — миграция с Nuxt.cloud на NetAngels.
+
 ## Deployment Platform
 
-**Platform:** VPS on NetAngels (netangels.ru)
+**Platform:** NetAngels (shared hosting с поддержкой Node.js)
 
-**Type:** Linux VPS — Node.js process managed by PM2, proxied by Nginx
+**App host:** `c48127@91.201.52.231` — приложение в `~/d-pub.ru/`
+**Front proxy:** `root@144.31.204.181` — внешний прокси перед NetAngels
+**Internal port:** `3001` (Next.js слушает на 3001, прокси терминирует SSL и кидает на него)
 
-**Why:** Russian hosting provider, full server control, domain d-pub.ru hosted here
+**Index status:** **Закрыт от поисковиков намеренно** через `X-Robots-Tag: noindex, nofollow` в `next.config.mjs`. Не снимать до явной команды Тони — проект ещё не готов для полноценного онлайна.
 
 ---
 
 ## Access Information
 
-**SSH Access:**
-- Production: TBD (configure after VPS provisioning)
+**App server (NetAngels):**
+```
+ssh c48127@91.201.52.231
+```
+Корень приложения: `~/d-pub.ru/`, исходники: `~/d-pub.ru/app/`
 
-**Credentials location:** GitHub Actions secrets (for CI/CD deploy)
+**Front proxy:**
+```
+ssh root@144.31.204.181
+```
+
+**Database:** PostgreSQL, строка подключения в переменной окружения `$DB_CONNECTION_STRING` на app-сервере (не `DATABASE_URL`, как было раньше).
 
 ---
 
 ## Environment Variables
 
-See `.env.example` in project root.
-
 | Variable | Description |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
+| `DB_CONNECTION_STRING` | PostgreSQL connection string (актуальное имя на NetAngels) |
 | `NEXTAUTH_SECRET` | Random secret for NextAuth session signing |
 | `NEXTAUTH_URL` | Full site URL (https://d-pub.ru) |
 | `ADMIN_EMAIL` | Admin login email |
 | `ADMIN_PASSWORD_HASH` | Bcrypt hash of admin password |
-| `TELEGRAM_CHANNELS` | Comma-separated Telegram channel usernames to sync (e.g. `web_vacancy,digital_pub`) |
+| `TELEGRAM_CHANNELS` | Comma-separated Telegram channel usernames to sync |
 | `SYNC_INTERVAL_MINUTES` | How often to run Telegram sync (default: 10) |
 
 ---
 
-## Deployment Triggers
+## Deployment Procedure (NetAngels)
 
-**Production:** Auto-deploy on push to `main` via GitHub Actions → SSH into VPS → `git pull` → `npx prisma migrate deploy` → `pm2 restart dpub`
+Ручной деплой по SSH (CI/CD пока не настроен после переезда):
 
-**Dev:** No staging environment — test locally before merging to main.
+```bash
+ssh c48127@91.201.52.231
+cd ~/d-pub.ru/app/
+git pull            # если правки уже в репо
+export NODE_ENV=development && npm run build
+cd ~/d-pub.ru/
+touch reload        # сигнал NetAngels Passenger-подобному раннеру перезапустить процесс
+```
 
----
-
-## Server Setup (one-time)
-
-On VPS:
-1. Install Node.js 20+, PostgreSQL, Nginx, PM2
-2. Clone repo, install deps: `npm install`
-3. Configure `.env` with production values
-4. Run `npx prisma migrate deploy` to init DB
-5. Build: `npm run build`
-6. Start with PM2: `pm2 start npm --name dpub -- start`
-7. Configure Nginx as reverse proxy to `localhost:3000`
-8. Point domain d-pub.ru to VPS IP, set up SSL with Certbot
+`touch reload` — штатный механизм NetAngels для перезапуска Node-приложения без `pm2`/`systemd`.
 
 ---
 
 ## Pre-Deploy Checklist
 
-- [ ] Run `npm run build` locally — no errors
-- [ ] If schema changed: migration file exists in `prisma/migrations/`
-- [ ] `.env` on server has all required vars from `.env.example`
+- [ ] Локально `npm run build` — без ошибок
+- [ ] Если менялась схема Prisma — миграция в `prisma/migrations/` есть, на сервере запустить `npx prisma migrate deploy`
+- [ ] `.env` на сервере содержит `DB_CONNECTION_STRING` и остальные переменные
+- [ ] `X-Robots-Tag` в `next.config.mjs` остаётся `noindex, nofollow` (намеренно)
 
 ---
 
 ## Rollback Procedure
 
-**Code rollback:** SSH into VPS → `git checkout <prev-commit>` → `npm run build` → `pm2 restart dpub`
+```bash
+ssh c48127@91.201.52.231
+cd ~/d-pub.ru/app/
+git checkout <prev-commit>
+export NODE_ENV=development && npm run build
+cd ~/d-pub.ru/ && touch reload
+```
 
-**DB rollback:** Manual — Prisma does not auto-rollback. Keep rollback SQL in `prisma/migrations/rollbacks/` for destructive changes.
-
-**Approximate time:** ~5 minutes without DB changes, ~15 minutes with DB rollback.
+Откат БД — вручную, Prisma сама не откатывает. Деструктивные миграции сопровождать SQL-откатом в `prisma/migrations/rollbacks/`.
 
 ---
 
 ## Environments
 
-**Production:** https://d-pub.ru — deploys from `main` branch
+**Production-like:** https://d-pub.ru — закрыт от индексации, деплой ручной с `main` или активной ветки.
 
-No staging environment.
+Staging нет.
 
 ---
 
 ## Monitoring & Observability
 
-### Logging
+**Логи:** через NetAngels-панель и/или файлы в `~/d-pub.ru/log/` (уточнить точный путь на сервере).
+**Health-check:** ручной — `curl https://d-pub.ru` и проверка status code.
+**Error tracking:** не настроен.
 
-**Where:** PM2 logs — `pm2 logs dpub`
-**Format:** Default Next.js stdout
+---
 
-### Error Tracking
+## Known Issues (open)
 
-**Tool:** Not configured initially.
-
-### Health Checks
-
-**Endpoint:** Not configured initially. Check `pm2 status` on server.
+- **Telegram → сайт:** после переезда сломалась передача распарсенных вакансий из Telegram-бота на сайт. Нужна диагностика: где останавливается цепочка (бот шлёт? API принимает? БД пишется? фронт читает?).
+- **Битые ссылки:** возможны после смены хостинга — нужно прогнать аудит кликабельности всех внутренних/внешних ссылок и API-эндпоинтов.
