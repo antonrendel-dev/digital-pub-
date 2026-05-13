@@ -1,23 +1,14 @@
 import Link from 'next/link'
-import { FeedPost } from '@/lib/posts'
+import { FeedPost, getPrimaryCategorySlug } from '@/lib/posts'
+import { cleanDescription, formatDateShort } from '@/lib/postUtils'
 import TagsSidebar, { TagData } from './TagsSidebar'
 
-function formatDate(iso: string): string {
+function formatDateLong(iso: string): string {
   return new Date(iso).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   })
-}
-
-function formatDateShort(iso: string): string {
-  const d = new Date(iso)
-  const now = new Date()
-  const days = Math.floor((now.getTime() - d.getTime()) / 86400000)
-  if (days === 0) return 'Сегодня'
-  if (days === 1) return 'Вчера'
-  if (days < 7) return `${days} дня назад`
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
 interface PostDetailProps {
@@ -33,8 +24,8 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
   const typeHref = post.type === 'vacancy' ? '/vacancies' : '/resumes'
 
   // Determine primary category for breadcrumb
-  const primaryTag = post.tags?.find(t => t.tagType === 'specialization') || post.tags?.[0]
-  const effectiveCategorySlug = categorySlug || primaryTag?.slug || 'other'
+  const primaryTag = post.tags?.find((t) => t.tagType === 'specialization') || post.tags?.[0]
+  const effectiveCategorySlug = categorySlug || getPrimaryCategorySlug(post)
   const effectiveCategoryName = categoryName || primaryTag?.name || (post.type === 'vacancy' ? 'Вакансии' : 'Резюме')
 
   const tgLink =
@@ -42,11 +33,9 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
       ? `https://t.me/${post.channelUsername}/${post.telegramMessageId}`
       : null
 
-  const cleanText = (post.description ?? '')
-    .replace(/@\w+/g, '')
-    .replace(/Администрация не несет ответственност[^\n]*/gi, '')
-    .replace(/Смотри вакансии →[^\n]*/gi, '')
-  const paragraphs = cleanText.split('\n').filter((l) => l.trim())
+  const paragraphs = cleanDescription(post.description ?? '')
+    .split('\n')
+    .filter((l) => l.trim())
 
   return (
     <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
@@ -81,7 +70,7 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
 
             <div className="flex items-center gap-3 flex-wrap mb-3.5">
               {post.company && <span className="text-sm font-semibold text-text">{post.company}</span>}
-              <span className="text-sm text-text-light ml-auto">{formatDate(post.createdAt)}</span>
+              <span className="text-sm text-text-light ml-auto">{formatDateLong(post.createdAt)}</span>
             </div>
 
             {post.salary && (
@@ -150,7 +139,7 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-text-muted">Опубликовано</span>
-                <span className="font-medium text-text">{formatDate(post.createdAt)}</span>
+                <span className="font-medium text-text">{formatDateLong(post.createdAt)}</span>
               </div>
             </div>
           </div>
@@ -164,7 +153,7 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
               <h3 className="text-sm font-semibold text-text mb-4">Похожие вакансии</h3>
               <div className="space-y-4">
                 {related.map((r) => {
-                  const rCatSlug = r.tags?.find(t => t.tagType === 'specialization')?.slug || r.tags?.[0]?.slug || 'other'
+                  const rCatSlug = getPrimaryCategorySlug(r)
                   return (
                     <Link
                       key={r.id}

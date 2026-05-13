@@ -1,50 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { FeedPost } from '@/lib/posts'
+import { FeedPost, getPrimaryCategorySlug } from '@/lib/posts'
+import { cleanDescription, formatDate, getTagColorClass } from '@/lib/postUtils'
 
 interface JobCardProps {
   post: FeedPost
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  const now = new Date()
-  const diff = Math.floor((now.getTime() - d.getTime()) / 1000 / 60 / 60)
-  if (diff < 1) return 'Только что'
-  if (diff < 24) return `${diff} ч. назад`
-  const days = Math.floor(diff / 24)
-  if (days === 1) return 'Вчера'
-  if (days < 7) return `${days} дня назад`
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
 function initials(title: string): string {
   return title.trim().charAt(0).toUpperCase()
 }
 
-function cleanDescription(text: string): string {
-  return text
-    .replace(/@\w+/g, '')
-    .replace(/Администрация не несет ответственност[^\n]*/gi, '')
-    .replace(/Смотри вакансии →[^\n]*/gi, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-}
-
-const FORMAT_TAGS = ['Удалёнка', 'Офис', 'Гибрид', 'Фриланс', 'Удалённо']
-const LEVEL_TAGS = ['Junior', 'Middle', 'Senior', 'Junior / Middle', 'Middle+']
-
-function getTagColorClass(tagName: string): string {
-  if (FORMAT_TAGS.some(t => tagName.toLowerCase().includes(t.toLowerCase()))) return 'tag-blue'
-  if (LEVEL_TAGS.some(t => tagName.toLowerCase() === t.toLowerCase())) return 'tag-green'
-  return 'tag-orange'
-}
-
 export default function JobCard({ post }: JobCardProps) {
   const [saved, setSaved] = useState(false)
 
-  const categorySlug = post.tags?.find(t => t.tagType === 'specialization')?.slug || post.tags?.[0]?.slug || 'other'
+  const categorySlug = getPrimaryCategorySlug(post)
   const href = post.slug ? `/vacancies/${categorySlug}/${post.slug}` : `/post/${post.id}`
 
   return (
