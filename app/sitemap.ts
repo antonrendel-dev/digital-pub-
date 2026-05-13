@@ -4,13 +4,6 @@ import { prisma } from '@/lib/prisma'
 
 const BASE_URL = 'https://d-pub.ru'
 
-const TAG_SLUGS = [
-  'udalyonka', 'ofis', 'gibrid',
-  'smm', 'seo', 'dizajn', 'marketing', 'menedzher', 'target',
-  'razrabotka', 'analitika', 'finansy', 'hr', 'wordpress',
-  'junior', 'middle', 'senior',
-]
-
 export const revalidate = 3600 // rebuild sitemap every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -25,11 +18,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ]
 
-  // Category pages (vacancies + resumes)
-  const tagRoutes: MetadataRoute.Sitemap = TAG_SLUGS.flatMap((slug) => [
-    { url: `${BASE_URL}/vacancies/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.8 },
-    { url: `${BASE_URL}/resumes/tag/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.7 },
-  ])
+  // Category pages (vacancies + resumes) — slugs sourced from DB
+  let tagRoutes: MetadataRoute.Sitemap = []
+  try {
+    const tags = await prisma.tag.findMany({ select: { slug: true } })
+    tagRoutes = tags.flatMap(({ slug }) => [
+      { url: `${BASE_URL}/vacancies/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.8 },
+      { url: `${BASE_URL}/resumes/tag/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.7 },
+    ])
+  } catch {
+    console.warn('[sitemap] DB unavailable, skipping tag routes')
+  }
 
   // Articles
   const articles = getArticles()
@@ -55,7 +54,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         createdAt: true,
         tags: {
           select: { tag: { select: { slug: true, tagType: true } } },
-          take: 1,
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -64,7 +62,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     postRoutes = posts
       .filter((p) => p.slug)
       .map((p) => {
-        const categorySlug = p.tags[0]?.tag?.slug || 'other'
+        const specTag = p.tags.find((pt) => pt.tag?.tagType === 'specialization')
+        const categorySlug = specTag?.tag?.slug || p.tags[0]?.tag?.slug || 'other'
         const url =
           p.type === 'vacancy'
             ? `${BASE_URL}/vacancies/${categorySlug}/${p.slug}`
