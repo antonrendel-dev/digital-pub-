@@ -6,12 +6,13 @@
 |---|---|---|
 | Framework | Next.js 14 (App Router) | SSR for SEO + React frontend in one, ideal for a public content site |
 | Language | TypeScript | Type safety, better DX with Prisma and Next.js |
+| Styling | Tailwind CSS 3.4 + CSS variables | Utility-first для DRY, CSS vars централизуют light/dark theme palette |
 | Database | PostgreSQL | Relational data model fits vacancies/resumes/tags/articles well |
 | ORM | Prisma | Simple migrations, auto-generated types, works great with Next.js |
-| Auth (admin) | NextAuth.js | Easy admin login setup, no need for a separate auth service |
-| Web server | Nginx | Reverse proxy in front of Next.js on VPS, handles SSL |
-| Process manager | PM2 | Keeps Next.js running on VPS, auto-restart on crash |
-| Telegram sync | Custom Node.js cron script | Parses t.me/s/{channel} HTML, saves to DB — fully independent from Вакансы bot |
+| Articles | MDX (`next-mdx-remote/rsc` + `remark-gfm` + `gray-matter`) | Файловые статьи в репозитории вместо БД — проще батч-деплой, версионирование через git |
+| Validation | zod | URL slug validation на всех dynamic routes (`/^[a-z0-9-_]{1,80}$/`) |
+| Hosting | NetAngels shared (Passenger-like runner) | Перенос с Nuxt.cloud. См. deployment.md |
+| Telegram sync | `scripts/sync-telegram.ts` + `lib/tag-matcher.ts` | Парсит `t.me/s/{channel}` HTML + Bot API для скачивания фото (forwardMessage trick). Авто-теггинг по keyword map. |
 
 ---
 
@@ -19,40 +20,53 @@
 
 ```
 /
-├── app/                        # Next.js App Router pages
-│   ├── page.tsx                # Main feed (homepage)
-│   ├── vacancies/              # Vacancies section
-│   ├── resumes/                # Resumes section
-│   ├── articles/               # Articles section (SEO)
-│   ├── admin/                  # Admin panel (protected routes)
-│   └── api/                    # API routes (Next.js)
-│       ├── sync/               # Telegram sync endpoint
-│       └── submit/             # User submission handler
-├── components/                 # Shared UI components
-│   ├── feed/                   # Job/resume card, feed list
-│   ├── filters/                # Tag chips, category sidebar
-│   └── admin/                  # Admin panel components
-├── lib/                        # Core logic
-│   ├── db.ts                   # Prisma client singleton
-│   ├── sync.ts                 # Telegram t.me/s/ parser
-│   └── auth.ts                 # NextAuth config
+├── app/                              # Next.js App Router pages
+│   ├── page.tsx                      # Main feed (homepage, ISR revalidate=300)
+│   ├── layout.tsx                    # Root layout, robots metadata, JsonLd schema
+│   ├── sitemap.ts                    # Dynamic sitemap.xml (теги из БД)
+│   ├── vacancies/
+│   │   ├── page.tsx                  # Vacancies listing
+│   │   └── [category]/page.tsx       # SEO category page + detail [slug] глубже
+│   ├── resumes/
+│   │   ├── page.tsx
+│   │   └── tag/[tagSlug]/page.tsx    # SEO tag page для резюме
+│   ├── articles/
+│   │   ├── page.tsx                  # Article listing
+│   │   └── [slug]/page.tsx           # MDX article rendering
+│   ├── privacy/, terms/              # Legal static pages
+│   └── api/                          # API routes (минимальные)
+├── components/                       # UI (Tailwind classes)
+│   ├── feed/                         # JobCard, TileCard, Feed
+│   ├── PostDetail.tsx, JsonLd.tsx
+│   ├── Navbar, Footer, *Sidebar      # Layout chrome
+├── content/articles/                 # MDX files (10+ статей writer-агента)
+├── lib/                              # Core logic
+│   ├── prisma.ts                     # Prisma singleton
+│   ├── posts.ts                      # Post queries (re-exports type & util)
+│   ├── postUtils.ts                  # Pure types/utils (client-safe)
+│   ├── tags.ts                       # Tag queries (_count для перфа)
+│   ├── tag-matcher.ts                # matchTags + TAG_KEYWORDS (без side effects)
+│   └── articles.ts                   # MDX reader + slug allowlist (path traversal protection)
+├── scripts/sync-telegram.ts          # Telegram sync (cron via auto-sync.sh)
 ├── prisma/
-│   ├── schema.prisma           # Data model
-│   └── migrations/             # DB migrations
-├── public/                     # Static assets
-├── .env.example                # Required env vars (no values)
-└── .claude/                    # AI agent context
+│   ├── schema.prisma                 # Data model (Tag расширен SEO-полями)
+│   ├── seed.ts                       # 17 тегов с SEO-контентом
+│   └── migrations/
+├── public/images/posts/              # Downloaded vacancy images
+└── _files/                           # Sandbox/backups (gitignored)
 ```
 
 ---
 
 ## Key Dependencies
 
-- `next` — framework, SSR, routing, API routes
-- `@prisma/client` + `prisma` — database ORM and migrations
-- `next-auth` — admin authentication
-- `node-cron` — scheduled Telegram sync (runs as a separate process or Next.js route)
-- `zod` — input validation for submission form and API routes
+- `next@14.2.x` — framework, SSR, App Router, ISR
+- `@prisma/client` + `prisma` — ORM and migrations
+- `tailwindcss@3.4` — utility CSS (darkMode selector настроен, но `dark:*` классы не используются — тема через CSS vars; см. decisions log в `work/completed/digital-pub-mvp/`)
+- `next-mdx-remote@5.0.0` + `gray-matter` + `remark-gfm` — MDX articles (remark-gfm критичен для markdown-таблиц, фикс hydration crash commit `038afbb`)
+- `zod` — slug validation на всех dynamic routes
+- `pg` — PostgreSQL driver (server-only; никогда не импортировать в client components — см. patterns.md)
+- **Удалены из MVP:** `next-auth` (admin не в MVP), `node-cron` (cron внешний через auto-sync.sh)
 
 ---
 
@@ -67,11 +81,11 @@
 
 ## Data Flow
 
-**Sync flow:** Cron job fetches `https://t.me/s/{channel}` → parses HTML for posts → deduplicates by Telegram message ID → saves new posts as `pending` vacancies/resumes to PostgreSQL → they appear in admin moderation queue.
+**Sync flow:** Внешний cron (`auto-sync.sh`) запускает `scripts/sync-telegram.ts` → парсит `t.me/s/{channel}` HTML → дедуп по `(telegram_message_id, channel_username)` → сохраняет посты сразу со статусом `published` (Decision 12: MVP без модерации) → `matchTags()` назначает теги по keyword map с word-boundary regex → backfill догоняет посты без тегов на каждом запуске.
 
-**User submission flow:** User fills form on site → POST to `/api/submit` → saved as `pending` with `source=user` → admin reviews in panel → approve sets `status=published` → item appears in public feed.
+**User submission flow:** MVP направляет на Telegram бота `@resume_vac_bot` (через кнопки «+ Разместить», ссылки в Footer). Веб-форма и admin-модерация — итерация 2.
 
-**Read flow:** Next.js SSR fetches published vacancies/resumes from PostgreSQL → renders page with full HTML for SEO → client-side filtering by tags runs against already-loaded data.
+**Read flow:** Server components тянут published posts из Postgres → ISR `revalidate=300` для главных страниц + tag/article страниц → client-side фильтрация чипов работает **по slug тега** (не по тексту, Decision 9) → пагинация «Показать ещё» по 10 штук.
 
 ---
 
@@ -83,26 +97,23 @@
 
 **Post**
 - Purpose: Stores both vacancies and resumes
-- Key fields: `id`, `type` (vacancy|resume), `title`, `description`, `status` (pending|published|rejected), `source` (telegram|user), `telegram_message_id`, `channel_username`, `created_at`
+- Key fields: `id`, `type` (vacancy|resume), `title`, `slug` (auto от транслита title + числовой суффикс), `description`, `status` (pending|published|rejected), `source` (telegram|user), `telegram_message_id`, `channel_username`, `company` (всегда NULL в MVP, не парсится), `imageUrl`, `created_at`
 - Relationships: `Post → PostTag (many-to-many)`
 
-**Tag**
-- Purpose: Reusable tags (Удалённо, Senior, IT, etc.)
-- Key fields: `id`, `name`, `tag_type` (format|level|specialization)
+**Tag** (расширена SEO-полями)
+- Purpose: Reusable tags (Удалённо, Senior, IT, etc.) + SEO-страницы
+- Key fields: `id`, `name`, `slug` (unique), `tagType` (format|level|specialization), `seoTitle?`, `seoDescription?`, `seoText?`
+- Initial set: 17 тегов через `prisma/seed.ts` (Удалёнка/Офис/Гибрид + 11 спец-тегов + Junior/Middle/Senior)
 
-**Category**
-- Purpose: Main sections (Разработка, Маркетинг, etc.)
-- Key fields: `id`, `name`, `slug`
-
-**Article**
-- Purpose: SEO articles managed via admin
-- Key fields: `id`, `title`, `slug`, `content`, `published_at`
+**Article** (НЕ в БД — оставлена пустой таблицей, не используется)
+- В MVP статьи живут как MDX-файлы в `content/articles/` (Decision 5 — security via component allowlist + filename allowlist для path traversal)
 
 ### Key Constraints
 
-- **Unique:** `(telegram_message_id, channel_username)` on Post — prevents duplicate sync
-- **Required:** `Post.type`, `Post.title`, `Post.status` are NOT NULL
-- **Default:** `Post.status = 'pending'`, `Post.source = 'telegram'`
+- **Unique:** `(telegram_message_id, channel_username)` on Post — предотвращает дубли при sync
+- **Required:** `Post.type`, `Post.title`, `Post.status` NOT NULL
+- **Default:** `Post.source = 'telegram'`. `Post.status = 'published'` для sync-постов (Decision 12, MVP без модерации)
+- **Filter:** `description: { not: null }` на всех читающих query (Decision 9: посты без описания не отображаются)
 
 ### Migration Strategy
 
