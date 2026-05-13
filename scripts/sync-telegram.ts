@@ -151,7 +151,7 @@ async function downloadImageLocally(url: string, filename: string): Promise<stri
     // Return public URL path
     return `/images/posts/${filename}`
   } catch (e) {
-    console.error(`  Failed to download image: ${e}`)
+    console.error(`  Failed to download image: ${sanitizeError(e)}`)
     return null
   }
 }
