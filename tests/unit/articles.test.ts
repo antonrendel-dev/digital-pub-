@@ -1,37 +1,59 @@
 import { getArticles, getArticleBySlug } from '@/lib/articles'
 
+// Reference slug — one of the real articles checked into content/articles/.
+// Used to assert getArticleBySlug() on a known-existing file without
+// hard-coding fragile title strings into every test.
+const REAL_SLUG = 'kak-nayti-rabotu-smm-menedzheru-2026'
+
 describe('articles', () => {
   describe('getArticles', () => {
-    it('returns articles sorted by date', () => {
+    it('returns articles sorted by date (newest first)', () => {
       const articles = getArticles()
       expect(Array.isArray(articles)).toBe(true)
-      // At least one sample article exists
-      expect(articles.length).toBeGreaterThanOrEqual(1)
-      // Check structure
+      // After the 57bd2c sample-removal + 10 real articles commit
+      expect(articles.length).toBeGreaterThanOrEqual(10)
+
+      // Check structure of the first item
       const article = articles[0]
       expect(article).toHaveProperty('title')
       expect(article).toHaveProperty('slug')
       expect(article).toHaveProperty('description')
       expect(article).toHaveProperty('publishedAt')
       expect(article).toHaveProperty('tags')
+
+      // Sorted newest-first
+      for (let i = 1; i < articles.length; i++) {
+        const prev = new Date(articles[i - 1].publishedAt).getTime()
+        const curr = new Date(articles[i].publishedAt).getTime()
+        expect(prev).toBeGreaterThanOrEqual(curr)
+      }
     })
 
-    it('parses frontmatter correctly', () => {
+    it('parses frontmatter correctly for a known real article', () => {
       const articles = getArticles()
-      const sample = articles.find((a) => a.slug === 'sample')
-      expect(sample).toBeDefined()
-      expect(sample!.title).toBe('Как найти работу в digital в 2026 году')
-      expect(sample!.description).toContain('Практическое руководство')
-      expect(sample!.tags).toEqual(['карьера', 'digital'])
+      const found = articles.find((a) => a.slug === REAL_SLUG)
+      expect(found).toBeDefined()
+      expect(typeof found!.title).toBe('string')
+      expect(found!.title.length).toBeGreaterThan(0)
+      expect(typeof found!.description).toBe('string')
+      expect(found!.description.length).toBeGreaterThan(0)
+      expect(Array.isArray(found!.tags)).toBe(true)
+    })
+
+    it('all articles have valid slug format (a-z0-9-)', () => {
+      const articles = getArticles()
+      for (const article of articles) {
+        expect(article.slug).toMatch(/^[a-z0-9-]+$/)
+      }
     })
   })
 
   describe('getArticleBySlug', () => {
-    it('returns article for valid slug', () => {
-      const article = getArticleBySlug('sample')
+    it('returns article for a valid existing slug', () => {
+      const article = getArticleBySlug(REAL_SLUG)
       expect(article).not.toBeNull()
-      expect(article!.title).toBe('Как найти работу в digital в 2026 году')
-      expect(article!.content).toContain('С чего начать')
+      expect(article!.slug).toBe(REAL_SLUG)
+      expect(article!.content.length).toBeGreaterThan(0)
     })
 
     it('returns null for non-existent slug', () => {
@@ -48,17 +70,17 @@ describe('articles', () => {
     it('rejects invalid slug formats', () => {
       expect(getArticleBySlug('UPPERCASE')).toBeNull()
       expect(getArticleBySlug('has spaces')).toBeNull()
-      // Note: underscores are rejected by article slugSchema (only allows a-z0-9 and hyphens)
+      // Underscores rejected by article slugSchema (only allows a-z0-9 and hyphens)
       expect(getArticleBySlug('has_underscores')).toBeNull()
       expect(getArticleBySlug('')).toBeNull()
       expect(getArticleBySlug('slug/with/slashes')).toBeNull()
     })
 
-    it('accepts valid slug formats', () => {
+    it('accepts valid slug format but returns null when file is absent', () => {
       // Valid slug format but no file - should return null
       expect(getArticleBySlug('valid-slug-format')).toBeNull()
       // Actually existing file
-      expect(getArticleBySlug('sample')).not.toBeNull()
+      expect(getArticleBySlug(REAL_SLUG)).not.toBeNull()
     })
   })
 

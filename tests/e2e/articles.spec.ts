@@ -8,10 +8,12 @@ test.describe('Articles', () => {
   })
 
   test('article detail page renders', async ({ page }) => {
-    await page.goto('/articles/sample')
-    await expect(page).toHaveTitle(/Как найти работу/)
-    // Content should include the article heading
-    await expect(page.getByText('С чего начать поиск')).toBeVisible()
+    // Use a real published article from content/articles/
+    await page.goto('/articles/kak-nayti-rabotu-smm-menedzheru-2026')
+    // Title should reflect the article (matches its h1 / metaTitle)
+    await expect(page).toHaveTitle(/SMM|работу/i)
+    // Article body must render with an <h1>
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   })
 
   test('SEO tag page renders', async ({ page }) => {
