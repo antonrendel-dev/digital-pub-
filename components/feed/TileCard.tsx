@@ -1,7 +1,6 @@
 'use client'
 
-import { FeedPost, getPrimaryCategorySlug } from '@/lib/posts'
-import { cleanDescription, formatDate, getTagColorClass } from '@/lib/postUtils'
+import { cleanDescription, formatDate, getTagColorClass, getPrimaryCategorySlug, type FeedPost } from '@/lib/postUtils'
 
 function initials(title: string): string {
   return title.trim().charAt(0).toUpperCase()

@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { FeedPost, getPrimaryCategorySlug } from '@/lib/posts'
-import { cleanDescription, formatDateShort } from '@/lib/postUtils'
+import { cleanDescription, formatDateShort, getPrimaryCategorySlug, type FeedPost } from '@/lib/postUtils'
 import TagsSidebar, { TagData } from './TagsSidebar'
 
 function formatDateLong(iso: string): string {

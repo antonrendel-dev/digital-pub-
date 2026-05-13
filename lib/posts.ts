@@ -1,23 +1,10 @@
 import { prisma } from './prisma'
 import { z } from 'zod'
+import type { FeedPost } from './postUtils'
+
+export { getPrimaryCategorySlug, type FeedPost } from './postUtils'
 
 export const slugSchema = z.string().regex(/^[a-z0-9-_]{1,80}$/)
-
-export interface FeedPost {
-  id: number
-  type: 'vacancy' | 'resume'
-  title: string
-  slug: string | null
-  description: string | null
-  company: string | null
-  salary: string | null
-  imageUrl: string | null
-  channelUsername: string | null
-  telegramMessageId: string | null
-  createdAt: string
-  isNew: boolean
-  tags: { id: number; name: string; slug: string; tagType: string }[]
-}
 
 export function toFeedPost(p: {
   id: number
@@ -54,12 +41,6 @@ export function toFeedPost(p: {
       tagType: pt.tag.tagType,
     })),
   }
-}
-
-export function getPrimaryCategorySlug(post: FeedPost): string {
-  if (!post.tags || post.tags.length === 0) return 'other'
-  const specTag = post.tags.find(t => t.tagType === 'specialization')
-  return specTag ? specTag.slug : post.tags[0].slug
 }
 
 export async function getPublishedPosts(): Promise<FeedPost[]> {

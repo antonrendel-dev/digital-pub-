@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FeedPost, getPrimaryCategorySlug } from '@/lib/posts'
-import { cleanDescription, formatDate, getTagColorClass } from '@/lib/postUtils'
+import { cleanDescription, formatDate, getTagColorClass, getPrimaryCategorySlug, type FeedPost } from '@/lib/postUtils'
 
 interface JobCardProps {
   post: FeedPost

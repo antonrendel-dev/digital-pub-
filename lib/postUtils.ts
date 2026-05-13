@@ -1,7 +1,30 @@
 /**
- * Shared utilities for post rendering (cards, detail page, sitemap).
+ * Shared utilities and types for post rendering (cards, detail page, sitemap).
+ * Pure functions and types only — safe for client components (no prisma/pg imports).
  * Extracted from JobCard / TileCard / PostDetail to avoid duplication.
  */
+
+export interface FeedPost {
+  id: number
+  type: 'vacancy' | 'resume'
+  title: string
+  slug: string | null
+  description: string | null
+  company: string | null
+  salary: string | null
+  imageUrl: string | null
+  channelUsername: string | null
+  telegramMessageId: string | null
+  createdAt: string
+  isNew: boolean
+  tags: { id: number; name: string; slug: string; tagType: string }[]
+}
+
+export function getPrimaryCategorySlug(post: FeedPost): string {
+  if (!post.tags || post.tags.length === 0) return 'other'
+  const specTag = post.tags.find((t) => t.tagType === 'specialization')
+  return specTag ? specTag.slug : post.tags[0].slug
+}
 
 const FORMAT_TAGS = ['Удалёнка', 'Офис', 'Гибрид', 'Фриланс', 'Удалённо']
 const LEVEL_TAGS = ['Junior', 'Middle', 'Senior', 'Junior / Middle', 'Middle+']
