@@ -9,6 +9,8 @@ import TagsSidebar from '@/components/TagsSidebar'
 import JsonLd from '@/components/JsonLd'
 import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/components/RelatedArticles'
 
+export const revalidate = 300
+
 interface Props {
   params: { category: string }
 }

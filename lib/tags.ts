@@ -23,9 +23,7 @@ export interface TagDetail {
 export async function getTagsWithCounts(): Promise<TagWithCount[]> {
   const tags = await prisma.tag.findMany({
     include: {
-      posts: {
-        select: { postId: true },
-      },
+      _count: { select: { posts: true } },
     },
     orderBy: { name: 'asc' },
   })
@@ -35,7 +33,7 @@ export async function getTagsWithCounts(): Promise<TagWithCount[]> {
     name: t.name,
     slug: t.slug,
     tagType: t.tagType,
-    count: t.posts.length,
+    count: t._count.posts,
   }))
 }
 

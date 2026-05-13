@@ -8,6 +8,8 @@ import PageShell from '@/components/PageShell'
 import JsonLd from '@/components/JsonLd'
 import { getRelatedCategoriesForArticle, RelatedCategoriesBlock } from '@/components/RelatedArticles'
 
+export const revalidate = 300
+
 interface Props {
   params: { slug: string }
 }
