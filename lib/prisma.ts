@@ -3,7 +3,9 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
 
 const connectionString =
-  process.env.DATABASE_URL ?? 'postgresql://antonrendel@localhost:5432/digital_pub'
+  process.env.DB_CONNECTION_STRING ??
+  process.env.DATABASE_URL ??
+  'postgresql://antonrendel@localhost:5432/digital_pub'
 
 const pool = new Pool({ connectionString })
 const adapter = new PrismaPg(pool)

@@ -12,17 +12,27 @@ import { PostType } from '../generated/prisma'
 import { prisma } from '../lib/prisma'
 import { matchTags, TAG_KEYWORDS } from '../lib/tag-matcher'
 
-// Read bot config from the bot's .env
-const BOT_ENV_PATH = '/opt/bots/telegram-bot-vac/.env'
-function readBotEnv(key: string): string {
-  const envContent = fs.readFileSync(BOT_ENV_PATH, 'utf-8')
-  const match = envContent.match(new RegExp(`^${key}=(.+)$`, 'm'))
-  if (!match) throw new Error(`${key} not found in bot .env`)
-  return match[1].trim()
-}
+// Read bot config from env vars (set in .env file)
+const BOT_TOKEN = process.env.BOT_TOKEN ?? (() => {
+  // Fallback: read from legacy bot .env file if present
+  const legacyPath = '/opt/bots/telegram-bot-vac/.env'
+  if (fs.existsSync(legacyPath)) {
+    const content = fs.readFileSync(legacyPath, 'utf-8')
+    const match = content.match(/^BOT_TOKEN=(.+)$/m)
+    if (match) return match[1].trim()
+  }
+  throw new Error('BOT_TOKEN not set in environment and legacy .env not found')
+})()
 
-const BOT_TOKEN = readBotEnv('BOT_TOKEN')
-const ADMIN_CHAT_ID = readBotEnv('ADMIN_ID') // Used as temp chat for forwardMessage
+const ADMIN_CHAT_ID = process.env.ADMIN_ID ?? (() => {
+  const legacyPath = '/opt/bots/telegram-bot-vac/.env'
+  if (fs.existsSync(legacyPath)) {
+    const content = fs.readFileSync(legacyPath, 'utf-8')
+    const match = content.match(/^ADMIN_ID=(.+)$/m)
+    if (match) return match[1].trim()
+  }
+  throw new Error('ADMIN_ID not set in environment and legacy .env not found')
+})()
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`
 const TG_FILE = `https://api.telegram.org/file/bot${BOT_TOKEN}`
 
@@ -444,7 +454,12 @@ function sanitizeError(e: unknown): string {
 }
 
 main().catch(async (e) => {
-  console.error('Sync failed:', sanitizeError(e))
+  const msg = sanitizeError(e)
+  const cause = e instanceof Error && e.cause ? String((e.cause as Error).message ?? e.cause) : ''
+  const stack = e instanceof Error ? e.stack : ''
+  console.error('Sync failed:', msg)
+  if (cause) console.error('Cause:', cause)
+  if (stack) console.error('Stack:', stack)
   await prisma.$disconnect()
   process.exit(1)
 })
