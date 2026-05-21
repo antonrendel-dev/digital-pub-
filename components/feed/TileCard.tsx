@@ -1,6 +1,12 @@
 'use client'
 
-import { cleanDescription, formatDate, getTagColorClass, getPrimaryCategorySlug, type FeedPost } from '@/lib/postUtils'
+import {
+  cleanDescription,
+  formatDate,
+  getTagColorClass,
+  getPrimaryCategorySlug,
+  type FeedPost,
+} from '@/lib/postUtils'
 
 function initials(title: string): string {
   return title.trim().charAt(0).toUpperCase()
@@ -27,10 +33,12 @@ export default function TileCard({ post }: TileCardProps) {
   return (
     <a
       href={href}
-      className="tile-card bg-bg-card border border-border rounded-xl p-4 block no-underline text-inherit"
+      className="bg-bg-card border border-border rounded-xl p-4 block no-underline text-inherit transition-transform duration-200 hover:-translate-y-[3px] hover:shadow-[0_8px_25px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_25px_rgba(0,0,0,0.3)]"
     >
       <div className="flex items-center justify-between mb-2">
-        <div className={`w-8 h-8 ${AVATAR_COLORS[colorIdx]} rounded-full flex items-center justify-center text-xs font-semibold`}>
+        <div
+          className={`w-8 h-8 ${AVATAR_COLORS[colorIdx]} rounded-full flex items-center justify-center text-xs font-semibold`}
+        >
           {initials(post.title)}
         </div>
         {post.isNew && (
@@ -42,9 +50,7 @@ export default function TileCard({ post }: TileCardProps) {
       <h2 className="text-sm font-semibold text-text mb-1 line-clamp-2 leading-snug">
         {post.title}
       </h2>
-      {post.company && (
-        <div className="text-xs text-text-muted mb-1.5">{post.company}</div>
-      )}
+      {post.company && <div className="text-xs text-text-muted mb-1.5">{post.company}</div>}
       {post.salary && (
         <div className="text-sm font-semibold text-amber-600 mb-2">{post.salary}</div>
       )}

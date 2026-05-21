@@ -13,26 +13,30 @@ import { prisma } from '../lib/prisma'
 import { matchTags, TAG_KEYWORDS } from '../lib/tag-matcher'
 
 // Read bot config from env vars (set in .env file)
-const BOT_TOKEN = process.env.BOT_TOKEN ?? (() => {
-  // Fallback: read from legacy bot .env file if present
-  const legacyPath = '/opt/bots/telegram-bot-vac/.env'
-  if (fs.existsSync(legacyPath)) {
-    const content = fs.readFileSync(legacyPath, 'utf-8')
-    const match = content.match(/^BOT_TOKEN=(.+)$/m)
-    if (match) return match[1].trim()
-  }
-  throw new Error('BOT_TOKEN not set in environment and legacy .env not found')
-})()
+const BOT_TOKEN =
+  process.env.BOT_TOKEN ??
+  (() => {
+    // Fallback: read from legacy bot .env file if present
+    const legacyPath = '/opt/bots/telegram-bot-vac/.env'
+    if (fs.existsSync(legacyPath)) {
+      const content = fs.readFileSync(legacyPath, 'utf-8')
+      const match = content.match(/^BOT_TOKEN=(.+)$/m)
+      if (match) return match[1].trim()
+    }
+    throw new Error('BOT_TOKEN not set in environment and legacy .env not found')
+  })()
 
-const ADMIN_CHAT_ID = process.env.ADMIN_ID ?? (() => {
-  const legacyPath = '/opt/bots/telegram-bot-vac/.env'
-  if (fs.existsSync(legacyPath)) {
-    const content = fs.readFileSync(legacyPath, 'utf-8')
-    const match = content.match(/^ADMIN_ID=(.+)$/m)
-    if (match) return match[1].trim()
-  }
-  throw new Error('ADMIN_ID not set in environment and legacy .env not found')
-})()
+const ADMIN_CHAT_ID =
+  process.env.ADMIN_ID ??
+  (() => {
+    const legacyPath = '/opt/bots/telegram-bot-vac/.env'
+    if (fs.existsSync(legacyPath)) {
+      const content = fs.readFileSync(legacyPath, 'utf-8')
+      const match = content.match(/^ADMIN_ID=(.+)$/m)
+      if (match) return match[1].trim()
+    }
+    throw new Error('ADMIN_ID not set in environment and legacy .env not found')
+  })()
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`
 const TG_FILE = `https://api.telegram.org/file/bot${BOT_TOKEN}`
 
@@ -72,7 +76,7 @@ interface TgPhoto {
  */
 async function downloadPhotoViaBotAPI(
   channelUsername: string,
-  messageId: string,
+  messageId: string
 ): Promise<string | null> {
   let forwardedMsgId: number | null = null
 
@@ -88,7 +92,7 @@ async function downloadPhotoViaBotAPI(
         disable_notification: true,
       }),
     })
-    const fwdData = await fwdRes.json() as {
+    const fwdData = (await fwdRes.json()) as {
       ok: boolean
       result?: { message_id: number; photo?: TgPhoto[] }
     }
@@ -106,7 +110,7 @@ async function downloadPhotoViaBotAPI(
 
     // 3. Get the file path on Telegram servers
     const fileRes = await fetch(`${TG_API}/getFile?file_id=${largest.file_id}`)
-    const fileData = await fileRes.json() as {
+    const fileData = (await fileRes.json()) as {
       ok: boolean
       result?: { file_path: string }
     }
@@ -121,7 +125,9 @@ async function downloadPhotoViaBotAPI(
     const localPath = await downloadImageLocally(downloadUrl, localFilename)
 
     if (localPath) {
-      console.log(`    ✓ Bot API photo: ${largest.width}x${largest.height} (${Math.round(largest.file_size / 1024)} KB)`)
+      console.log(
+        `    ✓ Bot API photo: ${largest.width}x${largest.height} (${Math.round(largest.file_size / 1024)} KB)`
+      )
     }
 
     return localPath
@@ -191,7 +197,10 @@ async function fetchChannelPosts(channelUsername: string, type: PostType): Promi
     const messageId = idMatch[1]
 
     // Check if this message has a photo (look for photo_wrap with CDN background-image)
-    const hasPhoto = /tgme_widget_message_photo_wrap[^>]*style="[^"]*background-image:\s*url\('https?:\/\/cdn/.test(block)
+    const hasPhoto =
+      /tgme_widget_message_photo_wrap[^>]*style="[^"]*background-image:\s*url\('https?:\/\/cdn/.test(
+        block
+      )
 
     let imageUrl: string | null = null
 
@@ -252,10 +261,42 @@ function parseTitle(text: string): string {
 }
 
 const TRANSLIT: Record<string, string> = {
-  а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',
-  к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
-  х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
-  і:'i',ї:'yi',є:'ye',
+  а: 'a',
+  б: 'b',
+  в: 'v',
+  г: 'g',
+  д: 'd',
+  е: 'e',
+  ё: 'yo',
+  ж: 'zh',
+  з: 'z',
+  и: 'i',
+  й: 'y',
+  к: 'k',
+  л: 'l',
+  м: 'm',
+  н: 'n',
+  о: 'o',
+  п: 'p',
+  р: 'r',
+  с: 's',
+  т: 't',
+  у: 'u',
+  ф: 'f',
+  х: 'kh',
+  ц: 'ts',
+  ч: 'ch',
+  ш: 'sh',
+  щ: 'shch',
+  ъ: '',
+  ы: 'y',
+  ь: '',
+  э: 'e',
+  ю: 'yu',
+  я: 'ya',
+  і: 'i',
+  ї: 'yi',
+  є: 'ye',
 }
 
 function transliterate(str: string): string {
@@ -276,6 +317,11 @@ function generateSlug(title: string, messageId: string): string {
     .slice(0, 60)
     .replace(/-+$/, '')
   return `${slug || 'post'}_${messageId}`
+}
+
+function parseCompany(text: string): string | null {
+  const match = text.match(/(?:компания|работодатель|company|employer)[:\s—–-]+([^\n,]{2,80})/i)
+  return match ? match[1].trim() : null
 }
 
 function parseSalary(text: string): string | null {
@@ -327,6 +373,7 @@ async function savePost(post: TelegramPost): Promise<boolean> {
       title,
       slug: generateSlug(title, post.messageId),
       description: post.text,
+      company: parseCompany(post.text),
       salary: parseSalary(post.text),
       imageUrl: post.imageUrl,
       status: 'published',

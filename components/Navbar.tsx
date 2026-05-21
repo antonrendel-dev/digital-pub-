@@ -33,21 +33,49 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
         <div className="max-w-wrap mx-auto px-4 py-3 flex items-center justify-between">
           {/* Logo + Brand */}
           <Link href="/" className="flex items-center gap-3 no-underline">
-            <Image src="/logo.png" alt="Диджитал Паб" width={44} height={44} className="rounded-lg" />
+            <Image
+              src="/logo.png"
+              alt="Диджитал Паб"
+              width={44}
+              height={44}
+              className="rounded-lg"
+            />
             <div>
               <div className="text-lg font-semibold text-text logo-brand">
                 диджитал<em>паб</em>
               </div>
-              <div className="text-xs text-text-muted hidden sm:block">Место, где встречаются хорошие люди</div>
+              <div className="text-xs text-text-muted hidden sm:block">
+                Место, где встречаются хорошие люди
+              </div>
             </div>
           </Link>
 
           {/* Desktop Nav Links */}
           <div className="hidden lg:flex items-center gap-6">
-            <Link href="/" className="text-sm font-medium text-text hover:text-accent transition-colors">Главная</Link>
-            <Link href="/vacancies" className="text-sm font-medium text-text-muted hover:text-text transition-colors">Вакансии</Link>
-            <Link href="/resumes" className="text-sm font-medium text-text-muted hover:text-text transition-colors">Резюме</Link>
-            <Link href="/articles" className="text-sm font-medium text-text-muted hover:text-text transition-colors">Статьи</Link>
+            <Link
+              href="/"
+              className="text-sm font-medium text-text hover:text-accent transition-colors"
+            >
+              Главная
+            </Link>
+            <Link
+              href="/vacancies"
+              className="text-sm font-medium text-text-muted hover:text-text transition-colors"
+            >
+              Вакансии
+            </Link>
+            <Link
+              href="/resumes"
+              className="text-sm font-medium text-text-muted hover:text-text transition-colors"
+            >
+              Резюме
+            </Link>
+            <Link
+              href="/articles"
+              className="text-sm font-medium text-text-muted hover:text-text transition-colors"
+            >
+              Статьи
+            </Link>
           </div>
 
           {/* Right: Search + Buttons */}
@@ -73,13 +101,25 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
                     handleSearch()
                   } else {
                     setSearchOpen(!searchOpen)
-                    if (searchOpen) { setQuery(''); onSearch('') }
+                    if (searchOpen) {
+                      setQuery('')
+                      onSearch('')
+                    }
                   }
                 }}
                 title="Поиск"
                 className="flex items-center justify-center w-9 h-9 rounded-full bg-border-light hover:bg-border text-text-light hover:text-accent cursor-pointer transition-all flex-shrink-0"
               >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
@@ -91,7 +131,12 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
               onClick={() => setSearchOpen(!searchOpen)}
               className="md:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-border-light transition-colors"
             >
-              <svg className="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-5 h-5 text-text-muted"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.35-4.35" />
               </svg>
@@ -116,7 +161,12 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
               {isDark ? (
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
                   <circle cx="12" cy="12" r="4" fill="#FFAC33" />
-                  <path stroke="#FFAC33" strokeWidth="2" strokeLinecap="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                  <path
+                    stroke="#FFAC33"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+                  />
                 </svg>
               ) : (
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
@@ -130,7 +180,13 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
               onClick={() => setMenuOpen(!menuOpen)}
               className="lg:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-border-light transition-colors"
             >
-              <svg className="w-5 h-5 text-text-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg
+                className="w-5 h-5 text-text-muted"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
                 {menuOpen ? (
                   <path d="M6 18L18 6M6 6l12 12" />
                 ) : (
@@ -143,11 +199,35 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
 
         {/* Mobile menu */}
         {menuOpen && (
-          <div className="lg:hidden mobile-menu border-t border-border px-4 py-4 space-y-1 shadow-lg">
-            <Link href="/" className="block py-3 px-3 text-sm font-medium text-text rounded-lg hover:bg-white/60 transition-colors" onClick={() => setMenuOpen(false)}>Главная</Link>
-            <Link href="/vacancies" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors" onClick={() => setMenuOpen(false)}>Вакансии</Link>
-            <Link href="/resumes" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors" onClick={() => setMenuOpen(false)}>Резюме</Link>
-            <Link href="/articles" className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors" onClick={() => setMenuOpen(false)}>Статьи</Link>
+          <div className="lg:hidden bg-[#f9fafb] dark:bg-[#0a1530] border-t border-border px-4 py-4 space-y-1 shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
+            <Link
+              href="/"
+              className="block py-3 px-3 text-sm font-medium text-text rounded-lg hover:bg-white/60 transition-colors"
+              onClick={() => setMenuOpen(false)}
+            >
+              Главная
+            </Link>
+            <Link
+              href="/vacancies"
+              className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors"
+              onClick={() => setMenuOpen(false)}
+            >
+              Вакансии
+            </Link>
+            <Link
+              href="/resumes"
+              className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors"
+              onClick={() => setMenuOpen(false)}
+            >
+              Резюме
+            </Link>
+            <Link
+              href="/articles"
+              className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors"
+              onClick={() => setMenuOpen(false)}
+            >
+              Статьи
+            </Link>
             <div className="pt-3 border-t border-border mt-3">
               <a
                 href="https://t.me/resume_vac_bot"
@@ -163,7 +243,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
       </nav>
 
       {/* Descriptor bar */}
-      <div className="descriptor-bar border-b border-border transition-colors duration-200">
+      <div className="bg-[#f9fafb] dark:bg-[#0a1530] border-b border-border transition-colors duration-200">
         <div className="max-w-wrap mx-auto px-4 py-1 text-center">
           <span style={{ fontSize: '12px', color: 'var(--text-light)', letterSpacing: '0.2px' }}>
             Вакансии и резюме из Telegram-каналов &middot; Находи быстро, откликайся легко
@@ -185,7 +265,11 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
               className="flex-1 h-11 px-4 border border-border rounded-lg bg-bg-card text-text text-sm outline-none focus:border-accent"
             />
             <button
-              onClick={() => { setSearchOpen(false); setQuery(''); onSearch('') }}
+              onClick={() => {
+                setSearchOpen(false)
+                setQuery('')
+                onSearch('')
+              }}
               className="text-sm text-text-muted"
             >
               Отмена

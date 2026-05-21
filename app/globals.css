@@ -58,7 +58,11 @@
 /* Yellow accent is the only accent per mockups */
 
 /* ---- Base ---- */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 body {
   font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
   background: var(--bg);
@@ -70,51 +74,65 @@ body {
 .theme-switching *,
 .theme-switching *::before,
 .theme-switching *::after {
-  transition: background-color 0.35s ease,
-              color 0.35s ease,
-              border-color 0.35s ease,
-              box-shadow 0.35s ease !important;
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease !important;
 }
 
 /* Section label with yellow bar */
-.s-lbl { font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-light); margin-bottom:10px; font-weight:600; display:flex; align-items:center; gap:7px; }
-.s-lbl::before { content:''; display:inline-block; width:3px; height:11px; background:#ffcc3e; border-radius:2px; flex-shrink:0; }
+.s-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-light);
+  margin-bottom: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.s-lbl::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 11px;
+  background: #ffcc3e;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
 
-/* Tag colors by type - light mode */
-.tile-card { transition: transform 0.2s, box-shadow 0.2s; }
-.tile-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
-[data-theme='dark'] .tile-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+/* Tag colors by type */
+.tag-blue {
+  background: #e8f4fd;
+  color: #1a73e8;
+}
+.tag-green {
+  background: #e6f7ed;
+  color: #1f8a50;
+}
+.tag-orange {
+  background: #fff3e0;
+  color: #e65100;
+}
 
-.tag-blue { background: #e8f4fd; color: #1a73e8; }
-.tag-green { background: #e6f7ed; color: #1f8a50; }
-.tag-orange { background: #fff3e0; color: #e65100; }
-
-/* Tag colors by type - dark mode */
-[data-theme='dark'] .tag-blue { background: rgba(26,115,232,0.15); color: #6db3f8; }
-[data-theme='dark'] .tag-green { background: rgba(31,138,80,0.15); color: #5dd39e; }
-[data-theme='dark'] .tag-orange { background: rgba(230,81,0,0.15); color: #ffab70; }
+[data-theme='dark'] .tag-blue {
+  background: rgba(26, 115, 232, 0.15);
+  color: #6db3f8;
+}
+[data-theme='dark'] .tag-green {
+  background: rgba(31, 138, 80, 0.15);
+  color: #5dd39e;
+}
+[data-theme='dark'] .tag-orange {
+  background: rgba(230, 81, 0, 0.15);
+  color: #ffab70;
+}
 
 /* Logo brand styling */
-.logo-brand em { font-style: italic; font-weight: 700; color: #ffcc3e; }
-
-/* Descriptor bar */
-.descriptor-bar { background: #f9fafb; }
-[data-theme='dark'] .descriptor-bar { background: #0a1530; }
-
-/* Mobile menu */
-.mobile-menu {
-  background: #f9fafb;
-  border-bottom: 2px solid var(--border);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+.logo-brand em {
+  font-style: italic;
+  font-weight: 700;
+  color: #ffcc3e;
 }
-[data-theme='dark'] .mobile-menu {
-  background: #0a1530;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-}
-
-/* Card hover animation */
-.card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
-[data-theme='dark'] .card-hover:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
-
-/* Chip active state */
-.chip-active { background: #ffcc3e !important; color: #111 !important; }
