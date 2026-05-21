@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
 }
 
-export const revalidate = 300 // ISR: refresh every 5 minutes
+export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   const [posts, stats, tags] = await Promise.all([

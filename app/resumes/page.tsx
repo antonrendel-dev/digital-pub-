@@ -3,15 +3,17 @@ import { getTagsWithCounts, getStats } from '@/lib/tags'
 import ListingPage from '@/components/ListingPage'
 import type { Metadata } from 'next'
 
-export const revalidate = 300 // ISR: refresh every 5 minutes
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Резюме дизайнеров, маркетологов и IT-специалистов',
-  description: 'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества для вашего проекта.',
+  description:
+    'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества для вашего проекта.',
   alternates: { canonical: 'https://d-pub.ru/resumes' },
   openGraph: {
     title: 'Резюме дизайнеров, маркетологов и IT-специалистов',
-    description: 'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества.',
+    description:
+      'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества.',
     url: 'https://d-pub.ru/resumes',
     type: 'website',
   },
