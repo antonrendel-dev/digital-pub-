@@ -30,7 +30,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
               "font-src 'self' fonts.gstatic.com",
               "img-src 'self' data: blob: yandex.ru *.yandex.ru *.yandex.net yandex.com *.yandex.com *.telesco.pe",
-              "connect-src 'self' yandex.ru *.yandex.ru *.yandex.net yandex.com *.yandex.com",
+              "connect-src 'self' yandex.ru *.yandex.ru *.yandex.net yandex.com *.yandex.com wss://mc.yandex.com wss://*.yandex.com",
               "frame-src yandex.ru *.yandex.ru yandex.com *.yandex.com",
               "frame-ancestors 'none'",
             ].join('; '),
