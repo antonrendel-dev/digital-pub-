@@ -1,0 +1,32 @@
+name: Retag posts (one-time)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  retag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Retag existing posts
+        run: npx tsx scripts/retag-posts.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
