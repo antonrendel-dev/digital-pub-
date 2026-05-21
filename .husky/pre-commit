@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export PATH="$HOME/.local/bin:$PATH"
+
 # 1. Scan for secrets
 gitleaks protect --staged --no-banner
 if [ $? -ne 0 ]; then
