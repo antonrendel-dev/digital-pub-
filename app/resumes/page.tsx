@@ -5,22 +5,30 @@ import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'Резюме дизайнеров, маркетологов и IT-специалистов',
-  description:
-    'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества для вашего проекта.',
-  alternates: { canonical: 'https://d-pub.ru/resumes' },
-  openGraph: {
-    title: 'Резюме дизайнеров, маркетологов и IT-специалистов',
-    description:
-      'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества.',
-    url: 'https://d-pub.ru/resumes',
-    type: 'website',
-  },
-}
+const BASE_URL = 'https://d-pub.ru'
+const TITLE = 'Резюме дизайнеров, маркетологов и IT-специалистов'
+const DESCRIPTION =
+  'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества для вашего проекта.'
 
 interface Props {
   searchParams: { page?: string }
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const page = Math.max(1, parseInt(searchParams.page || '1', 10) || 1)
+  const canonical = page === 1 ? `${BASE_URL}/resumes` : `${BASE_URL}/resumes?page=${page}`
+  return {
+    title: TITLE,
+    description: DESCRIPTION,
+    alternates: { canonical },
+    openGraph: {
+      title: TITLE,
+      description:
+        'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества.',
+      url: canonical,
+      type: 'website',
+    },
+  }
 }
 
 export default async function ResumesPage({ searchParams }: Props) {
@@ -30,15 +38,24 @@ export default async function ResumesPage({ searchParams }: Props) {
     getTagsWithCounts(),
     getStats(),
   ])
+
+  const base = `${BASE_URL}/resumes`
+  const prevUrl = page > 1 ? (page === 2 ? base : `${base}?page=${page - 1}`) : null
+  const nextUrl = page < totalPages ? `${base}?page=${page + 1}` : null
+
   return (
-    <ListingPage
-      posts={posts}
-      type="resume"
-      tags={tags}
-      stats={stats}
-      currentPage={page}
-      totalPages={totalPages}
-      total={total}
-    />
+    <>
+      {prevUrl && <link rel="prev" href={prevUrl} />}
+      {nextUrl && <link rel="next" href={nextUrl} />}
+      <ListingPage
+        posts={posts}
+        type="resume"
+        tags={tags}
+        stats={stats}
+        currentPage={page}
+        totalPages={totalPages}
+        total={total}
+      />
+    </>
   )
 }

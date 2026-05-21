@@ -5,22 +5,30 @@ import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'Вакансии маркетолога, дизайнера, SMM, аналитика',
-  description:
-    'Актуальные вакансии в digital: маркетинг, дизайн, SMM, аналитика, контент. Удалённая работа и офис. Обновление из Telegram-каналов ежедневно.',
-  alternates: { canonical: 'https://d-pub.ru/vacancies' },
-  openGraph: {
-    title: 'Вакансии маркетолога, дизайнера, SMM, аналитика',
-    description:
-      'Актуальные вакансии в digital: маркетинг, дизайн, SMM, аналитика, контент. Удалённая работа и офис.',
-    url: 'https://d-pub.ru/vacancies',
-    type: 'website',
-  },
-}
+const BASE_URL = 'https://d-pub.ru'
+const TITLE = 'Вакансии маркетолога, дизайнера, SMM, аналитика'
+const DESCRIPTION =
+  'Актуальные вакансии в digital: маркетинг, дизайн, SMM, аналитика, контент. Удалённая работа и офис. Обновление из Telegram-каналов ежедневно.'
 
 interface Props {
   searchParams: { page?: string }
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const page = Math.max(1, parseInt(searchParams.page || '1', 10) || 1)
+  const canonical = page === 1 ? `${BASE_URL}/vacancies` : `${BASE_URL}/vacancies?page=${page}`
+  return {
+    title: TITLE,
+    description: DESCRIPTION,
+    alternates: { canonical },
+    openGraph: {
+      title: TITLE,
+      description:
+        'Актуальные вакансии в digital: маркетинг, дизайн, SMM, аналитика, контент. Удалённая работа и офис.',
+      url: canonical,
+      type: 'website',
+    },
+  }
 }
 
 export default async function VacanciesPage({ searchParams }: Props) {
@@ -30,15 +38,24 @@ export default async function VacanciesPage({ searchParams }: Props) {
     getTagsWithCounts(),
     getStats(),
   ])
+
+  const base = `${BASE_URL}/vacancies`
+  const prevUrl = page > 1 ? (page === 2 ? base : `${base}?page=${page - 1}`) : null
+  const nextUrl = page < totalPages ? `${base}?page=${page + 1}` : null
+
   return (
-    <ListingPage
-      posts={posts}
-      type="vacancy"
-      tags={tags}
-      stats={stats}
-      currentPage={page}
-      totalPages={totalPages}
-      total={total}
-    />
+    <>
+      {prevUrl && <link rel="prev" href={prevUrl} />}
+      {nextUrl && <link rel="next" href={nextUrl} />}
+      <ListingPage
+        posts={posts}
+        type="vacancy"
+        tags={tags}
+        stats={stats}
+        currentPage={page}
+        totalPages={totalPages}
+        total={total}
+      />
+    </>
   )
 }

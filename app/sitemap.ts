@@ -23,8 +23,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const tags = await prisma.tag.findMany({ select: { slug: true } })
     tagRoutes = tags.flatMap(({ slug }) => [
-      { url: `${BASE_URL}/vacancies/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.8 },
-      { url: `${BASE_URL}/resumes/tag/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.7 },
+      {
+        url: `${BASE_URL}/vacancies/${slug}`,
+        lastModified: now,
+        changeFrequency: 'daily' as const,
+        priority: 0.8,
+      },
+      {
+        url: `${BASE_URL}/resumes/tag/${slug}`,
+        lastModified: now,
+        changeFrequency: 'daily' as const,
+        priority: 0.7,
+      },
     ])
   } catch {
     console.warn('[sitemap] DB unavailable, skipping tag routes')
@@ -51,12 +61,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: {
         slug: true,
         type: true,
-        createdAt: true,
+        updatedAt: true,
         tags: {
           select: { tag: { select: { slug: true, tagType: true } } },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
     })
 
     postRoutes = posts
@@ -70,7 +80,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             : `${BASE_URL}/post/${p.slug}`
         return {
           url,
-          lastModified: p.createdAt,
+          lastModified: p.updatedAt,
           changeFrequency: 'weekly' as const,
           priority: 0.5,
         }
