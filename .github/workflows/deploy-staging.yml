@@ -50,5 +50,8 @@ jobs:
       - name: Deploy lib/
         run: rsync -avz lib/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/lib/
 
+      - name: Deploy public/
+        run: rsync -avz public/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/public/
+
       - name: Restart staging app
         run: ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "pm2 restart d-pub-staging || pm2 start ~/staging/d-pub/ecosystem.config.js"
