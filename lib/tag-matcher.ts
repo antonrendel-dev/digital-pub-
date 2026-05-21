@@ -20,11 +20,37 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
   marketing: ['маркетинг', 'маркетолог', 'performance', 'контент-маркетинг'],
   menedzher: ['менеджер', 'проджект', 'продакт', 'project manager', 'product manager', 'аккаунт'],
   target: ['таргет', 'таргетолог', 'target', 'директ', 'контекстная реклама', 'яндекс директ'],
-  razrabotka: ['разработчик', 'программист', 'developer', 'frontend', 'backend', 'фулстек', 'react', 'python', 'javascript'],
+  razrabotka: [
+    'разработчик',
+    'программист',
+    'developer',
+    'frontend',
+    'backend',
+    'фулстек',
+    'react',
+    'python',
+    'javascript',
+  ],
   analitika: ['аналитик', 'аналитика', 'analytics', 'data analyst', 'bi'],
   finansy: ['финанс', 'бухгалтер', 'экономист'],
   hr: ['hr', 'рекрутер', 'кадр', 'hrbp', 'people partner'],
   wordpress: ['wordpress', 'вордпресс'],
+  copywriting: [
+    'копирайтер',
+    'копирайтинг',
+    'copywriter',
+    'copywriting',
+    'автор текстов',
+    'рерайтер',
+    'рерайтинг',
+  ],
+  content: [
+    'контент-мейкер',
+    'контент мейкер',
+    'content maker',
+    'контент-стратег',
+    'контент стратег',
+  ],
   udalyonka: ['удалённо', 'удаленно', 'удалёнка', 'удаленка', 'remote', 'дистанционно'],
   ofis: ['офис', 'office', 'в офисе'],
   gibrid: ['гибрид', 'гибридный', 'hybrid'],
@@ -44,11 +70,9 @@ export function matchTags(text: string): string[] {
       if (idx === -1) continue
 
       const before = idx > 0 ? lowerText[idx - 1] : ' '
-      const after =
-        idx + keyword.length < lowerText.length ? lowerText[idx + keyword.length] : ' '
+      const after = idx + keyword.length < lowerText.length ? lowerText[idx + keyword.length] : ' '
 
-      const isBoundary = (ch: string) =>
-        /[\s\.,;:!?\-—–()\/\[\]{}«»"'#@\n\r]/.test(ch)
+      const isBoundary = (ch: string) => /[\s\.,;:!?\-—–()\/\[\]{}«»"'#@\n\r]/.test(ch)
 
       if (
         (idx === 0 || isBoundary(before)) &&
