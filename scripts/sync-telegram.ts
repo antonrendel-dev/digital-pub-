@@ -325,10 +325,17 @@ function parseCompany(text: string): string | null {
 }
 
 function parseSalary(text: string): string | null {
-  const match = text.match(
-    /(?:зарплата|salary|от|до|💰)[:\s]*([0-9][0-9\s]*(?:000)?(?:\s*[-–—]\s*[0-9][0-9\s]*(?:000)?)?\s*(?:₽|руб|rub|k|тыс)?)/i
+  // Explicit label — any number after зарплата/salary/💰
+  const labeled = text.match(
+    /(?:зарплата|salary|💰)\s*:?\s*(\d[\d\s]*(?:[-–—]\s*\d[\d\s]*)?\s*(?:₽|руб\.?|rub|k|тыс\.?)?)/i
   )
-  return match ? match[1].trim() : null
+  if (labeled) return labeled[1].trim()
+
+  // Number with currency unit — requires ₽/руб/тыс/k to avoid false positives
+  const withUnit = text.match(/(\d[\d\s]{2,}(?:\s*[-–—]\s*\d[\d\s]*)?\s*(?:₽|руб\.?|тыс\.?|k\b))/i)
+  if (withUnit) return withUnit[1].trim()
+
+  return null
 }
 
 // Keyword -> tag slug mapping and matching logic live in lib/tag-matcher.ts
