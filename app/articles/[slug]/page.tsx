@@ -4,9 +4,22 @@ import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
 import { getArticleBySlug, getArticles, formatArticleDate } from '@/lib/articles'
+
+// Elements NOT in MDX_ALLOWED_ELEMENTS — blocked as defense-in-depth
+const mdxComponents = {
+  script: () => null,
+  iframe: () => null,
+  style: () => null,
+  object: () => null,
+  embed: () => null,
+  form: () => null,
+} as Record<string, () => null>
 import PageShell from '@/components/PageShell'
 import JsonLd from '@/components/JsonLd'
-import { getRelatedCategoriesForArticle, RelatedCategoriesBlock } from '@/components/RelatedArticles'
+import {
+  getRelatedCategoriesForArticle,
+  RelatedCategoriesBlock,
+} from '@/components/RelatedArticles'
 
 export const revalidate = 300
 
@@ -99,9 +112,19 @@ export default async function ArticlePage({ params }: Props) {
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
-          <Link href="/" className="text-text-muted no-underline hover:text-accent transition-colors">Главная</Link>
+          <Link
+            href="/"
+            className="text-text-muted no-underline hover:text-accent transition-colors"
+          >
+            Главная
+          </Link>
           <span className="text-text-light">&rsaquo;</span>
-          <Link href="/articles" className="text-text-muted no-underline hover:text-accent transition-colors">Статьи</Link>
+          <Link
+            href="/articles"
+            className="text-text-muted no-underline hover:text-accent transition-colors"
+          >
+            Статьи
+          </Link>
           <span className="text-text-light">&rsaquo;</span>
           <span className="text-text-light truncate">{article.title}</span>
         </div>
@@ -114,11 +137,16 @@ export default async function ArticlePage({ params }: Props) {
             </h1>
 
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-sm text-text-light">{formatArticleDate(article.publishedAt)}</span>
+              <span className="text-sm text-text-light">
+                {formatArticleDate(article.publishedAt)}
+              </span>
               {article.tags.length > 0 && (
                 <div className="flex gap-1">
                   {article.tags.map((tag) => (
-                    <span key={tag} className="text-[11px] px-2 py-0.5 rounded bg-border-light text-text-muted">
+                    <span
+                      key={tag}
+                      className="text-[11px] px-2 py-0.5 rounded bg-border-light text-text-muted"
+                    >
                       {tag}
                     </span>
                   ))}
@@ -128,13 +156,10 @@ export default async function ArticlePage({ params }: Props) {
 
             {/* MDX content with safe component allowlist */}
             <div className="prose prose-sm max-w-none text-text-muted [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-text [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_a]:text-accent [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-text-muted [&_blockquote]:my-4 [&_strong]:font-semibold [&_strong]:text-text [&_code]:bg-border-light [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_table]:my-4 [&_th]:bg-border-light [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-text [&_th]:border [&_th]:border-border [&_td]:px-3 [&_td]:py-2 [&_td]:border [&_td]:border-border [&_td]:text-text-muted">
-              {/* MDX is rendered without custom components prop -
-                   only standard HTML elements are available.
-                   MDX files are from our repo, not user-submitted.
-                   See MDX_ALLOWED_ELEMENTS in lib/articles.ts for reference. */}
               <MDXRemote
                 source={article.content}
                 options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+                components={mdxComponents}
               />
             </div>
           </article>
@@ -156,7 +181,9 @@ export default async function ArticlePage({ params }: Props) {
                     <div className="text-[12.5px] text-text font-medium leading-snug mb-0.5 group-hover:text-accent transition-colors">
                       {r.title}
                     </div>
-                    <div className="text-[11px] text-text-light">{formatArticleDate(r.publishedAt)}</div>
+                    <div className="text-[11px] text-text-light">
+                      {formatArticleDate(r.publishedAt)}
+                    </div>
                   </Link>
                 ))}
               </div>
