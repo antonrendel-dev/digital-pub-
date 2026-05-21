@@ -4,6 +4,12 @@ import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
 import { getArticleBySlug, getArticles, formatArticleDate } from '@/lib/articles'
+import PageShell from '@/components/PageShell'
+import JsonLd from '@/components/JsonLd'
+import {
+  getRelatedCategoriesForArticle,
+  RelatedCategoriesBlock,
+} from '@/components/RelatedArticles'
 
 // Elements NOT in MDX_ALLOWED_ELEMENTS — blocked as defense-in-depth
 const mdxComponents = {
@@ -14,12 +20,6 @@ const mdxComponents = {
   embed: () => null,
   form: () => null,
 } as Record<string, () => null>
-import PageShell from '@/components/PageShell'
-import JsonLd from '@/components/JsonLd'
-import {
-  getRelatedCategoriesForArticle,
-  RelatedCategoriesBlock,
-} from '@/components/RelatedArticles'
 
 export const revalidate = 300
 
