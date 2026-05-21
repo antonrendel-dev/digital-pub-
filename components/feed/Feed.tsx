@@ -2,17 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { FeedPost } from '@/lib/posts'
+import { FILTER_CHIPS } from '@/lib/config'
 import JobCard from './JobCard'
-
-const FILTER_CHIPS = [
-  'Удалёнка',
-  'SMM',
-  'SEO',
-  'Дизайн',
-  'Маркетинг',
-  'Менеджер',
-  'Таргет',
-]
 
 const PAGE_SIZE = 10
 
