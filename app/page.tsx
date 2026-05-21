@@ -6,11 +6,13 @@ import { getArticles, formatArticleDate } from '@/lib/articles'
 
 export const metadata: Metadata = {
   title: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб',
-  description: 'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. SMM, аналитика, дизайн, маркетинг — новые предложения каждый день.',
+  description:
+    'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. SMM, аналитика, дизайн, маркетинг — новые предложения каждый день.',
   alternates: { canonical: 'https://d-pub.ru' },
   openGraph: {
     title: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб',
-    description: 'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. SMM, аналитика, дизайн, маркетинг — новые предложения каждый день.',
+    description:
+      'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. SMM, аналитика, дизайн, маркетинг — новые предложения каждый день.',
     url: 'https://d-pub.ru',
     type: 'website',
   },
@@ -20,9 +22,9 @@ export const revalidate = 300 // ISR: refresh every 5 minutes
 
 export default async function Page() {
   const [posts, stats, tags] = await Promise.all([
-    getPublishedPosts(),
-    getStats(),
-    getTagsWithCounts(),
+    getPublishedPosts().catch(() => [] as Awaited<ReturnType<typeof getPublishedPosts>>),
+    getStats().catch(() => ({ vacancyCount: 0, resumeCount: 0, companyCount: 0, newToday: 0 })),
+    getTagsWithCounts().catch(() => [] as Awaited<ReturnType<typeof getTagsWithCounts>>),
   ])
   const articlesMeta = getArticles()
   const articles = articlesMeta.map((a) => ({
