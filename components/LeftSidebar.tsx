@@ -87,7 +87,7 @@ export default function LeftSidebar({ stats }: LeftSidebarProps) {
       <div className="bg-bg-card border border-border rounded-xl p-4 space-y-3">
         <h3 className="s-lbl">Вакансии в соцсетях</h3>
         <a
-          href="https://t.me/web_vacancy"
+          href="https://t.me/+69rdOEDrfvgyMDMy"
           target="_blank"
           rel="noopener noreferrer"
           className="block no-underline text-inherit"
