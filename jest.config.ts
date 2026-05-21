@@ -7,8 +7,9 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
-  modulePathIgnorePatterns: ['<rootDir>/node_modules_old/'],
-  watchPathIgnorePatterns: ['<rootDir>/node_modules_old/'],
+  modulePathIgnorePatterns: ['<rootDir>/node_modules_old/', '<rootDir>/_files/'],
+  watchPathIgnorePatterns: ['<rootDir>/node_modules_old/', '<rootDir>/_files/'],
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/_files/'],
 }
 
 export default config

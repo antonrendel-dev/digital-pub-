@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
 import Feed from './feed/Feed'
 import RightSidebar from './RightSidebar'
 import Footer from './Footer'
 import { FeedPost } from '@/lib/posts'
+import { useTheme } from '@/lib/hooks/useTheme'
 
 interface HomePageProps {
   posts: FeedPost[]
@@ -18,29 +19,7 @@ interface HomePageProps {
 
 export default function HomePage({ posts, stats, articles, tags, seoHtml }: HomePageProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [isDark, setIsDark] = useState(false)
-
-  useEffect(() => {
-    const theme = localStorage.getItem('theme')
-    // accent is always yellow per mockups
-    if (theme === 'dark') {
-      setIsDark(true)
-      document.documentElement.setAttribute('data-theme', 'dark')
-    }
-  }, [])
-
-  const toggleDark = () => {
-    const next = !isDark
-    setIsDark(next)
-    document.documentElement.classList.add('theme-switching')
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
-        localStorage.setItem('theme', next ? 'dark' : 'light')
-        setTimeout(() => document.documentElement.classList.remove('theme-switching'), 450)
-      })
-    })
-  }
+  const { isDark, toggleDark } = useTheme()
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -53,9 +32,9 @@ export default function HomePage({ posts, stats, articles, tags, seoHtml }: Home
               Вакансии и резюме digital-специалистов из Telegram-каналов
             </h1>
             <p className="text-sm text-text-muted leading-relaxed max-w-2xl">
-              Диджитал Паб — агрегатор вакансий в маркетинге, дизайне, SMM и IT из профильных Telegram-каналов.
-              Находите работу в digital или размещайте резюме — новые предложения поступают каждый день.
-              Удалённая работа, офис или гибрид — все форматы в одном месте.
+              Диджитал Паб — агрегатор вакансий в маркетинге, дизайне, SMM и IT из профильных
+              Telegram-каналов. Находите работу в digital или размещайте резюме — новые предложения
+              поступают каждый день. Удалённая работа, офис или гибрид — все форматы в одном месте.
             </p>
           </div>
 
@@ -63,11 +42,7 @@ export default function HomePage({ posts, stats, articles, tags, seoHtml }: Home
             <aside className="hidden lg:block">
               <LeftSidebar stats={stats} />
             </aside>
-            <Feed
-              posts={posts}
-              searchQuery={searchQuery}
-              onExternalTagConsumed={() => {}}
-            />
+            <Feed posts={posts} searchQuery={searchQuery} onExternalTagConsumed={() => {}} />
             <aside className="hidden lg:block">
               <RightSidebar tags={tags} articles={articles} />
             </aside>

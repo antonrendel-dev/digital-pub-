@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
@@ -8,6 +8,7 @@ import RightSidebar from './RightSidebar'
 import Feed from './feed/Feed'
 import Footer from './Footer'
 import { FeedPost } from '@/lib/posts'
+import { useTheme } from '@/lib/hooks/useTheme'
 
 interface ListingPageProps {
   posts: FeedPost[]
@@ -28,29 +29,8 @@ export default function ListingPage({
   totalPages = 1,
   total,
 }: ListingPageProps) {
-  const [isDark, setIsDark] = useState(false)
+  const { isDark, toggleDark } = useTheme()
   const [searchQuery, setSearchQuery] = useState('')
-
-  useEffect(() => {
-    const theme = localStorage.getItem('theme')
-    if (theme === 'dark') {
-      setIsDark(true)
-      document.documentElement.setAttribute('data-theme', 'dark')
-    }
-  }, [])
-
-  const toggleDark = () => {
-    const next = !isDark
-    setIsDark(next)
-    document.documentElement.classList.add('theme-switching')
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light')
-        localStorage.setItem('theme', next ? 'dark' : 'light')
-        setTimeout(() => document.documentElement.classList.remove('theme-switching'), 450)
-      })
-    })
-  }
 
   const pageTitle = type === 'vacancy' ? 'Вакансии' : 'Резюме'
   const basePath = type === 'vacancy' ? '/vacancies' : '/resumes'
@@ -123,7 +103,8 @@ export default function ListingPage({
 
               {total !== undefined && (
                 <div className="mt-3 text-center text-xs text-text-light">
-                  Страница {currentPage} из {totalPages} ({total} {type === 'vacancy' ? 'вакансий' : 'резюме'})
+                  Страница {currentPage} из {totalPages} ({total}{' '}
+                  {type === 'vacancy' ? 'вакансий' : 'резюме'})
                 </div>
               )}
             </div>

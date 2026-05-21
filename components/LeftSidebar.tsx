@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { SOCIAL_CHANNELS } from '@/lib/config'
 
 interface SubCardProps {
   type: 'tg' | 'mx' | 'vk'
@@ -29,7 +30,10 @@ function SubCard({ type, icon, title, subscribers, desc, btnColor }: SubCardProp
       <div className="text-xs text-text-muted mb-2">{desc}</div>
       <button
         className={`block w-full text-center py-1.5 rounded-md text-xs font-medium text-white border-none cursor-pointer transition-opacity hover:opacity-85 ${btnColor}`}
-        onClick={(e) => { e.preventDefault(); setSubscribed(true) }}
+        onClick={(e) => {
+          e.preventDefault()
+          setSubscribed(true)
+        }}
       >
         {subscribed ? '\u2713 Подписан' : 'Подписаться'}
       </button>
@@ -46,11 +50,21 @@ const TgIcon = () => (
 )
 
 const MxIcon = () => (
-  <Image src="/max-app.webp" alt="Макс" width={36} height={36} className="rounded-lg" style={{ objectFit: 'cover' }} />
+  <Image
+    src="/max-app.webp"
+    alt="Макс"
+    width={36}
+    height={36}
+    className="rounded-lg"
+    style={{ objectFit: 'cover' }}
+  />
 )
 
 const VkIcon = () => (
-  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#0077ff' }}>
+  <div
+    className="w-8 h-8 rounded-full flex items-center justify-center"
+    style={{ background: '#0077ff' }}
+  >
     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="white">
       <path d="M21.547 7h-3.29a.743.743 0 0 0-.655.392s-1.312 2.416-1.734 3.23C14.734 12.813 14 12.126 14 11.11V7.603A1.104 1.104 0 0 0 12.896 6.5h-2.474a1.982 1.982 0 0 0-1.75.813s1.255-.204 1.255 1.49c0 .42.022 1.626.04 2.64a.73.73 0 0 1-1.272.503 21.54 21.54 0 0 1-2.498-4.543.693.693 0 0 0-.63-.403h-2.99a.508.508 0 0 0-.48.685C3.005 10.175 6.918 18 11.38 18h1.878a.742.742 0 0 0 .742-.742v-1.135a.73.73 0 0 1 1.23-.53l2.247 2.112a1.1 1.1 0 0 0 .746.295h2.953c1.424 0 1.424-.988.647-1.753-.546-.538-2.518-2.617-2.518-2.617a1.02 1.02 0 0 1-.078-1.323c.637-.84 1.68-2.212 2.122-2.8.603-.804 1.697-2.507.197-2.507z" />
     </svg>
@@ -72,14 +86,50 @@ export default function LeftSidebar({ stats }: LeftSidebarProps) {
       {/* Subscribe cards - wrapped in border container per mockup */}
       <div className="bg-bg-card border border-border rounded-xl p-4 space-y-3">
         <h3 className="s-lbl">Вакансии в соцсетях</h3>
-        <a href="https://t.me/web_vacancy" target="_blank" rel="noopener noreferrer" className="block no-underline text-inherit">
-          <SubCard type="tg" icon={<TgIcon />} title="Telegram" subscribers="14 200 подписчиков" desc="Свежие вакансии каждый день прямо в Telegram." btnColor="bg-brand-tg" />
+        <a
+          href="https://t.me/web_vacancy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block no-underline text-inherit"
+        >
+          <SubCard
+            type="tg"
+            icon={<TgIcon />}
+            title="Telegram"
+            subscribers={SOCIAL_CHANNELS.telegram.subscribers}
+            desc="Свежие вакансии каждый день прямо в Telegram."
+            btnColor="bg-brand-tg"
+          />
         </a>
-        <a href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ" target="_blank" rel="noopener noreferrer" className="block no-underline text-inherit">
-          <SubCard type="mx" icon={<MxIcon />} title="Макс" subscribers="6 800 подписчиков" desc="Те же вакансии в экосистеме ВКонтакте." btnColor="bg-brand-mx" />
+        <a
+          href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block no-underline text-inherit"
+        >
+          <SubCard
+            type="mx"
+            icon={<MxIcon />}
+            title="Макс"
+            subscribers={SOCIAL_CHANNELS.max.subscribers}
+            desc="Те же вакансии в экосистеме ВКонтакте."
+            btnColor="bg-brand-mx"
+          />
         </a>
-        <a href="https://vk.com/digital_pub_vacancies" target="_blank" rel="noopener noreferrer" className="block no-underline text-inherit">
-          <SubCard type="vk" icon={<VkIcon />} title="ВКонтакте" subscribers="9 300 подписчиков" desc="Вакансии и карьерные советы в вашей ленте ВК." btnColor="bg-brand-vk" />
+        <a
+          href="https://vk.com/digital_pub_vacancies"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block no-underline text-inherit"
+        >
+          <SubCard
+            type="vk"
+            icon={<VkIcon />}
+            title="ВКонтакте"
+            subscribers={SOCIAL_CHANNELS.vk.subscribers}
+            desc="Вакансии и карьерные советы в вашей ленте ВК."
+            btnColor="bg-brand-vk"
+          />
         </a>
       </div>
 
@@ -87,10 +137,30 @@ export default function LeftSidebar({ stats }: LeftSidebarProps) {
       <div className="bg-bg-card border border-border rounded-xl p-4">
         <h3 className="s-lbl">Платформа</h3>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-text-muted">Вакансий</span><span className="font-semibold text-text">{stats?.vacancyCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">Новых сегодня</span><span className="font-semibold text-green-600">{stats?.newToday?.toLocaleString('ru-RU') ?? '—'}</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">Резюме</span><span className="font-semibold text-text">{stats?.resumeCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">Компаний</span><span className="font-semibold text-text">{stats?.companyCount?.toLocaleString('ru-RU') ?? '—'}</span></div>
+          <div className="flex justify-between">
+            <span className="text-text-muted">Вакансий</span>
+            <span className="font-semibold text-text">
+              {stats?.vacancyCount?.toLocaleString('ru-RU') ?? '—'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-text-muted">Новых сегодня</span>
+            <span className="font-semibold text-green-600">
+              {stats?.newToday?.toLocaleString('ru-RU') ?? '—'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-text-muted">Резюме</span>
+            <span className="font-semibold text-text">
+              {stats?.resumeCount?.toLocaleString('ru-RU') ?? '—'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-text-muted">Компаний</span>
+            <span className="font-semibold text-text">
+              {stats?.companyCount?.toLocaleString('ru-RU') ?? '—'}
+            </span>
+          </div>
         </div>
       </div>
     </div>
