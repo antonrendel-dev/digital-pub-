@@ -122,18 +122,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `}
           </Script>
         )}
-        {YANDEX_METRIKA_ID && (
-          <noscript>
-            <div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://mc.yandex.ru/watch/${YANDEX_METRIKA_ID}`}
-                style={{ position: 'absolute', left: '-9999px' }}
-                alt=""
-              />
-            </div>
-          </noscript>
-        )}
 
         {/* Google Analytics (GA4) */}
         {GA_MEASUREMENT_ID && (
