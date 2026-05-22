@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
 import RightSidebar from './RightSidebar'
+import TagsSidebar from './TagsSidebar'
 import Feed from './feed/Feed'
 import Footer from './Footer'
 import { FeedPost } from '@/lib/posts'
@@ -45,6 +46,12 @@ export default function ListingPage({
               <LeftSidebar stats={stats} />
             </aside>
             <div>
+              {/* Tags rubricator — mobile/tablet only (desktop: right sidebar) */}
+              {tags && tags.length > 0 && (
+                <div className="lg:hidden mb-4">
+                  <TagsSidebar tags={tags} />
+                </div>
+              )}
               <Feed
                 posts={posts}
                 searchQuery={searchQuery}
