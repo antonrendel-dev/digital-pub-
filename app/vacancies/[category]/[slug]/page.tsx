@@ -54,6 +54,18 @@ export default async function VacancyPage({ params }: Props) {
     getTagsWithCounts(),
   ])
 
+  // Determine job location type from post tags
+  const postTagSlugs = new Set(
+    post.tags?.map((pt: { tag: { slug: string } }) => pt.tag?.slug).filter(Boolean) ?? []
+  )
+  const jobLocationType = postTagSlugs.has('udalyonka')
+    ? 'TELECOMMUTE'
+    : postTagSlugs.has('gibrid')
+      ? 'TELECOMMUTE'
+      : postTagSlugs.has('ofis')
+        ? 'INPERSON'
+        : undefined
+
   // Schema.org JobPosting
   const jobPostingLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -61,8 +73,7 @@ export default async function VacancyPage({ params }: Props) {
     title: post.title,
     description: post.description || post.title,
     datePosted: post.createdAt,
-    employmentType: 'FULL_TIME',
-    jobLocationType: 'TELECOMMUTE',
+    ...(jobLocationType && { jobLocationType }),
     ...(post.company && {
       hiringOrganization: {
         '@type': 'Organization',
@@ -89,7 +100,14 @@ export default async function VacancyPage({ params }: Props) {
       { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
       { '@type': 'ListItem', position: 2, name: 'Вакансии', item: 'https://d-pub.ru/vacancies' },
       ...(tag
-        ? [{ '@type': 'ListItem', position: 3, name: tag.name, item: `https://d-pub.ru/vacancies/${category}` }]
+        ? [
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: tag.name,
+              item: `https://d-pub.ru/vacancies/${category}`,
+            },
+          ]
         : []),
       { '@type': 'ListItem', position: tag ? 4 : 3, name: post.title },
     ],
