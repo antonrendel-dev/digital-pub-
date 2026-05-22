@@ -44,7 +44,7 @@ export default async function Page() {
 <li><strong><a href="/vacancies/target">Таргетированная реклама</a></strong> — таргетолог ВКонтакте, специалист по контекстной рекламе, PPC-менеджер.</li>
 <li><strong><a href="/vacancies/analitika">Аналитика</a></strong> — веб-аналитик, продуктовый аналитик, data-аналитик в маркетинге.</li>
 <li><strong><a href="/vacancies/razrabotka">Разработка</a></strong> — фронтенд и бэкенд разработчики, WordPress-специалисты, верстальщики для digital-агентств.</li>
-<li><strong><a href="/vacancies/hr">HR</a></strong> — рекрутер, HRBP, HR-аналитик в digital-компаниях.</li>
+<li><strong><a href="/vacancies/copywriting">Копирайтинг</a></strong> — копирайтер, редактор, автор текстов, рерайтер в digital-компаниях и агентствах.</li>
 </ul>
 
 <h2>Все форматы работы в одном каталоге</h2>
