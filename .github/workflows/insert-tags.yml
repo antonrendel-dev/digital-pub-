@@ -9,14 +9,24 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Apply tag changes via DATABASE_URL
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Apply tag changes on server
         run: |
-          node -e "
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'bash -s' << 'ENDSSH'
+          export PATH=$HOME/.nvm/versions/node/v22.12.0/bin:$PATH
+          cd ~/d-pub.ru/app
+          node << 'ENDNODE'
+          require('dotenv').config();
           const { Pool } = require('pg');
           const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
           async function run() {
-            // 1. Insert missing tags
             const tags = [
               ['Копирайтинг', 'copywriting', 'specialization'],
               ['Контент',     'content',     'specialization'],
@@ -24,36 +34,29 @@ jobs:
             ];
             for (const [name, slug, tagType] of tags) {
               const r = await pool.query(
-                'INSERT INTO \"Tag\" (name, slug, \"tagType\") VALUES (\$1, \$2, \$3) ON CONFLICT (slug) DO NOTHING',
+                'INSERT INTO "Tag" (name, slug, "tagType") VALUES ($1, $2, $3) ON CONFLICT (slug) DO NOTHING',
                 [name, slug, tagType]
               );
               console.log(slug + ':', r.rowCount ? 'inserted' : 'already exists');
             }
-
-            // 2. Retag wordpress posts → razrabotka
-            const wpTag = await pool.query('SELECT id FROM \"Tag\" WHERE slug = \$1', ['wordpress']);
-            const rzTag = await pool.query('SELECT id FROM \"Tag\" WHERE slug = \$1', ['razrabotka']);
+            const wpTag = await pool.query('SELECT id FROM "Tag" WHERE slug = $1', ['wordpress']);
+            const rzTag = await pool.query('SELECT id FROM "Tag" WHERE slug = $1', ['razrabotka']);
             if (wpTag.rows.length && rzTag.rows.length) {
               const wpId = wpTag.rows[0].id;
               const rzId = rzTag.rows[0].id;
-              // Add razrabotka tag to posts that have wordpress but not razrabotka
               const retagged = await pool.query(
-                'INSERT INTO \"PostTag\" (\"postId\", \"tagId\") SELECT \"postId\", \$1 FROM \"PostTag\" WHERE \"tagId\" = \$2 ON CONFLICT DO NOTHING',
+                'INSERT INTO "PostTag" ("postId", "tagId") SELECT "postId", $1 FROM "PostTag" WHERE "tagId" = $2 ON CONFLICT DO NOTHING',
                 [rzId, wpId]
               );
-              console.log('retagged wordpress→razrabotka:', retagged.rowCount, 'posts');
-              // Remove all wordpress PostTag entries
-              const removed = await pool.query('DELETE FROM \"PostTag\" WHERE \"tagId\" = \$1', [wpId]);
+              console.log('retagged wordpress->razrabotka:', retagged.rowCount, 'posts');
+              const removed = await pool.query('DELETE FROM "PostTag" WHERE "tagId" = $1', [wpId]);
               console.log('removed wordpress PostTags:', removed.rowCount);
-              // Delete the wordpress Tag
-              await pool.query('DELETE FROM \"Tag\" WHERE id = \$1', [wpId]);
+              await pool.query('DELETE FROM "Tag" WHERE id = $1', [wpId]);
               console.log('deleted wordpress tag');
             } else {
-              console.log('wordpress tag not found, skipping retag');
+              console.log('wordpress tag already deleted or not found');
             }
           }
-
           run().then(() => pool.end()).catch(e => { console.error(e); pool.end(); process.exit(1); });
-          "
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ENDNODE
+          ENDSSH
