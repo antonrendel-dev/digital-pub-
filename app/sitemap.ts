@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 const BASE_URL = 'https://d-pub.ru'
 
-export const revalidate = 3600 // rebuild sitemap every hour
+export const dynamic = 'force-dynamic'
 
 // Static fallback so tag pages are always in sitemap even if DB is unreachable at build time
 const KNOWN_TAG_SLUGS = [
