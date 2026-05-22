@@ -56,8 +56,11 @@ jobs:
       - name: Deploy prisma/
         run: rsync -avz prisma/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/prisma/
 
+      - name: Deploy prisma.config.ts
+        run: rsync -avz prisma.config.ts ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/prisma.config.ts
+
       - name: Run migrations on server
-        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "export PATH=\$HOME/.nvm/versions/node/v22.12.0/bin:\$PATH && cd ~/d-pub.ru/app && npx prisma migrate deploy"
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "export PATH=\$HOME/.nvm/versions/node/v22.12.0/bin:\$PATH && cd ~/d-pub.ru/app && ./node_modules/.bin/prisma migrate deploy"
 
       - name: Restart app
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "touch ~/d-pub.ru/reload"
