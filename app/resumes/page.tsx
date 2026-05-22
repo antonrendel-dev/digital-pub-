@@ -7,6 +7,21 @@ export const dynamic = 'force-dynamic'
 
 const BASE_URL = 'https://d-pub.ru'
 const TITLE = 'Резюме дизайнеров, маркетологов и IT-специалистов'
+
+const RESUMES_SEO_HTML = `<h2>База резюме digital-специалистов из Telegram</h2>
+<p>Диджитал Паб агрегирует резюме специалистов digital-рынка из профильных Telegram-каналов. Здесь HR-менеджеры и руководители находят кандидатов на позиции в маркетинге, дизайне, SMM, аналитике и разработке. База пополняется ежедневно — свежие резюме появляются несколько раз в сутки.</p>
+<h2>Резюме по специализациям</h2>
+<ul>
+<li><strong><a href="/resumes/tag/smm">SMM-специалисты</a></strong> — SMM-менеджеры, контент-менеджеры, специалисты по ведению социальных сетей.</li>
+<li><strong><a href="/resumes/tag/marketing">Маркетологи</a></strong> — интернет-маркетологи, performance-специалисты, CRM и email-маркетологи.</li>
+<li><strong><a href="/resumes/tag/dizajn">Дизайнеры</a></strong> — UI/UX, графические дизайнеры, веб-дизайнеры, моушн-дизайнеры.</li>
+<li><strong><a href="/resumes/tag/copywriting">Копирайтеры</a></strong> — авторы текстов, редакторы, контент-стратеги для digital-проектов.</li>
+<li><strong><a href="/resumes/tag/target">Таргетологи</a></strong> — специалисты по таргетированной и контекстной рекламе.</li>
+<li><strong><a href="/resumes/tag/analitika">Аналитики</a></strong> — веб-аналитики, data-аналитики, продуктовые аналитики.</li>
+<li><strong><a href="/resumes/tag/razrabotka">Разработчики</a></strong> — фронтенд, бэкенд и фулстек разработчики для digital-компаний.</li>
+</ul>
+<h2>Как найти кандидата</h2>
+<p>Просматривай ленту резюме или переходи в нужную категорию через теги. Каждая карточка содержит описание опыта и навыков специалиста. Для связи с кандидатом перейдите в Telegram — все резюме публикуются из открытых профессиональных каналов.</p>`
 const DESCRIPTION =
   'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества для вашего проекта.'
 
@@ -55,6 +70,7 @@ export default async function ResumesPage({ searchParams }: Props) {
         currentPage={page}
         totalPages={totalPages}
         total={total}
+        seoHtml={page === 1 ? RESUMES_SEO_HTML : undefined}
       />
     </>
   )

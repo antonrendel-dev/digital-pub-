@@ -19,6 +19,7 @@ interface ListingPageProps {
   currentPage?: number
   totalPages?: number
   total?: number
+  seoHtml?: string
 }
 
 export default function ListingPage({
@@ -29,6 +30,7 @@ export default function ListingPage({
   currentPage = 1,
   totalPages = 1,
   total,
+  seoHtml,
 }: ListingPageProps) {
   const { isDark, toggleDark } = useTheme()
   const [searchQuery, setSearchQuery] = useState('')
@@ -113,6 +115,15 @@ export default function ListingPage({
                   Страница {currentPage} из {totalPages} ({total}{' '}
                   {type === 'vacancy' ? 'вакансий' : 'резюме'})
                 </div>
+              )}
+
+              {seoHtml && (
+                <article className="mt-12 pt-8 border-t border-border">
+                  <div
+                    className="prose prose-sm max-w-none text-text-muted [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_a]:text-accent [&_a]:underline [&_strong]:font-semibold [&_strong]:text-text"
+                    dangerouslySetInnerHTML={{ __html: seoHtml }}
+                  />
+                </article>
               )}
             </div>
             <aside className="hidden lg:block">
