@@ -54,10 +54,10 @@ jobs:
         run: rsync -avz public/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/public/
 
       - name: Deploy prisma/
-        run: rsync -avz prisma/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/prisma/
+        run: rsync -avz --checksum prisma/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/prisma/
 
       - name: Deploy prisma.config.ts
-        run: rsync -avz prisma.config.ts ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/prisma.config.ts
+        run: rsync -avz --checksum prisma.config.ts ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/prisma.config.ts
 
       - name: Run migrations on server
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "export PATH=\$HOME/.nvm/versions/node/v22.12.0/bin:\$PATH && cd ~/d-pub.ru/app && ./node_modules/.bin/prisma migrate deploy"
