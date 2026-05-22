@@ -59,6 +59,9 @@ jobs:
       - name: Deploy prisma.config.ts
         run: rsync -avz --checksum prisma.config.ts ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/prisma.config.ts
 
+      - name: Debug schema on server
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "head -15 ~/d-pub.ru/app/prisma/schema.prisma && echo '---' && sed -i '/^\s*url\s*=/d' ~/d-pub.ru/app/prisma/schema.prisma && echo 'After fix:' && head -15 ~/d-pub.ru/app/prisma/schema.prisma"
+
       - name: Run migrations on server
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "export PATH=\$HOME/.nvm/versions/node/v22.12.0/bin:\$PATH && cd ~/d-pub.ru/app && ./node_modules/.bin/prisma migrate deploy"
 
