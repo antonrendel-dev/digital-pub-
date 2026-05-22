@@ -59,9 +59,24 @@ export default async function TagPage({ params }: Props) {
     ],
   }
 
+  // ItemList of resumes in this tag
+  const itemListLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Резюме: ${tag.name}`,
+    numberOfItems: posts.length,
+    itemListElement: posts.slice(0, 20).map((post, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `https://d-pub.ru/post/${post.id}`,
+      name: post.title,
+    })),
+  }
+
   return (
     <PageShell>
       <JsonLd data={breadcrumbLd} />
+      <JsonLd data={itemListLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
           <Link

@@ -65,9 +65,26 @@ export default async function CategoryPage({ params }: Props) {
     ],
   }
 
+  // ItemList of job postings in this category
+  const itemListLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Вакансии ${tag.name}`,
+    numberOfItems: posts.length,
+    itemListElement: posts.slice(0, 20).map((post, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: post.slug
+        ? `https://d-pub.ru/vacancies/${category}/${post.slug}`
+        : `https://d-pub.ru/post/${post.id}`,
+      name: post.title,
+    })),
+  }
+
   return (
     <PageShell>
       <JsonLd data={breadcrumbLd} />
+      <JsonLd data={itemListLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-text-muted mb-6">

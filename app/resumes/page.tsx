@@ -1,6 +1,7 @@
 import { getPostsByTypePaginated } from '@/lib/posts'
 import { getTagsWithCounts, getStats } from '@/lib/tags'
 import ListingPage from '@/components/ListingPage'
+import JsonLd from '@/components/JsonLd'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'
@@ -58,8 +59,32 @@ export default async function ResumesPage({ searchParams }: Props) {
   const prevUrl = page > 1 ? (page === 2 ? base : `${base}?page=${page - 1}`) : null
   const nextUrl = page < totalPages ? `${base}?page=${page + 1}` : null
 
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Главная', item: `${BASE_URL}` },
+      { '@type': 'ListItem', position: 2, name: 'Резюме', item: `${BASE_URL}/resumes` },
+    ],
+  }
+
+  const collectionPageLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: TITLE,
+    description: DESCRIPTION,
+    url: `${BASE_URL}/resumes`,
+    publisher: {
+      '@type': 'Organization',
+      name: 'Диджитал Паб',
+      url: BASE_URL,
+    },
+  }
+
   return (
     <>
+      <JsonLd data={breadcrumbLd} />
+      <JsonLd data={collectionPageLd} />
       {prevUrl && <link rel="prev" href={prevUrl} />}
       {nextUrl && <link rel="next" href={nextUrl} />}
       <ListingPage
