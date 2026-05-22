@@ -1,0 +1,34 @@
+name: Insert missing tags (one-time)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  insert-tags:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Insert tags via DATABASE_URL
+        run: |
+          node -e "
+          const { Pool } = require('pg');
+          const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+          const tags = [
+            ['Копирайтинг', 'copywriting', 'specialization'],
+            ['Контент',     'content',     'specialization'],
+            ['Креатив',     'kreativ',     'specialization'],
+          ];
+          async function run() {
+            for (const [name, slug, tagType] of tags) {
+              const r = await pool.query(
+                'INSERT INTO \"Tag\" (name, slug, \"tagType\") VALUES (\$1, \$2, \$3) ON CONFLICT (slug) DO NOTHING',
+                [name, slug, tagType]
+              );
+              console.log(slug + ':', r.rowCount ? 'inserted' : 'already exists');
+            }
+          }
+          run().then(() => pool.end()).catch(e => { console.error(e); pool.end(); process.exit(1); });
+          "
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
