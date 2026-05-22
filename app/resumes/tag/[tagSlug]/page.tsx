@@ -62,19 +62,45 @@ export default async function TagPage({ params }: Props) {
       <JsonLd data={breadcrumbLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
-          <Link href="/" className="text-text-muted no-underline hover:text-accent transition-colors">Главная</Link>
+          <Link
+            href="/"
+            className="text-text-muted no-underline hover:text-accent transition-colors"
+          >
+            Главная
+          </Link>
           <span className="text-text-light">&rsaquo;</span>
-          <Link href="/resumes" className="text-text-muted no-underline hover:text-accent transition-colors">Резюме</Link>
+          <Link
+            href="/resumes"
+            className="text-text-muted no-underline hover:text-accent transition-colors"
+          >
+            Резюме
+          </Link>
           <span className="text-text-light">&rsaquo;</span>
           <span className="text-text-light">{tag.name}</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-text tracking-tight mb-2">
-          Резюме: {tag.name}
-        </h1>
+        <h1 className="text-2xl font-bold text-text tracking-tight mb-2">Резюме: {tag.name}</h1>
         <p className="text-sm text-text-muted mb-6">
           {posts.length} резюме по тегу {tag.name}
         </p>
+
+        {/* Related tags — mobile/tablet only (desktop: right sidebar) */}
+        {relatedTags.length > 0 && (
+          <div className="lg:hidden mb-6 bg-bg-card border border-border rounded-xl p-4">
+            <div className="s-lbl mb-3">Связанные теги</div>
+            <div className="flex flex-wrap gap-1.5">
+              {relatedTags.map((t) => (
+                <Link
+                  key={t.slug}
+                  href={`/resumes/tag/${t.slug}`}
+                  className="px-2.5 py-1 rounded text-xs border border-border bg-bg-card text-text-muted no-underline hover:border-accent hover:text-text transition-all"
+                >
+                  {t.name} ({t.count})
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
           <div>
