@@ -91,7 +91,6 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
   ],
   analitika: ['аналитик', 'аналитика', 'analytics', 'data analyst', 'bi'],
   finansy: ['финанс', 'бухгалтер', 'экономист'],
-  hr: ['hr', 'рекрутер', 'кадр', 'hrbp', 'people partner'],
   kreativ: ['креатив', 'креативщик'],
   copywriting: [
     'копирайтер',

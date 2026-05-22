@@ -56,6 +56,16 @@ jobs:
             } else {
               console.log('wordpress tag already deleted or not found');
             }
+            // Delete HR tag
+            const hrTag = await pool.query('SELECT id FROM "Tag" WHERE slug = $1', ['hr']);
+            if (hrTag.rows.length) {
+              const hrId = hrTag.rows[0].id;
+              await pool.query('DELETE FROM "PostTag" WHERE "tagId" = $1', [hrId]);
+              await pool.query('DELETE FROM "Tag" WHERE id = $1', [hrId]);
+              console.log('deleted hr tag');
+            } else {
+              console.log('hr tag already deleted or not found');
+            }
           }
           run().then(() => pool.end()).catch(e => { console.error(e); pool.end(); process.exit(1); });
           ENDNODE
