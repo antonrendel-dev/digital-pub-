@@ -8,7 +8,7 @@ import 'dotenv/config'
 import { prisma } from '../lib/prisma'
 import { matchTags } from '../lib/tag-matcher'
 
-const TARGET_SLUGS = ['copywriting', 'content']
+const TARGET_SLUGS = ['copywriting', 'content', 'kreativ']
 
 async function main() {
   const targetTags = await prisma.tag.findMany({
