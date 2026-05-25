@@ -1,0 +1,353 @@
+# Interview Plan for Feature Planning
+#
+# Tracks progress of adaptive discovery interview for a new feature/bug/refactoring.
+# Updated after EACH user response with scoring, values, and remaining gaps.
+#
+# Scoring: 0-100% (how well we understand this aspect)
+# Status: pending → partial → complete
+# Required: true = must reach threshold, false = cover if relevant
+
+# ============================================================================
+# Interview Metadata (Session Recovery)
+# ============================================================================
+interview_metadata:
+  started: "2026-05-23 00:00:00"
+  last_updated: "2026-05-23 00:00:00"
+  status: "in_progress"
+  can_resume: true
+  current_question_num: 0
+  feature_size: "L"  # New architecture: Payload CMS integrated into Next.js
+
+# ============================================================================
+# Conversation History (for session recovery)
+# ============================================================================
+# Preserves complete Q&A. Update after EVERY user response.
+#
+conversation_history: []
+# Format:
+# - question_num: 1
+#   timestamp: "2025-11-12 15:20:33"
+#   topic: "user_problem"
+#   agent_question: |
+#     [Full question text]
+#   user_answer: |
+#     [Full answer text]
+#   summary: "Brief summary"
+
+# ============================================================================
+# Phase 1: High-Level Feature Understanding
+# ============================================================================
+# Interview Cycle 1 scope
+phase1_feature_overview:
+
+  feature_name:
+    score: 90
+    status: "complete"
+    value: "payload-cms"
+    gaps: ""
+    required: true
+
+  feature_description:
+    score: 92
+    status: "complete"
+    value: |
+      Полноценный CMS на базе Payload v3, встроенный в существующий Next.js 15 проект.
+      Управляет: Tags (SEO-поля, H1, seoText rich-text), Posts (вакансии/резюме — редактировать/удалять/создавать),
+      Articles (переезжают из MDX в Payload, агенты публикуют через REST API),
+      Media (полная медиатека, локальное хранение на NetAngels),
+      Globals (Navbar с submenu, Footer, Site Settings, Sidebar).
+      Один admin + API-токены для агентов. Мгновенная инвалидация кеша при сохранении.
+    gaps: ""
+    required: true
+
+  work_type:
+    score: 90
+    status: "complete"
+    value: "feature — новая архитектурная возможность (итерация 2 из project.md)"
+    gaps: ""
+    required: true
+
+  user_problem:
+    score: 70
+    status: "partial"
+    value: "Любое изменение SEO-текста требует SSH-скрипта или деплоя. H1, seoText, seoDescription тегов правятся только через workflow_dispatch или prisma seed — слишком медленно для контентной работы"
+    gaps: "Как часто реально нужно менять контент? Насколько критичен speed-to-edit?"
+    required: true
+
+  target_users:
+    score: 70
+    status: "partial"
+    value: "Один администратор (Тони). Multi-admin не нужен в текущей итерации"
+    gaps: ""
+    required: false
+
+  success_criteria:
+    score: 90
+    status: "complete"
+    value: |
+      1. Открыть /admin → видеть разделы: Теги, Вакансии, Резюме, Статьи, Медиа, Globals (navbar, footer, site settings)
+      2. В любом разделе — список записей с поиском, нажать → форма с визуальным редактором (Lexical)
+      3. Медиатека — загрузить картинку, вставить в любое поле
+      4. Сохранить → изменения на сайте мгновенно (revalidatePath)
+      5. Агенты публикуют статьи через REST API без UI
+      6. CRUD + дублирование для всех существующих типов страниц
+      7. Smoke: главная + /vacancies + /vacancies/[category] + /articles + /articles/[slug] + /resumes не сломаны
+    gaps: ""
+    required: true
+
+  constraints:
+    score: 85
+    status: "complete"
+    value: |
+      - Next.js 15 upgrade (с 14.2.x) перед установкой Payload v3
+      - NetAngels shared hosting: один Node-процесс, /admin в том же приложении
+      - Медиа: локально в public/uploads/ + исключить из rsync в deploy.yml
+      - Один admin (Тони) + API-токены для агентов, роли не нужны
+      - Instant revalidation через revalidatePath() при сохранении в CMS
+    gaps: ""
+    required: true
+
+  testing_strategy:
+    score: 87
+    status: "complete"
+    value: |
+      - Auth smoke: GET /admin без сессии → redirect to login
+      - API smoke: POST /api/articles с токеном → 201, без токена → 401
+      - Page smoke: все типы страниц (/, /vacancies, /vacancies/[category], /articles, /articles/[slug], /resumes) возвращают 200
+      - Unit: нет (оверкилл для CMS-конфигурации)
+      - E2E Playwright: нет (избыточно на старте)
+    gaps: ""
+    required: true
+
+# ============================================================================
+# Phase 2: User Experience & Scenarios
+# ============================================================================
+# Interview Cycle 2 scope (together with Phase 3)
+phase2_user_experience:
+
+  user_stories:
+    score: 0
+    status: "pending"
+    value: ""
+    gaps: "Step-by-step user interaction scenarios"
+    required: true
+
+  acceptance_criteria:
+    score: 0
+    status: "pending"
+    value: ""
+    gaps: "Testable checklist of what must work"
+    required: true
+
+  edge_cases:
+    score: 0
+    status: "pending"
+    value: ""
+    gaps: "Unusual scenarios, boundary conditions"
+    required: true
+
+  error_scenarios:
+    score: 0
+    status: "pending"
+    value: ""
+    gaps: "What can go wrong, how to handle errors"
+    required: true
+
+  verification_strategy:
+    score: 0
+    status: "pending"
+    value: ""
+    gaps: "How to verify feature works (agent and/or user)"
+    required: true
+
+  ui_ux_requirements:
+    score: 0
+    status: "pending"
+    value: ""
+    gaps: "Specific UI/UX requirements if applicable"
+    required: false
+
+  risks:
+    score: 0
+    status: "pending"
+    value: ""
+    gaps: "Risks and mitigations"
+    required: true
+
+  technical_decisions:
+    score: 0
+    status: "pending"
+    value: ""
+    gaps: "Key decisions (what we do/don't, why)"
+    required: false
+
+  deploy_approach:
+    score: 90
+    status: "complete"
+    value: |
+      - Разработка на feature-ветке → merge в dev → автодеплой на staging.d-pub.ru (red server port 3002)
+      - Тестирование на staging → merge в main → автодеплой на d-pub.ru (NetAngels)
+      - deploy.yml: добавить `payload migrate` перед запуском и `--exclude=public/uploads/` в rsync
+      - staging deploy.yml: SSH на 144.31.204.181, user=claude, port 3002
+    gaps: ""
+    required: false
+
+  manual_user_actions:
+    score: 85
+    status: "complete"
+    value: |
+      - Первый запуск: зайти на /admin → создать admin-пользователя (seed через Payload)
+      - Добавить ENV переменные: PAYLOAD_SECRET (random string), DATABASE_URI (та же PostgreSQL)
+      - После миграции статей: убедиться что 10 MDX статей корректно перенесены
+    gaps: ""
+    required: false
+
+# ============================================================================
+# Phase 3: Integration & Technical Context
+# ============================================================================
+# Interview Cycle 2 scope (together with Phase 2)
+phase3_integration:
+
+  integration_points:
+    score: 90
+    status: "complete"
+    value: |
+      - Payload встраивается в существующий Next.js 15 процесс на /admin
+      - Payload REST API на /api/* (рядом с существующим app/)
+      - Telegram sync переписывается: Prisma → Payload Local API (POST /api/posts)
+      - revalidatePath() вызывается из Payload afterChange hooks
+      - Prisma полностью удаляется после миграции
+    gaps: ""
+    required: true
+
+  dependencies:
+    score: 85
+    status: "complete"
+    value: |
+      - Next.js 15 + React 19 (апгрейд с 14/18)
+      - @payloadcms/next, @payloadcms/db-postgres, @payloadcms/richtext-lexical
+      - Существующий PostgreSQL (та же БД, Payload создаёт свои таблицы рядом с Prisma)
+      - Telegram Bot API (sync не меняется концептуально, только слой записи в БД)
+    gaps: ""
+    required: false
+
+  technical_constraints:
+    score: 85
+    status: "complete"
+    value: |
+      - NetAngels shared hosting: один Node-процесс, нет Docker
+      - Медиа: локально в public/uploads/ + исключить из rsync
+      - CSP headers в next.config.mjs нужно расширить для Payload admin UI
+      - PAYLOAD_SECRET обязателен в ENV (random 32+ chars)
+      - Payload Jobs (для sync) — пока бета, используем API route (вариант B)
+    gaps: ""
+    required: false
+
+  data_requirements:
+    score: 85
+    status: "complete"
+    value: |
+      - Payload Collections: Posts (vacancies+resumes), Tags, Articles, Media, Users
+      - Payload Globals: NavbarSettings, FooterSettings, SiteSettings, SocialChannels
+      - Одноразовая миграция: 10 MDX статей → Payload Articles collection
+      - Одноразовая миграция: существующие Posts, Tags, PostTag → Payload коллекции
+      - DATABASE_URI = тот же PostgreSQL что и сейчас
+    gaps: ""
+    required: false
+
+  migration_needs:
+    score: 85
+    status: "complete"
+    value: |
+      - MDX статьи (10 файлов) → скрипт миграции в Payload Articles
+      - Posts + Tags + PostTag: Prisma данные → Payload коллекции (одноразовый скрипт)
+      - Prisma schema → Payload schema: параллельно работают до полного переноса
+      - После миграции: удалить prisma/, content/articles/, зависимости Prisma из package.json
+    gaps: ""
+    required: false
+
+# ============================================================================
+# Phase 4: Completion
+# ============================================================================
+phase4_completion:
+  userspec_file: ""  # work/{feature}/user-spec.md
+  status: "pending"  # pending | created | approved
+
+# ============================================================================
+# Decision Rules
+# ============================================================================
+decision_rules:
+
+  required_threshold: 85
+  optional_threshold: 50
+
+  # Stop criteria (BOTH must be true to exit a cycle)
+  stop_criteria:
+    - "All required items in current cycle scope score >= 85%"
+    - "Structural: every required item has non-empty value, no TBD, gaps empty or conscious limitations"
+
+  priority_order:
+    - "Required items with score < 85% (lowest score first)"
+    - "Optional items mentioned by user in context"
+    - "Other optional items if user seems knowledgeable"
+
+  question_strategy:
+    - "3-4 questions per batch about different gaps"
+    - "Run as many batches as needed — batch size is NOT cycle limit"
+    - "Propose solutions based on PK, not just ask questions"
+    - "Challenge with substance: counterexamples, code references, unexplored scenarios"
+    - "After each response: update scores, values, gaps, conversation_history, save"
+
+# ============================================================================
+# Interview Progress
+# ============================================================================
+progress:
+  current_phase: "phase1_feature_overview"
+  questions_asked: 0
+  last_question: ""
+  total_required_score: 0
+  total_optional_score: 0
+  completion_estimate: "0%"
+  user_detail_level: "unknown"  # brief | moderate | detailed
+
+# ============================================================================
+# Notes
+# ============================================================================
+notes: |
+  Free-form notes:
+  - Important insights
+  - Areas of uncertainty
+  - Pivot points
+  - Scope changes
+
+# ============================================================================
+# USAGE INSTRUCTIONS
+# ============================================================================
+#
+# 1. INIT: Created by init-feature-folder.sh at work/{feature}/logs/userspec/interview.yml
+#    Set metadata.started, metadata.status: in_progress
+#
+# 2. INITIAL SCORING: After user's free-form description, score ALL items
+#    Detailed 80-95%, brief 50-70%, vague 20-40%, not mentioned 0%
+#
+# 3. INTERVIEW LOOP (save after EVERY response):
+#    a) Find required items with score < 85% in current cycle scope
+#    b) Ask 3-4 questions about different gaps
+#    c) Propose solutions based on PK
+#    d) User answers
+#    e) Update: conversation_history, scores, values, gaps, metadata
+#    f) Save immediately
+#    g) Check stop criteria (score >= 85% AND structural: value filled, no TBD, gaps resolved)
+#    h) Not done → repeat. Done → next cycle.
+#
+# 4. CYCLES:
+#    Cycle 1: phase1_feature_overview items
+#    Cycle 2: phase2_user_experience + phase3_integration items
+#    Cycle 3: ALL items still below threshold (cleanup pass)
+#
+# 5. RESUME: If metadata.status is "in_progress"
+#    Load, show conversation summary, resume from current state
+#
+# 6. COMPLETION: After user approves user-spec.md
+#    Set phase4_completion.status: approved
+#    Set metadata.status: completed
