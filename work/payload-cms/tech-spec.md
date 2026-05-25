@@ -449,7 +449,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 - **deploy.yml adds source file rsync:** user-spec mentions `--exclude=public/uploads/` and `payload migrate` but does not detail full deploy.yml changes. Tech-spec adds rsync of `payload-migrations/` directory with `--ignore-missing-args`. → [TECHNICAL], no approval needed.
 
-- **`/api/sync` endpoint not implemented:** user-spec AC states "`GET /api/sync` без secret-параметра → 401". Tech-spec routes sync writes directly via Payload REST API (no `/api/sync` trigger endpoint). Sync is invoked by cron on the red server as a direct process — there is no HTTP trigger endpoint in this architecture. This AC is superseded by Decision 4. → [PENDING USER APPROVAL]
+- **`/api/sync` endpoint not implemented:** user-spec AC states "`GET /api/sync` без secret-параметра → 401". Tech-spec routes sync writes directly via Payload REST API (no `/api/sync` trigger endpoint). Sync is invoked by cron on the red server as a direct process — there is no HTTP trigger endpoint in this architecture. This AC is superseded by Decision 4. → [APPROVED BY USER 2026-05-25]
 
 - **`deploy-staging.yml` is a new file, not a modification:** user-spec implies CI/CD parity between staging and prod. The file `deploy-staging.yml` does not exist — it will be created in Task 2. Scope is larger than a simple edit. → [TECHNICAL], no approval needed.
 
