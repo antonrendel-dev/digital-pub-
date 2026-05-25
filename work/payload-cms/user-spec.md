@@ -1,6 +1,6 @@
 ---
 created: 2026-05-25
-status: draft
+status: approved
 type: feature
 size: L
 ---
@@ -9,7 +9,7 @@ size: L
 
 ## Что делаем
 
-Интегрируем Payload CMS v3 в существующий Next.js 15 проект d-pub.ru. CMS встраивается в тот же Node.js процесс и доступна по адресу `d-pub.ru/admin`. Prisma полностью заменяется Payload как слой работы с базой данных. Telegram sync переписывается для работы через Payload API вместо Prisma.
+Интегрируем Payload CMS v3 в проект d-pub.ru (текущая версия — Next.js 14.2.35; апгрейд до Next.js 15 + React 19 — первый изолированный шаг). CMS встраивается в тот же Node.js процесс и доступна по адресу `d-pub.ru/admin`. Prisma полностью заменяется Payload как слой работы с базой данных — затронуты `lib/prisma.ts`, `lib/postUtils.ts`, `lib/posts.ts`, `lib/tags.ts`, `app/sitemap.ts`, `prisma/seed.ts`, все скрипты в `scripts/` и связанные GitHub Actions workflows. Telegram sync переписывается для работы через Payload Local API вместо Prisma.
 
 ## Зачем
 
@@ -23,33 +23,44 @@ size: L
 2. Переходит в раздел «Теги» → выбирает «SMM»
 3. Редактирует поле `seoText` в визуальном редакторе (Lexical/Notion-style)
 4. Нажимает «Сохранить»
-5. Страница `d-pub.ru/vacancies/smm` обновляется мгновенно (revalidatePath)
+5. Страница `d-pub.ru/vacancies/smm` обновляется за ≤ 3 секунды (revalidatePath)
 
 ### Сценарий 2 — Публикация статьи через API (агент SEO/writer)
 
 1. Агент формирует контент статьи
 2. Отправляет `POST /api/articles` с Bearer-токеном
-3. Статья появляется на `d-pub.ru/articles/slug` немедленно без участия администратора
+3. Статья появляется на `d-pub.ru/articles/slug` в течение ≤ 3 секунд без участия администратора
 
 ### Сценарий 3 — Редактирование меню
 
 1. Администратор → «Глобальные настройки» → «Навигация»
 2. Добавляет новый пункт меню с URL и вложенными submenu
-3. Сохраняет → меню на всех страницах обновляется мгновенно
+3. Сохраняет → меню на всех страницах обновляется за ≤ 1 секунду
 
 ### Сценарий 4 — Загрузка медиафайла
 
 1. Администратор → «Медиатека» → «Загрузить»
-2. Файл сохраняется в `public/uploads/`, URL доступен для вставки в любое поле
+2. Файл сохраняется в `public/uploads/` → сервер возвращает 201 с URL вида `/uploads/filename.jpg`
+3. `GET /uploads/filename.jpg` → 200, URL можно вставить в любое поле
 
 ### Сценарий 5 — Telegram sync (переработанный)
 
-1. Внешний cron вызывает `GET https://d-pub.ru/api/sync?secret=SYNC_SECRET`
-2. Next.js API route запускает парсинг Telegram-каналов
+1. Cron на красном сервере (144.31.204.181) запускает sync-скрипт
+2. Скрипт парсит Telegram-каналы — логика не меняется
 3. Новые посты сохраняются через Payload Local API вместо Prisma
-4. Дедупликация по `(telegramMessageId, channelUsername)` — как прежде
+4. При повторном вызове sync посты с тем же `(telegramMessageId, channelUsername)` не создаются заново — `count(Post)` не растёт
 
 ## Критерии приёмки
+
+### Фаза 1 — Next.js 15 апгрейд (staging, до Payload)
+
+Telegram sync на staging не запущен — проверяем только UI, роутинг и рендеринг (не функционал парсинга).
+
+- [ ] `npm run build` завершается без ошибок
+- [ ] Все динамические роуты возвращают 200: `/vacancies/[category]`, `/resumes/tag/[tagSlug]`, `/articles/[slug]`
+- [ ] Все статические страницы возвращают 200: `/`, `/vacancies`, `/resumes`, `/articles`
+- [ ] Верстка не сломана: шапка, меню, карточки вакансий, пагинация — нет ошибок в console, элементы отображаются корректно (ручная проверка)
+- [ ] Ошибок в логах нет (async params, cookies/headers — breaking changes Next.js 15)
 
 ### Аутентификация и безопасность
 
@@ -74,19 +85,20 @@ size: L
 ### Контент и revalidation
 
 - [ ] Сохранение любой записи → страница на сайте обновляется в течение 3 секунд
-- [ ] Изменения в Globals (navbar) → все страницы обновляются мгновенно
+- [ ] Изменения в Globals (navbar) → все страницы обновляются за ≤ 1 секунду
 
 ### Telegram sync
 
-- [ ] Sync работает после полной замены Prisma: новые посты появляются в ленте
-- [ ] Дедупликация работает: повторный sync не создаёт дубли
-- [ ] Автотегирование через `lib/tag-matcher.ts` не сломалось
+- [ ] Sync работает: `SELECT count(*) FROM posts` после первого sync больше чем до — новые посты видны на `/vacancies`
+- [ ] Дедупликация работает: повторный sync подряд не увеличивает `count(Post)` — дублей нет
+- [ ] Автотегирование работает: пост с текстом «SMM» автоматически получает тег `smm` после sync
 
 ### Деплой
 
-- [ ] Staging (`staging.d-pub.ru`) работает с CMS после деплоя из ветки `dev`
-- [ ] `public/uploads/` не удаляется при rsync-деплое
-- [ ] `payload migrate` выполняется автоматически в CI/CD
+- [ ] Staging доступен с CMS: `GET https://staging.d-pub.ru/admin` → 200 OK (деплой из ветки `dev`, отдельные env vars `PAYLOAD_SECRET` и `DB_CONNECTION_STRING` для staging)
+- [ ] `public/uploads/` не удаляется при rsync-деплое (добавлен `--exclude=public/uploads/`)
+- [ ] `payload migrate` выполняется автоматически в CI/CD перед запуском приложения
+- [ ] Первый запуск: переход на `staging.d-pub.ru/admin` → форма создания admin-пользователя (через `PAYLOAD_ADMIN_EMAIL` / `PAYLOAD_ADMIN_PASSWORD` в ENV)
 
 ### Smoke-тесты
 
@@ -96,14 +108,15 @@ size: L
 - [ ] `GET /articles` → 200
 - [ ] `GET /articles/[slug]` → 200
 - [ ] `GET /resumes` → 200
+- [ ] `GET /sitemap.xml` → 200
 
 ## Ограничения
 
 - **NetAngels shared hosting**: один Node.js процесс, нет Docker, нет отдельных воркеров. Payload работает в том же процессе что и Next.js.
 - **Медиа — только локально**: `public/uploads/` на NetAngels исключается из rsync. При нехватке места — переход на Cloudinary отдельной итерацией.
 - **Один администратор**: мультиролевая система не нужна. Агенты работают через API-токены без доступа к UI.
-- **Next.js 15 + React 19**: обязательный апгрейд перед установкой Payload v3.
-- **Payload Jobs — не использовать**: фича в бета-статусе. Sync реализуется через API route.
+- **Next.js 15 + React 19**: обязательный апгрейд перед установкой Payload v3. Апгрейд — первая изолированная фаза; все роуты проверяются на staging (`async params`, `cookies()`, `headers()` API — breaking changes).
+- **Payload Jobs — не использовать**: фича в бета-статусе. Sync остаётся на красном сервере как отдельный процесс, не переносится на NetAngels.
 
 ## Риски
 
@@ -111,9 +124,9 @@ size: L
 
 - **Потеря медиафайлов при деплое** (rsync --delete удаляет `public/uploads/`). **Митигация:** добавить `--exclude=public/uploads/` в `deploy.yml` самым первым коммитом, до любых других изменений.
 
-- **Telegram sync при смене ORM**. **Митигация:** sync переписывается и тестируется на staging с реальными Telegram-каналами; в `main` только после подтверждения что посты приходят.
+- **Telegram sync при смене ORM**. **Митигация:** после переписки скрипт запускается вручную один раз на красном сервере с указанием staging Payload-инстанса (порт 3002) — проверяем что `count(Post)` вырос и посты видны на `staging.d-pub.ru/vacancies`; в `main` только после подтверждения.
 
-- **Объём миграции данных** (Posts, Tags, PostTag → Payload-таблицы). **Митигация:** одноразовый скрипт с проверкой счётчиков до/после миграции.
+- **Объём миграции данных** (Posts, Tags, PostTag → Payload-таблицы). **Митигация:** перед деплоем на прод — ручной `pg_dump` всей базы; 5-10 минут даунтайма на время `payload migrate` + скрипт переноса; одноразовый скрипт с проверкой счётчиков до/после; при ошибке — `psql < backup.sql`.
 
 - **CSP блокирует Payload admin UI**. **Митигация:** расширить CSP в `next.config.mjs` для маршрута `/admin/*` отдельным правилом.
 
@@ -121,11 +134,15 @@ size: L
 
 - **Полная миграция Prisma → Payload**, не гибрид. Prisma полностью удаляется. Причина: гибрид создаёт два источника правды и откладывает неизбежную работу.
 
-- **Sync через API route** (`/api/sync?secret=...`), не внешний скрипт и не Payload Jobs. Причина: Payload уже инициализирован в процессе, cron делает простой HTTP-запрос; Jobs — бета.
+- **Sync остаётся на красном сервере** (144.31.204.181), не переносится на NetAngels. Меняется только ORM: Prisma → Payload Local API. Причина: sync уже работает как отдельный процесс на красном сервере — не трогаем инфраструктуру, устраняем только зависимость от Prisma. `setImmediate` на NetAngels ненадёжен из-за Passenger-окружения.
+
+- **Bearer-токен для агентов — через Payload API Keys** (`useAPIKey: true` на коллекции Users). Агент получает отдельный User-аккаунт с доступом только к коллекции Articles (create/read). Токен выдаётся в `/admin`, хранится хешированным, отзывается через UI. Tags, Globals, Posts, Users — только через UI администратора. Причина: утечка токена агента не даёт полный admin-доступ.
+
+- **`payload migrate` запускается через SSH в CI** до `touch reload` — атомарный порядок `migrate → restart`. Payload-конфиг читает `process.env.DB_CONNECTION_STRING` (не `DATABASE_URI`) — соответствует текущему env на NetAngels. Причина: если миграция упала — приложение не перезапустится, старая версия продолжает работать. `autoMigrate: true` создаёт окно нестабильности внутри стартующего процесса — не используется.
 
 - **Медиа хранятся локально** (`public/uploads/`), не в Cloudinary/S3. Причина: данных мало, внешняя зависимость избыточна на текущем этапе.
 
-- **Статьи переезжают из MDX в Payload**. Git остаётся для кода, но не для контента статей. Агенты публикуют через REST API.
+- **Статьи остаются в MDX в v1**. Переезд в Payload — отдельная итерация после стабилизации CMS. Причина: MDX→Lexical конвертация нетривиальна и не блокирует основную функциональность CMS. Агенты публикуют новые статьи через Payload REST API, старые MDX-файлы читаются как прежде.
 
 - **Все Globals в первом релизе**: Navbar, Footer, Social Channels, Site Settings — без разбивки на итерации.
 
@@ -143,18 +160,22 @@ size: L
 
 ### Агент проверяет
 
-| Шаг                             | Инструмент   | Ожидаемый результат    |
-| ------------------------------- | ------------ | ---------------------- |
-| GET /                           | curl staging | 200 OK                 |
-| GET /vacancies                  | curl staging | 200 OK                 |
-| GET /vacancies/smm              | curl staging | 200 OK                 |
-| GET /articles                   | curl staging | 200 OK                 |
-| GET /resumes                    | curl staging | 200 OK                 |
-| GET /admin (без сессии)         | curl staging | 302 → /admin/login     |
-| POST /api/articles (с токеном)  | curl + JSON  | 201 Created            |
-| POST /api/articles (без токена) | curl + JSON  | 401 Unauthorized       |
-| GET /api/sync?secret=...        | curl staging | 200 OK, посты в БД     |
-| Повторный sync                  | curl дважды  | счётчик Posts не вырос |
+| Шаг                               | Инструмент         | Ожидаемый результат         |
+| --------------------------------- | ------------------ | --------------------------- |
+| GET /                             | curl staging       | 200 OK                      |
+| GET /vacancies                    | curl staging       | 200 OK                      |
+| GET /vacancies/smm                | curl staging       | 200 OK                      |
+| GET /articles                     | curl staging       | 200 OK                      |
+| GET /resumes                      | curl staging       | 200 OK                      |
+| GET /admin (без сессии)           | curl staging       | 302 → /admin/login          |
+| POST /api/articles (с токеном)    | curl + JSON        | 201 Created                 |
+| POST /api/articles (без токена)   | curl + JSON        | 401 Unauthorized            |
+| GET /sitemap.xml                  | curl staging       | 200 OK                      |
+| payload migrate в CI              | GitHub Actions log | exit 0, no errors           |
+| Запуск sync-скрипта на red server | SSH + скрипт       | count(Post) в Payload вырос |
+| Повторный sync                    | curl дважды        | count(Post) не изменился    |
+| Изменить тег → открыть страницу   | браузер            | обновление ≤ 3 сек          |
+| Изменить navbar → все страницы    | браузер            | обновление ≤ 1 сек          |
 
 ### Пользователь проверяет
 
