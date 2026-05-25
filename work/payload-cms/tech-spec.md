@@ -79,7 +79,7 @@ Cron on red server runs scripts/sync-telegram.ts
 ```
 Old (Next.js 14):  const { category } = params
 New (Next.js 15):  const { category } = await params
-Affects: 4 dynamic route files + generateMetadata in each
+Affects: 5 dynamic route files + generateMetadata in each
 ```
 
 ### Shared resources
@@ -102,7 +102,7 @@ Affects: 4 dynamic route files + generateMetadata in each
 ### Decision 2: afterChange hooks call revalidatePath() directly
 
 **Decision:** Payload collection/global hooks import `revalidatePath` from `'next/cache'` and call it synchronously in the hook body. No separate `/api/revalidate` HTTP endpoint.  
-**Rationale:** Payload and Next.js share the same Node.js process (via `withPayload()`). `revalidatePath()` works in server context — hooks run in that context. Supports US revalidation ≤3 sec / ≤1 sec requirements.  
+**Rationale:** Payload and Next.js share the same Node.js process (via `withPayload()`). `revalidatePath()` works in server context — hooks run in that context. Supports US-1, US-3 revalidation SLA requirements (≤3 sec content, ≤1 sec Globals).  
 **Alternatives considered:** Separate `/api/revalidate` endpoint with secret header — adds a network hop and extra authentication layer with no benefit in same-process architecture.
 
 ### Decision 3: revalidatePath strategy per collection
@@ -114,7 +114,7 @@ Affects: 4 dynamic route files + generateMetadata in each
 - Article saved → `revalidatePath('/articles', 'layout')` + `revalidatePath('/articles/[slug]', 'page')` with article slug
 - Any Global saved → `revalidatePath('/', 'layout')` (invalidates all pages sharing root layout)
 
-**Rationale:** Targeted invalidation avoids full-site cache bust on every post save. Global change invalidates all pages since Navbar/Footer are in root layout. Supports user-spec revalidation SLA: Tag/Post/Article ≤3 sec (US-1, US-2, US-5), Global ≤1 sec (US-3).
+**Rationale:** Targeted invalidation avoids full-site cache bust on every post save. Global change invalidates all pages since Navbar/Footer are in root layout. Supports user-spec revalidation SLA: Tag/Post/Article ≤3 sec (US-1, US-2, US-5), Global ≤1 sec (US-3). Note: afterChange hook must use the saved document's actual slug — `revalidatePath(\`/vacancies/${doc.slug}\`, 'page')` — not the Next.js route template string.
 
 ### Decision 4: Sync script calls Payload REST API over HTTP
 
@@ -206,7 +206,7 @@ Affects: 4 dynamic route files + generateMetadata in each
     { name: 'source', type: 'select', options: ['telegram', 'user'], defaultValue: 'telegram' },
     { name: 'telegramMessageId', type: 'text' },
     { name: 'channelUsername', type: 'text' },
-    { name: 'imageUrl', type: 'text' },  // validate HTTPS only in sync script before POST
+    { name: 'imageUrl', type: 'text', validate: (val) => !val || /^https:\/\/.+/.test(val) || 'imageUrl must be HTTPS' },
     { name: 'tags', type: 'relationship', relationTo: 'tags', hasMany: true },
   ],
   // Composite unique index via custom SQL migration (Payload indexes config lacks partial-index syntax):
@@ -232,7 +232,7 @@ Affects: 4 dynamic route files + generateMetadata in each
   ],
   access: {
     create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'agent',
-    read: ({ req }) => req.user ? true : { status: { equals: 'published' } },
+    read: ({ req }) => req.user?.role === 'admin' ? true : { status: { equals: 'published' } },
     update: ({ req }) => req.user?.role === 'admin',
     delete: ({ req }) => req.user?.role === 'admin',
   },
@@ -394,6 +394,7 @@ One-time scripts (run on staging first, then prod with downtime):
 
 - Count assertion: Prisma post count equals Payload post count after migration
 - Tags relationship: at least one migrated post has non-empty tags array
+- Field-level spot check: spot-checked post has non-null `type`, `title`, `telegramMessageId`, `channelUsername`, `source`, `status` (Prisma camelCase → Payload Drizzle snake_case mapping correctness)
 
 **scripts/sync-telegram.ts:**
 
@@ -402,7 +403,7 @@ One-time scripts (run on staging first, then prod with downtime):
 
 ### Integration tests
 
-None — Payload is a well-tested library. Data access layer correctness verified by smoke tests on staging. The `getPayload()` singleton and afterChange hook interaction are verified end-to-end on staging (not in Jest).
+Not written as automated tests. The three critical integration points (afterChange → revalidatePath chain, getPayload() singleton per-process behavior, /api/articles auth flow end-to-end) are verified in Task 15 via mandatory staging scenarios with pass/fail criteria: (1) edit a Tag in Payload admin → GET `/vacancies/{slug}` within 3 sec returns updated seoText; (2) GET a page twice in sequence → no duplicate getPayload() init log; (3) POST `/api/articles` with agent key → 201, without key → 401. These staging checks are substitutes for Jest integration tests because Payload's server context cannot be reliably reproduced in Jest without a running Next.js server.
 
 ### E2E tests
 
@@ -452,6 +453,10 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 - **`deploy-staging.yml` is a new file, not a modification:** user-spec implies CI/CD parity between staging and prod. The file `deploy-staging.yml` does not exist — it will be created in Task 2. Scope is larger than a simple edit. → [TECHNICAL], no approval needed.
 
+- **Sync uses Payload REST API, not Local API:** user-spec constraints say "Меняется только ORM: Prisma → Payload Local API". The sync script on the red server cannot use Local API (different process/server). It calls Payload REST API over HTTP. Functionally equivalent — same data, different transport. → [TECHNICAL], no approval needed.
+
+- **Revalidation SLA checks reassigned from agent to user:** user-spec "Агент проверяет" table lists Tag/Navbar edits with timing measurement as agent checks. These require a browser to measure ≤3 sec / ≤1 sec thresholds and are not executable via curl alone. Task 17 correctly reclassifies them as manual user checks. → [TECHNICAL], no approval needed.
+
 ---
 
 ## Acceptance Criteria
@@ -467,6 +472,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 - [ ] `POST /api/articles` with valid API Key → 201; without token → 401
 - [ ] All existing unit tests pass (no regressions from lib/\* rewrite)
 - [ ] No `import prisma` remaining in app/_, lib/_, app/sitemap.ts (confirmed by grep)
+- [ ] `POST /api/media` with multipart/form-data → 201; `GET /uploads/<filename>` → 200 (media upload URL contract)
 
 ---
 
@@ -485,7 +491,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 #### Task 2: Deploy Pipeline Updates
 
-- **Description:** Update `.github/workflows/deploy.yml` and create `.github/workflows/deploy-staging.yml` (does not exist yet — modeled on deploy.yml but targeting `144.31.204.181`, user `claude`, port `3002`). Changes: add `--exclude=public/uploads/` to the `public/` rsync, remove the `generated/prisma/` rsync step and `npx prisma generate` build step, add rsync of `payload-migrations/` with `--ignore-missing-args` (directory may not exist until first Payload migration is committed), add SSH step running `npx payload migrate` before `touch reload`, and add `PAYLOAD_SECRET` to the build env vars.
+- **Description:** Update `deploy.yml` and create `deploy-staging.yml` for Payload-aware deployments. Both files: remove Prisma steps, add `--exclude=public/uploads/` to rsync, add `payload-migrations/` rsync with `--ignore-missing-args`, add SSH step running `npx payload migrate` before `touch reload`. Staging uses separate GitHub Secrets: `STAGING_PAYLOAD_SECRET`, `STAGING_DB_CONNECTION_STRING` (targeting `144.31.204.181:3002`) — never sharing prod values.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing
 - **Files to modify:** `.github/workflows/deploy.yml`
@@ -496,7 +502,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 #### Task 3: Payload Installation & Base Config
 
-- **Description:** Install `payload`, `@payloadcms/next`, `@payloadcms/db-postgres`, `@payloadcms/richtext-lexical`, `sharp`. Create `payload.config.ts` importing from `payload/collections/*` and `payload/globals/*` (those files are created as stubs here and filled in Wave 3 tasks). Pass `url: process.env.DB_CONNECTION_STRING` explicitly to the db-postgres adapter. Wrap `next.config.mjs` with `withPayload()`. Add scoped CSP for `/admin(.*)` in `next.config.mjs` headers with `worker-src blob: 'self'` and `frame-src 'self'`. Add Payload `onInit` hook that creates the first admin user from `PAYLOAD_ADMIN_EMAIL` / `PAYLOAD_ADMIN_PASSWORD` env vars if no users exist. Add `PAYLOAD_SECRET`, `PAYLOAD_ADMIN_EMAIL`, `PAYLOAD_ADMIN_PASSWORD` to `.env.example`.
+- **Description:** Install Payload v3 packages and create the foundation: `payload.config.ts` (imports stubs from `payload/collections/*` and `payload/globals/*`, passes `url: process.env.DB_CONNECTION_STRING` explicitly to db-postgres adapter), `middleware.ts` (Payload's built-in `/admin` redirect is sufficient; middleware adds no logic — can be omitted if Payload handles auth natively), scoped CSP for `/admin(.*)` in `next.config.mjs`, and `onInit` hook creating the first admin user from `PAYLOAD_ADMIN_EMAIL`/`PAYLOAD_ADMIN_PASSWORD` plus a `sync` role user with a generated API key (stored value becomes `PAYLOAD_API_KEY` for red server). Add to `.env.example`: `PAYLOAD_SECRET` (minimum 32 random chars, e.g. `openssl rand -hex 32`; rotating invalidates all sessions), `PAYLOAD_ADMIN_EMAIL`, `PAYLOAD_ADMIN_PASSWORD`, `PAYLOAD_API_KEY`, `DB_CONNECTION_STRING`.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing, security-auditor
 - **Verify-smoke:** `npm run build` → exit 0; `curl -sI http://localhost:3000/admin` → `302`; `curl -sI http://localhost:3000/admin/login | grep Content-Security-Policy` → contains `worker-src blob:`
@@ -508,7 +514,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 #### Task 4: Tags Collection + Migration Script
 
-- **Description:** Fill `payload/collections/tags.ts` stub (created in Task 3) with the full tags collection definition from Data Models, including access control and afterChange hook (`revalidatePath('/vacancies/[category]', 'page')` + `revalidatePath('/', 'layout')`). The `h1` field is new (not in Prisma schema) — migration populates it as null; must be filled manually post-migration. Write `scripts/migrate-tags.ts` that reads Prisma `tag` rows via `pg` Pool and upserts into Payload via Local API, writing a minimal Lexical JSON wrapper around the plain-text `seoText` string (no existing utility — write from scratch).
+- **Description:** Fill `payload/collections/tags.ts` stub with the full tags collection definition from Data Models, including access control and afterChange hook (use actual slug: ``revalidatePath(`/vacancies/${doc.slug}`, 'page')`` + `revalidatePath('/', 'layout')`). The `h1` field is new — migration sets it null; filled manually post-migration. Write `scripts/migrate-tags.ts` converting Prisma `tag` rows to Payload via Local API; the minimal Lexical JSON wrapper for `seoText` must follow the Lexical v0.21+ structure: `{ root: { type: 'root', version: 1, children: [{ type: 'paragraph', version: 1, children: [{ type: 'text', version: 1, text: '<content>', format: 0 }] }] } }`.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing, test-master
 - **Files to modify:** `payload/collections/tags.ts`
@@ -517,7 +523,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 #### Task 5: Posts Collection + Migration Script
 
-- **Description:** Fill `payload/collections/posts.ts` stub with the full posts collection definition from Data Models, including access control (`sync` role for create) and afterChange hook. The composite unique index on `(telegramMessageId, channelUsername)` must be a custom SQL migration (Payload `indexes` config doesn't support partial-index syntax) — create `payload-migrations/custom-posts-unique-idx.sql` and run it via `payload migrate`. Add post duplication as an admin list action (Payload `custom` list actions). Write `scripts/migrate-posts.ts` that reads Prisma `post` + `post_tag` rows and creates Payload posts with resolved tag relationships.
+- **Description:** Fill `payload/collections/posts.ts` stub with the full posts collection definition from Data Models — access control (`sync` role creates, admin-only updates/deletes), afterChange hook, and post duplication as a Payload admin list action. The composite unique index requires a custom SQL migration (Payload `indexes` doesn't support partial-index syntax). Write `scripts/migrate-posts.ts` with full field mapping from Prisma to Payload.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing, test-master
 - **Files to modify:** `payload/collections/posts.ts`
@@ -544,19 +550,21 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 #### Task 8: Replace Prisma Data Layer
 
-- **Description:** Rewrite `lib/tags.ts` and `lib/posts.ts` to use `getPayload()` + Local API calls (`payload.find()`, `payload.findByID()`). Preserve function signatures and `FeedPost` type from `lib/postUtils.ts` so call sites don't change. Preserve try/catch + `console.warn('[posts] DB unavailable')` resilience pattern. Update `app/sitemap.ts` to use Payload Local API for tags and posts. Remove `lib/prisma.ts`.
+- **Description:** Replace the Prisma data layer with Payload Local API: rewrite `lib/tags.ts` and `lib/posts.ts` using `getPayload()` + `payload.find()`/`payload.findByID()`, preserving function signatures, FeedPost type, and the try/catch resilience pattern. Update `app/sitemap.ts`. Remove `lib/prisma.ts` and `prisma/seed.ts` (dead file after migration).
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing, test-master
 - **Verify-smoke:** `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/vacancies/smm` → 200 (exercises lib/tags.ts Local API); `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/sitemap.xml` → 200; `grep -r "from '@prisma" app/ lib/` → no results
-- **Files to modify:** `lib/tags.ts`, `lib/posts.ts`, `lib/postUtils.ts`, `app/sitemap.ts`, delete `lib/prisma.ts`
+- **Files to modify:** `lib/tags.ts`, `lib/posts.ts`, `lib/postUtils.ts`, `app/sitemap.ts`
+- **Files to delete:** `lib/prisma.ts`, `prisma/seed.ts`
 - **Files to read:** `lib/tags.ts`, `lib/posts.ts`, `lib/postUtils.ts`, `app/sitemap.ts`
 
 #### Task 9: App Routes + Globals Integration
 
-- **Description:** Update `app/articles/page.tsx` to merge MDX articles (existing `lib/articles.ts`) with Payload articles sorted by `publishedAt` descending. Update `app/articles/[slug]/page.tsx` to resolve slug from Payload first, fall back to MDX renderer. Update `components/Navbar.tsx` to read Navbar Global from Payload Local API. Update `components/Footer.tsx` and `components/LeftSidebar.tsx` to read Footer/SocialChannels Globals.
+- **Description:** Integrate Payload Globals and merge article sources. `app/articles/page.tsx` merges MDX articles (frontmatter `date` field maps to `publishedAt`) with Payload articles sorted by `publishedAt` descending. `app/articles/[slug]/page.tsx` tries Payload first, falls back to MDX. Navbar, Footer, LeftSidebar read their respective Globals from Payload Local API.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing, test-master
-- **Verify-user:** `http://localhost:3000/articles` → shows MDX articles; `http://localhost:3000` → Navbar slogan matches Payload Global value
+- **Verify-smoke:** `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/articles` → 200; `curl -s http://localhost:3000 | grep -c '<nav'` → ≥1
+- **Verify-user:** Navbar slogan matches Payload Global value; `/articles` shows MDX articles in correct order
 - **Files to modify:** `app/articles/page.tsx`, `app/articles/[slug]/page.tsx`, `components/Navbar.tsx`, `components/Footer.tsx`, `components/LeftSidebar.tsx`
 - **Files to read:** `lib/articles.ts`, `components/Navbar.tsx`, `components/Footer.tsx`, `components/LeftSidebar.tsx`
 
@@ -564,7 +572,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 #### Task 10: Agent API Route (/api/articles)
 
-- **Description:** Create `app/api/articles/route.ts` — a Next.js API route that accepts `POST` with `Authorization: users API-Key <token>` header, validates via Payload's auth, creates an Article document via Local API, and returns 201 with the created document. Return 401 if token missing or invalid, 400 on validation error. This route is the documented agent publishing endpoint.
+- **Description:** Create `app/api/articles/route.ts` handling both `GET` (delegates to `payload.find({ collection: 'articles' })` for the public articles feed, avoiding 405 blocking Payload's REST GET) and `POST` (extracts `Authorization: users API-Key <token>`, calls `payload.auth({ headers })`, verifies `role === 'agent'`, then `payload.create({ collection: 'articles', ... })` — must NOT use `overrideAccess: true`; returns 201 or 401/400). This shadows Payload's auto-generated `/api/articles` REST endpoint, so both methods must be explicitly handled.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing, security-auditor, test-master
 - **Verify-smoke:** `curl -X POST http://localhost:3000/api/articles -H "Authorization: users API-Key test-token" -H "Content-Type: application/json" -d '{"title":"Test","slug":"test-article","status":"draft"}' ` → 201 or 401 depending on token validity
@@ -573,7 +581,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 #### Task 11: Sync Script Migration (Prisma → Payload REST API)
 
-- **Description:** Rewrite `scripts/sync-telegram.ts` to replace all Prisma calls with Payload REST API calls: pre-load `GET /api/tags?limit=200` to build slug→id map; replace `prisma.post.create()` with `POST /api/posts` using `PAYLOAD_API_KEY` env var; handle 409 conflict as dedup skip. Preserve image download logic to `public/images/posts/` unchanged. Remove `prisma` import and `../generated/prisma` import.
+- **Description:** Rewrite `scripts/sync-telegram.ts` replacing Prisma with Payload REST API: pre-load `GET /api/tags?limit=200` for slug→id map, replace `prisma.post.create()` with `POST /api/posts` using `Authorization: users API-Key ${PAYLOAD_API_KEY}`, handle 409 as dedup skip. Error logging must never include the Authorization header — log only status code and URL (not request headers or the `PAYLOAD_API_KEY` value). Preserve image download logic unchanged.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing, security-auditor, test-master
 - **Files to modify:** `scripts/sync-telegram.ts`
@@ -586,18 +594,21 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 - **Description:** Holistic code quality review of all files created/modified in this feature. Focus: correct Payload Local API usage (no misused `getPayload()` calls in client components), consistent error handling across lib/\* rewrites, no Prisma imports remaining (grep check), afterChange hook correctness across all collections.
 - **Skill:** code-reviewing
 - **Reviewers:** none
+- **Files to read:** `payload/collections/*.ts`, `payload/globals/*.ts`, `lib/tags.ts`, `lib/posts.ts`, `lib/postUtils.ts`, `app/sitemap.ts`, `app/api/articles/route.ts`, `scripts/sync-telegram.ts`, `scripts/migrate-tags.ts`, `scripts/migrate-posts.ts`
 
 #### Task 13: Security Audit
 
 - **Description:** Security review across all feature code. Focus: API Key auth on `/api/articles` route (can a token from one collection authenticate to another?), access control on Articles collection (agent role cannot modify Tags/Globals), PAYLOAD_SECRET entropy, sync script API key not leaked in logs (sanitizeError pattern preserved), CSP for `/admin/*` (Lexical editor runs without `unsafe-eval` policy gaps).
 - **Skill:** security-auditor
 - **Reviewers:** none
+- **Files to read:** `payload/collections/*.ts`, `payload/globals/*.ts`, `app/api/articles/route.ts`, `scripts/sync-telegram.ts`, `next.config.mjs`, `middleware.ts`, `.env.example`
 
 #### Task 14: Test Audit
 
 - **Description:** Review test coverage for all rewritten modules. Verify that lib/tags.ts, lib/posts.ts, lib/postUtils.ts have unit tests for all exported functions, that migration scripts have count-assertion tests, and that the sync script's dedup (409 handling) is unit-tested with a mocked HTTP response.
 - **Skill:** test-master
 - **Reviewers:** none
+- **Files to read:** `lib/tags.ts`, `lib/posts.ts`, `lib/postUtils.ts`, `scripts/migrate-tags.ts`, `scripts/migrate-posts.ts`, `scripts/sync-telegram.ts`, `tests/`
 
 ### Final Wave
 
@@ -606,15 +617,18 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 - **Description:** Full acceptance test of Payload CMS integration on staging before production deploy. Covers all user-spec scenarios and tech-spec acceptance criteria: smoke routes, auth checks, API endpoints, revalidation timing, sync dedup, migration integrity.
 - **Skill:** pre-deploy-qa
 - **Reviewers:** none
+- **Files to read:** `work/payload-cms/user-spec.md`, `work/payload-cms/tech-spec.md`
 
 #### Task 16: Deploy
 
 - **Description:** Production deployment with safe cutover sequence: disable sync cron on red server → `pg_dump` backup → merge `dev` → `main` → GitHub Actions deploy (`npm ci` → `npm run build` → rsync → SSH `payload migrate` → `touch reload`) → smoke verify → re-enable sync. Rollback if `payload migrate` fails: restore from dump, no `touch reload`.
 - **Skill:** deploy-pipeline
 - **Reviewers:** none
+- **Files to read:** `.github/workflows/deploy.yml`
 
 #### Task 17: Post-deploy Verification
 
 - **Description:** Agent verifies live production via curl: all smoke routes return 200, `/admin` redirects to login, `POST /api/articles` without token returns 401, `POST /api/articles` with agent API Key returns 201, sitemap returns 200. Agent triggers sync script on red server and confirms post count grew. Revalidation SLA (Tag edit → page updates ≤3 sec; Navbar edit → ≤1 sec) is a manual user check — not executable by agent via curl alone.
 - **Skill:** post-deploy-qa
 - **Reviewers:** none
+- **Files to read:** `work/payload-cms/tech-spec.md` (Agent Verification Plan)
