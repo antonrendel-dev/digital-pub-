@@ -1,0 +1,57 @@
+{
+  "reviewer": "test-reviewer",
+  "task": "task-1",
+  "round": 1,
+  "status": "needs_changes",
+  "summary": "All 8 TDD anchors from the task spec are covered and test names match exactly. Mock setup is largely correct but has two gaps that create false-positive risk: (1) @/lib/vacancies is never mocked — VacancyPage imports getPostsByType from @/lib/posts (mocked) and getTagBySlug/getTagsWithCounts from @/lib/tags (mocked), so this particular gap happens not to blow up, but this is accidental and fragile; (2) @/components/* are imported by every page under test and render in the happy path only when tag/post is non-null — since all mocks return null the components are never actually exercised, hiding potential render-side failures. More critically: the test for VacancyPage and ArticlePage does NOT assert that generateMetadata awaits params (no test calls categorySlug_generate_metadata or articles_generate_metadata), which are required by the task spec for 'all 5 generateMetadata functions'. The task spec says every page's generateMetadata must be covered, but only 3 of the 5 are tested (category, resumes/tag, post). VacancyPage/generateMetadata and ArticlePage/generateMetadata have no test at all.",
+  "findings": [
+    {
+      "id": "TR-1",
+      "severity": "major",
+      "file": "tests/unit/async-params.test.ts",
+      "line": null,
+      "finding": "generateMetadata for app/vacancies/[category]/[slug]/page.tsx (VacancyPage) and app/articles/[slug]/page.tsx (ArticlePage) are not tested. The task spec states 'all 5 generateMetadata functions use await params' and the TDD anchor section lists 8 required tests — but only 3 of the 5 generateMetadata functions are exercised (category, resumes/tag, post). A regression in VacancyPage's or ArticlePage's generateMetadata would not be caught.",
+      "suggestion": "Add two tests in the 'generateMetadata' describe block: 'vacancy_slug_generate_metadata_awaits_params' calling the named export from @/app/vacancies/[category]/[slug]/page with Promise<{category,slug}> and asserting getPostBySlug was called with 'test'; and 'articles_slug_generate_metadata_awaits_params' calling the named export from @/app/articles/[slug]/page with Promise<{slug:'test-slug'}> and asserting getArticleBySlug was called with 'test-slug'."
+    },
+    {
+      "id": "TR-2",
+      "severity": "major",
+      "file": "tests/unit/async-params.test.ts",
+      "line": 66,
+      "finding": "False-positive risk on page-component tests: runSafe swallows ALL errors and the assertion is only 'not TypeError'. If params is NOT awaited (the regression we are detecting), accessing a property on a Promise produces undefined, which is passed to getTagBySlug — the call-with-resolved-value assertion on line 72 would actually catch this. However, if the component throws any non-TypeError (e.g. a component import error, a missing mock causing a DB error), err is non-null, not a TypeError, and the test still passes — masking a broken execution path. The test gives a green signal even when the component never reached the lib call.",
+      "suggestion": "Add an additional assertion after the 'not TypeError' check: verify that the relevant mock was actually called (most tests already do this, which partially mitigates the issue). Consider also asserting err is null OR err.message === 'NEXT_NOT_FOUND' to reject any unexpected error type, not just TypeError."
+    },
+    {
+      "id": "TR-3",
+      "severity": "major",
+      "file": "tests/unit/async-params.test.ts",
+      "line": null,
+      "finding": "No tests for app/vacancies/page.tsx and app/resumes/page.tsx searchParams async upgrade. Both files were modified as part of this task (searchParams: Promise<{page?:string}> + await searchParams in both generateMetadata and page component). These are completely untested. A regression here would not be caught by the unit test suite.",
+      "suggestion": "Add tests: 'vacancies_page_awaits_search_params' and 'resumes_page_awaits_search_params' calling the default export and generateMetadata with searchParams: Promise.resolve({}) and asserting no TypeError is thrown."
+    },
+    {
+      "id": "TR-4",
+      "severity": "minor",
+      "file": "tests/unit/async-params.test.ts",
+      "line": 21,
+      "finding": "The mock for @/lib/tags includes getTagsWithCounts and getPostsByTag which are used by CategoryPage and TagPage after the notFound() branch — but getTagBySlug is mocked to return null, so notFound() is thrown and these secondary calls are never reached. The mock entries are harmless but were described in the task spec's required mocks section with a different scope: the task spec mock for @/lib/posts did NOT include getPostsByType. The actual test file adds getPostsByType (line 29), which is correct since VacancyPage and PostPage both call it — but this divergence from the spec mock means the spec mock section was incomplete and the implementer had to discover it empirically.",
+      "suggestion": "No action required for test correctness — the actual mocks in the file are more complete than the spec. Document in decisions.md that the spec's mock list was non-exhaustive."
+    },
+    {
+      "id": "TR-5",
+      "severity": "minor",
+      "file": "tests/unit/async-params.test.ts",
+      "line": 75,
+      "finding": "category_slug_page_awaits_params does not assert that getTagBySlug was called with 'smm', only getPostBySlug with 'test'. VacancyPage calls both. While verifying getPostBySlug is sufficient to prove slug was extracted from the resolved Promise, the category param is also destructured from the same await — a partial await bug (awaiting but only reading slug) would not be detected.",
+      "suggestion": "Add: expect(jest.mocked(getTagBySlug)).toHaveBeenCalledWith('smm') inside category_slug_page_awaits_params. Note: getTagBySlug is called inside Promise.all after the notFound() guard — since getPostBySlug returns null, notFound() fires before Promise.all is reached, so this assertion would fail even in correct code. This is a structural limitation: to test the category extraction, getPostBySlug should be mocked to return a non-null post object in this specific test."
+    },
+    {
+      "id": "TR-6",
+      "severity": "minor",
+      "file": "jest.config.ts",
+      "line": null,
+      "finding": "Adding jsx: 'react-jsx' to ts-jest transform config applies globally to all test files, not just async-params.test.ts. This may affect other test files that previously compiled without jsx transform. The change is necessary for React component imports but could silently alter compilation behaviour for non-component tests (e.g. articles.test.ts, data.test.ts).",
+      "suggestion": "Verify that all existing test files (articles.test.ts, data.test.ts, slug-validation.test.ts, smoke.test.ts, tag-matching.test.ts) still pass after this config change. If any relied on the absence of jsx transform, they may behave differently."
+    }
+  ]
+}

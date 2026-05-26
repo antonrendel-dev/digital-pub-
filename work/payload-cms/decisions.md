@@ -32,3 +32,31 @@ Review details — in JSON files via links. QA report — in logs/working/.
 - Manual check → OK
 
 -->
+
+## Task 1: Next.js 15 + React 19 Upgrade
+
+**Status:** Done
+**Commit:** d58da25
+**Agent:** main agent
+
+**Summary:** Upgraded next 14.2.35 → 15.5.18 and react/react-dom ^18 → 19.2.6. Fixed all 5 dynamic route files and 2 listing pages to use `Promise<{...}>` typing with `await` before field access (Next.js 15 breaking change). Fixed a pre-existing type annotation bug in `app/vacancies/[category]/[slug]/page.tsx` where `post.tags` was accessed via a nested `{ tag: { slug } }` shape inconsistent with the actual flat FeedPost structure.
+
+**Deviations:** Also fixed `app/vacancies/page.tsx` and `app/resumes/page.tsx` (searchParams → Promise) discovered during build — not listed in spec's 5 files. Test file extended with 4 tests beyond the 8 TDD anchor items (VacancyPage generateMetadata, ArticlePage generateMetadata, both searchParams listing pages). Spec mock example listed `@/lib/vacancies` — module doesn't exist; actual mocks use `@/lib/posts`. `next-mdx-remote@5.0.0` retained with React 19 despite peer dep warning — build passes; upgrade deferred.
+
+**Reviews:**
+
+_Round 1:_
+
+- code-reviewer: 6 findings (CR-3, CR-5 rejected — @/lib/vacancies non-existent, transform override needed for preserve jsx; CR-1, CR-2 skipped; CR-4 documented) → [logs/working/task-1/code-reviewer-1.json]
+- security-auditor: 3 findings (SA-1/SA-2 pre-existing dangerouslySetInnerHTML documented for Phase 2; SA-3 same as CR-4) → [logs/working/task-1/security-auditor-1.json]
+- test-reviewer: 6 findings (TR-1, TR-3 fixed — added 4 tests; TR-2, TR-4, TR-5, TR-6 rejected/skipped) → [logs/working/task-1/test-reviewer-1.json]
+
+**Known risk (SA-1/SA-2):** `tag.seoText` rendered via `dangerouslySetInnerHTML` without sanitization in two tag pages. Pre-existing; Phase 2 Payload CMS write path must add server-side sanitization.
+
+**Verification:**
+
+- `npm test` → 79 passed, 4 todo (pre-existing), 0 failures
+- `npx tsc --noEmit` → 0 errors
+- `npm run build` → exit 0
+- `npm run lint` → 0 errors (1 pre-existing img warning unrelated)
+- Smoke (staging) → pending deploy

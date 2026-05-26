@@ -461,8 +461,8 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 ## Acceptance Criteria
 
-- [ ] `npm run build` exits 0 after Next.js 15 upgrade
-- [ ] All dynamic routes use `await params` (TypeScript strict mode passes)
+- [x] `npm run build` exits 0 after Next.js 15 upgrade
+- [x] All dynamic routes use `await params` (TypeScript strict mode passes)
 - [ ] `payload migrate` exits 0 on fresh database
 - [ ] `getPayload()` singleton initializes without errors in production build
 - [ ] Payload `tags` collection count matches Prisma `tag` count after migration

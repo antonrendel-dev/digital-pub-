@@ -2,17 +2,17 @@
 
 ## Tech Stack
 
-| Layer | Technology | Why |
-|---|---|---|
-| Framework | Next.js 14 (App Router) | SSR for SEO + React frontend in one, ideal for a public content site |
-| Language | TypeScript | Type safety, better DX with Prisma and Next.js |
-| Styling | Tailwind CSS 3.4 + CSS variables | Utility-first для DRY, CSS vars централизуют light/dark theme palette |
-| Database | PostgreSQL | Relational data model fits vacancies/resumes/tags/articles well |
-| ORM | Prisma | Simple migrations, auto-generated types, works great with Next.js |
-| Articles | MDX (`next-mdx-remote/rsc` + `remark-gfm` + `gray-matter`) | Файловые статьи в репозитории вместо БД — проще батч-деплой, версионирование через git |
-| Validation | zod | URL slug validation на всех dynamic routes (`/^[a-z0-9-_]{1,80}$/`) |
-| Hosting | NetAngels shared (Passenger-like runner) | Перенос с Nuxt.cloud. См. deployment.md |
-| Telegram sync | `scripts/sync-telegram.ts` + `lib/tag-matcher.ts` | Парсит `t.me/s/{channel}` HTML + Bot API для скачивания фото (forwardMessage trick). Авто-теггинг по keyword map. |
+| Layer         | Technology                                                 | Why                                                                                                               |
+| ------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Framework     | Next.js 15 (App Router) + React 19                         | SSR for SEO + React frontend in one, ideal for a public content site                                              |
+| Language      | TypeScript                                                 | Type safety, better DX with Prisma and Next.js                                                                    |
+| Styling       | Tailwind CSS 3.4 + CSS variables                           | Utility-first для DRY, CSS vars централизуют light/dark theme palette                                             |
+| Database      | PostgreSQL                                                 | Relational data model fits vacancies/resumes/tags/articles well                                                   |
+| ORM           | Prisma                                                     | Simple migrations, auto-generated types, works great with Next.js                                                 |
+| Articles      | MDX (`next-mdx-remote/rsc` + `remark-gfm` + `gray-matter`) | Файловые статьи в репозитории вместо БД — проще батч-деплой, версионирование через git                            |
+| Validation    | zod                                                        | URL slug validation на всех dynamic routes (`/^[a-z0-9-_]{1,80}$/`)                                               |
+| Hosting       | NetAngels shared (Passenger-like runner)                   | Перенос с Nuxt.cloud. См. deployment.md                                                                           |
+| Telegram sync | `scripts/sync-telegram.ts` + `lib/tag-matcher.ts`          | Парсит `t.me/s/{channel}` HTML + Bot API для скачивания фото (forwardMessage trick). Авто-теггинг по keyword map. |
 
 ---
 
@@ -73,6 +73,7 @@
 ## External Integrations
 
 **Telegram (t.me/s/ public web)**
+
 - Purpose: Scraping public channel posts for vacancies and resumes
 - Auth method: None — public HTTP endpoint, no API key required
 - Pattern: GET `https://t.me/s/{channel_username}` → parse HTML → extract post ID, text, date
@@ -96,16 +97,19 @@
 ### Posts (vacancies and resumes in one table)
 
 **Post**
+
 - Purpose: Stores both vacancies and resumes
 - Key fields: `id`, `type` (vacancy|resume), `title`, `slug` (auto от транслита title + числовой суффикс), `description`, `status` (pending|published|rejected), `source` (telegram|user), `telegram_message_id`, `channel_username`, `company` (всегда NULL в MVP, не парсится), `imageUrl`, `created_at`
 - Relationships: `Post → PostTag (many-to-many)`
 
 **Tag** (расширена SEO-полями)
+
 - Purpose: Reusable tags (Удалённо, Senior, IT, etc.) + SEO-страницы
 - Key fields: `id`, `name`, `slug` (unique), `tagType` (format|level|specialization), `seoTitle?`, `seoDescription?`, `seoText?`
 - Initial set: 17 тегов через `prisma/seed.ts` (Удалёнка/Офис/Гибрид + 11 спец-тегов + Junior/Middle/Senior)
 
 **Article** (НЕ в БД — оставлена пустой таблицей, не используется)
+
 - В MVP статьи живут как MDX-файлы в `content/articles/` (Decision 5 — security via component allowlist + filename allowlist для path traversal)
 
 ### Key Constraints
