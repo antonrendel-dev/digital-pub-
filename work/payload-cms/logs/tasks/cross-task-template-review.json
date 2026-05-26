@@ -1,0 +1,128 @@
+{
+  "validator": "task-validator",
+  "mode": "cross-task-integration",
+  "batch": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+  "batch_number": 99,
+  "iteration": 3,
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "decomposition",
+      "task": 5,
+      "section": "Frontmatter / depends_on",
+      "issue": "Task 5 (Posts Collection + Migration Script) does not declare depends_on Task 4, even though the migration script migrate-posts.ts MUST run after migrate-tags.ts (Task 4). The Details section explicitly states: 'Tags migration (Task 4) MUST complete before running migrate-posts.ts. The script resolves Payload tag IDs by slug — if tags don't exist yet, all tag relationships will be lost.' Tasks 4 and 5 are both in wave 3 and run in parallel, so without a depends_on [4] declaration, parallel execution agents would attempt to run migrate-posts.ts before tags exist in Payload.",
+      "fix": "Add Task 4 to depends_on: [3, 4] in Task 5 frontmatter, or move Task 5 to wave 4 (after Task 4). Alternatively, keep wave 3 but split the collection definition (wave 3) from the migration script (wave 4 task) — the collection stub can be filled in parallel, but the data migration must be sequential."
+    },
+    {
+      "severity": "major",
+      "category": "consistency",
+      "task": 7,
+      "section": "Frontmatter / reviewers",
+      "issue": "Task 7 frontmatter has `reviewers: [code-reviewing]` but the body Reviewers section says `**code-reviewing** → work/payload-cms/logs/working/task-7/code-reviewing-1.json`. The correct reviewer identifier for code tasks is `code-reviewer`, not `code-reviewing`. Skill is `[code-writing]` which maps to `code-reviewer + test-reviewer`. Using `code-reviewing` (the skill name, not the reviewer role name) creates confusion and may break agent-team routing.",
+      "fix": "Change frontmatter `reviewers: [code-reviewing]` to `reviewers: [code-reviewer]` and update the Reviewers body section to `**code-reviewer** → work/payload-cms/logs/working/task-7/code-reviewer-1.json`. Consider adding `test-reviewer` as well since this is a code task with afterChange hooks that have behavioral constraints worth testing."
+    },
+    {
+      "severity": "major",
+      "category": "decomposition",
+      "task": 9,
+      "section": "Frontmatter / depends_on",
+      "issue": "Task 9 declares depends_on: [3, 4, 5, 6, 7] which includes Task 3 redundantly — Tasks 4, 5, 6, 7 all depend on Task 3, so Task 3 is always completed before Tasks 4-7. This is a minor clarity issue but more importantly Task 9 does NOT list Task 8 as a dependency, yet both Task 8 and Task 9 are in wave 4 and Task 9 modifies app/articles/[slug]/page.tsx and components/* files that may conflict with assumptions Task 8 makes about lib/tags.ts and lib/posts.ts being available as Payload Local API. Task 9's getPayload() calls in article fetching depend on the data layer being ready (Task 8). The wave assignment is identical (both wave 4) which means they can run in parallel — but Task 9 consumes Payload Local API from lib/tags.ts and lib/posts.ts which Task 8 is rewriting. This is an implicit ordering dependency not captured in depends_on.",
+      "fix": "Add Task 8 to Task 9's depends_on: [4, 5, 6, 7, 8] and move Task 9 to wave 5 (after Task 8). Task 9 reads Payload Globals directly (not through lib/), so it doesn't technically block on Task 8 for all its work — but the article slug fallback in app/articles/[slug]/page.tsx calls lib/articles.ts which may interact with the rewritten lib/. Safer to serialize: Task 9 after Task 8."
+    },
+    {
+      "severity": "major",
+      "category": "resource-sharing",
+      "task": 5,
+      "section": "Details / Dependencies",
+      "issue": "Both Task 4 and Task 5 create migration scripts that use the Payload Local API (getPayload() instance) in the same wave (wave 3). If run in parallel by a feature-execution agent, both scripts would attempt to initialize getPayload() and write to the same Payload/PostgreSQL instance simultaneously. The migration scripts are runtime artifacts (not build-time code) but their parallel execution in the same wave creates a competing resource access pattern on the shared PostgreSQL connection pool — specifically around tag→post relationship resolution. The tech-spec Shared Resources table identifies the PostgreSQL connection pool as a singleton managed by Payload.",
+      "fix": "Serialize migration scripts: Task 5 (migrate-posts.ts) should declare depends_on: [3, 4] so it runs after Task 4's migration completes. Migration scripts need sequential execution regardless of collection definition work being parallelizable."
+    },
+    {
+      "severity": "minor",
+      "category": "consistency",
+      "task": 1,
+      "section": "Frontmatter / reviewers",
+      "issue": "Task 1 frontmatter lists `reviewers: [code-reviewer, security-auditor, test-reviewer]`. Tech-spec says reviewers for Task 1 are `code-reviewing, test-master`. The frontmatter uses the reviewer-role names (code-reviewer, test-reviewer) which is correct per template, but security-auditor is not listed in the tech-spec for Task 1. Security audit is a separate wave 6 task (Task 13). Adding security-auditor to a Next.js upgrade task is over-specified — the upgrade touches only type annotations for async params, not auth or security-sensitive code.",
+      "fix": "Remove `security-auditor` from Task 1 reviewers (keep `code-reviewer, test-reviewer`). Security concerns in this feature are handled holistically in Task 13."
+    },
+    {
+      "severity": "minor",
+      "category": "consistency",
+      "task": 2,
+      "section": "Frontmatter / reviewers",
+      "issue": "Task 2 frontmatter has `reviewers: [code-reviewer, security-auditor, deploy-reviewer]`. The reviewer `deploy-reviewer` is not a standard reviewer name in the project's skills mapping. The standard skill for deploy tasks is `deploy-pipeline`, and the tech-spec lists reviewers as `code-reviewing` only for Task 2. `deploy-reviewer` is an undefined reviewer role.",
+      "fix": "Replace `deploy-reviewer` with a defined reviewer role. If the intent is a CI/CD-focused review, use `code-reviewer` (which can cover YAML/CI config). Remove or align with actual available reviewer skills."
+    },
+    {
+      "severity": "minor",
+      "category": "decomposition",
+      "task": 12,
+      "section": "Frontmatter / depends_on",
+      "issue": "Task 12 (Code Audit) declares depends_on: [10, 11] but does not include Task 8, which produces key files the audit reviews: lib/tags.ts, lib/posts.ts, lib/postUtils.ts, app/sitemap.ts. Task 8 is wave 4, Task 12 is wave 6, so wave ordering is technically satisfied transitively through Tasks 10 and 11 (both depend on Task 8). The dependency chain is: 8 → 10 → 12. This is correct but implicit — adding depends_on: [8, 10, 11] would make the intent clearer and guard against wave reordering in future spec edits.",
+      "fix": "Consider adding Task 8 explicitly to Task 12's depends_on for documentation clarity: depends_on: [8, 10, 11]. Not critical since Task 10 and 11 both depend on Task 8, ensuring Task 8 always completes first."
+    },
+    {
+      "severity": "minor",
+      "category": "decomposition",
+      "task": 9,
+      "section": "Details / Dependencies",
+      "issue": "Task 9 depends_on redundantly includes Task 3 ([3, 4, 5, 6, 7]). Since Tasks 4, 5, 6, 7 all have depends_on: [3], Task 3 is always completed before Task 9 runs. The redundant dependency clutters the graph without adding correctness.",
+      "fix": "Simplify to depends_on: [4, 5, 6, 7] (and add 8 per the major finding above). Task 3 completion is guaranteed by the transitive dependency through Tasks 4-7."
+    },
+    {
+      "severity": "minor",
+      "category": "carry-forward",
+      "task": 4,
+      "section": "Frontmatter / reviewers",
+      "issue": "Task 4 frontmatter has `reviewers: [code-reviewer, security-auditor, test-reviewer]`. Tech-spec Implementation Tasks for Task 4 list reviewers as `code-reviewing, test-master`. The security-auditor inclusion is inconsistent with the tech-spec — tags collection security review is covered holistically in Task 13.",
+      "fix": "Remove `security-auditor` from Task 4 reviewers. Keep `code-reviewer, test-reviewer`."
+    },
+    {
+      "severity": "minor",
+      "category": "carry-forward",
+      "task": 5,
+      "section": "Frontmatter / reviewers",
+      "issue": "Task 5 frontmatter has `reviewers: [code-reviewer, security-auditor, test-reviewer]`. Tech-spec lists reviewers as `code-reviewing, test-master` for Task 5. Security review is handled in Task 13.",
+      "fix": "Remove `security-auditor` from Task 5 reviewers."
+    }
+  ],
+  "wave_graph": {
+    "wave_1": [1, 2],
+    "wave_2": [3],
+    "wave_3": [4, 5, 6, 7],
+    "wave_4": [8, 9],
+    "wave_5": [10, 11],
+    "wave_6": [12, 13, 14],
+    "wave_7": [15],
+    "wave_8": [16],
+    "wave_9": [17]
+  },
+  "dependency_cycles": "none",
+  "shared_resource_violations": [
+    {
+      "resource": "Payload Local API / getPayload() singleton",
+      "owner_task": 3,
+      "consumer_tasks": [4, 5, 6, 7, 8, 9, 10, 11],
+      "status": "OK — all consumers declare depends_on Task 3 (directly or transitively)"
+    },
+    {
+      "resource": "PostgreSQL connection pool (shared via Payload)",
+      "violation": "Tasks 4 and 5 migration scripts both write to Payload in wave 3 with no explicit ordering — see critical finding on Task 5"
+    }
+  ],
+  "merge_candidates": "none — all same-file modifications are in different waves serving different purposes",
+  "over_decomposition_check": {
+    "user_stories": 5,
+    "total_tasks": 17,
+    "tasks_per_story": 3.4,
+    "verdict": "within acceptable range for a size-L feature (Next.js upgrade + full CMS integration + Prisma removal + deploy pipeline)"
+  },
+  "stats": {
+    "tasks_checked": 17,
+    "issues_found": 10,
+    "critical": 1,
+    "major": 3,
+    "minor": 6
+  }
+}
