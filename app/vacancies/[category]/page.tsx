@@ -12,16 +12,18 @@ import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/component
 export const revalidate = 300
 
 interface Props {
-  params: { category: string }
+  params: Promise<{ category: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { category } = params
+  const { category } = await params
   const tag = await getTagBySlug(category)
   if (!tag) return { title: 'Категория не найдена' }
 
   const title = tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`
-  const description = tag.seoDescription ?? `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`
+  const description =
+    tag.seoDescription ??
+    `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`
   const url = `https://d-pub.ru/vacancies/${category}`
 
   return {
@@ -43,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const { category } = params
+  const { category } = await params
   const tag = await getTagBySlug(category)
   if (!tag) notFound()
 
@@ -63,15 +65,36 @@ export default async function CategoryPage({ params }: Props) {
     ],
   }
 
+  // ItemList of job postings in this category
+  const itemListLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Вакансии ${tag.name}`,
+    numberOfItems: posts.length,
+    itemListElement: posts.slice(0, 20).map((post, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: post.slug
+        ? `https://d-pub.ru/vacancies/${category}/${post.slug}`
+        : `https://d-pub.ru/post/${post.id}`,
+      name: post.title,
+    })),
+  }
+
   return (
     <PageShell>
       <JsonLd data={breadcrumbLd} />
+      <JsonLd data={itemListLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-text-muted mb-6">
-          <Link href="/" className="no-underline hover:text-text transition-colors">Главная</Link>
+          <Link href="/" className="no-underline hover:text-text transition-colors">
+            Главная
+          </Link>
           <span>&#8250;</span>
-          <Link href="/vacancies" className="no-underline hover:text-text transition-colors">Вакансии</Link>
+          <Link href="/vacancies" className="no-underline hover:text-text transition-colors">
+            Вакансии
+          </Link>
           <span>&#8250;</span>
           <span className="text-text">{tag.name}</span>
         </nav>
@@ -79,12 +102,15 @@ export default async function CategoryPage({ params }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
           {/* Content */}
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">
-              {tag.name}-вакансии
-            </h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">{tag.name}-вакансии</h1>
             <p className="text-text-muted mb-6">
               Актуальные вакансии в сфере {tag.name}: удалённая работа, фриланс, полная занятость
             </p>
+
+            {/* Tags block — mobile/tablet only (desktop: right sidebar) */}
+            <div className="lg:hidden mb-6">
+              <TagsSidebar tags={allTags} activeSlug={category} />
+            </div>
 
             {/* Count */}
             <div className="flex items-center justify-between mb-5">
@@ -134,8 +160,12 @@ export default async function CategoryPage({ params }: Props) {
 
             {/* CTA */}
             <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4 text-center">
-              <div className="text-sm font-semibold text-text mb-2">Ищете {tag.name}-специалиста?</div>
-              <p className="text-xs text-text-muted mb-3">Разместите вакансию через нашего бота и получите отклики из сообщества</p>
+              <div className="text-sm font-semibold text-text mb-2">
+                Ищете {tag.name}-специалиста?
+              </div>
+              <p className="text-xs text-text-muted mb-3">
+                Разместите вакансию через нашего бота и получите отклики из сообщества
+              </p>
               <a
                 href="https://t.me/resume_vac_bot"
                 target="_blank"

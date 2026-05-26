@@ -155,12 +155,6 @@ export default function LeftSidebar({ stats }: LeftSidebarProps) {
               {stats?.resumeCount?.toLocaleString('ru-RU') ?? '—'}
             </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-text-muted">Компаний</span>
-            <span className="font-semibold text-text">
-              {stats?.companyCount?.toLocaleString('ru-RU') ?? '—'}
-            </span>
-          </div>
         </div>
       </div>
     </div>

@@ -1,0 +1,118 @@
+{
+  "validator": "task-validator",
+  "batch": [16, 17],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "frontmatter",
+      "task": 16,
+      "section": "Frontmatter",
+      "issue": "`wave: final` is a string. The `wave` field must be a number ≥ 1 per the template. String values are not valid.",
+      "fix": "Replace `wave: final` with a number, e.g. `wave: 5` (or whatever integer corresponds to the final wave in the overall task plan)."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 16,
+      "section": "Verification Steps",
+      "issue": "Section `## Verification Steps` is entirely absent. It is mandatory for all tasks per the template.",
+      "fix": "Add `## Verification Steps` section between `## Context Files` and `## Details`. Move the smoke-check curl commands from `## What to do` (Steps 6–7) into the Automated/Smoke sub-sections here."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 16,
+      "section": "Reviewers",
+      "issue": "Section `## Reviewers` is entirely absent. It is mandatory for all tasks per the template.",
+      "fix": "Add `## Reviewers` section between `## Details` and `## Post-completion`. Since `reviewers: []` in frontmatter, the section body can note 'No reviewers — self-verifying task (deploy).' or use an empty list consistent with template."
+    },
+    {
+      "severity": "critical",
+      "category": "carry-forward",
+      "task": 16,
+      "section": "Context Files",
+      "issue": "`decisions.md` is missing from Context Files. It is a mandatory context file per the validation checklist.",
+      "fix": "Add `- [decisions.md](../decisions.md)` to the Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "carry-forward",
+      "task": 16,
+      "section": "Context Files",
+      "issue": "`architecture.md` is missing from Context Files. It is a mandatory context file per the validation checklist.",
+      "fix": "Add `- [architecture.md](~/.claude/skills/project-knowledge/architecture.md)` to the Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "frontmatter",
+      "task": 17,
+      "section": "Frontmatter",
+      "issue": "`wave: final` is a string. The `wave` field must be a number ≥ 1 per the template. String values are not valid.",
+      "fix": "Replace `wave: final` with a number. Since Task 17 depends on Task 16 (which will also be updated), Task 17 must have a wave number strictly greater than Task 16's wave number."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 17,
+      "section": "Reviewers",
+      "issue": "Section `## Reviewers` is entirely absent. It is mandatory for all tasks per the template.",
+      "fix": "Add `## Reviewers` section between `## Details` and `## Post-completion`. Since `reviewers: []` in frontmatter, the section body can note 'No reviewers — self-verifying task (post-deploy QA).' or use an empty list."
+    },
+    {
+      "severity": "critical",
+      "category": "carry-forward",
+      "task": 17,
+      "section": "Context Files",
+      "issue": "`architecture.md` is missing from Context Files. It is a mandatory context file per the validation checklist.",
+      "fix": "Add `- [architecture.md](~/.claude/skills/project-knowledge/architecture.md)` to the Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "decomposition",
+      "task": 17,
+      "section": "Frontmatter",
+      "issue": "Both Task 16 and Task 17 share `wave: final` (same string value), yet Task 17 has `depends_on: [16]`. A task must have a wave number strictly greater than the wave of all its dependencies. If both tasks have the same wave, they would be eligible for parallel execution — which contradicts the dependency declaration.",
+      "fix": "After fixing wave fields to numbers: ensure Task 16 wave < Task 17 wave (e.g. Task 16 wave: 5, Task 17 wave: 6)."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 16,
+      "section": "Context Files",
+      "issue": "`.github/workflows/deploy.yml` is listed as plain text, not as a markdown link. All context files should use the format `[name](path)`.",
+      "fix": "Replace the plain-text entry with `- [deploy.yml](.github/workflows/deploy.yml) — текущий CI pipeline (rsync + SSH шаги)`."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 16,
+      "section": "Details",
+      "issue": "The `## Details` section does not use the standard subsection labels from the template: `**Files:**`, `**Dependencies:**`, `**Edge cases:**`, `**Implementation hints:**`. Custom subsections are present but the template format is not followed.",
+      "fix": "Restructure Details using the template subsection labels. Map 'Серверы' and env vars to **Files:**; dependencies (Task 15 must pass) to **Dependencies:**; rollback/failure scenarios to **Edge cases:**; operation ordering constraints to **Implementation hints:**."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 16,
+      "section": "Rollback Procedure",
+      "issue": "`## Rollback Procedure` is an extra section not present in the task template. Template sections only: Required Skills, Description, What to do, [TDD Anchor], Acceptance Criteria, Context Files, Verification Steps, Details, Reviewers, Post-completion.",
+      "fix": "Move rollback content into `## Details` under **Edge cases:** or **Implementation hints:** sub-sections rather than a separate top-level section."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 17,
+      "section": "Details",
+      "issue": "The `## Details` section does not use the standard subsection labels: `**Files:**`, `**Dependencies:**`, `**Edge cases:**`, `**Implementation hints:**`. Uses ad-hoc sub-headings instead.",
+      "fix": "Restructure using the template subsection labels. Map server topology to **Files:**; PAYLOAD_API_KEY dependency to **Dependencies:**; dedup/cleanup scenarios to **Edge cases:**; seoText rendering hints to **Implementation hints:**."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 2,
+    "issues_found": 13,
+    "critical": 9,
+    "major": 0,
+    "minor": 4
+  }
+}

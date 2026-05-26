@@ -1,0 +1,143 @@
+{
+  "validator": "task-validator",
+  "batch": [1, 2, 3, 4, 5],
+  "iteration": 2,
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "decomposition",
+      "task": 5,
+      "section": "Frontmatter",
+      "issue": "Task 5 has depends_on: [3, 4] and wave: 3, but Task 4 is also wave: 3. The rule requires wave(dependant) > wave(dependency). Task 5 cannot be in the same wave as Task 4 if it depends on Task 4.",
+      "fix": "Either remove depends_on: 4 from Task 5 frontmatter (the Details section already calls it 'желательно', not a hard dependency) and treat them as truly parallel Wave 3 tasks, OR move Task 5 to wave: 4. If migration script order matters, set wave: 4."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 3,
+      "section": "What to do",
+      "issue": "Step 7 in 'What to do' contains a full implementation code block (TypeScript): `export { default } from '@payloadcms/next/middleware'`. The rule is WHAT not HOW — no code blocks with implementation in this section.",
+      "fix": "Replace step 7 with a declarative instruction: 'Create middleware.ts with Payload's built-in middleware export and matcher configuration for /admin and /api paths.' Move the code snippet to the Details → Implementation hints subsection."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 3,
+      "section": "Context Files",
+      "issue": "Mandatory context file project.md is missing from Context Files. Only user-spec.md, tech-spec.md, decisions.md, architecture.md, and patterns.md are listed. project.md is always required per template rules.",
+      "fix": "Add `- [project.md](~/.claude/skills/project-knowledge/references/project.md)` to Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 4,
+      "section": "Context Files",
+      "issue": "Mandatory context file project.md is missing from Context Files. Only user-spec.md, tech-spec.md, decisions.md, architecture.md, and patterns.md are listed.",
+      "fix": "Add `- [project.md](~/.claude/skills/project-knowledge/references/project.md)` to Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 5,
+      "section": "Context Files",
+      "issue": "Mandatory context file project.md is missing from Context Files. Only user-spec.md, tech-spec.md, decisions.md, and architecture.md are listed.",
+      "fix": "Add `- [project.md](~/.claude/skills/project-knowledge/references/project.md)` to Context Files section."
+    },
+    {
+      "severity": "major",
+      "category": "consistency",
+      "task": 2,
+      "section": "Frontmatter",
+      "issue": "frontmatter `reviewers: [code-reviewing, security-auditor]` uses `code-reviewing` which is a skill name, not the standard reviewer agent name. The template and validator rules define `code-reviewer` as the canonical reviewer name for code-writing tasks. `code-reviewing` is internally consistent (frontmatter matches Reviewers body) but deviates from the template convention and the skills↔reviewers mapping rule (code-writing → code-reviewer).",
+      "fix": "Rename `code-reviewing` to `code-reviewer` in both the frontmatter and the Reviewers section body."
+    },
+    {
+      "severity": "major",
+      "category": "consistency",
+      "task": 1,
+      "section": "Frontmatter",
+      "issue": "frontmatter `reviewers: [code-reviewer, security-auditor, test-master]` uses `test-master` which is a skill name. The template and consistency rule E defines the standard reviewer for code-writing tasks as `test-reviewer`. `test-master` is internally consistent (frontmatter matches Reviewers body at line 194) but deviates from the template mapping convention.",
+      "fix": "Rename `test-master` to `test-reviewer` in both frontmatter and the Reviewers section body, unless `test-master` is an intentional project-level reviewer override (in which case document this in decisions.md)."
+    },
+    {
+      "severity": "major",
+      "category": "consistency",
+      "task": 4,
+      "section": "Frontmatter",
+      "issue": "Same as Task 1: `reviewers` includes `test-master` (skill name) instead of standard `test-reviewer`. Internally consistent but deviates from template reviewer naming.",
+      "fix": "Rename `test-master` to `test-reviewer` in frontmatter and Reviewers section body."
+    },
+    {
+      "severity": "major",
+      "category": "consistency",
+      "task": 5,
+      "section": "Frontmatter",
+      "issue": "Same as Task 1 and Task 4: `reviewers` includes `test-master` (skill name) instead of standard `test-reviewer`. Internally consistent but deviates from template reviewer naming.",
+      "fix": "Rename `test-master` to `test-reviewer` in frontmatter and Reviewers section body."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 1,
+      "section": "Context Files",
+      "issue": "Code files `app/vacancies/[category]/page.tsx`, `app/vacancies/[category]/[slug]/page.tsx`, etc. are listed as plain text (without markdown link format `[name](path)`), not as proper markdown links. Template requires all files as `[name](path)` links.",
+      "fix": "Convert each plain-text code file reference to markdown link format, e.g. `- [app/vacancies/[category]/page.tsx](../../../app/vacancies/[category]/page.tsx) — текущее использование params`."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 2,
+      "section": "Context Files",
+      "issue": "`.github/workflows/deploy.yml` is listed as a markdown link but without using proper path from project root: `['.github/workflows/deploy.yml'](../../../.github/workflows/deploy.yml)`. This is acceptable but the link syntax is slightly off — single quotes in link text are unusual.",
+      "fix": "Normalize to: `- [.github/workflows/deploy.yml](../../../.github/workflows/deploy.yml)` (no single quotes in display name)."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 3,
+      "section": "Context Files",
+      "issue": "Files `next.config.mjs` and `app/layout.tsx` are listed as plain text (inline code), not as markdown links with paths. Template requires all context files as `[name](path)` links.",
+      "fix": "Convert to: `- [next.config.mjs](../../../next.config.mjs)` and `- [app/layout.tsx](../../../app/layout.tsx)`."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 4,
+      "section": "Context Files",
+      "issue": "Files `prisma/schema.prisma`, `lib/tags.ts`, and `lib/tag-matcher.ts` are listed with markdown link format but the display name should match filename convention more closely. Minor: links exist and are correct, just noting the lib/tag-matcher.ts description in the link text could be more specific.",
+      "fix": "No change required — links are valid. Cosmetic improvement only."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 5,
+      "section": "Context Files",
+      "issue": "Files `prisma/schema.prisma`, `lib/posts.ts`, `lib/postUtils.ts`, and `payload/collections/tags.ts` are listed as plain text (`\`path\``), not as markdown links.",
+      "fix": "Convert to markdown link format: `- [prisma/schema.prisma](../../../prisma/schema.prisma)`, etc."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 3,
+      "section": "What to do",
+      "issue": "Step 6 includes a multi-line JS code block with CSP headers implementation inside 'What to do'. While implementation context is helpful, large inline code blocks describing the exact implementation belong in Details → Implementation hints, not in What to do.",
+      "fix": "Replace the code block in step 6 with a declarative instruction: 'Add a second headers() entry scoped to /admin(.*) with loosened CSP including worker-src blob:, unsafe-inline for scripts and styles, frame-ancestors self, and frame-src self. See Details for the exact header values.' Move the code block to Details → Implementation hints."
+    },
+    {
+      "severity": "minor",
+      "category": "decomposition",
+      "task": 5,
+      "section": "Description",
+      "issue": "Task 5 modifies 4 files (posts.ts, migrate-posts.ts, custom-posts-unique-idx.sql, migrate-posts.test.ts) and also includes implementing a Payload custom admin UI component ('Дублировать пост'). The admin list action is a UI concern separate from the migration script — this may be a split candidate. However, the access control + afterChange hook + migration form a cohesive whole for the posts domain, so this is a borderline case.",
+      "fix": "Consider whether the admin duplication UI action should be a separate task (Task 5b or moved to Task 9 App Routes Integration). If kept here, ensure atomicity is maintained and scope doesn't expand beyond 3-4 files."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 5,
+    "issues_found": 16,
+    "critical": 5,
+    "major": 4,
+    "minor": 7
+  }
+}

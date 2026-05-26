@@ -1,0 +1,68 @@
+{
+  "validator": "reality-checker",
+  "batch": [16, 17],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "feasibility",
+      "task": 16,
+      "issue": "Step 3 (run migrate-tags.ts and migrate-posts.ts on app server) is ordered BEFORE Step 4 (CI deploy). The migration scripts do not exist on the app server (c48127@91.201.52.231) until after the CI rsync deploys them. Running `ls scripts/migrate-tags.ts` and `npx tsx scripts/migrate-tags.ts` in Step 3 will fail because the scripts are in the dev branch which hasn't been deployed yet. The same ordering problem appears in tech-spec line 332: 'run migration scripts, deploy Payload code' — migration must come AFTER deploy.",
+      "fix": "Move Step 3 (data migration scripts) to AFTER Step 4 (CI deploy completes successfully). Correct order: pg_dump → disable sync → merge+push → CI deploys Payload code → npx payload migrate (via CI) → run migrate-tags.ts → run migrate-posts.ts → touch reload → smoke verify → re-enable sync. Alternatively: CI should run migration scripts as part of the SSH step before payload migrate."
+    },
+    {
+      "severity": "critical",
+      "category": "hallucination",
+      "task": 16,
+      "issue": "Steps 1 and 8 instruct to disable/enable Telegram sync on the RED SERVER (144.31.204.181) via crontab or systemd. But per project memory (session 2026-05-20), the sync was MOVED to the NetAngels app server (c48127@91.201.52.231) during the migration. The cron runs via NetAngels panel: `*/30 * * * * /home/c48127/d-pub.ru/app/scripts/auto-sync.sh` using tsx. There is no sync cron or systemd timer on root@144.31.204.181.",
+      "fix": "Replace Steps 1 and 8 to disable/enable sync on the NETANGELS server (c48127@91.201.52.231). Method: either comment the cron in NetAngels control panel, or stop the process manually. The auto-sync.sh script is at /home/c48127/d-pub.ru/app/scripts/auto-sync.sh and uses tsx, not ts-node."
+    },
+    {
+      "severity": "critical",
+      "category": "hallucination",
+      "task": 17,
+      "issue": "Acceptance Criteria line 49 and Verification Step line 122 instruct to trigger sync by SSHing to the RED SERVER (root@144.31.204.181) and running `/opt/bots/telegram-bot-vac/scripts/sync-telegram.ts` with `npx ts-node`. Reality: sync runs on the NetAngels app server (c48127@91.201.52.231) at /home/c48127/d-pub.ru/app/scripts/auto-sync.sh using tsx. The path /opt/bots/telegram-bot-vac/ does not exist on the current infrastructure.",
+      "fix": "Replace the sync trigger with: `ssh c48127@91.201.52.231 'cd ~/d-pub.ru/app && node_modules/.bin/tsx scripts/sync-telegram.ts'` or invoke auto-sync.sh: `ssh c48127@91.201.52.231 '~/d-pub.ru/app/scripts/auto-sync.sh'`. Update AC line 49 accordingly."
+    },
+    {
+      "severity": "major",
+      "category": "hallucination",
+      "task": 16,
+      "issue": "Step 2 pg_dump uses `source ~/.env 2>/dev/null || true` to load DB_CONNECTION_STRING, but the actual env file on the NetAngels server is at `~/d-pub.ru/app/.env`, not `~/.env`. This means $DB_CONNECTION_STRING will be empty and pg_dump will fail to connect.",
+      "fix": "Replace `source ~/.env 2>/dev/null || true` with `source ~/d-pub.ru/app/.env 2>/dev/null || true`, or read the variable directly: `DB_CONNECTION_STRING=$(grep DB_CONNECTION_STRING ~/d-pub.ru/app/.env | cut -d= -f2-)`."
+    },
+    {
+      "severity": "major",
+      "category": "hallucination",
+      "task": 16,
+      "issue": "Step 5 describes the current deploy.yml as already containing 'SSH: npx payload migrate' step (step 8) and conditional 'touch reload' (step 9). The actual deploy.yml does NOT have a payload migrate SSH step — it only has a direct `touch reload` step with no payload migrate at all. This description is of the MODIFIED deploy.yml that Task 2 is supposed to create. If Task 2 has not been completed, the agent executing Task 16 will be confused by the mismatch.",
+      "fix": "Add a precondition note: 'Task 2 must be completed before Task 16 — deploy.yml must already contain the payload migrate SSH step. Verify with: grep -n \"payload migrate\" .github/workflows/deploy.yml'. The description in Step 5 is correct for the post-Task-2 state, but the current file state must be checked."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 17,
+      "issue": "Verification Step line 88 uses invalid curl flag `-L0`: `curl -s -o /dev/null -w \"%{http_code}\" -L0 https://d-pub.ru/admin`. `-L0` is not a valid curl flag combination (valid syntax would be `-L --max-redirs 0`). The comment below says 'без -L' but the code uses `-L0`. This will likely cause curl to either error or behave unexpectedly.",
+      "fix": "Remove `-L0` flag entirely. To check that /admin returns 302 without following the redirect, use: `curl -s -o /dev/null -w \"%{http_code}\" https://d-pub.ru/admin` (without -L). The expected HTTP code is 302, not 200."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 17,
+      "issue": "Step 8 (POST /api/articles with agent API key → 201) creates a real article with slug 'verify-test-agent' in production. If the task is run more than once (retry after failure), the second attempt will get a 409 conflict (unique slug constraint) instead of 201, causing a false-negative failure.",
+      "fix": "Use a dynamic slug with timestamp: `\"slug\":\"verify-test-$(date +%s)\"` to ensure uniqueness on retries. The Post-completion section already notes to delete the test article — add a check/cleanup step for any existing verify-test-* slugs before creating."
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 16,
+      "issue": "Rollback procedure (line 234) suggests `export NODE_ENV=development && npm run build` on the server for code rollback. Project memory explicitly states 'НЕ запускать npm run build на сервере' — builds run locally and are rsynced. Running build on the server may fail due to Node v10 system version (nvm must be sourced) and likely insufficient memory.",
+      "fix": "Update rollback procedure to match project deploy pattern: build locally, rsync to server, touch reload. If previous .next/ backup exists (from .next.backup/ per memory), restore it instead of rebuilding."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 2,
+    "claims_verified": 31,
+    "issues_found": 8
+  }
+}

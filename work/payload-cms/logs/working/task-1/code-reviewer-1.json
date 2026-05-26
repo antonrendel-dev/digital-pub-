@@ -1,0 +1,57 @@
+{
+  "reviewer": "code-reviewer",
+  "task": "task-1",
+  "round": 1,
+  "status": "needs_changes",
+  "summary": "The core async-params migration is mechanically correct and covers all 5 route files plus generateMetadata in each. However there is one critical type regression in vacancies/[category]/[slug]/page.tsx: the diff replaces `pt.tag.slug` with `pt.slug`, which breaks the existing Prisma data model where tags are accessed via the join relation `{ tag: { slug } }`, not directly. The FeedPost type has a flat `tags` array, but getPostBySlug returns a FeedPost built by toFeedPost(), so post.tags IS already the flat array — meaning pt.slug IS correct on the FeedPost. This needs verification against actual runtime shape. Additionally, the test mocks deviate significantly from the task spec (mock @/lib/posts instead of @/lib/vacancies, add getTagsWithCounts to tags mock) and the mock for @/lib/posts omits getPostsByType which is called by VacancyPage, causing the test to fail at runtime even though the TypeError check passes. The jest.config.ts change adding an explicit transform block that duplicates the preset's transform is redundant but harmless. The package.json version bump for next-mdx-remote is not reflected — it stays at 5.0.0 which may have React 18 as a peer dependency, creating a latent peer conflict that npm install will surface.",
+  "findings": [
+    {
+      "id": "CR-1",
+      "severity": "major",
+      "file": "app/vacancies/[category]/[slug]/page.tsx",
+      "line": 60,
+      "finding": "The diff changes `post.tags?.map((pt: { tag: { slug: string } }) => pt.tag?.slug)` to `post.tags?.map((pt) => pt.slug)`. The type annotation being removed was documenting that the raw Prisma query result uses a join shape `{ tag: { slug } }`. However, by the time VacancyPage receives `post`, it is a FeedPost (returned by getPostBySlug → toFeedPost), which already maps tags to `{ id, name, slug, tagType }`. So `pt.slug` is correct on the FeedPost. The removed explicit type annotation `(pt: { tag: { slug: string } })` was factually wrong for FeedPost but served as documentation. The fix introduces an implicit `any` inference risk if FeedPost type ever changes. This is not a runtime bug today but the removal of the explicit type annotation makes the code harder to audit — the correct annotation should be `(pt: FeedPost['tags'][number])` or let TypeScript infer from FeedPost.",
+      "suggestion": "Remove the cast entirely and let TypeScript infer: `post.tags?.map((pt) => pt.slug).filter(Boolean) ?? []` is already in the diff and is correct. No change needed to the runtime behavior. But add a type assertion comment or typed intermediate for clarity: `const slugs: string[] = post.tags?.map((pt) => pt.slug).filter((s): s is string => Boolean(s)) ?? []`"
+    },
+    {
+      "id": "CR-2",
+      "severity": "major",
+      "file": "tests/unit/async-params.test.ts",
+      "line": 12,
+      "finding": "The test mocks `@/lib/posts` with `{ getPostBySlug, getPostsByType, getPostById }`. But `VacancyPage` in `app/vacancies/[category]/[slug]/page.tsx` also calls `getTagBySlug` and `getTagsWithCounts` from `@/lib/tags`, and `getPostsByType` from `@/lib/posts`. The `@/lib/tags` mock in the test file does include `getTagsWithCounts` and `getTagBySlug`, so tags are covered. However the `category_slug_page_awaits_params` test expects `getPostBySlug` to be called — but does NOT import `getPostBySlug` from the mock in the assertion (it imports from `@/lib/posts` which IS mocked). This is fine. The deeper problem: VacancyPage calls `getPostsByType(post.type)` — but since `getPostBySlug` mock returns `null`, `post` is null and `notFound()` is thrown before that call. The `runSafe` wrapper catches it as an Error (not TypeError), so the test passes. This means the `getPostsByType` code path inside VacancyPage is never exercised in this test, making it a false positive — the test does not actually verify the page renders successfully, only that it does not throw TypeError.",
+      "suggestion": "Either accept this as intentional (the task spec says '200 or 404 but not 500/TypeError') or mock `getPostBySlug` to return a minimal valid FeedPost object so the full render path is exercised and `getPostsByType` is also reached."
+    },
+    {
+      "id": "CR-3",
+      "severity": "major",
+      "file": "tests/unit/async-params.test.ts",
+      "line": 11,
+      "finding": "The task spec (task-1.md, TDD Anchor section) explicitly requires mocking `@/lib/vacancies` with `getVacanciesByCategory` and `getVacancyBySlug`. The implemented test instead mocks `@/lib/posts` with `getPostsByType`. The module `@/lib/vacancies` does not appear to exist in the codebase (the actual data access is in `@/lib/posts` and `@/lib/tags`). If `@/lib/vacancies` was listed in the spec but does not exist, the spec was wrong. However if it does exist as an alias or re-export, its absence from the mock list will cause a DB connection error when VacancyPage tries to import it, masking the TypeError signal. This needs explicit confirmation that `@/lib/vacancies` does not exist.",
+      "suggestion": "Verify with `find . -name 'vacancies.ts' -path '*/lib/*'`. If it does not exist, add a comment in the test explaining the spec listed a non-existent module. If it exists, add the mock."
+    },
+    {
+      "id": "CR-4",
+      "severity": "minor",
+      "file": "package.json",
+      "line": 21,
+      "finding": "`next-mdx-remote` stays at `5.0.0`. The tech-spec implementation hints explicitly warn: 'check next-mdx-remote@5.0.0 — may require React 18'. React 19 is now installed. If next-mdx-remote 5.0.0 declares `react: '^18'` as a peer dependency, `npm install` will emit peer warnings, and `npm install --legacy-peer-deps` may be silently required. This is a deployment risk: npm ci on the server will fail without --legacy-peer-deps if there are hard peer conflicts.",
+      "suggestion": "Run `npm info next-mdx-remote@5.0.0 peerDependencies` to check. If it requires React 18, upgrade next-mdx-remote to a version that declares React 19 compatibility, or add `\"overrides\": { \"next-mdx-remote\": { \"react\": \"^19\" } }` to package.json. Document the choice in decisions.md per the task spec."
+    },
+    {
+      "id": "CR-5",
+      "severity": "minor",
+      "file": "jest.config.ts",
+      "line": 5,
+      "finding": "The added `transform` block explicitly configures ts-jest with `{ tsconfig: { jsx: 'react-jsx' } }`. The `preset: 'ts-jest'` already sets up ts-jest as the transformer. This creates a redundant override that is not wrong per se, but if the project's `tsconfig.json` already has `jsx: 'react-jsx'` (standard for Next.js), this override is unnecessary noise. If tsconfig.json has a different jsx setting (e.g. `preserve`), then the override IS needed — but should be documented.",
+      "suggestion": "Check `tsconfig.json` compilerOptions.jsx. If it is already `react-jsx`, remove the redundant transform override. If not, keep it but add a comment explaining why it overrides the tsconfig value."
+    },
+    {
+      "id": "CR-6",
+      "severity": "low",
+      "file": "package.json",
+      "line": 19,
+      "finding": "`next` is pinned to `\"^15.0.0\"` which resolves to the latest 15.x at install time. At time of writing (2026-05), Next.js 15 has had several patch releases. The caret range is acceptable per the task spec instruction, but without a lockfile commit this means different environments may get different 15.x versions. The task does not require pinning to a specific patch, but the risk should be noted.",
+      "suggestion": "Ensure package-lock.json is committed after npm install so all environments (CI, staging, prod) use the identical resolved version."
+    }
+  ]
+}

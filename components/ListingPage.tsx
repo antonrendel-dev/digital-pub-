@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
 import RightSidebar from './RightSidebar'
+import TagsSidebar from './TagsSidebar'
 import Feed from './feed/Feed'
 import Footer from './Footer'
 import { FeedPost } from '@/lib/posts'
@@ -18,6 +19,7 @@ interface ListingPageProps {
   currentPage?: number
   totalPages?: number
   total?: number
+  seoHtml?: string
 }
 
 export default function ListingPage({
@@ -28,6 +30,7 @@ export default function ListingPage({
   currentPage = 1,
   totalPages = 1,
   total,
+  seoHtml,
 }: ListingPageProps) {
   const { isDark, toggleDark } = useTheme()
   const [searchQuery, setSearchQuery] = useState('')
@@ -45,6 +48,12 @@ export default function ListingPage({
               <LeftSidebar stats={stats} />
             </aside>
             <div>
+              {/* Tags rubricator — mobile/tablet only (desktop: right sidebar) */}
+              {tags && tags.length > 0 && (
+                <div className="lg:hidden mb-4">
+                  <TagsSidebar tags={tags} />
+                </div>
+              )}
               <Feed
                 posts={posts}
                 searchQuery={searchQuery}
@@ -106,6 +115,15 @@ export default function ListingPage({
                   Страница {currentPage} из {totalPages} ({total}{' '}
                   {type === 'vacancy' ? 'вакансий' : 'резюме'})
                 </div>
+              )}
+
+              {seoHtml && (
+                <article className="mt-12 pt-8 border-t border-border">
+                  <div
+                    className="prose prose-sm max-w-none text-text-muted [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_a]:text-accent [&_a]:underline [&_strong]:font-semibold [&_strong]:text-text"
+                    dangerouslySetInnerHTML={{ __html: seoHtml }}
+                  />
+                </article>
               )}
             </div>
             <aside className="hidden lg:block">

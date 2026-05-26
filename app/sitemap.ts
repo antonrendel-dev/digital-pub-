@@ -4,7 +4,29 @@ import { prisma } from '@/lib/prisma'
 
 const BASE_URL = 'https://d-pub.ru'
 
-export const revalidate = 3600 // rebuild sitemap every hour
+export const dynamic = 'force-dynamic'
+
+// Static fallback so tag pages are always in sitemap even if DB is unreachable at build time
+const KNOWN_TAG_SLUGS = [
+  'smm',
+  'seo',
+  'dizajn',
+  'marketing',
+  'menedzher',
+  'target',
+  'razrabotka',
+  'analitika',
+  'finansy',
+  'kreativ',
+  'copywriting',
+  'content',
+  'udalyonka',
+  'ofis',
+  'gibrid',
+  'junior',
+  'middle',
+  'senior',
+]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
@@ -18,17 +40,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ]
 
-  // Category pages (vacancies + resumes) — slugs sourced from DB
-  let tagRoutes: MetadataRoute.Sitemap = []
+  // Category pages (vacancies + resumes) — slugs from DB with static fallback
+  let tagSlugs: string[] = KNOWN_TAG_SLUGS
   try {
     const tags = await prisma.tag.findMany({ select: { slug: true } })
-    tagRoutes = tags.flatMap(({ slug }) => [
-      { url: `${BASE_URL}/vacancies/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.8 },
-      { url: `${BASE_URL}/resumes/tag/${slug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.7 },
-    ])
+    if (tags.length > 0) tagSlugs = tags.map((t) => t.slug)
   } catch {
-    console.warn('[sitemap] DB unavailable, skipping tag routes')
+    console.warn('[sitemap] DB unavailable, using static tag list')
   }
+  const tagRoutes: MetadataRoute.Sitemap = tagSlugs.flatMap((slug) => [
+    {
+      url: `${BASE_URL}/vacancies/${slug}`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/resumes/tag/${slug}`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.7,
+    },
+  ])
 
   // Articles
   const articles = getArticles()
@@ -51,12 +84,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: {
         slug: true,
         type: true,
-        createdAt: true,
+        updatedAt: true,
         tags: {
           select: { tag: { select: { slug: true, tagType: true } } },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
     })
 
     postRoutes = posts
@@ -70,7 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             : `${BASE_URL}/post/${p.slug}`
         return {
           url,
-          lastModified: p.createdAt,
+          lastModified: p.updatedAt,
           changeFrequency: 'weekly' as const,
           priority: 0.5,
         }

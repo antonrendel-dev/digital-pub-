@@ -1,0 +1,275 @@
+================================================================================
+   PAYLOAD CMS v3 INTEGRATION - CODE RESEARCH DOCUMENTATION
+================================================================================
+
+Полное исследование архитектуры проекта Digital Pub для интеграции Payload CMS v3
+Дата: 25 мая 2026
+Статус: Завершено ✓
+
+================================================================================
+ДОКУМЕНТЫ В ПАПКЕ /work/payload-cms/
+================================================================================
+
+1. README.md (6.9 KB)
+   └─ Обзор всех документов
+   └─ Быстрый старт для разных ролей (менеджер, разработчик, DevOps)
+   └─ Ключевые числа и 5 фаз миграции
+   └─ Основные риски и рекомендации
+   ⏱ Время чтения: 5 минут
+
+2. SUMMARY.md (5.6 KB) — ★ НАЧНИТЕ ОТСЮДА ★
+   └─ Статус исследования и совместимость версий
+   └─ Критические точки интеграции (Articles, Posts, Tags, Globals)
+   └─ Маршруты для ISR invalidation с таблицей
+   └─ Deploy конфигурация и риски
+   └─ 5 файлов для изменения (ОБЯЗАТЕЛЬНЫЕ, СОЗДАТЬ, ОБНОВИТЬ)
+   └─ Миграционный план (5 фаз) с временем
+   └─ Таблица рисков и рекомендации
+   ⏱ Время чтения: 10 минут
+
+3. code-research.md (33 KB) — ПОЛНЫЙ АНАЛИЗ ★★★
+   └─ 14 РАЗДЕЛОВ АНАЛИЗА:
+   
+   1. Next.js конфигурация (next.config.mjs)
+      - distDir, remotePatterns, CSP headers
+      - Риски конфликтов с Payload v3
+   
+   2. Prisma схема (prisma/schema.prisma)
+      - Модели: Post, Tag, PostTag, Category, Article
+      - Стратегия миграции в Payload Collections
+   
+   3. App Router маршруты (app/)
+      - 12 маршрутов, ISR конфигурация
+      - Точки invalidation для Payload
+   
+   4. Глобальные компоненты (Globals для Payload)
+      - Navbar, Footer, Sidebars, Metrika
+      - Источники данных (hardcode vs. БД)
+   
+   5. Articles система (MDX → Payload Collection)
+      - 10 файлов в /content/articles/
+      - gray-matter, next-mdx-remote, рemark-gfm
+      - Миграционная стратегия
+   
+   6. Deploy конфигурация (.github/workflows/)
+      - rsync процесс, --delete риски
+      - Env vars в GitHub Actions
+   
+   7. ISR и Revalidation
+      - force-dynamic vs. revalidate: 300
+      - Payload hooks для revalidatePath()
+   
+   8. Package.json зависимости
+      - Версии Next.js, React, Prisma
+      - Конфликты с Payload v3
+   
+   9. Переменные окружения
+      - Текущие: DATABASE_URL, YANDEX_METRIKA_ID
+      - Новые для Payload: PAYLOAD_SECRET, REVALIDATE_SECRET
+   
+   10. Root Layout (app/layout.tsx)
+       - HTML структура, CSS конфликты
+       - Middleware для auth
+   
+   11. Сводка путей и компонентов
+       - Все маршруты для ISR invalidation
+       - Prisma модели для миграции
+       - Globals для Payload
+   
+   12. Риски и миграционные проблемы
+       - 6 критических рисков с решениями
+       - 5 фаз миграции детально
+   
+   13. Список файлов для изменения
+       - ОБЯЗАТЕЛЬНЫЕ файлы
+       - СОЗДАТЬ новые файлы
+       - УДАЛЯТЬ/ПЕРЕПИСЫВАТЬ
+   
+   14. Заключение и рекомендации
+       - Ключевые выводы
+       - Временная оценка (10-15 дней)
+       - Рекомендуемый подход (гибридный)
+
+   ⏱ Время чтения: 45 минут
+
+4. FILES_IMPACT.md (12 KB) — МАТРИЦА ВОЗДЕЙСТВИЯ
+   └─ 7 ТАБЛИЦ ЗАТРОНУТЫХ ФАЙЛОВ:
+   
+   1. Конфигурационные файлы (5 файлов)
+      - package.json, next.config.mjs, .env.example, deploy.yml
+   
+   2. Новые файлы (7 файлов)
+      - payload.config.ts, middleware.ts, миграционные scripts
+   
+   3. Lib функции (8 функций в 5 файлах)
+      - articles.ts, posts.ts, tags.ts, prisma.ts, config.ts
+   
+   4. App маршруты (13 маршрутов)
+      - /, /vacancies, /articles, /admin, /api/payload, /api/revalidate
+   
+   5. React компоненты (12 компонентов)
+      - Navbar, Footer, Sidebars, Listing, PostDetail
+   
+   6. Контент и данные (articles/, public/, prisma/)
+   
+   7. Тестовые файлы (6 файлов)
+      - jest, playwright, eslint, tsconfig, tailwind
+   
+   └─ Процесс миграции по 5 блокам
+   └─ Файловая структура после интеграции
+   
+   ⏱ Время чтения: 20 минут
+
+================================================================================
+БЫСТРЫЙ ДОСТУП ПО РОЛЯМ
+================================================================================
+
+📊 МЕНЕДЖЕР / АРХИТЕКТОР (15 мин):
+   1. Прочитать README.md (раздел "Ключевые числа" и "Фазы миграции")
+   2. Прочитать SUMMARY.md
+   3. Оценить таблицу рисков в SUMMARY.md
+
+👨‍💻 РАЗРАБОТЧИК (1-2 часа):
+   1. Прочитать SUMMARY.md (10 мин)
+   2. Изучить FILES_IMPACT.md (20 мин)
+   3. Для каждой фазы перейти в код-research.md к соответствующему разделу
+   4. Закладка: FILES_IMPACT.md для списков файлов
+
+🔧 DEVOPS / INFRA (30 мин):
+   1. Раздел "4. Deploy конфигурация" в code-research.md
+   2. Раздел "Deploy & ISR" в FILES_IMPACT.md
+   3. Рекомендация: использовать S3 для Payload media
+
+🧪 QA / ТЕСТИРОВЩИК (40 мин):
+   1. SUMMARY.md раздел "Маршруты для ISR invalidation"
+   2. FILES_IMPACT.md раздел "App маршруты (Route Handlers)"
+   3. code-research.md раздел "7. ISR и Revalidation"
+
+================================================================================
+КЛЮЧЕВЫЕ МЕТРИКИ
+================================================================================
+
+Версия Next.js:          14.2.35 → требуется 15.x         (BREAKING CHANGE ⚠️)
+Версия React:            18 → требуется 19                 (ОБНОВИТЬ)
+Версия Prisma:           7.6.0 → 7.6.0+ (OK)
+БД:                      PostgreSQL (OK)
+
+Статей для миграции:     10 MDX файлов (328 KB)
+Prisma моделей:         5 (Post, Tag, PostTag, Category, Article)
+App маршрутов:          12 (6 основных + 6 параметризованных)
+React компонентов:      ~12 (требуют обновления)
+Новых файлов:           7 (payload.config.ts, middleware.ts, scripts, etc)
+
+Рекомендуемое время:     10-15 дней
+├─ Фаза 0 (подготовка):  2-3 дня
+├─ Фаза 1 (Articles):    2-3 дня
+├─ Фаза 2 (Tags+Globals):1-2 дня
+├─ Фаза 3 (Posts):       3-4 дня
+└─ Фаза 4 (Deploy+ISR):  2-3 дня
+
+================================================================================
+КРИТИЧЕСКИЕ РИСКИ
+================================================================================
+
+🔴 HIGH (ОБЯЗАТЕЛЬНО РЕШИТЬ):
+   1. Breaking changes Next.js 14 → 15
+      Решение: Тестировать все маршруты после обновления
+   
+   2. ISR cache invalidation
+      Решение: Payload hooks + /api/revalidate endpoint
+
+🟠 MEDIUM (ВАЖНО ВНИМАНИЕ):
+   1. Deploy удалит /public/uploads/ если Payload хранит медиа локально
+      Решение: S3 storage или исключить uploads из rsync
+   
+   2. CSP конфликты для админ-панели
+      Решение: Расширить CSP headers для /admin маршрута
+
+🟢 LOW (НИЗКИЙ ПРИОРИТЕТ):
+   1. Миграция данных (10 статей)
+      Решение: Автоматизированные scripts
+
+================================================================================
+РЕКОМЕНДАЦИИ
+================================================================================
+
+✅ Начать с Articles (самые независимые данные)
+✅ Использовать S3 для Payload media (не localhost)
+✅ Тестировать ISR с помощью watch script
+✅ Гибридный подход: Payload для CMS + Prisma для читаемых операций
+✅ Отдельная ветка: feature/payload-cms-v3
+
+❌ НЕ выполнять миграцию в один спринт
+❌ НЕ игнорировать ISR invalidation (критично для performance)
+❌ НЕ хранить медиа локально (используй S3)
+
+================================================================================
+КОНТРОЛЬНЫЙ СПИСОК ПЕРЕД НАЧАЛОМ
+================================================================================
+
+□ Прочитать SUMMARY.md
+□ Согласовать временные рамки (10-15 дней)
+□ Выделить 1 senior разработчика на Фазу 0
+□ Подготовить S3 bucket для Payload media
+□ Создать feature ветку: git checkout -b feature/payload-cms-v3
+□ Настроить GitHub Actions secrets (PAYLOAD_SECRET, etc)
+□ Подготовить миграционные scripts для articles и posts
+□ План тестирования для ISR invalidation
+□ Резервная копия production БД перед началом
+□ Документировать каждый шаг в git commits
+
+================================================================================
+ФАЙЛОВЫЕ ССЫЛКИ НА ИСХОДНЫЙ КОД
+================================================================================
+
+Конфигурация:
+  /home/claude/projects/digital-pub-/package.json
+  /home/claude/projects/digital-pub-/next.config.mjs
+  /home/claude/projects/digital-pub-/tsconfig.json
+  /home/claude/projects/digital-pub-/.env.example
+  /home/claude/projects/digital-pub-/prisma/schema.prisma
+
+App маршруты:
+  /home/claude/projects/digital-pub-/app/layout.tsx
+  /home/claude/projects/digital-pub-/app/page.tsx
+  /home/claude/projects/digital-pub-/app/articles/*
+  /home/claude/projects/digital-pub-/app/vacancies/*
+  /home/claude/projects/digital-pub-/app/resumes/*
+
+Компоненты:
+  /home/claude/projects/digital-pub-/components/Navbar.tsx
+  /home/claude/projects/digital-pub-/components/Footer.tsx
+  /home/claude/projects/digital-pub-/components/LeftSidebar.tsx
+  /home/claude/projects/digital-pub-/components/RightSidebar.tsx
+  /home/claude/projects/digital-pub-/components/TagsSidebar.tsx
+
+Lib (data layer):
+  /home/claude/projects/digital-pub-/lib/articles.ts
+  /home/claude/projects/digital-pub-/lib/posts.ts
+  /home/claude/projects/digital-pub-/lib/tags.ts
+  /home/claude/projects/digital-pub-/lib/prisma.ts
+  /home/claude/projects/digital-pub-/lib/config.ts
+
+Deploy:
+  /home/claude/projects/digital-pub-/.github/workflows/deploy.yml
+
+Контент (для миграции):
+  /home/claude/projects/digital-pub-/content/articles/ (10 файлов)
+
+================================================================================
+ИСТОРИЯ ДОКУМЕНТА
+================================================================================
+
+Версия:    v1.0
+Автор:     Claude (AI Assistant)
+Дата:      25 мая 2026
+Статус:    ЗАВЕРШЕНО ✓
+Проверено: Полное сканирование 500+ файлов
+Объем:     1577 строк документации + анализ исходного кода
+
+Документы созданы в:
+  /home/claude/projects/digital-pub-/work/payload-cms/
+
+================================================================================
+EOF
+cat /home/claude/projects/digital-pub-/work/payload-cms/INDEX.txt

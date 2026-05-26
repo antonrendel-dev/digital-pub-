@@ -1,0 +1,82 @@
+{
+  "validator": "reality-checker",
+  "batch": [7, 8, 9],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "missing_function",
+      "task": 8,
+      "issue": "getStats() uses prisma.post.groupBy() for companyCount. Task 8 says to replace with 4x payload.find({ limit: 0 }) calls, but Payload Local API has no groupBy(). The companyCount metric (distinct company values) cannot be computed via payload.find({ limit: 0, totalDocs }) alone — it requires either a raw SQL query or loading all companies and deduplicating in memory. Task 8 does not address this gap, leaving the implementer without a concrete approach for companyCount.",
+      "fix": "Add an explicit edge case note: companyCount requires loading posts with company field and deduplicating in memory (payload.find({ collection: 'posts', where: { status: { equals: 'published' }, company: { not_equals: null } }, select: { company: true }, limit: 0 }) won't give distinct count). Either use a raw SQL fallback via payload.db.drizzle or store companyCount as a separate field on a SiteStats global, or remove companyCount from getStats() return shape and update callers."
+    },
+    {
+      "severity": "critical",
+      "category": "hallucination",
+      "task": 9,
+      "issue": "Task 9 references `payload.findGlobal({ slug: 'navbar' })` as the Payload Local API method for reading Globals. The Payload v3 Local API method for reading a Global is `payload.findGlobal({ slug })` — this is correct API naming in Payload v3. However, Payload packages are NOT yet installed (not in package.json, node_modules/@payloadcms does not exist). Task 9 depends on Task 3 (Payload installation), but if the implementer starts on Task 9 without Task 3 complete, the import `from 'payload'` will fail entirely. This is a wave dependency gap — Task 9 is Wave 4 and must wait for Wave 2 (Task 3) to be fully complete, including npm install, before `getPayload` or `payload.findGlobal` work. The task's depends_on correctly lists [4, 5, 6, 7] but not [3] explicitly — and Task 3 is the one that actually installs Payload packages.",
+      "fix": "Add Task 3 to depends_on list of Task 9 (and Task 8). Without it, the wave ordering is: Wave 2 must complete before Wave 3, Wave 3 before Wave 4 — but the dependency chain should make this explicit. Update depends_on: [3, 4, 5, 6, 7]."
+    },
+    {
+      "severity": "major",
+      "category": "missing_function",
+      "task": 8,
+      "issue": "Task 8 lists all function signatures to preserve including getStats() in the acceptance criteria, but getStats() is defined in lib/tags.ts (not lib/posts.ts). Task 8's 'What to do' section only instructs rewriting lib/tags.ts and lib/posts.ts — yet getStats() lives in lib/tags.ts (confirmed at line 88) and uses prisma.post.groupBy() which has no Payload equivalent. The task description covers getStats() in step 2 under lib/tags.ts rewrite, but the companyCount computation gap is undocumented. The Payload replacement approach ('four calls with limit: 0') is correct for vacancyCount, resumeCount, newToday — but not for companyCount.",
+      "fix": "In the 'What to do' step for lib/tags.ts getStats() rewrite, add explicit note: companyCount cannot use limit:0 totalDocs — suggest in-memory dedup of company values from a full payload.find call, or document that companyCount is dropped/approximated."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 9,
+      "issue": "Task 9 instructs updating components/Footer.tsx by 'adding async' — but Footer.tsx is currently a plain server component (no 'use client' directive, confirmed in file). However, PageShell.tsx IS a 'use client' component that imports and renders Footer directly. A server component cannot be async-rendered from a client component in Next.js. PageShell renders Footer via import — if PageShell remains 'use client', making Footer async is valid (Next.js supports async server components as children of client components when passed as children/slots, but NOT when directly imported). Task 9 should flag this: making Footer async while PageShell directly imports it as a client component import may cause build issues or require PageShell refactoring.",
+      "fix": "Add note: PageShell.tsx is 'use client' and directly imports Footer. To make Footer async (server component calling payload.findGlobal), either: (1) move Footer out of PageShell and into the server layout above PageShell, or (2) create FooterServer.tsx that PageShell accepts as a children/slot prop. Current architecture requires PageShell restructuring — task should mention this."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 9,
+      "issue": "Task 9 instructs creating LeftSidebarServer.tsx to pass channels prop to LeftSidebar, and updating 'where LeftSidebar is used' (HomePage.tsx, ListingPage.tsx) to use LeftSidebarServer. However, both HomePage.tsx and ListingPage.tsx are 'use client' components (they use useState/hooks). A 'use client' component cannot import a server component. The server wrapper pattern (LeftSidebarServer passes channels as props to client LeftSidebar) is correct, but the wiring point must be in a server component above HomePage/ListingPage — not inside them. Task 9 does not explain this constraint or where the actual wiring should happen.",
+      "fix": "Clarify that since HomePage.tsx and ListingPage.tsx are 'use client', they cannot import LeftSidebarServer. The channels prop must be fetched at the page level (app/page.tsx, app/vacancies/page.tsx, etc. — which are server components) and passed down through HomePage/ListingPage as a prop. Task should explicitly instruct modifying the page-level server components to fetch channels and pass them down."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 9,
+      "issue": "Task 9 says Navbar is 'use client' with useState, and instructs creating NavbarServer.tsx as a server wrapper that passes slogan as prop. However, the current Navbar interface only accepts { onSearch, onDarkToggle, isDark } — no slogan prop. Adding a slogan prop requires modifying both Navbar's TypeScript interface AND NavbarServer.tsx. More critically, PageShell.tsx is 'use client' and directly renders Navbar — task 9 instructs updating app/layout.tsx or PageShell.tsx to use NavbarServer, but PageShell is a client component and cannot render a server component via direct import. The wiring point for NavbarServer must be at a server-component level above PageShell.",
+      "fix": "Task must explicitly state: (1) add slogan?: string prop to Navbar's NavbarProps interface; (2) NavbarServer cannot be rendered inside PageShell.tsx ('use client') — it must be placed in a server component wrapper above PageShell (e.g., in app/layout.tsx directly, or a new ServerLayout component). This requires restructuring the PageShell/layout hierarchy."
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 7,
+      "issue": "Task 7 references 'Navbar.tsx строка 48' for the slogan. The actual file has the slogan at line 48: 'Место, где встречаются хорошие люди' inside a <div className='text-xs text-text-muted hidden sm:block'>. This is correct and verified. However, task 7 also says 'SocialChannels → url: JSX href атрибутов на <a> обёртках SubCard' — LeftSidebar.tsx indeed uses <a href='...'> wrappers around SubCard. The actual hrefs match the seed data in the task (Telegram, Макс, ВКонтакте URLs). Additionally, lib/config.ts ONLY has subscribers (no name/url), which matches the task's instruction. All seed data verified as accurate.",
+      "fix": "No fix needed — minor note that seed values are correct and references are accurate. This is an informational finding."
+    },
+    {
+      "severity": "minor",
+      "category": "tdd",
+      "task": 8,
+      "issue": "TDD Anchor for Task 8 specifies test file paths as tests/lib/tags.test.ts and tests/lib/posts.test.ts, but the project's test directory structure uses tests/unit/ (e.g., tests/unit/articles.test.ts, tests/unit/slug-validation.test.ts). There is no tests/lib/ directory in the project.",
+      "fix": "Change TDD Anchor test file paths to tests/unit/tags.test.ts and tests/unit/posts.test.ts to match actual project test directory conventions."
+    },
+    {
+      "severity": "minor",
+      "category": "tdd",
+      "task": 9,
+      "issue": "TDD Anchor specifies test file path as tests/articles-merge.test.ts (root of tests/), but project convention places unit tests in tests/unit/. No file exists at tests/articles-merge.test.ts.",
+      "fix": "Change test path to tests/unit/articles-merge.test.ts to match project convention."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 9,
+      "issue": "Task 9 mentions: 'MDX-статьи используют поле date из frontmatter как publishedAt'. Actual MDX files in content/articles/ use the field name publishedAt (not date) — verified from kak-nayti-rabotu-smm-menedzheru-2026.mdx frontmatter. The lib/articles.ts frontmatterSchema also expects publishedAt. Task 9's concern about a date vs publishedAt mismatch is unfounded — real MDX files already use publishedAt consistently.",
+      "fix": "Remove the 'date vs publishedAt' edge case warning from Task 9 (or keep it as a 'verify' step), since actual files already use publishedAt. No mapping code needed."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 38,
+    "issues_found": 10
+  }
+}

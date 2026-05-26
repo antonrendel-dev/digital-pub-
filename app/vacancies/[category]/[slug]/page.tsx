@@ -9,11 +9,12 @@ import JsonLd from '@/components/JsonLd'
 export const revalidate = 300 // ISR: refresh every 5 minutes
 
 interface Props {
-  params: { category: string; slug: string }
+  params: Promise<{ category: string; slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug)
+  const { category, slug } = await params
+  const post = await getPostBySlug(slug)
   if (!post) return { title: 'Вакансия не найдена' }
 
   const rawTitle = `${post.title}${post.salary ? ` (${post.salary})` : ''} — вакансия`
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const rawDesc = `${post.company ? post.company + ': ' : ''}${post.title}.${post.salary ? ' Зарплата: ' + post.salary + '.' : ''} Смотреть на Диджитал Паб.`
   const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
 
-  const url = `https://d-pub.ru/vacancies/${params.category}/${params.slug}`
+  const url = `https://d-pub.ru/vacancies/${category}/${slug}`
 
   return {
     title,
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function VacancyPage({ params }: Props) {
-  const { category, slug } = params
+  const { category, slug } = await params
   const post = await getPostBySlug(slug)
   if (!post) notFound()
 
@@ -54,6 +55,16 @@ export default async function VacancyPage({ params }: Props) {
     getTagsWithCounts(),
   ])
 
+  // Determine job location type from post tags
+  const postTagSlugs = new Set(post.tags?.map((pt) => pt.slug).filter(Boolean) ?? [])
+  const jobLocationType = postTagSlugs.has('udalyonka')
+    ? 'TELECOMMUTE'
+    : postTagSlugs.has('gibrid')
+      ? 'TELECOMMUTE'
+      : postTagSlugs.has('ofis')
+        ? 'INPERSON'
+        : undefined
+
   // Schema.org JobPosting
   const jobPostingLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -61,8 +72,7 @@ export default async function VacancyPage({ params }: Props) {
     title: post.title,
     description: post.description || post.title,
     datePosted: post.createdAt,
-    employmentType: 'FULL_TIME',
-    jobLocationType: 'TELECOMMUTE',
+    ...(jobLocationType && { jobLocationType }),
     ...(post.company && {
       hiringOrganization: {
         '@type': 'Organization',
@@ -89,7 +99,14 @@ export default async function VacancyPage({ params }: Props) {
       { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
       { '@type': 'ListItem', position: 2, name: 'Вакансии', item: 'https://d-pub.ru/vacancies' },
       ...(tag
-        ? [{ '@type': 'ListItem', position: 3, name: tag.name, item: `https://d-pub.ru/vacancies/${category}` }]
+        ? [
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: tag.name,
+              item: `https://d-pub.ru/vacancies/${category}`,
+            },
+          ]
         : []),
       { '@type': 'ListItem', position: tag ? 4 : 3, name: post.title },
     ],

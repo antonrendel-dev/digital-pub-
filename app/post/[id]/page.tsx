@@ -9,11 +9,12 @@ import PostDetail from '@/components/PostDetail'
 const idSchema = z.string().regex(/^\d{1,10}$/)
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const parsed = idSchema.safeParse(params.id)
+  const { id } = await params
+  const parsed = idSchema.safeParse(id)
   if (!parsed.success) return { title: 'Запись не найдена' }
 
   const post = await getPostById(parseInt(parsed.data, 10))
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const rawDesc = `${post.company ? post.company + ': ' : ''}${post.title}.${post.salary ? ' Зарплата: ' + post.salary + '.' : ''} Смотреть на Диджитал Паб.`
   const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
 
-  const url = `https://d-pub.ru/post/${params.id}`
+  const url = `https://d-pub.ru/post/${id}`
 
   return {
     title,
@@ -48,7 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PostPage({ params }: Props) {
-  const { id: rawId } = params
+  const { id: rawId } = await params
   const parsed = idSchema.safeParse(rawId)
   if (!parsed.success) notFound()
   const id = parseInt(parsed.data, 10)

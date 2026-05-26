@@ -1,0 +1,96 @@
+{
+  "validator": "reality-checker",
+  "batch": [4, 5, 6],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 4,
+      "issue": "Task 4 depends on Task 3 outputs: payload/collections/tags.ts stub, payload.config.ts, and installed Payload packages. None of these exist yet. The payload/ directory does not exist, payload.config.ts does not exist, and neither payload nor @payloadcms packages are installed in node_modules. Task 4 cannot be executed until Task 3 is complete.",
+      "fix": "Ensure Task 3 is fully completed before starting Task 4. Verify: (1) payload/ directory created with collection stubs, (2) payload.config.ts exists at project root, (3) 'payload', '@payloadcms/next', '@payloadcms/db-postgres', '@payloadcms/richtext-lexical', 'sharp' are in package.json and installed."
+    },
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 5,
+      "issue": "Same prerequisite issue as Task 4: payload/collections/posts.ts stub, payload.config.ts, and Payload packages do not exist. Additionally, payload-migrations/ directory does not exist and must be created by Task 5. Task 5 also depends on Task 4 (Tags Collection) for the migration script to resolve tag IDs — but Task 5's frontmatter only declares depends_on: [3], not [3, 4].",
+      "fix": "Add Task 4 to depends_on in Task 5 frontmatter (depends_on: [3, 4]) since migrate-posts.ts resolves Payload tag IDs by slug, requiring tags to already exist in Payload. Also ensure Task 3 completes first."
+    },
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 6,
+      "issue": "payload/collections/articles.ts and payload/collections/media.ts stubs do not exist (payload/ directory is entirely absent). Task 6 cannot be executed until Task 3 creates these stubs.",
+      "fix": "Ensure Task 3 completes before Task 6. Wave 3 tasks (4, 5, 6, 7) should not start until payload/ directory and all stubs are created by Task 3."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 5,
+      "issue": "Task 5 frontmatter declares depends_on: [3] but the migration script (migrate-posts.ts) requires Payload tags collection to already be populated to resolve slug→ID mapping. This means Task 4 (Tags Collection + Migration Script) must be completed AND the migration script must have been run before migrate-posts.ts can work correctly. The task description says 'Task 4 — желательно завершить' (desirable, not required) which understates the hard dependency.",
+      "fix": "Update frontmatter to depends_on: [3, 4]. In the task description, change 'желательно' to 'обязательно' for the Task 4 dependency. The migrate-posts.ts script cannot correctly resolve tag IDs without Task 4's Tags collection being filled."
+    },
+    {
+      "severity": "major",
+      "category": "hints",
+      "task": 4,
+      "issue": "The Details section of Task 4 contains a full, working implementation of the toRichText() function (complete TypeScript code block with exact logic) and a complete tags collection definition (full CollectionConfig object with all fields and hooks). This crosses from implementation hint into prescribing the full solution — violates the hints-not-implementations rule.",
+      "fix": "Replace full code blocks with references to patterns: 'See tech-spec Data Models section for the full collection definition. For Lexical JSON structure see tech-spec Data Migration note on Lexical v0.21+ format.' Remove the complete code implementations from Details."
+    },
+    {
+      "severity": "major",
+      "category": "hints",
+      "task": 5,
+      "issue": "The Details section contains a complete afterChange hook implementation with exact TypeScript code, a complete field mapping table, and pseudocode for the 'Дублировать пост' admin action with step-by-step algorithm. This prescribes the solution rather than pointing to patterns.",
+      "fix": "Replace full hook code block with reference to tech-spec Decision 3 and the pattern from Task 4's afterChange implementation. Keep the field mapping table (it's reference data, not code). Replace admin action algorithm with a description of desired behavior only."
+    },
+    {
+      "severity": "major",
+      "category": "hints",
+      "task": 6,
+      "issue": "Details section includes a complete implementation hint: 'req.user?.role === \"admin\" ? true : { status: { equals: \"published\" } }' as a full code pattern for read access control. While shorter than Tasks 4-5 examples, it still provides the exact implementation. Also notes 'async ({ doc }: { doc: any }) => { ... }' type annotation.",
+      "fix": "Replace with: 'For the read access control Where-filter pattern, see tech-spec Data Models → articles collection access definition.' Keep the edge case note about not using false for non-admins as it is a behavioral warning, not code."
+    },
+    {
+      "severity": "major",
+      "category": "tdd",
+      "task": 4,
+      "issue": "Task 4 TDD Anchor specifies test file path as 'tests/migrate-tags.test.ts (or __tests__/migrate-tags.test.ts in зависимости от структуры)'. The jest.config.ts matches pattern '**/tests/**/*.test.ts', so the correct path is tests/migrate-tags.test.ts. However, current test files are in tests/ root (e.g. tests/articles.test.ts, tests/tag-matching.test.ts) not in a tests/unit/ subdirectory. The parenthetical uncertainty about __tests__/ is incorrect for this project.",
+      "fix": "Remove the __tests__/ alternative — it does not match the jest.config.ts pattern '**/tests/**/*.test.ts'. Use 'tests/migrate-tags.test.ts' definitively."
+    },
+    {
+      "severity": "major",
+      "category": "tdd",
+      "task": 5,
+      "issue": "Same test path ambiguity: tests/migrate-posts.test.ts is correct per jest.config.ts, but task does not clarify this. Additionally, the 'migrate-posts: tags relationship' test checks that 'at least one migrated post has non-empty tags array' — this tests the migration script's behavior against a mocked Payload, which is correct. However, with mocked Prisma data, the test author must ensure mock data includes PostTag records, which is not mentioned.",
+      "fix": "Specify 'tests/migrate-posts.test.ts' explicitly and note that mock Prisma data for the tags relationship test must include PostTag records."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 5,
+      "issue": "The SQL in payload-migrations/custom-posts-unique-idx.sql uses 'CREATE UNIQUE INDEX ON posts (telegram_message_id, channel_username)'. Payload's db-postgres (Drizzle) adapter will create the posts table with a specific table name. Payload typically names tables with an underscore prefix or schema-based naming. The exact Payload-generated table name for the 'posts' collection should be verified after running 'payload migrate' to ensure the SQL targets the correct table name.",
+      "fix": "Add a note in the task: 'Verify the exact Payload-generated table name for posts collection by running SELECT tablename FROM pg_tables WHERE tablename LIKE \\'%post%\\' after payload migrate. Adjust SQL index accordingly.'"
+    },
+    {
+      "severity": "minor",
+      "category": "missing_function",
+      "task": 4,
+      "issue": "Task 4 states 'Поле h1 — не существует в Prisma' which is correct per schema.prisma (Tag model has: name, slug, tagType, seoTitle, seoDescription, seoText — no h1). The task correctly handles this. However, the Acceptance Criteria counts 7 fields including h1, but lib/tags.ts TagDetail interface only has 6 fields (no h1). The new field h1 is an addition not present in current code — task should note this extends the TagDetail interface.",
+      "fix": "Add a note that lib/tags.ts TagDetail interface will need to be updated in Task 8 to include the h1 field once the Payload data layer replaces Prisma."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 6,
+      "issue": "Task 6 instructs to read 'payload/collections/articles.ts (стаб из Task 3)' and 'payload/collections/media.ts (стаб из Task 3)' as context files. Since these files do not exist yet (Task 3 not executed), the agent running Task 6 cannot pre-read them as part of context loading. This is a workflow description issue.",
+      "fix": "Context file references to Task 3 outputs are expected — this is by design for Wave 3 execution after Wave 2 completion. Add explicit note: 'These files will exist after Task 3 completes. If they do not exist, Task 3 has not been completed — stop and complete Task 3 first.'"
+    }
+  ],
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 31,
+    "issues_found": 11
+  }
+}

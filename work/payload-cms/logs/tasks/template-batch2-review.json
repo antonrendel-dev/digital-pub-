@@ -1,0 +1,158 @@
+{
+  "validator": "task-validator",
+  "batch": [6, 7, 8, 9, 10],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 6,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor is present for a pure configuration task (filling Payload collection stubs with no independent business logic). The content is not a test entry at all — it is a CLI command (`npx tsc --noEmit`) without a test path or test name. Format `tests/path::test_name — description` is not used. A TypeScript compile check is a verification step, not a TDD Anchor.",
+      "fix": "Remove the TDD Anchor section entirely. Task 6 defines collection configuration with no unit-testable business logic (access control is verified through integration scenarios in Task 15). Move `npx tsc --noEmit` to Verification Steps → Automated, which is already present."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 7,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor section is present for a pure configuration task (filling Payload Globals stubs) but explicitly states 'Unit-тесты не пишутся'. The section should be absent for non-code tasks per template: 'For non-code tasks (user instructions, deploy, config) — delete this section.' Globals definitions contain no business logic.",
+      "fix": "Remove the TDD Anchor section entirely. Smoke checks are already in Verification Steps → Smoke."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 10,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor entries are inside a TypeScript comment block (`// POST без токена → 401`) rather than the required format: `tests/path::test_name — description`. There are no test paths, no test names, and no descriptions. The section is titled '## TDD Anchors' (plural) instead of '## TDD Anchor' (as per template).",
+      "fix": "Rewrite TDD Anchor entries in the required format: `\\`tests/api/articles.test.ts::POST_withoutToken_returns401\\` — POST request without Authorization header returns 401. Provide a test file path and a function name for each of the 8 listed scenarios. Rename section to '## TDD Anchor'."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 6,
+      "section": "Context Files",
+      "issue": "Mandatory context file `project.md` is missing. Template requires `project.md` as a mandatory context file.",
+      "fix": "Add: `- [project.md](~/.claude/skills/project-knowledge/project.md)`"
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 7,
+      "section": "Context Files",
+      "issue": "Mandatory context file `project.md` is missing. Template requires `project.md` as a mandatory context file.",
+      "fix": "Add: `- [project.md](~/.claude/skills/project-knowledge/project.md)`"
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 10,
+      "section": "Context Files",
+      "issue": "Mandatory context file `project.md` is missing. Template requires `project.md` as a mandatory context file.",
+      "fix": "Add: `- [project.md](~/.claude/skills/project-knowledge/project.md)`"
+    },
+    {
+      "severity": "major",
+      "category": "carry-forward",
+      "task": 7,
+      "section": "Frontmatter / Reviewers",
+      "issue": "Tech-spec for Task 7 lists only `code-reviewing` as reviewer. The task frontmatter adds `security-auditor` and `test-reviewer` with no rationale. Task 7 fills Globals stubs (no access control logic, no security-sensitive code). Adding `security-auditor` and `test-reviewer` is not supported by tech-spec or task content.",
+      "fix": "Remove `security-auditor` and `test-reviewer` from frontmatter `reviewers` array and from the Reviewers section body. Keep only `code-reviewer`."
+    },
+    {
+      "severity": "major",
+      "category": "carry-forward",
+      "task": 6,
+      "section": "Frontmatter / Reviewers",
+      "issue": "Tech-spec for Task 6 lists `code-reviewing, security-auditor` as reviewers. The task frontmatter adds `test-reviewer`, which is not in the tech-spec. Task 6 fills collection stubs — there are no unit tests to review in this task.",
+      "fix": "Remove `test-reviewer` from frontmatter `reviewers` array and from the Reviewers section body. Keep `code-reviewer` and `security-auditor`."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 10,
+      "section": "Details",
+      "issue": "The `Implementation hints` subsection is absent from the Details section. The template and validation checklist require: Files, Dependencies, Edge cases, Implementation hints. All four subsections must be present.",
+      "fix": "Add `**Implementation hints:**` subsection with practical hints for implementing the route handler (e.g., how to correctly pass `req` to `payload.create()`, how to handle `payload.auth()` return shape in v3, note on not using `overrideAccess: true`)."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 10,
+      "section": "Details / Dependencies",
+      "issue": "The Dependencies subsection incorrectly labels Task 8 as 'Articles Collection'. Task 8 is 'Replace Prisma Data Layer'. The Articles Collection is Task 6. This mis-labelling will cause an executor to read the wrong task for context.",
+      "fix": "Change '- Task 8 (Articles Collection)' to '- Task 6 (Articles Collection) — коллекция articles должна существовать' and '- Task 8 (Replace Prisma Data Layer) — Payload Local API доступен через getPayload()'. Also review whether depends_on [8, 9] is correct — Task 10 may only truly need Task 6 + Task 3 for the Articles collection, not Task 8."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 9,
+      "section": "Context Files",
+      "issue": "Context file links use relative path format `../../.claude/...` for project-knowledge files instead of the standard `~/.claude/...` format used in all other tasks. Example: `[project.md](../../.claude/skills/project-knowledge/references/project.md)` should be `[project.md](~/.claude/skills/project-knowledge/references/project.md)`.",
+      "fix": "Replace `../../.claude/` prefix with `~/.claude/` in all three project-knowledge links (project.md, architecture.md, patterns.md)."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 6,
+      "section": "Context Files",
+      "issue": "Context file `testing.md` is absent. Task 6 has a TDD Anchor section (even if incorrectly present) and a test-reviewer in reviewers. For completeness in the context of a code task, `testing.md` should be included.",
+      "fix": "Add: `- [testing.md](~/.claude/skills/project-knowledge/testing.md)` (or remove test-reviewer per major finding and omit testing.md as not applicable for config-only task)."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 7,
+      "section": "Context Files",
+      "issue": "Context file `testing.md` is absent. Even though no unit tests are written for this task, the pattern file is listed as reference in the template.",
+      "fix": "Add: `- [testing.md](~/.claude/skills/project-knowledge/testing.md)` — or omit if config-only tasks are exempted from testing.md requirement."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 9,
+      "section": "Context Files",
+      "issue": "Context file `testing.md` is absent for a task that has TDD Anchors (articles-merge tests).",
+      "fix": "Add: `- [testing.md](~/.claude/skills/project-knowledge/testing.md)`"
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 10,
+      "section": "Context Files",
+      "issue": "Context file `testing.md` is absent for a task that has TDD Anchors (API endpoint tests).",
+      "fix": "Add: `- [testing.md](~/.claude/skills/project-knowledge/testing.md)`"
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 8,
+      "section": "Context Files",
+      "issue": "Architecture and patterns paths use `~/.claude/skills/project-knowledge/architecture.md` (no `/references/` subdirectory) while tasks 9, 10, and the template use `~/.claude/skills/project-knowledge/references/architecture.md`. Inconsistent path — one is correct and the other will 404.",
+      "fix": "Verify actual path and standardize. If references/ subdirectory exists, update task 8 to: `[architecture.md](~/.claude/skills/project-knowledge/references/architecture.md)` and same for `patterns.md` and `project.md`."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 7,
+      "section": "Reviewers",
+      "issue": "Reviewer paths use `{round}` placeholder which is correct per template. However `security-auditor` reviewer is listed in body but should be removed (see major finding on reviewers mismatch). After removing `security-auditor`, test-reviewer entry also drops.",
+      "fix": "Align with major finding: keep only `code-reviewer` entry in body."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 10,
+      "section": "TDD Anchor",
+      "issue": "Section heading uses plural '## TDD Anchors' instead of '## TDD Anchor' as specified in the template. While cosmetic, this breaks section-name consistency and may cause automated section-parsers to miss the section.",
+      "fix": "Rename '## TDD Anchors' to '## TDD Anchor'."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 5,
+    "issues_found": 17,
+    "critical": 6,
+    "major": 4,
+    "minor": 7
+  }
+}

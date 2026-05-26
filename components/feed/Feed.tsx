@@ -62,13 +62,11 @@ export default function Feed({
   let filtered = posts
 
   if (searchQuery) {
-    const q = searchQuery.toLowerCase()
-    filtered = filtered.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        (p.description?.toLowerCase().includes(q) ?? false) ||
-        (p.company?.toLowerCase().includes(q) ?? false)
-    )
+    const words = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean)
+    filtered = filtered.filter((p) => {
+      const haystack = [p.title, p.description, p.company].filter(Boolean).join(' ').toLowerCase()
+      return words.every((word) => haystack.includes(word))
+    })
   }
 
   if (activeFilters.size > 0) {

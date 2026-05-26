@@ -1,0 +1,33 @@
+{
+  "reviewer": "security-auditor",
+  "task": "task-1",
+  "round": 1,
+  "status": "needs_changes",
+  "summary": "The async-params migration is mechanically correct and the zod id-validation in app/post/[id]/page.tsx remains intact and correctly applied before any integer parsing. However, two issues require attention before deploy. First, tag.seoText is rendered via dangerouslySetInnerHTML in two pages (app/vacancies/[category]/page.tsx and app/resumes/tag/[tagSlug]/page.tsx) without any sanitization; the tag data comes from the database and if any admin or sync path ever writes attacker-controlled content into that field, stored XSS is possible — this is a pre-existing issue that now requires explicit sign-off. Second, next-mdx-remote is pinned to 5.0.0 which does not officially support React 19; running with --legacy-peer-deps or an incompatible peer silences the install error but can result in subtle runtime behaviour differences not caught by the current test suite. The remaining concerns (SSRF, path traversal, race conditions, type confusion in tag slug access, canonical URL construction, test mock isolation) are all clear.",
+  "findings": [
+    {
+      "id": "SA-1",
+      "severity": "major",
+      "file": "app/vacancies/[category]/page.tsx",
+      "line": 148,
+      "finding": "tag.seoText is injected into the DOM via dangerouslySetInnerHTML without sanitisation. tag originates from a Prisma/DB query (getTagBySlug). If the seoText column is ever populated through the Telegram sync script or a future admin interface with user-controlled or attacker-controlled HTML, this is a stored XSS vector. The upgrade itself does not introduce this — it was present before — but it must be explicitly accepted or remediated before adding any write path (Phase 2 Payload integration writes to these same tag records).",
+      "suggestion": "Run tag.seoText through a server-side HTML sanitiser (e.g. DOMPurify with the jsdom adapter or the `sanitize-html` package) before passing it to dangerouslySetInnerHTML, or maintain a strict allowlist of tags/attributes in the DB write path. At minimum, document the trust assumption (only internal editors write seoText) so Phase 2 does not silently break it."
+    },
+    {
+      "id": "SA-2",
+      "severity": "major",
+      "file": "app/resumes/tag/[tagSlug]/page.tsx",
+      "line": 161,
+      "finding": "Same dangerouslySetInnerHTML / tag.seoText issue as SA-1. Identical code path, same XSS risk.",
+      "suggestion": "Same fix as SA-1. Both pages share the pattern and must be fixed together."
+    },
+    {
+      "id": "SA-3",
+      "severity": "minor",
+      "file": "package.json",
+      "line": 22,
+      "finding": "next-mdx-remote is pinned to 5.0.0 which declares a peer dependency on React 18. The upgrade to React 19 is either resolved with --legacy-peer-deps or causes a peer conflict that is silently ignored. This is a supply-chain hygiene issue: the installed version of next-mdx-remote may behave differently under React 19's concurrent rendering model than tested. The jest mock (jest.mock('next-mdx-remote/rsc', ...)) fully bypasses the library in tests, so regressions here would not be caught by the unit test suite.",
+      "suggestion": "Upgrade next-mdx-remote to the latest version with declared React 19 compatibility (check the package's CHANGELOG — v5.x series added React 19 support in a subsequent patch). If no compatible version exists yet, add an explicit comment in package.json and a smoke-test step that renders an article page end-to-end on staging."
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "validator": "reality-checker",
+  "batch": [4, 5, 6],
+  "iteration": 2,
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "missing_function",
+      "task": 5,
+      "issue": "Migration script (migrate-posts.ts) does not mention overrideAccess: true for payload.create() calls, while Task 4 explicitly requires it. The posts collection access control allows create only for 'admin' or 'sync' roles. The migration script runs locally without user context — without overrideAccess: true, payload.create() will fail access control checks and reject all post creation calls.",
+      "fix": "Add to What to do step 5 and Details: 'Call payload.create({ collection: \"posts\", data: { ... }, overrideAccess: true }) — same pattern as migrate-tags.ts. Without overrideAccess, Local API will reject creates since the script has no authenticated user.'"
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 5,
+      "issue": "The field mapping table in Task 5 Details omits createdAt and categoryId fields from the Prisma Post model. Prisma Post has: createdAt (DateTime), updatedAt (DateTime), categoryId (Int?, FK to Category), category (relation). The FeedPost interface in lib/postUtils.ts has createdAt: string which is populated from Prisma Post.createdAt. Without explicit handling: (1) Payload will auto-generate its own createdAt on create, losing original post dates — breaking feed ordering; (2) categoryId/category foreign key relationship is abandoned without a comment explaining the intentional omission.",
+      "fix": "Add to the mapping table: createdAt → (note: Payload auto-sets createdAt; if preserving original dates is required, use overrideAccess + direct DB insert or check if Payload supports createdAt override on create). Add explicit note: 'categoryId and category relation — intentionally omitted; category/tag relationship is replaced by the tags relationship field in Payload.'"
+    },
+    {
+      "severity": "major",
+      "category": "hints",
+      "task": 4,
+      "issue": "Details section contains full working TypeScript implementations: (1) complete toRichText() function with exact logic (14 lines of code), (2) full CollectionConfig object with all fields, hooks, and access control (27 lines). These prescribe the solution rather than pointing to patterns. The complete collection definition duplicates the tech-spec Data Models section verbatim.",
+      "fix": "Replace toRichText code block with: 'Implement a toRichText(text: string | null) helper that wraps plain text in the Lexical v0.21+ structure — see tech-spec Data Migration note for the required JSON shape.' Replace the full CollectionConfig code block with: 'See tech-spec Data Models → tags collection for the complete field definitions, access control, and afterChange hook structure.'"
+    },
+    {
+      "severity": "major",
+      "category": "hints",
+      "task": 5,
+      "issue": "Details section contains a complete afterChange hook implementation (TypeScript code block with if/else and both revalidatePath calls) and a step-by-step algorithm for the 'Дублировать пост' admin action (5 numbered steps with exact field names to nullify). While the mapping table is acceptable reference data, the executable code blocks prescribe the implementation.",
+      "fix": "Replace the afterChange hook code block with: 'Follow the same afterChange pattern as Task 4. Decision 3 in tech-spec specifies the revalidation strategy for posts — check doc.slug before calling revalidatePath since posts can have null slugs.' Replace the admin action algorithm with: 'The duplicate action should copy all fields, nullify unique constraint fields (telegramMessageId, channelUsername, slug), and set status to pending. See Payload docs for Custom Admin Components / List Actions.'"
+    },
+    {
+      "severity": "major",
+      "category": "hints",
+      "task": 6,
+      "issue": "Details section Implementation hints contain the exact read access control implementation: 'req.user?.role === \"admin\" ? true : { status: { equals: \"published\" } }' — full inline code prescribing the solution. Also contains the exact type annotation for afterChange: 'async ({ doc }: { doc: any }) => { ... }' which is a specific implementation decision.",
+      "fix": "Replace with: 'For the read access control, return true for admin and a Where-filter object for non-admin users — see tech-spec Data Models → articles collection access definition for the exact filter shape. The afterChange hook signature follows Payload CollectionAfterChangeHook type from payload.'"
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 4,
+      "issue": "Reviewer declared as 'code-reviewer' in frontmatter reviewers array and in Reviewers section, but the actual skill name in this project is 'code-reviewing' (confirmed by ls ~/.claude/skills/ and by task 2, 7, 12 which correctly use 'code-reviewing'). This naming inconsistency means the reviewer agent may not be invoked correctly by the feature-execution orchestrator.",
+      "fix": "Change 'code-reviewer' to 'code-reviewing' in both the frontmatter reviewers array and the Reviewers section log path (code-reviewer-1.json → code-reviewing-1.json)."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 5,
+      "issue": "Same reviewer naming issue as Task 4: frontmatter uses 'code-reviewer' instead of 'code-reviewing'. The Reviewers section log path also says 'code-reviewer-1.json'.",
+      "fix": "Change 'code-reviewer' to 'code-reviewing' in frontmatter and log path."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 6,
+      "issue": "Same reviewer naming issue: frontmatter uses 'code-reviewer' and Reviewers section log path says 'code-reviewer-1.json'. The correct skill name is 'code-reviewing'.",
+      "fix": "Change 'code-reviewer' to 'code-reviewing' in frontmatter and log path."
+    },
+    {
+      "severity": "minor",
+      "category": "tdd",
+      "task": 6,
+      "issue": "Task 6 has no TDD section and no unit tests for the articles collection or media collection definitions. While the tech-spec does not mandate unit tests for collection definitions (relying on TypeScript for correctness), the articles afterChange hook is behavioral logic (revalidatePath with real slug) that could be unit-tested to verify the correct paths are called. Task 6 currently defers all verification to staging (Task 15).",
+      "fix": "Minor concern only — acceptable for Wave 3 collection definitions where TypeScript type checking via 'npx tsc --noEmit' is the primary verification. Add a note acknowledging this trade-off if desired."
+    }
+  ],
+  "r1_findings_resolved": [
+    {
+      "finding": "Task 5 depends_on missing Task 4",
+      "status": "resolved",
+      "note": "depends_on: [3, 4] is now correctly set in Task 5 frontmatter"
+    },
+    {
+      "finding": "Critical missing_file for payload/ directory and Payload packages",
+      "status": "reclassified",
+      "note": "These are prerequisite gaps (Task 3 not yet executed), not defects in task 4/5/6 files. Tasks correctly declare depends_on: [3]. Not re-flagged in r2."
+    },
+    {
+      "finding": "Task 4/5 test path ambiguity (tests/ vs tests/unit/ vs __tests__/)",
+      "status": "resolved",
+      "note": "tests/unit/ directory confirmed to exist. Path tests/unit/migrate-tags.test.ts and tests/unit/migrate-posts.test.ts match jest pattern '**/tests/**/*.test.ts'. Task descriptions now use these paths definitively."
+    },
+    {
+      "finding": "Task 5 'желательно' language understating dependency on Task 4",
+      "status": "resolved",
+      "note": "depends_on: [3, 4] header fix makes the dependency explicit at the orchestration level."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 38,
+    "issues_found": 9
+  }
+}

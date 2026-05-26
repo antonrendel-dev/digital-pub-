@@ -1,0 +1,154 @@
+{
+  "validator": "task-validator",
+  "batch": [6, 7, 8, 9, 10],
+  "iteration": 2,
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 7,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor section is still present and contains an explicit 'Unit tests not written' stub: 'Globals не имеют бизнес-логики — только конфигурация структуры Payload и хук ревалидации. Unit-тесты не пишутся.' Per template: 'For non-code tasks (user instructions, deploy, config) — delete this section. No empty stubs.' A section that explicitly says no tests are written is an empty stub and must be removed.",
+      "fix": "Delete the entire '## TDD Anchor' section from Task 7. Smoke verification is already present in Verification Steps → Smoke."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 7,
+      "section": "Context Files",
+      "issue": "Mandatory context file 'project.md' is still missing from Task 7. Template requires project.md as a mandatory context file for all tasks. This finding was flagged in r1 and not fixed.",
+      "fix": "Add: '- [project.md](~/.claude/skills/project-knowledge/references/project.md)' to the Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 6,
+      "section": "Context Files",
+      "issue": "Mandatory context file 'project.md' path uses incorrect format '.claude/skills/project-knowledge/references/project.md' (missing leading '~/'). This path will not resolve correctly — it is a relative path from CWD rather than the standard home-relative '~/.claude/...' path used in all other tasks. The r1 finding required adding project.md; a file was added but with a broken path.",
+      "fix": "Change path from '.claude/skills/project-knowledge/references/project.md' to '~/.claude/skills/project-knowledge/references/project.md'. Same fix applies to architecture.md and patterns.md in Task 6 which use the same broken format."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 10,
+      "section": "Details",
+      "issue": "'Implementation hints' subsection is absent from the Details section. The section uses 'Важные нюансы' (important nuances) instead of the required '**Implementation hints:**' label. This was flagged as major in r1 and not corrected — 'Важные нюансы' is not a recognized subsection name per the template checklist which requires: Files, Dependencies, Edge cases, Implementation hints.",
+      "fix": "Rename '**Важные нюансы:**' to '**Implementation hints:**' to match the required subsection label."
+    },
+    {
+      "severity": "major",
+      "category": "carry-forward",
+      "task": 8,
+      "section": "Frontmatter / Reviewers",
+      "issue": "Tech-spec for Task 8 lists reviewers: 'code-reviewing, test-master'. Task 8 frontmatter adds 'security-auditor' which is not in the tech-spec for this task. Additionally, 'test-reviewer' is used instead of 'test-master' (the skill name in tech-spec). The Reviewers section body lists 'security-auditor' and 'test-reviewer' consistent with frontmatter but inconsistent with tech-spec.",
+      "fix": "Remove 'security-auditor' from frontmatter and body (not in tech-spec for Task 8). Decide on consistent naming: either align all tasks to tech-spec names ('code-reviewing', 'test-master') or to validator-rule names ('code-reviewer', 'test-reviewer'). The tech-spec names are the source of truth for reviewer selection. Update frontmatter to: reviewers: [code-reviewing, test-master] and body accordingly."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 9,
+      "section": "Context Files",
+      "issue": "Context file links for project-knowledge files still use relative path format '../../.claude/skills/project-knowledge/references/...' instead of the standard '~/.claude/skills/project-knowledge/references/...' format. This was flagged in r1 and not fixed. Relative paths are fragile and depend on CWD at invocation time.",
+      "fix": "Replace '../../.claude/' prefix with '~/.claude/' in project.md, architecture.md, and patterns.md links."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 8,
+      "section": "Context Files",
+      "issue": "Context file paths for architecture.md and patterns.md use '~/.claude/skills/project-knowledge/architecture.md' (without /references/ subdirectory), while tasks 9, 10, and the template consistently use '~/.claude/skills/project-knowledge/references/architecture.md'. This path inconsistency was flagged in r1 and not fixed.",
+      "fix": "Update task 8 context file paths to: '~/.claude/skills/project-knowledge/references/architecture.md', '~/.claude/skills/project-knowledge/references/patterns.md', '~/.claude/skills/project-knowledge/references/project.md'. Verify the actual directory structure to confirm which path is correct."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 9,
+      "section": "Context Files",
+      "issue": "Context file 'testing.md' is absent for Task 9, which has a TDD Anchor section with 4 test entries for articles-merge functionality. This was flagged in r1 and not fixed.",
+      "fix": "Add: '- [testing.md](~/.claude/skills/project-knowledge/testing.md)' (or the /references/ variant, depending on the correct path)."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 10,
+      "section": "Context Files",
+      "issue": "Context file 'testing.md' is absent for Task 10, which has a TDD Anchor section with 8 test entries for the API route. This was flagged in r1 and not fixed.",
+      "fix": "Add: '- [testing.md](~/.claude/skills/project-knowledge/references/testing.md)' to Context Files."
+    },
+    {
+      "severity": "minor",
+      "category": "consistency",
+      "task": 6,
+      "section": "Frontmatter / Reviewers",
+      "issue": "Frontmatter uses reviewer name 'code-reviewer' but tech-spec Task 6 specifies 'code-reviewing'. Across the batch, Task 7 correctly uses 'code-reviewing' (matching tech-spec), while Tasks 6, 8, 9, 10 use 'code-reviewer'. Similarly, 'test-reviewer' is used in Tasks 8, 9, 10 where tech-spec specifies 'test-master'. This naming inconsistency may route reviews to the wrong agent.",
+      "fix": "Standardize reviewer names to match tech-spec across all tasks: use 'code-reviewing' instead of 'code-reviewer', and 'test-master' instead of 'test-reviewer'. Tasks 6, 8, 9, 10 need update to frontmatter and Reviewers body section. Update report paths accordingly: 'code-reviewing-{round}.json', 'test-master-{round}.json'."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 6,
+      "section": "Context Files",
+      "issue": "Context file 'testing.md' is absent from Task 6. While Task 6 is a configuration-only task (no TDD Anchor), the tech-spec lists 'code-reviewing, security-auditor' as reviewers — reviewers typically expect testing context. Low priority since Task 6 has no testable code logic.",
+      "fix": "Optionally add '- [testing.md](~/.claude/skills/project-knowledge/references/testing.md)'. Can be omitted if config-only tasks are exempted."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 7,
+      "section": "Context Files",
+      "issue": "Context file 'testing.md' is absent from Task 7. While Globals have no unit tests, keeping context consistent with other tasks in the wave improves readability. Low priority.",
+      "fix": "Optionally add '- [testing.md](~/.claude/skills/project-knowledge/references/testing.md)'. Can be omitted if config-only tasks are exempted."
+    }
+  ],
+  "fixed_from_r1": [
+    {
+      "task": 6,
+      "issue": "TDD Anchor section present for config-only task",
+      "status": "FIXED — Section removed"
+    },
+    {
+      "task": 6,
+      "issue": "project.md missing from Context Files",
+      "status": "PARTIAL FIX — project.md added but with broken path (.claude/ instead of ~/.claude/). Now flagged as critical."
+    },
+    {
+      "task": 6,
+      "issue": "test-reviewer added beyond tech-spec",
+      "status": "FIXED — test-reviewer removed from frontmatter and body"
+    },
+    {
+      "task": 7,
+      "issue": "security-auditor and test-reviewer added beyond tech-spec",
+      "status": "FIXED — both removed from frontmatter and body"
+    },
+    {
+      "task": 10,
+      "issue": "TDD Anchor entries in comment block format without test paths",
+      "status": "FIXED — entries now use proper `tests/path::test_name — description` format"
+    },
+    {
+      "task": 10,
+      "issue": "Section heading '## TDD Anchors' (plural)",
+      "status": "FIXED — renamed to '## TDD Anchor'"
+    },
+    {
+      "task": 10,
+      "issue": "project.md missing from Context Files",
+      "status": "FIXED — project.md added with correct path"
+    },
+    {
+      "task": 10,
+      "issue": "Dependencies subsection mislabelled Task 8 as 'Articles Collection'",
+      "status": "FIXED — corrected to 'Task 8 (Replace Prisma Data Layer)' and 'Task 6 (Articles Collection)'"
+    }
+  ],
+  "stats": {
+    "tasks_checked": 5,
+    "issues_found": 12,
+    "critical": 3,
+    "major": 2,
+    "minor": 7,
+    "fixed_from_r1": 8
+  }
+}

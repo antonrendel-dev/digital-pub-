@@ -1,0 +1,110 @@
+{
+  "validator": "task-validator",
+  "batch": [16, 17],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 16,
+      "section": "What to do",
+      "issue": "Steps 1 and 8 instruct to SSH to NetAngels (c48127@91.201.52.231) to disable/re-enable Telegram sync cron. But tech-spec Architecture, Decision 4, and the Data Migration section all state that the sync cron runs on the red server (root@144.31.204.181, /opt/bots/telegram-bot-vac/). Task 16 Description says 'Sync запускается на app-сервере NetAngels' — this directly contradicts tech-spec. Executing these steps on the wrong server would leave the prod cron running during the migration window.",
+      "fix": "Change Steps 1 and 8 to SSH to the red server (root@144.31.204.181) and reference /opt/bots/telegram-bot-vac/ crontab. Update the Description to state that sync cron is on the red server. Also update Verification Step 9 (which also incorrectly references NetAngels for the sync check)."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 17,
+      "section": "Verification Steps",
+      "issue": "Sync verification step (SSH на NetAngels) instructs 'ssh c48127@91.201.52.231 \"bash /home/c48127/d-pub.ru/app/scripts/auto-sync.sh\"', but the same task's Details section states 'Red server (proxy + sync cron): root@144.31.204.181' and 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts'. Internal inconsistency within task 17: the Verification Steps reference NetAngels, while Details correctly identify the red server as the sync host.",
+      "fix": "Change the sync verification SSH target to root@144.31.204.181 and the script path to /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts (or npx tsx /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts). Keep the Details section as-is — it is correct."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 16,
+      "section": "Verification Steps",
+      "issue": "Smoke section in Verification Steps (post-deploy checks) does not include verification of 'POST /api/articles without token → 401' and 'POST /api/articles with agent API Key → 201', which are listed in the task's own Acceptance Criteria (lines 250-251). The task delegates these checks to Task 17, but a deploy task should at minimum smoke-verify the auth gate is working. More critically, the AC contains these items but they are not in Verification Steps, creating a carry-forward gap.",
+      "fix": "Add POST /api/articles auth smoke checks to Verification Steps Smoke section, or explicitly note in Verification Steps that these are delegated to Task 17 with a cross-reference."
+    },
+    {
+      "severity": "major",
+      "category": "structure",
+      "task": 16,
+      "section": "Context Files",
+      "issue": "Section order is incorrect. Template order: AC → Context Files → Verification Steps → Details → Reviewers → Post-completion. Actual order: AC → Verification Steps → Reviewers → Context Files → Details → Post-completion. Context Files appears after Reviewers (line 296) instead of before Verification Steps. Reviewers also appears before Context Files and Details.",
+      "fix": "Reorder sections to match template: move Context Files to appear after Acceptance Criteria and before Verification Steps; move Reviewers to appear after Details."
+    },
+    {
+      "severity": "major",
+      "category": "structure",
+      "task": 16,
+      "section": "Rollback Procedure",
+      "issue": "Section '## Rollback Procedure' (line 208) is not in the task template and is not one of the 11 required sections. While its content is valuable, having extra top-level sections deviates from the template. This also contributes to the section ordering issue.",
+      "fix": "Move rollback procedure content into the ## Details section as a '**Rollback:**' subsection, or keep it in ## What to do as a numbered step/sub-section (### Rollback). Remove the standalone ## Rollback Procedure heading."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 16,
+      "section": "Details",
+      "issue": "The Details section lacks the four required subsections from the template: **Files**, **Dependencies**, **Edge cases**, and **Implementation hints**. The current subsections (**Серверы**, **Порядок операций критичен**, **Env vars**, **Backup location**, **Даунтайм**, **Staging must pass**) provide useful context but do not satisfy the template structure. Missing: explicit **Edge cases** (e.g., what if pg_dump fails, what if merge has conflicts) and **Implementation hints**.",
+      "fix": "Add the required subsections. **Files**: list key files involved (deploy.yml, scripts/migrate-tags.ts, scripts/migrate-posts.ts, scripts/auto-sync.sh). **Dependencies**: Task 15 must be done, pg_dump must succeed. **Edge cases**: pg_dump fails → abort; payload migrate returns non-zero exit → do NOT touch reload; sync cron already disabled → skip step. **Implementation hints**: hints for executing the procedure safely."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 17,
+      "section": "Details",
+      "issue": "The Details section lacks the four required template subsections: **Files**, **Dependencies**, **Edge cases**, and **Implementation hints**. The current subsections provide operational context but don't map to the template structure. Missing: explicit **Edge cases** (POST /api/articles → 201 creates a real article that must be cleaned up; PAYLOAD_API_KEY not set in env; sync returns 0 new posts), and **Implementation hints**.",
+      "fix": "Add required subsections. **Files**: tech-spec.md, user-spec.md, decisions.md (write target). **Dependencies**: Task 16 must be completed (depends_on: [16]). **Edge cases**: PAYLOAD_API_KEY missing from env → 401 even with correct role; sync returns 0 new posts (normal if no new Telegram content). **Implementation hints**: read PAYLOAD_API_KEY from server env before curl, clean up test article after verification."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 16,
+      "section": "Reviewers",
+      "issue": "Reviewers section body uses prose ('This is a deploy task — the deploy report serves as the review. No additional reviewers assigned.') rather than the template checklist format '- **name** → `path`'. Since reviewers: [] in frontmatter, this is consistent — but the explanatory prose is non-standard.",
+      "fix": "Replace prose with a single line such as '- No reviewers — deploy tasks are self-verifying; deploy log serves as the record.' or simply leave the section minimal with a single-line explanation."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 17,
+      "section": "Reviewers",
+      "issue": "Same as task 16: Reviewers section uses prose explanation instead of the template checklist format. Consistent with reviewers: [] in frontmatter, but non-standard.",
+      "fix": "Same as task 16 fix — use a brief one-liner rather than a prose paragraph."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 16,
+      "section": "What to do",
+      "issue": "Step 4 notes 'Step 4 — Что делает deploy.yml (контролируем каждый шаг)' includes a bullet: 'npx prisma generate (старый шаг; после Task 2 должен быть заменён или убран)'. This conditional language ('должен быть заменён') implies the step may or may not be present — but Task 2 was supposed to already update deploy.yml before this task runs. The deploy task should have certainty about the CI pipeline shape, not hedge on whether the Prisma step was removed.",
+      "fix": "After Task 2 is completed, update this step to remove the parenthetical uncertainty. The deploy task should reference the actual state of deploy.yml after Task 2's changes."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 17,
+      "section": "What to do",
+      "issue": "Step 6 says 'Запустить sync на красном сервере через SSH'. But the Acceptance Criteria (line 49) and Verification Steps (Sync verification section) reference running sync on NetAngels (c48127@91.201.52.231) — contradicting this step's description. The inconsistency between 'красный сервер' in What to do and NetAngels SSH target in Verification Steps creates ambiguity about which server to use.",
+      "fix": "Resolve server reference: change Verification Steps to use root@144.31.204.181 (red server) with the correct script path, making it consistent with What to do step 6 and the Details section."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 17,
+      "section": "Acceptance Criteria",
+      "issue": "AC item 'SSH на NetAngels (c48127@91.201.52.231) → запуск /home/c48127/d-pub.ru/app/scripts/auto-sync.sh → count(Post) в Payload вырос' references NetAngels as the sync server, which contradicts both the task's own Details section and the tech-spec. This AC will be satisfied on the wrong server.",
+      "fix": "Update AC to: 'SSH на красный сервер (root@144.31.204.181) → запуск /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts → count(Post) в Payload вырос'."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 2,
+    "issues_found": 12,
+    "critical": 3,
+    "major": 4,
+    "minor": 5
+  }
+}
