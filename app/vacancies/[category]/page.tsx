@@ -12,11 +12,11 @@ import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/component
 export const revalidate = 300
 
 interface Props {
-  params: { category: string }
+  params: Promise<{ category: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { category } = params
+  const { category } = await params
   const tag = await getTagBySlug(category)
   if (!tag) return { title: 'Категория не найдена' }
 
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const { category } = params
+  const { category } = await params
   const tag = await getTagBySlug(category)
   if (!tag) notFound()
 

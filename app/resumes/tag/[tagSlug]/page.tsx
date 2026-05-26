@@ -7,11 +7,11 @@ import JobCard from '@/components/feed/JobCard'
 import JsonLd from '@/components/JsonLd'
 
 interface Props {
-  params: { tagSlug: string }
+  params: Promise<{ tagSlug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { tagSlug } = params
+  const { tagSlug } = await params
   const tag = await getTagBySlug(tagSlug)
   if (!tag) return { title: 'Тег не найден' }
 
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function TagPage({ params }: Props) {
-  const { tagSlug } = params
+  const { tagSlug } = await params
   const tag = await getTagBySlug(tagSlug)
   if (!tag) notFound()
 

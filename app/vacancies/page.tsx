@@ -30,11 +30,12 @@ const DESCRIPTION =
   'Актуальные вакансии в digital: маркетинг, дизайн, SMM, аналитика, контент. Удалённая работа и офис. Обновление из Telegram-каналов ежедневно.'
 
 interface Props {
-  searchParams: { page?: string }
+  searchParams: Promise<{ page?: string }>
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const page = Math.max(1, parseInt(searchParams.page || '1', 10) || 1)
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam || '1', 10) || 1)
   const canonical = page === 1 ? `${BASE_URL}/vacancies` : `${BASE_URL}/vacancies?page=${page}`
   return {
     title: TITLE,
@@ -51,7 +52,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function VacanciesPage({ searchParams }: Props) {
-  const page = Math.max(1, parseInt(searchParams.page || '1', 10) || 1)
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam || '1', 10) || 1)
   const [{ posts, total, totalPages }, tags, stats] = await Promise.all([
     getPostsByTypePaginated('vacancy', page, 20),
     getTagsWithCounts(),

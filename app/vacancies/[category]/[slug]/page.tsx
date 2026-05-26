@@ -9,11 +9,12 @@ import JsonLd from '@/components/JsonLd'
 export const revalidate = 300 // ISR: refresh every 5 minutes
 
 interface Props {
-  params: { category: string; slug: string }
+  params: Promise<{ category: string; slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug)
+  const { category, slug } = await params
+  const post = await getPostBySlug(slug)
   if (!post) return { title: 'Вакансия не найдена' }
 
   const rawTitle = `${post.title}${post.salary ? ` (${post.salary})` : ''} — вакансия`
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const rawDesc = `${post.company ? post.company + ': ' : ''}${post.title}.${post.salary ? ' Зарплата: ' + post.salary + '.' : ''} Смотреть на Диджитал Паб.`
   const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
 
-  const url = `https://d-pub.ru/vacancies/${params.category}/${params.slug}`
+  const url = `https://d-pub.ru/vacancies/${category}/${slug}`
 
   return {
     title,
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function VacancyPage({ params }: Props) {
-  const { category, slug } = params
+  const { category, slug } = await params
   const post = await getPostBySlug(slug)
   if (!post) notFound()
 
@@ -55,9 +56,7 @@ export default async function VacancyPage({ params }: Props) {
   ])
 
   // Determine job location type from post tags
-  const postTagSlugs = new Set(
-    post.tags?.map((pt: { tag: { slug: string } }) => pt.tag?.slug).filter(Boolean) ?? []
-  )
+  const postTagSlugs = new Set(post.tags?.map((pt) => pt.slug).filter(Boolean) ?? [])
   const jobLocationType = postTagSlugs.has('udalyonka')
     ? 'TELECOMMUTE'
     : postTagSlugs.has('gibrid')

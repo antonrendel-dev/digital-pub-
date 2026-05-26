@@ -27,11 +27,12 @@ const DESCRIPTION =
   'Резюме digital-специалистов: дизайнеры, маркетологи, SMM, аналитики. Найдите сотрудника из Telegram-сообщества для вашего проекта.'
 
 interface Props {
-  searchParams: { page?: string }
+  searchParams: Promise<{ page?: string }>
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const page = Math.max(1, parseInt(searchParams.page || '1', 10) || 1)
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam || '1', 10) || 1)
   const canonical = page === 1 ? `${BASE_URL}/resumes` : `${BASE_URL}/resumes?page=${page}`
   return {
     title: TITLE,
@@ -48,7 +49,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function ResumesPage({ searchParams }: Props) {
-  const page = Math.max(1, parseInt(searchParams.page || '1', 10) || 1)
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam || '1', 10) || 1)
   const [{ posts, total, totalPages }, tags, stats] = await Promise.all([
     getPostsByTypePaginated('resume', page, 20),
     getTagsWithCounts(),

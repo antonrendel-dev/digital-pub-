@@ -24,11 +24,11 @@ const mdxComponents = {
 export const revalidate = 300
 
 interface Props {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = params
+  const { slug } = await params
   const article = getArticleBySlug(slug)
   if (!article) return { title: 'Статья не найдена' }
 
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ArticlePage({ params }: Props) {
-  const { slug } = params
+  const { slug } = await params
   const article = getArticleBySlug(slug)
   if (!article) notFound()
 
