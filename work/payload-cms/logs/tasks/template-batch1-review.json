@@ -1,0 +1,222 @@
+{
+  "validator": "task-validator",
+  "batch": [1, 2, 3, 4, 5],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "frontmatter",
+      "task": 1,
+      "section": "frontmatter",
+      "issue": "reviewers field contains 'test-reviewer' but the correct skill name is 'test-master' (as defined in tech-spec Task 1 Reviewers: 'code-reviewing, test-master'). The Reviewers body section also lists 'test-reviewer' instead of 'test-master', creating a frontmatter↔body mismatch with an invalid skill name.",
+      "fix": "Change frontmatter reviewers from '[code-reviewer, security-auditor, test-reviewer]' to '[code-reviewer, security-auditor, test-master]'. Update Reviewers section log path from 'test-reviewer' to 'test-master'."
+    },
+    {
+      "severity": "critical",
+      "category": "frontmatter",
+      "task": 2,
+      "section": "frontmatter",
+      "issue": "reviewers field contains 'deploy-reviewer' which is not a valid or known skill name. The tech-spec lists 'code-reviewing' as the only reviewer for Task 2. 'deploy-reviewer' is not a skill that exists in the skills system.",
+      "fix": "Change frontmatter reviewers from '[code-reviewer, security-auditor, deploy-reviewer]' to '[code-reviewer, security-auditor]'. Update Reviewers body section to remove the 'deploy-reviewer' entry."
+    },
+    {
+      "severity": "critical",
+      "category": "carry-forward",
+      "task": 2,
+      "section": "TDD Anchor",
+      "issue": "Task 2 modifies deploy.yml and creates deploy-staging.yml. These are YAML config files, not code — TDD Anchor section is correctly absent. However, the Automated subsection under Verification Steps is missing. The template requires Verification Steps to always be present with content, and the task only has a Smoke subsection. Automated checks like YAML linting are missing from the Automated sub-section (though the smoke section has inline bash commands that cover this).",
+      "fix": "Add an 'Automated' subsection to Verification Steps with at minimum: 'No automated tests (config-only task)' or the YAML validation commands currently only in the Smoke section."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 2,
+      "section": "Context Files",
+      "issue": "Context Files section is missing mandatory files: 'decisions.md', 'architecture.md', 'project.md'. The template requires these as critical mandatory context files for all tasks.",
+      "fix": "Add to Context Files: [decisions.md](../decisions.md), [architecture.md](~/.claude/skills/project-knowledge/references/architecture.md), [project.md](~/.claude/skills/project-knowledge/references/project.md)."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 2,
+      "section": "Context Files",
+      "issue": "Context Files section is also missing 'patterns.md'. While not always mandatory, it is listed as a standard context file in the template.",
+      "fix": "Add [patterns.md](~/.claude/skills/project-knowledge/references/patterns.md) to Context Files."
+    },
+    {
+      "severity": "critical",
+      "category": "consistency",
+      "task": 2,
+      "section": "Reviewers",
+      "issue": "Reviewers body section contains '{round}' placeholder in all three reviewer paths (e.g. 'deploy-reviewer-{round}.json'). This is a template placeholder that was not replaced.",
+      "fix": "The '{round}' placeholder is actually the correct convention for the reviewer log path format — it is a literal placeholder indicating the round number (1, 2, etc.). However this conflicts with the checker rule 'No template placeholders'. Confirm with task-creator that '{round}' is intentional convention, not an unfilled placeholder."
+    },
+    {
+      "severity": "critical",
+      "category": "carry-forward",
+      "task": 3,
+      "section": "TDD Anchor",
+      "issue": "Task 3 TDD Anchor section states 'Unit-тесты для этой задачи не применимы — создаётся инфраструктура/конфигурация, а не бизнес-логика.' This is acceptable for a config task. However, tech-spec Task 3 does not list a TDD Anchor either. But the tech-spec Testing Strategy mentions that onInit hook behavior needs verification. The TDD Anchor section is present but empty of actual test anchors — this is a stub/empty section which the rules prohibit ('No empty stubs').",
+      "fix": "Either delete the TDD Anchor section entirely (since Task 3 is a config/infrastructure task) and rely on smoke checks, or add at least one concrete test anchor. The section currently has prose explanation but no test entries in the required format."
+    },
+    {
+      "severity": "critical",
+      "category": "consistency",
+      "task": 3,
+      "section": "Reviewers",
+      "issue": "Reviewers body section contains '{round}' literal placeholder in log paths for both 'code-reviewer-{round}.json' and 'security-auditor-{round}.json'. Same issue as Task 2 — if this is unintentional, it's a critical placeholder issue.",
+      "fix": "Same resolution as Task 2: confirm '{round}' is intentional convention representing round number (1, 2, etc.), not an unfilled placeholder."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 1,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor entries are not in the required format '`tests/path::test_name` — description'. The entries list test names without backtick-wrapped path::name format (they are listed as plain text 'tests/routes/async-params.test.ts::category_page_awaits_params' in a code block, not in the expected inline format). The description section below the list provides context but the entries themselves lack inline descriptions per the template format.",
+      "fix": "Reformat TDD Anchor entries as: '`tests/routes/async-params.test.ts::category_page_awaits_params` — verifies CategoryPage accepts Promise<{category}> and awaits it before passing to getTagBySlug'. Each entry needs the backtick format and an inline description."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 1,
+      "section": "TDD Anchor",
+      "issue": "Some TDD Anchor test anchors verify string/pattern presence in source files rather than behavior: 'читать исходник файла, проверять что params: Promise< присутствует в типе и await params присутствует в теле функции — простая строковая проверка'. Per validation rules, anchors like 'assert keyword in text' test structure not logic — severity minor per rules but combined with format issue elevates to major.",
+      "fix": "Prefer behavioral tests: pass Promise-wrapped params to the page function, verify it resolves correctly and calls the downstream function with the right argument. Keep string-presence checks only as secondary anchors."
+    },
+    {
+      "severity": "major",
+      "category": "decomposition",
+      "task": 4,
+      "section": "frontmatter",
+      "issue": "Task 4 has 'reviewers: [code-reviewer, security-auditor, test-reviewer]' in frontmatter but 'test-reviewer' is not a valid skill name (same issue as Task 1). The correct name is 'test-master' per the skills system and tech-spec.",
+      "fix": "Change frontmatter reviewers to '[code-reviewer, security-auditor, test-master]'. Update Reviewers body section to use 'test-master' instead of 'test-reviewer'."
+    },
+    {
+      "severity": "major",
+      "category": "decomposition",
+      "task": 5,
+      "section": "frontmatter",
+      "issue": "Task 5 has 'reviewers: [code-reviewer, security-auditor, test-reviewer]' in frontmatter. Same 'test-reviewer' vs 'test-master' issue as Tasks 1 and 4.",
+      "fix": "Change frontmatter reviewers to '[code-reviewer, security-auditor, test-master]'. Update Reviewers body section accordingly."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 3,
+      "section": "What to do",
+      "issue": "Step 7 in 'What to do' includes a code block with actual implementation: `export { default } from '@payloadcms/next/middleware'`. The template rule states 'WHAT, not HOW — no pseudocode, no algorithms, no code blocks with implementation'. Similarly, Step 6 includes a full JS code block for CSP headers. These should be moved to Details/Implementation hints.",
+      "fix": "Move code blocks from 'What to do' to 'Details > Implementation hints'. Keep 'What to do' at the level of: '7. Create middleware.ts using Payload's built-in middleware export with matcher for /admin and /api routes'."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 4,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor entries lack proper inline descriptions. They are listed as plain prose ('migrateTags: count assertion — после вызова...') rather than the required format '`tests/path::test_name` — description'.",
+      "fix": "Reformat as: '`tests/migrate-tags.test.ts::migrateTags_count_assertion` — verifies that after migration, payload.create is called N times matching prisma.tag.findMany() count (N tags)'. Include file path and test name in backtick format."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 5,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor entries are in prose format without the required '`path::test_name` — description' structure. All three entries ('migrate-posts: count assertion', 'migrate-posts: tags relationship', 'migrate-posts: field-level spot check') lack the backtick-wrapped path::name format.",
+      "fix": "Reformat as: '`tests/migrate-posts.test.ts::count_assertion` — verifies prisma.post.count() equals payload.find({ collection: posts }).totalDocs after full migration run (mocked)'. Add to each entry."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 5,
+      "section": "Verification Steps",
+      "issue": "Verification Steps / Smoke subsection states 'Нет (smoke-тесты posts collection будут в Task 8...)'. This means the Smoke section is effectively empty. Per the template, sections must not be empty stubs. If there are no smoke checks, the subsection should be omitted, not present with a 'None' explanation.",
+      "fix": "Remove the Smoke subsection entirely from Task 5 Verification Steps, or add at least one concrete smoke check (e.g., 'npx tsc --noEmit payload/collections/posts.ts → exit 0')."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 1,
+      "section": "Context Files",
+      "issue": "Context Files section includes inline code references without markdown links (e.g., '`app/vacancies/[category]/page.tsx` — текущее использование `params`'). The template requires all files as markdown links '[name](path)', not plain text or inline code.",
+      "fix": "Convert to markdown links: '[app/vacancies/[category]/page.tsx](../../../app/vacancies/[category]/page.tsx) — current params usage pattern'."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 1,
+      "section": "Context Files",
+      "issue": "Context Files is missing 'testing.md' (project knowledge file). The template lists it as a standard context file for code tasks.",
+      "fix": "Add [testing.md](~/.claude/skills/project-knowledge/references/testing.md) to Context Files."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 2,
+      "section": "Required Skills",
+      "issue": "Required Skills lists '/skill:deploy-pipeline' but frontmatter 'skills' contains '[deploy-pipeline]'. This is consistent. However, there is no 'SKILL.md' path verified for deploy-pipeline — the format references ~/.claude/skills/deploy-pipeline/SKILL.md which should be validated. This is a minor consistency note.",
+      "fix": "Verify that ~/.claude/skills/deploy-pipeline/SKILL.md exists. If not, the skill link is broken."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 2,
+      "section": "Context Files",
+      "issue": "Context Files references '[`.github/workflows/deploy.yml`](../../../.github/workflows/deploy.yml)' with backtick formatting inside the link text, which is unusual markdown. Minor formatting issue.",
+      "fix": "Change to '[deploy.yml](../../../.github/workflows/deploy.yml)' without backticks in the link text."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 3,
+      "section": "Context Files",
+      "issue": "Context Files is missing 'testing.md' and 'deployment.md' from project knowledge references. For a task creating payload.config.ts and middleware.ts, deployment.md would be relevant context.",
+      "fix": "Add [testing.md](~/.claude/skills/project-knowledge/references/testing.md) and [deployment.md](~/.claude/skills/project-knowledge/references/deployment.md) to Context Files."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 3,
+      "section": "Context Files",
+      "issue": "Inline file references ('`next.config.mjs`', '`app/layout.tsx`') are not markdown links. Template requires all files as '[name](path)'.",
+      "fix": "Convert to: [next.config.mjs](../../../next.config.mjs) and [app/layout.tsx](../../../app/layout.tsx)."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 4,
+      "section": "Context Files",
+      "issue": "Context Files references '[lib/tags.ts](../../../lib/tags.ts)', '[lib/tag-matcher.ts](../../../lib/tag-matcher.ts)', and '[prisma/schema.prisma](../../../prisma/schema.prisma)' as markdown links — this is correct. However, 'testing.md' is missing from the standard project-knowledge context files.",
+      "fix": "Add [testing.md](~/.claude/skills/project-knowledge/references/testing.md) to Context Files."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 5,
+      "section": "Context Files",
+      "issue": "Context Files uses plain text for the last 4 entries ('`prisma/schema.prisma`', '`lib/posts.ts`', '`lib/postUtils.ts`', '`payload/collections/tags.ts`') without markdown links. Also missing 'testing.md'.",
+      "fix": "Convert to markdown links: [prisma/schema.prisma](../../../prisma/schema.prisma), [lib/posts.ts](../../../lib/posts.ts), etc. Add [testing.md](~/.claude/skills/project-knowledge/references/testing.md)."
+    },
+    {
+      "severity": "minor",
+      "category": "decomposition",
+      "task": 5,
+      "section": "frontmatter",
+      "issue": "Task 5 depends_on: [3] only, but the Details section states 'Task 4 (Tags Collection) — желательно завершить до запуска migration script'. If Task 4 completion is a practical dependency (migration script resolves tag IDs from Payload Tags collection), this should be reflected in depends_on. The script would fail at runtime without Task 4's data.",
+      "fix": "Consider adding Task 4 to depends_on: [3, 4]. If the migration script is run separately and not part of the task's main acceptance criteria, document why Task 4 is not a formal dependency."
+    },
+    {
+      "severity": "minor",
+      "category": "carry-forward",
+      "task": 3,
+      "section": "What to do",
+      "issue": "Step 54 in 'What to do' specifies 'db: postgresAdapter({ pool: { connectionString: process.env.DB_CONNECTION_STRING } })' while the tech-spec Description for Task 3 says 'db-postgres adapter with explicit url: process.env.DB_CONNECTION_STRING'. The task text itself acknowledges this uncertainty ('в v3 может быть pool: { connectionString } или url:') but should not leave this ambiguous in 'What to do'.",
+      "fix": "Resolve the API discrepancy before execution: verify the @payloadcms/db-postgres v3 API and specify the correct field name definitively. Move the ambiguity note to Implementation hints."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 5,
+    "issues_found": 26,
+    "critical": 8,
+    "major": 9,
+    "minor": 9
+  }
+}

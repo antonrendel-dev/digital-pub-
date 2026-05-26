@@ -1,0 +1,54 @@
+{
+  "validator": "reality-checker",
+  "batch": [10, 11, 12],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "feasibility",
+      "task": 10,
+      "issue": "Implementation pseudocode in 'What to do' step 2 checks `if (user.role !== 'agent') → 403`, which would reject admin tokens with 403. Tech-spec articles access control explicitly allows both 'agent' AND 'admin' to create articles (`create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'agent'`). The TDD anchor correctly asserts 'POST с токеном admin → 201' and the AC correctly says 'не agent, не admin → 403', but the pseudocode contradicts both. An implementer following the code block would produce a broken route.",
+      "fix": "Update the POST pseudocode in 'What to do' step 2 to check `if (user.role !== 'agent' && user.role !== 'admin') → 403` (or better: let Payload's own access control handle it by NOT doing the manual role check and instead relying on `payload.create()` with `req` passed — which is the stated intent of 'НЕЛЬЗЯ использовать overrideAccess: true'). Alternatively remove the manual role check entirely and let the Payload access layer reject non-agent/non-admin tokens."
+    },
+    {
+      "severity": "major",
+      "category": "tdd",
+      "task": 11,
+      "issue": "TDD Anchor specifies test file path `scripts/__tests__/sync-telegram.test.ts`. Jest config (jest.config.ts) uses `testMatch: ['**/tests/**/*.test.ts']` — this pattern matches only files under a `tests/` directory. Files in `scripts/__tests__/` will NOT be discovered by Jest and will never run.",
+      "fix": "Move the test file to `tests/unit/sync-telegram.test.ts` (matching the existing pattern used by other unit tests). Update the Verification Steps section accordingly: `npm test -- --testPathPattern=sync-telegram` will then work."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 10,
+      "issue": "The 'Dependencies' section states 'Task 8 (Articles Collection)' and 'Task 9 (Users Collection & Roles)'. Task 8 is actually 'Replace Prisma Data Layer', not 'Articles Collection'. Task 6 is 'Articles Collection + Media Collection'. Task 9 is 'App Routes + Globals Integration', not 'Users Collection'. Users collection is created in Task 3 (`payload/collections/users.ts` stub). While the `depends_on: [8, 9]` wave-level ordering is sufficient (all collections are done before Wave 5), the human-readable rationale is factually wrong and will confuse the implementing agent.",
+      "fix": "Update 'Dependencies' description to correctly state: 'Task 6 (Articles Collection) — коллекция articles должна существовать; Task 3 (Payload Installation) — коллекция users с полем role создана как stub; depends_on: [8, 9] обеспечивает запуск после Wave 4, когда все коллекции (Tasks 4-7) уже определены.'"
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 11,
+      "issue": "The 'Dependencies' section states 'Task 8 должен быть выполнен — Posts collection в Payload определена' and 'Task 9 должен быть выполнен — Users collection определена, роль sync создана в onInit'. Task 8 is 'Replace Prisma Data Layer', not Posts collection definition. Posts collection is Task 5. Task 9 is 'App Routes + Globals Integration'; the sync user's API Key is created in Task 3's onInit hook. The rationale is factually wrong.",
+      "fix": "Update 'Dependencies' to: 'Task 5 (Posts Collection) — коллекция posts с полями telegramMessageId+channelUsername определена; Task 3 (Payload Installation) — пользователь sync создан в onInit, API Key режим включён; depends_on: [8, 9] обеспечивает запуск после Wave 4.'"
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 10,
+      "issue": "Context Files reference `[architecture.md](~/.claude/skills/project-knowledge/references/architecture.md)` and `[patterns.md](~/.claude/skills/project-knowledge/references/patterns.md)`. The path `~/.claude/skills/project-knowledge/references/` does not exist on this machine. The correct project-specific path is `.claude/skills/project-knowledge/references/` (within the project root).",
+      "fix": "Replace `~/.claude/skills/project-knowledge/references/architecture.md` with `../../.claude/skills/project-knowledge/references/architecture.md` (relative from work/payload-cms/) or use the absolute project path."
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 11,
+      "issue": "Context Files reference `[architecture.md](~/.claude/skills/project-knowledge/references/architecture.md)` and `[patterns.md](~/.claude/skills/project-knowledge/references/patterns.md)` using `~/.claude/...` path. Same as Task 10 — this global path does not exist; project-knowledge references live under the project's `.claude/` directory.",
+      "fix": "Replace with `../../.claude/skills/project-knowledge/references/architecture.md` relative path, matching the pattern used in Task 12 which correctly uses `../../.claude/...`."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 31,
+    "issues_found": 6
+  }
+}

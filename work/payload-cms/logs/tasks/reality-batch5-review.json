@@ -1,0 +1,103 @@
+{
+  "validator": "reality-checker",
+  "batch": [13, 14, 15],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 13,
+      "issue": "Task 13 references files that don't exist yet: `payload/collections/tags.ts`, `payload/collections/posts.ts`, `payload/collections/articles.ts`, `payload/collections/media.ts`, `payload/collections/users.ts`, `payload/globals/navbar.ts`, `payload/globals/footer.ts`, `payload/globals/socialChannels.ts`, `payload/globals/siteSettings.ts`, `app/api/articles/route.ts`, `middleware.ts`. None of these exist in the codebase. The entire Payload integration (Wave 2-5) has not been implemented yet. Task 13 is a security audit of code that doesn't exist.",
+      "fix": "Task 13 must declare depends_on: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] — it can only run after all implementation tasks complete. Currently depends_on: [10, 11] is insufficient and the files it audits are absent."
+    },
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 14,
+      "issue": "Task 14 references test files that don't exist: `tests/lib/tags.test.ts`, `tests/lib/posts.test.ts`, `tests/lib/postUtils.test.ts`, `tests/scripts/migrate-tags.test.ts`, `tests/scripts/migrate-posts.test.ts`, `tests/scripts/sync-telegram.test.ts`. Actual test directories are `tests/unit/` and `tests/integration/` — there are no `tests/lib/` or `tests/scripts/` subdirectories. The verification command `ls tests/lib/tags.test.ts ...` will always fail with 'No such file or directory'.",
+      "fix": "Task 14 Verification Steps must use correct paths: `tests/unit/tags.test.ts`, `tests/unit/posts.test.ts`, `tests/unit/postUtils.test.ts`, `tests/unit/migrate-tags.test.ts`, `tests/unit/migrate-posts.test.ts`, `tests/unit/sync-telegram.test.ts` (or `tests/scripts/` subdirectory must be explicitly created as part of the feature)."
+    },
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 14,
+      "issue": "Task 14 reads `lib/tags.ts`, `lib/posts.ts`, `lib/postUtils.ts` to audit their tests — but these files are still Prisma-based (not Payload-rewritten). `lib/tags.ts` imports from `./prisma`, `lib/posts.ts` imports from `./prisma`. The Payload-rewritten versions don't exist yet (Task 8 hasn't run). Task 14 depends_on: [10, 11] but must also depend on Task 8 which rewrites the lib files it audits.",
+      "fix": "Add Task 8 to depends_on: [8, 10, 11]. Task 14 cannot audit Payload-based lib/* until Task 8 is complete."
+    },
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 15,
+      "issue": "Task 15 performs QA on Payload integration including `payload migrate`, `payload.config.ts`, `getPayload()` singleton, `/admin` redirect, and Payload REST API — but `payload.config.ts` does not exist, no Payload packages are installed (package.json shows `next: 14.2.35`, no `payload` entry), and `middleware.ts` does not exist. The entire Payload foundation (Waves 2-5) is absent. All QA checks will fail.",
+      "fix": "Task 15 correctly declares depends_on: [12, 13, 14] but those tasks themselves have incorrect depends_on chains. The overall wave dependency is correct in intent but the full chain (Waves 1-5 + Audit) must complete before Task 15 executes."
+    },
+    {
+      "severity": "critical",
+      "category": "hallucination",
+      "task": 13,
+      "issue": "Task 13 Security Checklist item: 'Нет обхода через `//admin` или `/admin/` (trailing slash)' — but middleware.ts doesn't exist yet and Payload's built-in auth behavior on trailing slash is not something Task 3 (which creates middleware.ts) explicitly addresses. The tech-spec says 'middleware adds no logic — can be omitted if Payload handles auth natively'. This creates a gap: if middleware.ts is omitted (per tech-spec), the audit checklist item about trailing slash bypass has nothing to verify.",
+      "fix": "Security audit checklist should note that if Payload handles /admin auth natively (no custom middleware.ts), the trailing slash bypass test should verify Payload's built-in behavior, not a non-existent middleware.ts."
+    },
+    {
+      "severity": "major",
+      "category": "missing_file",
+      "task": 13,
+      "issue": "Task 13 reads `.env.example` to verify PAYLOAD_SECRET entropy documentation. Current `.env.example` has no Payload-related variables (only DATABASE_URL, NEXTAUTH_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD_HASH, TELEGRAM_CHANNELS, SYNC_INTERVAL_MINUTES). The PAYLOAD_SECRET, PAYLOAD_ADMIN_EMAIL, PAYLOAD_ADMIN_PASSWORD, PAYLOAD_API_KEY, DB_CONNECTION_STRING entries do not exist yet — they are added in Task 3.",
+      "fix": "This is acceptable as Task 13 depends on Tasks 10+11 (which run after Task 3), so by the time Task 13 runs .env.example should be updated. However, Task 13 should explicitly note this dependency in its checklist."
+    },
+    {
+      "severity": "major",
+      "category": "tdd",
+      "task": 14,
+      "issue": "Task 14 Expected Coverage table for `scripts/migrate-tags.ts` and `scripts/migrate-posts.ts` describes tests that verify behavior of actual scripts (count assertions, spot-checks, Lexical JSON validity). However, these are one-time migration scripts that run against a real DB — writing unit tests for them requires either mocking Prisma+Payload clients or running against a test DB. The task does not specify the mocking strategy, leaving the test implementation ambiguous.",
+      "fix": "Task 14 or Task 8 should specify whether migration script tests use mocked Prisma/Payload clients (via jest.mock) or require a test database. Without this, the audit cannot definitively confirm test adequacy."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 15,
+      "issue": "Task 15 Step 10 (getPayload() singleton check) uses `pm2 logs staging-dpub` as the primary log source, with `journalctl -u staging-dpub` and `tail -50 ~/staging.d-pub.ru/app/app.log` as fallbacks. Per `deployment.md`, staging runs Next.js on port 3002 on the red server — but the actual process manager is not documented as pm2. The service name `staging-dpub` is invented — there is no reference to this service name in deployment.md or project knowledge.",
+      "fix": "Verify the actual process manager and service name for staging. deployment.md mentions 'Next.js запущен прямо на красном сервере на порту 3002' but doesn't specify pm2 or systemd. The fallback chain (pm2 → journalctl → app.log) is reasonable but `staging-dpub` service name should be confirmed or replaced with a more robust log discovery approach."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 15,
+      "issue": "Task 15 Step 9 (Sync dedup end-to-end) runs sync script from `ssh root@144.31.204.181 'cd /opt/bots/telegram-bot-vac && npx ts-node scripts/sync-telegram.ts'`. After Task 11 rewrites `scripts/sync-telegram.ts` to use Payload REST API, the script lives in the project repo — but Task 15 assumes it's at `/opt/bots/telegram-bot-vac/`. The sync script location on the red server vs. the project repo is not reconciled in Task 11's scope.",
+      "fix": "Task 11 description says it rewrites `scripts/sync-telegram.ts` in the project repo, but Task 15 assumes the red server runs it from `/opt/bots/telegram-bot-vac/`. Clarify whether the rewritten script is deployed to the red server separately or replaces the existing bot. The path in Task 15 Step 9 may be incorrect post-migration."
+    },
+    {
+      "severity": "major",
+      "category": "hints",
+      "task": 15,
+      "issue": "Task 15 Step 7 (Migration integrity) includes a full Node.js script with `require('payload')` and `getPayload({config}).then(...)` as an implementation block, not a hint. This prescribes a specific code approach (CommonJS require in an ES module project) that may fail if the project uses ES modules (`package.json type: 'module'` or `.mjs` extensions). The task also provides a simpler REST API alternative, but the primary approach may not work.",
+      "fix": "Replace the inline Node.js script with the REST API alternative as the primary approach: `curl -s '$BASE/api/tags?limit=0'`. The Node.js script should be a fallback hint, not prescribed implementation."
+    },
+    {
+      "severity": "minor",
+      "category": "tdd",
+      "task": 14,
+      "issue": "Task 14 instructs to run `npm test` on staging server (`ssh claude@144.31.204.181 'cd ~/staging.d-pub.ru/app && npm test'`). Running unit tests on a production-like staging server is unusual — unit tests should be local. Installing devDependencies on staging may not be configured (CI typically runs `npm ci --production` or equivalent).",
+      "fix": "Prefer running `npm test` locally on the agent's machine where devDependencies are available. Staging test execution is acceptable as a fallback but should not be primary."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 15,
+      "issue": "Task 15 Step 4 (Media upload) creates a 1x1 PNG via an inline Python script and uploads it via `curl -X POST $BASE/api/media`. However, `ADMIN_API_KEY` variable is used but never defined in the task's bash context — it references a staging env value that the agent must obtain separately (from Payload admin UI or staging env vars). The task doesn't specify how the agent gets this key.",
+      "fix": "Add explicit instructions for obtaining ADMIN_API_KEY: 'Read PAYLOAD_ADMIN_API_KEY from staging server env or generate via Payload admin UI → Users → admin user → API Key'. Same issue applies to AGENT_API_KEY and SYNC_API_KEY used in steps 3 and 8."
+    },
+    {
+      "severity": "minor",
+      "category": "cross-task-integration",
+      "task": 13,
+      "issue": "Task 13 depends_on: [10, 11] (Agent API Route and Sync Script Migration). However, the security audit also covers collections (Tasks 4-7), globals (Task 7), base config (Task 3), and CSP (Task 3). Missing dependency on Tasks 3-9 means Task 13 could theoretically be scheduled before these implementation tasks complete.",
+      "fix": "Update depends_on to: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] to reflect that Task 13 audits all implementation tasks. Alternatively, ensure the wave ordering in the feature executor guarantees Audit Wave only starts after Wave 5."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 38,
+    "issues_found": 13
+  }
+}

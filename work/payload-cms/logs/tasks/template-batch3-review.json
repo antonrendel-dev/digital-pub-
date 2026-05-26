@@ -1,0 +1,222 @@
+{
+  "validator": "task-validator",
+  "batch": [11, 12, 13, 14, 15],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 11,
+      "section": "Reviewers",
+      "issue": "Template placeholder `{round}` present in all three reviewer log paths: `code-reviewer-{round}.json`, `security-auditor-{round}.json`, `test-reviewer-{round}.json`",
+      "fix": "Replace `{round}` with `1` (first review round): `code-reviewer-1.json`, `security-auditor-1.json`, `test-reviewer-1.json`"
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 11,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor entries use full TypeScript code blocks instead of the required format `` `path::test_name` — description ``. All three tests are presented as code block implementations, not as anchor entries. The intro also says 'два unit-теста' (two) but lists three tests.",
+      "fix": "Replace code blocks with entries in the required format, e.g.: `scripts/__tests__/sync-telegram.test.ts::skips post on 409 response (dedup)` — savePost returns false when fetch returns 409, fetch called exactly once. Remove the full code implementations from this section."
+    },
+    {
+      "severity": "critical",
+      "category": "frontmatter",
+      "task": 12,
+      "section": "frontmatter",
+      "issue": "`wave: audit` is a string, not a number ≥ 1. The frontmatter spec requires `wave` to be a number.",
+      "fix": "Assign the next numeric wave after wave 5. Tasks 12, 13, 14 run after Tasks 10 and 11 (wave 5) — set `wave: 6`."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 12,
+      "section": "Verification Steps",
+      "issue": "`## Verification Steps` section is missing entirely. The checklist mandates this section for ALL tasks.",
+      "fix": "Add a `## Verification Steps` section. For an audit task this can contain the grep checks already listed in `## What to do` step 4, formatted as: `### Automated` with each grep command and its expected result."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 12,
+      "section": "Details",
+      "issue": "`## Details` section is missing entirely (no Files, Dependencies, Edge cases, Implementation hints subsections).",
+      "fix": "Add a `## Details` section with at minimum: **Files** (decisions.md — write audit report here), **Dependencies** (tasks 10 and 11 must be done first), **Edge cases** (what if grep finds Prisma imports — document escalation path), **Implementation hints** (run grep checks before reading code)."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 12,
+      "section": "Reviewers",
+      "issue": "`## Reviewers` section is missing. Even though `reviewers: []` in frontmatter, the template requires the section to be present (can state 'none — self-reviewing audit task').",
+      "fix": "Add `## Reviewers` section with content: `none — audit task is self-reviewing.`"
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 12,
+      "section": "Context Files",
+      "issue": "Context files listed as plain-text paths (e.g. `` `payload/collections/tags.ts` ``) instead of markdown links `[name](path)`. Lines 165–181 are plain text, not `[name](path)` format.",
+      "fix": "Convert each plain-text file reference to a markdown link: `[payload/collections/tags.ts](../../../payload/collections/tags.ts)` etc."
+    },
+    {
+      "severity": "critical",
+      "category": "frontmatter",
+      "task": 13,
+      "section": "frontmatter",
+      "issue": "`wave: audit` is a string, not a number ≥ 1.",
+      "fix": "Set `wave: 6` (same as tasks 12 and 14 — they are parallel audit tasks)."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 13,
+      "section": "Details",
+      "issue": "`## Details` section is missing entirely.",
+      "fix": "Add a `## Details` section with **Files** (list files to read), **Dependencies** (tasks 10, 11), **Edge cases** (e.g. overrideAccess:true could be hidden inside a helper — check call chain), **Implementation hints** (grep-first approach before reading full code)."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 13,
+      "section": "Reviewers",
+      "issue": "`## Reviewers` section is missing. Template requires it even when `reviewers: []`.",
+      "fix": "Add `## Reviewers` section stating: `none — security audit task is self-reviewing.`"
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 13,
+      "section": "Context Files",
+      "issue": "Context files from line 151 onward are listed as plain-text code-spans (`` `payload/collections/tags.ts` ``) instead of markdown links. 11 files are not linked.",
+      "fix": "Convert each to: `[payload/collections/tags.ts](../../../payload/collections/tags.ts)` etc."
+    },
+    {
+      "severity": "critical",
+      "category": "frontmatter",
+      "task": 14,
+      "section": "frontmatter",
+      "issue": "`wave: audit` is a string, not a number ≥ 1.",
+      "fix": "Set `wave: 6` (parallel audit wave alongside tasks 12 and 13)."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 14,
+      "section": "Reviewers",
+      "issue": "`## Reviewers` section is missing. Template requires it even for self-reviewing tasks.",
+      "fix": "Add `## Reviewers` section: `none — test audit task is self-reviewing.`"
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 14,
+      "section": "Context Files",
+      "issue": "Context files from line 133 onward (lib/tags.ts, lib/posts.ts, lib/postUtils.ts, scripts/migrate-tags.ts, scripts/migrate-posts.ts, scripts/sync-telegram.ts, tests/) are listed as plain-text code-spans, not markdown links.",
+      "fix": "Convert each to markdown link format: `[lib/tags.ts](../../../lib/tags.ts)` etc."
+    },
+    {
+      "severity": "critical",
+      "category": "frontmatter",
+      "task": 15,
+      "section": "frontmatter",
+      "issue": "`wave: final` is a string, not a number ≥ 1.",
+      "fix": "Set `wave: 7` (after the audit wave 6, before deploy tasks)."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 15,
+      "section": "TDD Anchor",
+      "issue": "`## TDD Anchor` section is missing. Task 15 (Pre-deploy QA) uses skill `pre-deploy-qa` and its `## What to do` contains bash commands that constitute automated test-like checks (curl, grep). If this is a non-code task the section should be explicitly absent — but the task contains scripted automated steps that verify code behavior, making this borderline. At minimum, the absence should be intentional and explicit.",
+      "fix": "If Task 15 is classified as a non-code task, confirm no TDD Anchor is needed and document that decision in Description. If the bash automation constitutes testable code, add a TDD Anchor section with the key verification commands."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 15,
+      "section": "Details",
+      "issue": "`## Details` section is missing (no Files, Dependencies, Edge cases, Implementation hints subsections).",
+      "fix": "Add `## Details` with **Files** (qa-report.md — to create), **Dependencies** (tasks 12, 13, 14 must pass), **Edge cases** (staging data may differ from prod count; AGENT_API_KEY may not be in env), **Implementation hints** (get AGENT_API_KEY from Payload admin before running checks)."
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 15,
+      "section": "Reviewers",
+      "issue": "`## Reviewers` section is missing. Template requires it even for tasks with `reviewers: []`.",
+      "fix": "Add `## Reviewers` section: `none — pre-deploy QA task is self-verifying.`"
+    },
+    {
+      "severity": "critical",
+      "category": "structure",
+      "task": 15,
+      "section": "Verification Steps",
+      "issue": "`## Verification Steps` section is missing. It is mandatory for all tasks.",
+      "fix": "Add `## Verification Steps` section with the key automated checks (e.g.: `curl -s -o /dev/null -w '%{http_code}' https://staging.d-pub.ru/ → 200`) and a User subsection for revalidation SLA checks that require browser access."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 11,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor Test 3 (`does not log PAYLOAD_API_KEY on error`) checks that the literal string `'API-Key'` doesn't appear in logs. This tests string presence in console output rather than behavioral correctness — the test would pass if the error message contains the key value but not the literal string 'API-Key'.",
+      "fix": "Strengthen the test: mock `PAYLOAD_API_KEY` to a distinctive random value and assert that value does not appear in any console.error call, regardless of surrounding strings."
+    },
+    {
+      "severity": "major",
+      "category": "consistency",
+      "task": 11,
+      "section": "Details",
+      "issue": "Dependencies section says 'Task 9 должен быть выполнен — Users collection определена, роль `sync` создана в `onInit`' but `depends_on: [8, 9]` in frontmatter. Task 3 (not Task 9) creates the Users collection and onInit hook per tech-spec. Task 9 is 'App Routes + Globals Integration'. The dependency rationale is factually wrong.",
+      "fix": "Correct the Details/Dependencies text: the Users collection and onInit hook are created in Task 3. Task 11 depends on Task 8 (Posts collection with unique constraint) and Task 9 (Users collection with sync role) — but verify if the actual dependency is Task 3. Update depends_on accordingly if Task 3 is the real prerequisite."
+    },
+    {
+      "severity": "major",
+      "category": "decomposition",
+      "task": 15,
+      "section": "Description",
+      "issue": "Task 15 modifies `work/payload-cms/logs/qa-report.md` (new file) and reads many spec files, but also executes SSH commands on the red server and curl checks against staging. This combines report writing, HTTP verification, SSH automation, and migration validation into a single task — potentially too broad for a single atomic unit.",
+      "fix": "Consider splitting into Task 15a (automated curl/grep checks) and Task 15b (staging SSH + sync verification), or accept as-is with a note that all steps share the single outcome of a QA report."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 11,
+      "section": "TDD Anchor",
+      "issue": "Section intro says 'Написать два unit-теста' (write two unit tests) but lists three tests. Inconsistency in the count stated.",
+      "fix": "Update intro to say 'три unit-теста' or remove the count reference."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 12,
+      "section": "What to do",
+      "issue": "Step 3 says 'Прочитать все feature-файлы (см. раздел Context Files)' but the Context Files section contains 11 plain-text references that are not navigable links. The agent cannot easily jump to the files.",
+      "fix": "After fixing Context Files to use markdown links (see critical finding above), this minor issue is resolved."
+    },
+    {
+      "severity": "minor",
+      "category": "structure",
+      "task": 13,
+      "section": "Post-completion",
+      "issue": "Post-completion contains a markdown code block with a template (`## Security Audit Report — Task 13 (YYYY-MM-DD)`) inside the Post-completion section. This is a reporting template, not a checklist item. The YYYY-MM-DD is an unfilled placeholder.",
+      "fix": "Move the report template to a `## Reporting` section (as done in tasks 14 and 15), or convert it to a linked reference. Keep Post-completion as a simple checklist."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 15,
+      "section": "Context Files",
+      "issue": "`deployment.md` is listed as `[deployment.md](../../.claude/skills/project-knowledge/references/deployment.md)` — the relative path from `work/payload-cms/tasks/` to `.claude/skills/...` would require `../../../` not `../../`. Same issue may affect other PK references in this task.",
+      "fix": "Verify relative path depth: from `work/payload-cms/tasks/15.md` to `.claude/skills/project-knowledge/references/` requires going up 4 levels: `../../../../.claude/skills/project-knowledge/references/deployment.md`."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 5,
+    "issues_found": 25,
+    "critical": 18,
+    "major": 3,
+    "minor": 4
+  }
+}

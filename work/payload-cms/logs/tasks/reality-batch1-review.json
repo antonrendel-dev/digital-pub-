@@ -1,0 +1,47 @@
+{
+  "validator": "reality-checker",
+  "batch": [1, 2, 3],
+  "status": "approved",
+  "findings": [
+    {
+      "severity": "major",
+      "category": "tdd",
+      "task": 1,
+      "issue": "TDD Anchor specifies test file path `tests/routes/async-params.test.ts`, but the project's established test directory convention is `tests/unit/`, `tests/integration/`, and `tests/e2e/`. A `tests/routes/` directory does not exist and does not match any existing convention. All existing unit tests live in `tests/unit/` (tag-matching.test.ts, data.test.ts, slug-validation.test.ts, smoke.test.ts, articles.test.ts).",
+      "fix": "Change TDD Anchor file path to `tests/unit/async-params.test.ts` to match the project's established `tests/unit/` convention."
+    },
+    {
+      "severity": "major",
+      "category": "hints",
+      "task": 3,
+      "issue": "The 'What to do' section (step 5) contradicts the tech-spec: it says `db: postgresAdapter({ pool: { connectionString: process.env.DB_CONNECTION_STRING } })` — noting explicitly 'НЕ url, а pool.connectionString'. However, tech-spec.md Architecture section states the db-postgres adapter uses `url: process.env.DB_CONNECTION_STRING` (not pool.connectionString). The tech-spec is the authoritative source. The task body gives conflicting instructions with a wrong emphasis, which could cause the implementer to use the wrong API.",
+      "fix": "Align 'What to do' step 5 with tech-spec: use `url: process.env.DB_CONNECTION_STRING` as the db-postgres adapter parameter, not `pool: { connectionString }`. The Implementation Hints already correctly say to 'verify actual API' — remove the prescriptive 'НЕ url, а pool.connectionString' claim from the What to do section since it contradicts the tech-spec."
+    },
+    {
+      "severity": "minor",
+      "category": "missing_file",
+      "task": 3,
+      "issue": "Task 3 specifies `serverURL: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'` in payload.config.ts. However, `NEXT_PUBLIC_SITE_URL` does not appear anywhere in the current codebase (not in .env.example, not referenced in any .ts/.tsx/.mjs file). The variable will silently default to 'http://localhost:3000' in all environments unless explicitly added.",
+      "fix": "Add `NEXT_PUBLIC_SITE_URL=https://d-pub.ru` to .env.example in the Payload CMS block (alongside PAYLOAD_SECRET etc.). Update Acceptance Criteria to include this variable."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 2,
+      "issue": "Task 2 Details section states the prod server is `c48127@91.201.52.231` hardcoded. However, the actual deploy.yml uses GitHub Secrets `${{ secrets.DEPLOY_USER }}` and `${{ secrets.DEPLOY_HOST }}` — the actual credentials are not exposed in code. The hardcoded values in the Details section are documentation-only but create a risk if someone copy-pastes them into the actual YAML instead of using the secrets references.",
+      "fix": "Clarify in the Details section that `c48127@91.201.52.231` is provided for reference only and the actual YAML must use `${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}` — which is already the pattern in the existing deploy.yml."
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 3,
+      "issue": "Task 3 Implementation hints include a specific middleware.ts implementation as a complete code block: `export { default } from '@payloadcms/next/middleware'`. Since Payload packages are not yet installed, this export path cannot be verified against the actual package. Payload v3 middleware API may differ. The hint is presented as definitive but contains a fallback ('if this approach doesn't work — leave empty middleware'), suggesting uncertainty.",
+      "fix": "Rephrase as: 'Check Payload v3 docs for the correct middleware export. A common pattern is `export { default } from \"@payloadcms/next/middleware\"` but verify against installed package before using.' This makes the uncertainty explicit without removing the useful hint."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 31,
+    "issues_found": 5
+  }
+}
