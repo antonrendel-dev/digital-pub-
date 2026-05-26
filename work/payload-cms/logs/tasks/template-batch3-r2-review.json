@@ -1,0 +1,102 @@
+{
+  "validator": "task-validator",
+  "batch": [11, 12, 13, 14, 15],
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 11,
+      "section": "Context Files",
+      "issue": "Mandatory file `project.md` is missing from Context Files. The checklist requires `project.md` (~/.claude/skills/project-knowledge/project.md) to be present in every task.",
+      "fix": "Add `- [project.md](~/.claude/skills/project-knowledge/project.md)` to the Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 13,
+      "section": "Context Files",
+      "issue": "Mandatory file `project.md` is missing from Context Files. Task 13 lists architecture.md and patterns.md but not project.md.",
+      "fix": "Add `- [project.md](~/.claude/skills/project-knowledge/references/project.md)` to the Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 14,
+      "section": "Context Files",
+      "issue": "Mandatory files `project.md` and `architecture.md` are both missing from Context Files. Task 14 lists patterns.md but omits the other two required project-knowledge files.",
+      "fix": "Add `- [project.md](~/.claude/skills/project-knowledge/references/project.md)` and `- [architecture.md](~/.claude/skills/project-knowledge/references/architecture.md)` to the Context Files section."
+    },
+    {
+      "severity": "critical",
+      "category": "content",
+      "task": 15,
+      "section": "Context Files",
+      "issue": "Mandatory files `architecture.md` and `decisions.md` are missing. Task 15 Context Files lists user-spec.md, tech-spec.md, deployment.md, project.md — but omits `decisions.md` (required by checklist as mandatory) and `architecture.md` (required by checklist as mandatory).",
+      "fix": "Add `- [decisions.md](../decisions.md)` and `- [architecture.md](~/.claude/skills/project-knowledge/references/architecture.md)` to the Context Files section."
+    },
+    {
+      "severity": "major",
+      "category": "content",
+      "task": 11,
+      "section": "What to do",
+      "issue": "The task contains a full `## What to implement` H2 section with detailed TypeScript function implementations as fenced code blocks. This violates the rule 'WHAT, not HOW — no pseudocode, no algorithms, no code blocks with implementation'. The section effectively documents HOW to rewrite the sync script with line-by-line code, not WHAT to do.",
+      "fix": "Replace the 10-part `What to implement` code-dump with concise WHAT-level steps. E.g., '1. Remove Prisma imports and replace PostType with local union type. 2. Add PAYLOAD_BASE_URL and PAYLOAD_API_KEY env vars with throw-on-missing guard. 3. Add loadTagMap() that fetches GET /api/tags?limit=200. 4. Replace assignTags with resolveTagIds using tagMap. 5. Replace savePost with Payload REST POST /api/posts, handling 409 as dedup-skip. 6. Remove backfillTags and backfillImages. 7. Update main() to call loadTagMap() once before the channel loop. 8. Ensure no PAYLOAD_API_KEY value appears in any log statement.'"
+    },
+    {
+      "severity": "major",
+      "category": "structure",
+      "task": 11,
+      "section": "What to implement",
+      "issue": "Task 11 has an extra H2 section `## What to implement` that is not in the task template. The template only defines `## What to do`. The extra H2 breaks the expected section sequence, inserting an undocumented section between `## What to do` and `## TDD Anchor`.",
+      "fix": "Merge the content from `## What to implement` into `## What to do` (as prose steps), then delete the `## What to implement` heading. Remove all fenced code blocks — replace with descriptive steps."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 11,
+      "section": "TDD Anchor",
+      "issue": "TDD Anchor entry 3 tests behavior at string presence level: 'console.error не содержит значение PAYLOAD_API_KEY и строку API-Key'. This tests string absence in output rather than verifying the behavior (that the error is logged with only status+URL). While useful as a security check, this is closer to output inspection than behavioral verification.",
+      "fix": "Acceptable as-is given the security nature of the check, but consider adding a behavioral description: 'savePost logs only status code and URL on 500 — error message contains no secret values'."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 12,
+      "section": "Verification Steps",
+      "issue": "Verification Steps Automated section says 'N/A — это audit задача'. The template requires Verification Steps to be present and not empty — which it is — but the Smoke subsection contains only a bash check for the decisions.md report. The automated step is a reasonable substitution for an audit task. Minor issue: the User subsection is absent, but this is acceptable for an audit task.",
+      "fix": "No fix required — audit tasks legitimately have no automated test suite. Current Smoke check is sufficient."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 14,
+      "section": "Details",
+      "issue": "The Details section has 'Dependencies' content but does not have a dedicated `**Edge cases:**` subsection label. Edge cases content appears under '**Важные проверки при аудите:**' and '**Что НЕ входит в этот аудит:**' rather than an explicit **Edge cases:** label as required by the template.",
+      "fix": "Rename '**Важные проверки при аудите:**' → keep it as-is (it's an audit hint), but add a dedicated `**Edge cases:**` label with at least one edge case (e.g., 'missing test file — module not yet written, flag as FAIL with note', 'test exists but covers wrong behavior path — flag as WARNING not FAIL')."
+    },
+    {
+      "severity": "minor",
+      "category": "content",
+      "task": 15,
+      "section": "Details",
+      "issue": "Details section has `**Files to read for QA context:**`, `**Dependencies:**`, `**Edge cases:**`, `**Implementation hints:**` but no `**Files:**` subsection describing what files are created/modified (QA report file `work/payload-cms/logs/qa-report.md` is mentioned in Post-completion but not in Details > Files).",
+      "fix": "Add `**Files:** work/payload-cms/logs/qa-report.md — created by this task as QA sign-off artifact` under Details."
+    },
+    {
+      "severity": "minor",
+      "category": "decomposition",
+      "task": 11,
+      "section": "What to do",
+      "issue": "Step 8 in 'What to do' says 'Написать тесты (TDD Anchor)' which is correct per TDD workflow. However the section lists reading 5 files before implementation as sequential steps — this is a workflow prescription (HOW to work) rather than WHAT to accomplish. Minor stylistic issue.",
+      "fix": "Acceptable — reading context before implementing is a standard preamble pattern used consistently across all tasks in this feature."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 5,
+    "issues_found": 11,
+    "critical": 4,
+    "major": 2,
+    "minor": 5
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "validator": "reality-checker",
+  "batch": [1, 2, 3],
+  "iteration": 2,
+  "status": "changes_required",
+  "fixes_confirmed_from_r1": [
+    "Task 1 TDD Anchor path corrected: now uses `tests/unit/async-params.test.ts` (was `tests/routes/`)",
+    "Task 3 db adapter: now uses `url: process.env.DB_CONNECTION_STRING` consistently in What to do step 5",
+    "Task 3 NEXT_PUBLIC_SITE_URL replaced with NEXT_PUBLIC_BASE_URL (still factually wrong — see finding below)",
+    "Task 2 hardcoded prod server values (c48127@91.201.52.231) removed from Details section"
+  ],
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "hallucination",
+      "task": 3,
+      "issue": "Task 3 step 7 provides a definitive middleware implementation: `export { default } from '@payloadcms/next/middleware'`. Verified against npm registry: `@payloadcms/next@3.84.1` (latest) does NOT export a `/middleware` subpath. The package's exports map contains: `/css`, `/rsc`, `/auth`, `/views`, `/client`, `/routes`, `/layouts`, `/templates`, `/utilities`, `/withPayload` — no `/middleware`. This import will throw `Cannot find module '@payloadcms/next/middleware'` at runtime.",
+      "fix": "Remove the prescriptive `export { default } from '@payloadcms/next/middleware'` code block. Replace with: Payload v3 handles /admin auth redirects natively via the Next.js adapter — no middleware.ts is needed. If a project-level middleware is required for other purposes, create a standard Next.js middleware without relying on a Payload middleware export. The existing fallback 'if this approach doesn't work — leave empty middleware' should be elevated to the primary instruction."
+    },
+    {
+      "severity": "major",
+      "category": "hallucination",
+      "task": 3,
+      "issue": "Task 3 step 5 states `serverURL: process.env.NEXT_PUBLIC_BASE_URL || 'https://d-pub.ru'` and explicitly notes 'NEXT_PUBLIC_BASE_URL (фактическая переменная в проекте)'. This is factually incorrect. `NEXT_PUBLIC_BASE_URL` does not exist anywhere in the codebase: not in `.env.example`, not in any `.ts`/`.tsx`/`.mjs` source file. The only `NEXT_PUBLIC_*` variables used are `NEXT_PUBLIC_YANDEX_METRIKA_ID`, `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `NEXT_PUBLIC_YANDEX_VERIFICATION`, `NEXT_PUBLIC_GOOGLE_VERIFICATION`. The fallback `'https://d-pub.ru'` means runtime behavior is correct, but the claim misleads the implementer into thinking the variable exists and may be used elsewhere.",
+      "fix": "Change step 5 to: `serverURL: 'https://d-pub.ru'` (hardcoded, since `NEXT_PUBLIC_BASE_URL` does not exist in the project). Alternatively, add `NEXT_PUBLIC_BASE_URL=https://d-pub.ru` to `.env.example` (step 8) and the Acceptance Criteria. Remove the erroneous '(фактическая переменная в проекте)' claim."
+    },
+    {
+      "severity": "major",
+      "category": "tdd",
+      "task": 1,
+      "issue": "TDD Anchor tests (e.g., `CategoryPage({ params: Promise.resolve({ category: 'smm' }) })`) directly invoke Next.js App Router page components that internally call Prisma/DB functions (`getTagBySlug`, `getPostBySlug`, `getTagsWithCounts`, `getPostById`). Jest runs in `testEnvironment: 'node'` without a database connection, so these calls will throw DB connection errors, not TypeErrors. No mocking guidance is provided. The tests cannot pass in the described form without `jest.mock('@/lib/tags')` and `jest.mock('@/lib/posts')` stubs. The tests do not 'check real behavior' as required by the TDD checklist — they test a component that depends on an unavailable external resource.",
+      "fix": "Add mocking guidance to the TDD Anchor section: instruct the implementer to `jest.mock('@/lib/tags', () => ({ getTagBySlug: jest.fn().mockResolvedValue({ name: 'SMM', slug: 'smm', ... }), getTagsWithCounts: jest.fn().mockResolvedValue([]) }))` and similar for `@/lib/posts`. Alternatively, rephrase the TDD anchor: since page components cannot be meaningfully unit-tested without mocks, focus on testing the type contract only (that params is correctly awaited) via a narrow integration test on staging, not via Jest unit tests."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 2,
+      "issue": "Task 2 uses secret name `STAGING_DEPLOY_SSH_KEY` throughout (step 3 and Details section). However, `deployment.md` (the project's authoritative deployment reference) documents this secret as `STAGING_SSH_KEY` (line 96: 'GitHub Secrets: STAGING_HOST=144.31.204.181, STAGING_USER=claude, STAGING_SSH_KEY'). These are different secret names. If Toni has already created `STAGING_SSH_KEY` in GitHub Secrets based on the deployment.md docs, the deploy-staging.yml using `STAGING_DEPLOY_SSH_KEY` will fail with a secret-not-found error.",
+      "fix": "Align with deployment.md: use `STAGING_SSH_KEY` instead of `STAGING_DEPLOY_SSH_KEY` in both step 3 and the Details section. If intentionally renaming the secret, add an explicit note that the old secret must be renamed in GitHub Settings and deployment.md must be updated."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 38,
+    "issues_found": 4,
+    "critical": 1,
+    "major": 2,
+    "minor": 1
+  }
+}

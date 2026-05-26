@@ -1,0 +1,56 @@
+{
+  "validator": "reality-checker",
+  "batch": [16, 17],
+  "iteration": 2,
+  "status": "changes_required",
+  "fixed_since_r1": [
+    "Task 16 Step 1/8: sync disable/enable now correctly targets NetAngels (c48127@91.201.52.231), not red server",
+    "Task 16 Step 2: pg_dump now sources ~/d-pub.ru/app/.env (not ~/.env)",
+    "Task 16 Step 3/5: migration scripts now run AFTER CI deploy completes (correct order)",
+    "Task 17 AC line 49: sync trigger now correctly uses auto-sync.sh on NetAngels",
+    "Task 17 Verification step 6: invalid curl -L0 flag replaced with -L"
+  ],
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "feasibility",
+      "task": 16,
+      "issue": "Rollback procedure (lines 230-235) instructs: `git checkout <предыдущий_коммит>` on the NetAngels app server, followed by `npm run build`. Both commands will fail. Per deployment.md: '~/d-pub.ru/app/ НЕ git-репо' — the server has no git repository, so `git checkout` will fail immediately. Additionally, deployment.md explicitly states in Known Issues P0: 'НЕ ДЕЛАТЬ: npm run build на сервере' — builds must be done locally and rsynced. Executing this rollback procedure will leave the site in a broken state.",
+      "fix": "Replace the code rollback procedure with: (1) locally `git checkout <предыдущий_коммит> && npm run build`, (2) rsync .next/ to server, (3) touch reload. Or restore from the .next.backup/ if previous build was saved. Add a note that the server has no git repo and builds must happen locally."
+    },
+    {
+      "severity": "major",
+      "category": "hallucination",
+      "task": 17,
+      "issue": "Details section line 151 states 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts'. This directly contradicts the correct Verification Steps section which uses NetAngels (c48127@91.201.52.231) and auto-sync.sh. The Details section still contains the pre-r1-fix stale information. An agent reading Details for context may attempt to SSH root@144.31.204.181 and run a non-existent script path instead of following Verification Steps.",
+      "fix": "Update Details section 'Серверная топология': change 'Red server (proxy + sync cron): root@144.31.204.181' and 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts' to accurately reflect that sync runs on NetAngels via /home/c48127/d-pub.ru/app/scripts/auto-sync.sh. Red server is proxy only."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 16,
+      "issue": "Step 4 describes deploy.yml as already containing 'SSH: npx payload migrate' (step 8) and conditional 'touch reload' (step 9). The actual current deploy.yml does NOT have these steps — it only has a direct unconditional `touch ~/d-pub.ru/reload`. This state is only true AFTER Task 2 is completed. Task 16 depends_on Task 15 only (not Task 2), and there is no explicit precondition check instructing the agent to verify `grep -n 'payload migrate' .github/workflows/deploy.yml` before proceeding. An agent could proceed trusting Step 4's description without checking the actual file, then be surprised when migrate never runs.",
+      "fix": "Add an explicit precondition check before Step 3: 'Убедиться что Task 2 выполнена: `grep -n \"payload migrate\" .github/workflows/deploy.yml` должна вернуть результат. Если не возвращает — Task 2 не выполнена, деплой прекратить.' Also add Task 2 to depends_on in the frontmatter."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 17,
+      "issue": "Verification step 8 uses static slug 'verify-test-agent' for POST /api/articles. If the task is run more than once (e.g., retry after network failure), the second attempt returns 409 Conflict (unique slug constraint) instead of 201, producing a false verification failure. The Post-completion note says to delete the test article, but cleanup happens after the check — a retry scenario before cleanup would still fail.",
+      "fix": "Use a dynamic slug: `\"slug\":\"verify-test-$(date +%s)\"` to ensure uniqueness on every run. The article should still be deleted after verification."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 16,
+      "issue": "Step 2 pg_dump command writes to ~/backups/ without first creating the directory. The Details section (line 327) notes 'создать директорию если не существует: mkdir -p ~/backups', but this is buried in Details and not in the executable Step 2 code block. If ~/backups/ does not exist, pg_dump will fail with 'No such file or directory'.",
+      "fix": "Add `mkdir -p ~/backups` as the first line of the Step 2 code block, before the pg_dump command."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 2,
+    "claims_verified": 34,
+    "issues_found": 5,
+    "fixed_from_previous_iteration": 5
+  }
+}

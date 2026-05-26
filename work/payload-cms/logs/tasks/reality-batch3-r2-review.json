@@ -1,0 +1,86 @@
+{
+  "validator": "reality-checker",
+  "batch": [7, 8, 9],
+  "iteration": 2,
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 7,
+      "issue": "Stub files payload/globals/navbar.ts, footer.ts, socialChannels.ts, siteSettings.ts do not exist. The payload/ directory itself does not exist in the repo. Task 7 depends_on [3] (Task 3 creates stubs), but Task 3 has not been executed — Payload is not installed, payload.config.ts and middleware.ts are absent. Task 7 cannot run until Task 3 completes.",
+      "fix": "Ensure Task 3 is fully completed before Task 7 executes. The depends_on [3] declaration is correct and must be enforced."
+    },
+    {
+      "severity": "critical",
+      "category": "missing_file",
+      "task": 8,
+      "issue": "payload.config.ts, payload/collections/tags.ts, and payload/collections/posts.ts do not exist. Task 8 rewrites lib/tags.ts and lib/posts.ts to use getPayload() from '@payload-config', but Payload is not installed (not in package.json) and the config alias does not exist. The import `import config from '@payload-config'` will fail at build time.",
+      "fix": "Tasks 3, 4, and 5 must complete before Task 8 executes. Verify all Payload packages are installed (payload, @payloadcms/next, @payloadcms/db-postgres, @payloadcms/richtext-lexical, sharp) before starting Wave 4."
+    },
+    {
+      "severity": "critical",
+      "category": "feasibility",
+      "task": 9,
+      "issue": "Task 9 says to update app/layout.tsx to use <NavbarServer> instead of <Navbar>, but Navbar is NOT rendered in app/layout.tsx. It is rendered inside three separate 'use client' components: components/HomePage.tsx, components/ListingPage.tsx, and components/PageShell.tsx. Similarly, Footer is imported by all three client components. The 'Files to modify' list omits HomePage.tsx, ListingPage.tsx, and PageShell.tsx — the actual files that must be changed to wire server-side Globals data into the UI. Without modifying these files, the slogan from the Navbar Global will never appear on the homepage or vacancies pages.",
+      "fix": "Add components/HomePage.tsx, components/ListingPage.tsx, and components/PageShell.tsx to 'Files to modify'. Update the wiring strategy: either (a) pass slogan/channels as props from server page components (app/page.tsx, app/vacancies/[category]/page.tsx) down through HomePage/ListingPage props, or (b) refactor app/layout.tsx to include Navbar/Footer so NavbarServer can be placed there. The current strategy of only updating app/layout.tsx is insufficient because the layout does not currently render Navbar or Footer."
+    },
+    {
+      "severity": "major",
+      "category": "hallucination",
+      "task": 8,
+      "issue": "Task 8 states that payload.findByID() 'returns null' for not-found documents (in getPostById). In Payload v3, findByID throws a NotFound error when the document does not exist — it does not return null. The current Prisma implementation uses findUnique which returns null. The try/catch pattern will catch the thrown error, but the function will then log '[posts] DB unavailable' instead of correctly distinguishing 'not found' from 'DB unavailable', causing misleading logs for valid 404 scenarios.",
+      "fix": "In getPostById, catch NotFoundError specifically (import from 'payload/errors') and return null for it, while re-throwing or warning only for genuine DB errors. Alternatively use payload.find() with where:{id:{equals:id}} and check docs[0] for null-like behavior."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 8,
+      "issue": "Task 8's TDD anchor tests must be placed in tests/unit/tags.test.ts and tests/unit/posts.test.ts, but these files do not exist. The existing test structure has tests/unit/articles.test.ts, data.test.ts, slug-validation.test.ts, smoke.test.ts, tag-matching.test.ts — no tags or posts unit test files. The TDD instruction says 'write tests before implementation' but the task doesn't mention creating these new test files explicitly.",
+      "fix": "Add 'Files to create: tests/unit/tags.test.ts, tests/unit/posts.test.ts' explicitly to the task. The TDD anchor section implies creation but the Details section omits them."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 8,
+      "issue": "Task 8 does not mention updating the TagDetail interface to include the new h1 field defined in the Payload Tags collection (tech-spec Data Models). The Payload tags collection adds a new 'h1' field (type: text). The current TagDetail interface has 7 fields without h1. After rewriting lib/tags.ts to use Payload, getTagBySlug() will receive a Payload document that includes h1, but the interface and return mapping will silently drop it. Components or pages that need h1 for SEO rendering (the 'h1' field is described as new content in tech-spec) will not have access to it.",
+      "fix": "Add h1: string | null to the TagDetail interface in task 8, and include h1 in the return mapping of getTagBySlug(). Update TDD anchor mock to include h1 field so the '7 fields' count becomes 8."
+    },
+    {
+      "severity": "major",
+      "category": "tdd",
+      "task": 9,
+      "issue": "Task 9's TDD anchor defines tests in tests/unit/articles-merge.test.ts for a mergeAndSortArticles() helper function. However, the task description only mentions extracting this as a helper 'in отдельный файл или в lib/articles.ts' as a hint — the helper function name, file, and export are not defined in the acceptance criteria. The TDD tests reference mergeArticles() but the task doesn't specify where this function lives or its exact signature. This creates ambiguity: the test file will fail to import the function if the implementation chooses a different function name or file.",
+      "fix": "Define explicitly: create lib/articles-merge.ts (or add to lib/articles.ts) with an exported function named mergeAndSortArticles(mdxArticles: ArticleMeta[], payloadArticles: PayloadArticle[]): MergedArticle[]. Add this to 'Files to create' in the task details."
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 7,
+      "issue": "Task 7 states that SocialChannels seed data should use the name 'Telegram' (from LeftSidebar.tsx title prop), but the actual title prop in LeftSidebar.tsx line 96 is `title=\"Telegram\"` and line 110 is `title=\"Макс\"` and line 122 is `title=\"ВКонтакте\"`. These match the seed values in the task. However, the task's Details section says channels are identified by the SubCard `title` prop while LeftSidebar uses a `type` prop ('tg' | 'mx' | 'vk') for styling. When LeftSidebarServer maps channels by `name` to SubCard, the mapping by name string will work but is fragile if the name changes in Payload Global. Task 9 should use the `type` field from SubCard props for matching, not name.",
+      "fix": "Minor: acknowledge in task 9 that the dynamic channel rendering in LeftSidebar may need to adapt the SubCard-per-type mapping, potentially adding a `type` field to the SocialChannels Global channels array or switching to positional/index-based rendering."
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 8,
+      "issue": "Task 8 hint says 'import config from \"@payload-config\"' — this alias is set up by withPayload() in next.config.mjs (Task 3). This is correct. However, for scripts like migrate-tags.ts and migrate-posts.ts that are run via tsx outside Next.js, the @payload-config alias won't resolve. Task 4 and 5 scripts use Local API, so this is a concern for those tasks, not task 8. No action needed in task 8 itself but worth noting for cross-task awareness.",
+      "fix": "No fix needed in task 8. Document in task 4/5 that migration scripts must import payload.config.ts directly (not via @payload-config alias) since they run outside the Next.js build context."
+    },
+    {
+      "severity": "minor",
+      "category": "feasibility",
+      "task": 9,
+      "issue": "Task 9 says `app/articles/page.tsx` is 'синхронная функция' — this is correct per the current code. The task correctly identifies it needs to become async. However, it also uses the `metadata` export as a static const, which is correct for pages without dynamic metadata. No issues here.",
+      "fix": "No fix needed. Confirmed correct."
+    }
+  ],
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 38,
+    "issues_found": 10,
+    "critical": 3,
+    "major": 4,
+    "minor": 3
+  }
+}

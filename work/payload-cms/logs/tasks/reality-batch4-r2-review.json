@@ -1,0 +1,70 @@
+{
+  "validator": "reality-checker",
+  "batch": [10, 11, 12],
+  "iteration": 2,
+  "status": "changes_required",
+  "findings": [
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 10,
+      "issue": "Task description (line 26) still says 'проверяет `role === \"agent\"` — single-role check, contradicting the fixed pseudocode (step 2, line 62) which correctly checks `role !== 'agent' && role !== 'admin'`. An implementer reading the Description before the pseudocode gets conflicting signals. The critical finding from iter-1 was fixed in the pseudocode but the Description text was not updated to match.",
+      "fix": "Update Description line to: 'проверяет role === \"agent\" || role === \"admin\", затем создаёт статью через payload.create()'"
+    },
+    {
+      "severity": "major",
+      "category": "hallucination",
+      "task": 10,
+      "issue": "TDD Anchor (line 109) and AC (line 115) reference status 'archived': 'get_excludes_draft_and_archived' and 'GET /api/articles не возвращает статьи со статусом `draft` или `archived`'. The articles collection in tech-spec Data Models defines only two status options: ['draft', 'published'] — there is no 'archived' status. The GET handler filters `status: { equals: 'published' }` which already excludes all non-published statuses including any hypothetical future ones. Testing for a specific 'archived' status is testing for a non-existent enum value.",
+      "fix": "Remove 'archived' from TDD anchor test name and AC: rename 'get_excludes_draft_and_archived' to 'get_excludes_draft', and update AC to 'GET /api/articles не возвращает статьи со статусом draft (только published)'. The filter `{ status: { equals: 'published' } }` in the GET handler already satisfies this."
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 10,
+      "issue": "Dependencies section (lines 196-198) still incorrectly names dependencies: 'Task 8 (Replace Prisma Data Layer)' should be cited as providing the data layer, not the articles collection; 'Task 9 (Users Collection & Roles)' is factually wrong — Task 9 is 'App Routes + Globals Integration', not a Users collection task. Users collection is created in Task 3. The articles collection is Task 6. This finding was flagged as major in iteration 1 but was NOT fixed.",
+      "fix": "Update Dependencies to: 'Task 6 (Articles Collection) — коллекция articles должна существовать; Task 3 (Payload Installation) — коллекция users с полем role создана как stub в onInit; depends_on: [8, 9] обеспечивает запуск после Wave 4, когда все коллекции (Tasks 4-7) уже определены.'"
+    },
+    {
+      "severity": "major",
+      "category": "feasibility",
+      "task": 11,
+      "issue": "Dependencies section (lines 290-292) still incorrectly names: 'Task 8 должен — Posts collection в Payload определена' (Task 8 is 'Replace Prisma Data Layer', not Posts collection; Posts collection is Task 5); 'Task 9 должен — Users collection определена, API Key включён' (Task 9 is 'App Routes + Globals Integration'; sync user + API Key is Task 3 onInit). This finding was flagged as major in iteration 1 but was NOT fixed.",
+      "fix": "Update Dependencies to: 'Task 5 (Posts Collection) — коллекция posts с полями telegramMessageId+channelUsername и unique constraint определена; Task 3 (Payload Installation) — пользователь sync создан в onInit, API Key режим включён; depends_on: [8, 9] обеспечивает запуск после Wave 4.'"
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 10,
+      "issue": "Context Files (lines 130-132) still reference `~/.claude/skills/project-knowledge/references/` paths which do not exist on this machine. The skill files live at a user-global level that may not resolve correctly within Claude Code agent context. Task 12 correctly uses `../../.claude/skills/project-knowledge/references/` relative paths. This finding was flagged as minor in iteration 1 but was NOT fixed.",
+      "fix": "Replace `~/.claude/skills/project-knowledge/references/project.md` etc. with `../../.claude/skills/project-knowledge/references/project.md` (relative from work/payload-cms/), matching Task 12's correct pattern."
+    },
+    {
+      "severity": "minor",
+      "category": "hints",
+      "task": 11,
+      "issue": "Context Files (lines 240-241) still reference `~/.claude/skills/project-knowledge/references/architecture.md` and `patterns.md` using the global `~/` prefix. Same issue as Task 10 — not fixed in iteration 1. Task 12 correctly uses `../../.claude/...`.",
+      "fix": "Replace with `../../.claude/skills/project-knowledge/references/architecture.md` and `../../.claude/skills/project-knowledge/references/patterns.md`."
+    }
+  ],
+  "iteration_delta": {
+    "fixed_since_iter1": [
+      "Task 10 critical: POST pseudocode now correctly checks `user.role !== 'agent' && user.role !== 'admin'` — fixed",
+      "Task 11 major: TDD Anchor test file path changed from `scripts/__tests__/sync-telegram.test.ts` to `tests/unit/sync-telegram.test.ts` — fixed"
+    ],
+    "not_fixed_since_iter1": [
+      "Task 10 major: dependency description names (Task 8/9) still factually wrong",
+      "Task 11 major: dependency description names (Task 8/9) still factually wrong",
+      "Task 10 minor: context file paths using ~/.claude",
+      "Task 11 minor: context file paths using ~/.claude"
+    ]
+  },
+  "stats": {
+    "tasks_checked": 3,
+    "claims_verified": 28,
+    "issues_found": 6,
+    "critical": 0,
+    "major": 4,
+    "minor": 2
+  }
+}
