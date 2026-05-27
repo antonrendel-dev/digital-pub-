@@ -1,4 +1,0 @@
-User-agent: *
-Disallow:
-
-Sitemap: https://d-pub.ru/sitemap.xml
