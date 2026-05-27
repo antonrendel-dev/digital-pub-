@@ -52,7 +52,7 @@ jobs:
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy .next/
-        run: rsync -avz --delete .next/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/.next/
+        run: rsync -avz --delete --exclude='cache/' .next/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/.next/
 
       - name: Deploy lib/
         run: rsync -avz lib/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/lib/
