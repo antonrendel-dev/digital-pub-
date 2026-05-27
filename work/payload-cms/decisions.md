@@ -89,3 +89,32 @@ Rejected: CR-3 (Task 3 scope), CR-4/SA-7 (intentional), SA-1/2 (credentials from
 - uploads excluded: confirmed
 - migrate before reload: line 67 < line 76
 - No prod secrets in staging: confirmed
+
+## Task 3: Payload Installation & Base Config
+
+**Status:** Done
+**Commit:** da441e7
+**Agent:** main agent
+
+**Summary:** Installed Payload CMS 3.85.0 with `--legacy-peer-deps` (Next.js 15.5.18 not yet in @payloadcms/next peer dep range — same pattern as next-mdx-remote). Created payload.config.ts with postgresAdapter (pool.connectionString API), stub collections/globals, onInit user seed with idempotency guard. Created all app/(payload) route files from official blank template. Added @payload-config tsconfig alias.
+
+**Deviations:** Users stub extended beyond minimal (added `auth: { useAPIKey: true }`, `role` field, basic access control) — required for onInit to generate apiKey and prevent open /api/users endpoint. serverURL uses `NEXT_PUBLIC_SERVER_URL` env var with fallback to d-pub.ru (task said hardcode, but CR-4 showed staging would break). Global CSP source changed from `/(.*)`to `/((?!admin).*)` negative lookahead — prevents Next.js from merging global frame-ancestors:'none' with admin frame-ancestors:'self'.
+
+**Reviews:**
+
+_Round 1:_
+
+- code-reviewer: 8 findings → [logs/working/task-3/code-reviewer-1.json]
+- security-auditor: 7 findings → [logs/working/task-3/security-auditor-1.json]
+
+Applied: CR-1/SA-1 (secret guard), CR-2/SA-2 (password guard), CR-3 (Users stub role+useAPIKey), SA-4 (Users access control), CR-5 (CSP non-merging via negative lookahead), CR-6 (try/catch in onInit), CR-4 (serverURL env var), CR-8 (WebSocket in admin connect-src).
+Rejected: SA-5 (DB guard — pg throws at connect), SA-7 (unsafe-eval intentional for Lexical). SA-3 accepted — console.log API key is per task spec, one-time only.
+
+**Verification:**
+
+- `npx tsc --noEmit` → 0 errors
+- `npm run build` (with PAYLOAD_SECRET set) → exit 0, /admin/[[...segments]] in route table
+- `npm test` → 79 passed, 0 failures
+- stub files: 5 collections + 4 globals confirmed
+- DB_CONNECTION_STRING: no DATABASE_URI/DATABASE_URL in payload.config.ts ✓
+- withPayload() wrapping next.config.mjs ✓
