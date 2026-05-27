@@ -28,6 +28,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DB_CONNECTION_STRING,
     },
+    push: process.env.PAYLOAD_PUSH_DB === 'true',
   }),
   collections: [Tags, Posts, Articles, Media, Users],
   globals: [Navbar, Footer, SocialChannels, SiteSettings],
