@@ -55,6 +55,9 @@ jobs:
       - name: Deploy payload-migrations/
         run: rsync -avz --ignore-missing-args payload-migrations/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/payload-migrations/
 
+      - name: Deploy payload source (needed for payload migrate)
+        run: rsync -avz tsconfig.json payload.config.ts payload/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
+
       - name: Deploy package files
         run: rsync -avz package.json package-lock.json ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
 
