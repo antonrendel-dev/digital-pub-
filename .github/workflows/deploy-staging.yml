@@ -72,9 +72,7 @@ jobs:
       - name: Run payload migrate
         run: |
           ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/staging/d-pub && [ -f node_modules/.bin/payload ] && npx payload migrate || echo 'Payload not installed, skipping migration'
+            cd ~/staging/d-pub && [ -f node_modules/.bin/payload ] && /usr/bin/node node_modules/.bin/payload migrate || echo 'Payload migrate failed or not installed'
           "
 
       - name: Restart staging app
