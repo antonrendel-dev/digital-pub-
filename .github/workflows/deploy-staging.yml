@@ -49,7 +49,7 @@ jobs:
 
       - name: Deploy content/
         run: |
-          ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "mkdir -p ~/staging/d-pub/content"
+          ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "sudo mkdir -p ~/staging/d-pub/content/articles && sudo chown -R \$(whoami) ~/staging/d-pub/content"
           rsync -avz content/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/content/
 
       - name: Deploy payload-migrations/
