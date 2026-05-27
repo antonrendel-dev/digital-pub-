@@ -41,22 +41,17 @@ jobs:
       - name: Add server to known hosts
         run: ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Create directories on staging
-        run: |
-          ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} \
-            "mkdir -p ~/d-pub.ru/app/.next ~/d-pub.ru/app/generated/prisma ~/d-pub.ru/app/lib ~/d-pub.ru/app/public"
-
       - name: Deploy .next/
-        run: rsync -avz --delete .next/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/d-pub.ru/app/.next/
+        run: rsync -avz --delete .next/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/.next/
 
       - name: Deploy Prisma client
-        run: rsync -avz generated/prisma/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/d-pub.ru/app/generated/prisma/
+        run: rsync -avz generated/prisma/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/generated/prisma/
 
       - name: Deploy lib/
-        run: rsync -avz lib/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/d-pub.ru/app/lib/
+        run: rsync -avz lib/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/lib/
 
       - name: Deploy public/
-        run: rsync -avz public/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/d-pub.ru/app/public/
+        run: rsync -avz public/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/public/
 
       - name: Restart app
-        run: ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "cd ~/d-pub.ru && PORT=3002 touch reload"
+        run: ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "pm2 restart d-pub-staging || pm2 start ~/staging/d-pub/ecosystem.config.js"
