@@ -60,3 +60,32 @@ _Round 1:_
 - `npm run build` → exit 0
 - `npm run lint` → 0 errors (1 pre-existing img warning unrelated)
 - Smoke (staging) → pending deploy
+
+## Task 2: Deploy Pipeline Updates
+
+**Status:** Done
+**Commit:** 3bdee5f
+**Agent:** main agent
+
+**Summary:** Removed Prisma steps (generate + rsync generated/prisma/) from both workflows. Added Payload-aware steps: `--exclude=uploads/` on public/ rsync, `payload-migrations/` rsync with `--ignore-missing-args`, NVM-aware `npm ci --omit=dev` on server, and guarded `npx payload migrate` (skips if payload not yet installed). Timeout raised to 20 min. Created `deploy-staging.yml` deploying from `dev` to red server via PM2.
+
+**Deviations:** DATABASE_URL kept alongside DB_CONNECTION_STRING in prod build env during transition (Prisma still active until Task 8). Staging app path kept as `~/staging/d-pub/` (existing working setup) instead of `~/staging.d-pub.ru/app/` from spec. `NEXT_PUBLIC_YANDEX_METRIKA_ID` shared between staging and prod — intentional, single counter.
+
+**Reviews:**
+
+_Round 1:_
+
+- code-reviewer: 4 findings → [logs/working/task-2/code-reviewer-1.json]
+- security-auditor: 7 findings → [logs/working/task-2/security-auditor-1.json]
+- deploy-reviewer: 8 findings → [logs/working/task-2/deploy-reviewer-1.json]
+
+Applied: CR-1/SA-3/SA-4 (payload guard), CR-2/DR-1 (NVM in staging), DR-4 (timeout 20m).
+Rejected: CR-3 (Task 3 scope), CR-4/SA-7 (intentional), SA-1/2 (credentials from .env correct), SA-5/6 (intentional), DR-2/3/5/6/7/8 (out of scope or not real issues).
+
+**Verification:**
+
+- YAML valid: both files parse cleanly
+- No prisma in deploy.yml: confirmed
+- uploads excluded: confirmed
+- migrate before reload: line 67 < line 76
+- No prod secrets in staging: confirmed
