@@ -30,5 +30,13 @@
     ".next/types/**/*.ts",
     ".next-dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "node_modules_old", "v1", "_files"]
+  "exclude": [
+    "node_modules",
+    "node_modules_old",
+    "v1",
+    "_files",
+    "scripts/**",
+    "tests/unit/migrate-posts.test.ts",
+    "tests/unit/migrate-tags.test.ts"
+  ]
 }

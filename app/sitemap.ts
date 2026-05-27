@@ -1,12 +1,12 @@
 import { MetadataRoute } from 'next'
 import { getArticles } from '@/lib/articles'
-import { prisma } from '@/lib/prisma'
+import { getPayload } from 'payload'
+import config from '@payload-config'
 
 const BASE_URL = 'https://d-pub.ru'
 
 export const dynamic = 'force-dynamic'
 
-// Static fallback so tag pages are always in sitemap even if DB is unreachable at build time
 const KNOWN_TAG_SLUGS = [
   'smm',
   'seo',
@@ -28,6 +28,13 @@ const KNOWN_TAG_SLUGS = [
   'senior',
 ]
 
+type PayloadPost = {
+  slug: string | null
+  type: 'vacancy' | 'resume'
+  updatedAt: string | Date
+  tags: Array<{ slug: string; tagType: string } | number>
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
@@ -43,11 +50,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Category pages (vacancies + resumes) — slugs from DB with static fallback
   let tagSlugs: string[] = KNOWN_TAG_SLUGS
   try {
-    const tags = await prisma.tag.findMany({ select: { slug: true } })
-    if (tags.length > 0) tagSlugs = tags.map((t) => t.slug)
+    const payload = await getPayload({ config })
+    const tagsResult = await payload.find({ collection: 'tags', limit: 500 })
+    if (tagsResult.docs.length > 0) {
+      tagSlugs = (tagsResult.docs as unknown as Array<{ slug: string }>).map((t) => t.slug)
+    }
   } catch {
     console.warn('[sitemap] DB unavailable, using static tag list')
   }
+
   const tagRoutes: MetadataRoute.Sitemap = tagSlugs.flatMap((slug) => [
     {
       url: `${BASE_URL}/vacancies/${slug}`,
@@ -75,38 +86,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Individual vacancy and resume pages from DB
   let postRoutes: MetadataRoute.Sitemap = []
   try {
-    const posts = await prisma.post.findMany({
+    const payload = await getPayload({ config })
+    const postsResult = await payload.find({
+      collection: 'posts',
       where: {
-        status: 'published',
-        slug: { not: null },
-        description: { not: null },
+        status: { equals: 'published' },
+        slug: { not_equals: null },
+        description: { not_equals: null },
       },
-      select: {
-        slug: true,
-        type: true,
-        updatedAt: true,
-        tags: {
-          select: { tag: { select: { slug: true, tagType: true } } },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
+      sort: '-updatedAt',
+      limit: 10000,
+      depth: 1,
     })
 
-    postRoutes = posts
+    postRoutes = (postsResult.docs as unknown as PayloadPost[])
       .filter((p) => p.slug)
       .map((p) => {
-        const specTag = p.tags.find((pt) => pt.tag?.tagType === 'specialization')
-        const categorySlug = specTag?.tag?.slug || p.tags[0]?.tag?.slug || 'other'
+        const tags = Array.isArray(p.tags) ? p.tags : []
+        const specTag = tags.find(
+          (t): t is { slug: string; tagType: string } =>
+            typeof t === 'object' &&
+            t !== null &&
+            (t as { tagType: string }).tagType === 'specialization'
+        )
+        const firstTag = tags.find(
+          (t): t is { slug: string; tagType: string } => typeof t === 'object' && t !== null
+        )
+        const categorySlug = specTag?.slug ?? firstTag?.slug ?? 'other'
+        const updatedAt = p.updatedAt ? new Date(p.updatedAt) : now
         const url =
           p.type === 'vacancy'
             ? `${BASE_URL}/vacancies/${categorySlug}/${p.slug}`
             : `${BASE_URL}/post/${p.slug}`
-        return {
-          url,
-          lastModified: p.updatedAt,
-          changeFrequency: 'weekly' as const,
-          priority: 0.5,
-        }
+        return { url, lastModified: updatedAt, changeFrequency: 'weekly' as const, priority: 0.5 }
       })
   } catch {
     console.warn('[sitemap] DB unavailable, skipping post routes')

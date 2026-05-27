@@ -2,13 +2,27 @@
  * Integration test: Sitemap generation
  * Verifies that sitemap includes expected URLs for all route types.
  *
- * Note: sitemap() is async (touches Prisma + filesystem). All assertions
+ * Note: sitemap() is async (touches Payload + filesystem). All assertions
  * must await the result. If the test DB is unavailable, tag/post routes
  * are silently skipped by the implementation — static + article routes
  * remain assertable in all environments.
  */
+
+// Mock Payload to avoid ESM/DB issues in test environment
+jest.mock('payload', () => ({ getPayload: jest.fn() }))
+jest.mock('@payload-config', () => ({}), { virtual: true })
+
 import sitemap from '@/app/sitemap'
 import { getArticles } from '@/lib/articles'
+import { getPayload } from 'payload'
+
+const mockGetPayload = jest.mocked(getPayload)
+
+beforeEach(() => {
+  jest.resetAllMocks()
+  // Simulate DB unavailable — sitemap falls back to static content
+  mockGetPayload.mockRejectedValue(new Error('DB unavailable in test env'))
+})
 
 describe('Sitemap', () => {
   test('generates sitemap entries', async () => {

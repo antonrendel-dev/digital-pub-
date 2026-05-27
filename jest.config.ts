@@ -9,6 +9,7 @@ const config: Config = {
   testMatch: ['**/tests/**/*.test.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    '^@payload-config$': '<rootDir>/payload.config.ts',
   },
   modulePathIgnorePatterns: ['<rootDir>/node_modules_old/', '<rootDir>/_files/'],
   watchPathIgnorePatterns: ['<rootDir>/node_modules_old/', '<rootDir>/_files/'],

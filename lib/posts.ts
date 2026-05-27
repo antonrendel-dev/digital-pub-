@@ -1,4 +1,5 @@
-import { prisma } from './prisma'
+import { getPayload } from 'payload'
+import config from '@payload-config'
 import { z } from 'zod'
 import type { FeedPost } from './postUtils'
 
@@ -6,7 +7,8 @@ export { getPrimaryCategorySlug, type FeedPost } from './postUtils'
 
 export const slugSchema = z.string().regex(/^[a-z0-9-_]{1,80}$/)
 
-export function toFeedPost(p: {
+type PayloadTag = { id: number; name: string; slug: string; tagType: string }
+type PayloadPost = {
   id: number
   type: 'vacancy' | 'resume'
   title: string
@@ -17,9 +19,12 @@ export function toFeedPost(p: {
   imageUrl: string | null
   channelUsername: string | null
   telegramMessageId: string | null
-  createdAt: Date
-  tags: { tag: { id: number; name: string; slug: string; tagType: string } }[]
-}): FeedPost {
+  createdAt: string | Date
+  tags: PayloadTag[]
+}
+
+export function toFeedPost(p: PayloadPost): FeedPost {
+  const createdAt = typeof p.createdAt === 'string' ? p.createdAt : p.createdAt.toISOString()
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000)
   return {
     id: p.id,
@@ -32,31 +37,27 @@ export function toFeedPost(p: {
     imageUrl: p.imageUrl,
     channelUsername: p.channelUsername,
     telegramMessageId: p.telegramMessageId,
-    createdAt: p.createdAt.toISOString(),
-    isNew: p.createdAt > cutoff,
-    tags: p.tags.map((pt) => ({
-      id: pt.tag.id,
-      name: pt.tag.name,
-      slug: pt.tag.slug,
-      tagType: pt.tag.tagType,
+    createdAt,
+    isNew: new Date(createdAt) > cutoff,
+    tags: (p.tags ?? []).map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+      tagType: tag.tagType,
     })),
   }
 }
 
 export async function getPublishedPosts(): Promise<FeedPost[]> {
   try {
-    const posts = await prisma.post.findMany({
-      where: {
-        status: 'published',
-        description: { not: null },
-      },
-      include: {
-        tags: { include: { tag: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
+      where: { status: { equals: 'published' }, description: { not_equals: null } },
+      limit: 100,
+      sort: '-createdAt',
     })
-    return posts.map(toFeedPost)
+    return (result.docs as unknown as PayloadPost[]).map(toFeedPost)
   } catch {
     console.warn('[posts] DB unavailable')
     return []
@@ -65,35 +66,34 @@ export async function getPublishedPosts(): Promise<FeedPost[]> {
 
 export async function getPostsByType(type: 'vacancy' | 'resume'): Promise<FeedPost[]> {
   try {
-    const posts = await prisma.post.findMany({
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
       where: {
-        status: 'published',
-        type,
-        description: { not: null },
+        status: { equals: 'published' },
+        type: { equals: type },
+        description: { not_equals: null },
       },
-      include: {
-        tags: { include: { tag: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
+      limit: 100,
+      sort: '-createdAt',
     })
-    return posts.map(toFeedPost)
+    return (result.docs as unknown as PayloadPost[]).map(toFeedPost)
   } catch {
-    console.warn(`[posts] DB unavailable`)
+    console.warn('[posts] DB unavailable')
     return []
   }
 }
 
 export async function getPostById(id: number): Promise<FeedPost | null> {
   try {
-    const post = await prisma.post.findUnique({
-      where: { id },
-      include: {
-        tags: { include: { tag: true } },
-      },
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
+      where: { id: { equals: id } },
+      limit: 1,
     })
-    if (!post) return null
-    return toFeedPost(post)
+    if (!result.docs.length) return null
+    return toFeedPost(result.docs[0] as unknown as PayloadPost)
   } catch {
     console.warn('[posts] DB unavailable')
     return null
@@ -103,27 +103,28 @@ export async function getPostById(id: number): Promise<FeedPost | null> {
 export async function getPostsByTypePaginated(
   type: 'vacancy' | 'resume',
   page: number = 1,
-  pageSize: number = 20,
+  pageSize: number = 20
 ): Promise<{ posts: FeedPost[]; total: number; totalPages: number }> {
   try {
-    const where = { status: 'published' as const, type, description: { not: null } }
-    const [posts, total] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        include: { tags: { include: { tag: true } } },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      prisma.post.count({ where }),
-    ])
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
+      where: {
+        status: { equals: 'published' },
+        type: { equals: type },
+        description: { not_equals: null },
+      },
+      limit: pageSize,
+      page,
+      sort: '-createdAt',
+    })
     return {
-      posts: posts.map(toFeedPost),
-      total,
-      totalPages: Math.ceil(total / pageSize),
+      posts: (result.docs as unknown as PayloadPost[]).map(toFeedPost),
+      total: result.totalDocs,
+      totalPages: result.totalPages,
     }
   } catch {
-    console.warn(`[posts] DB unavailable`)
+    console.warn('[posts] DB unavailable')
     return { posts: [], total: 0, totalPages: 0 }
   }
 }
@@ -133,14 +134,14 @@ export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
   if (!parsed.success) return null
 
   try {
-    const post = await prisma.post.findUnique({
-      where: { slug },
-      include: {
-        tags: { include: { tag: true } },
-      },
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
+      where: { slug: { equals: slug } },
+      limit: 1,
     })
-    if (!post) return null
-    return toFeedPost(post)
+    if (!result.docs.length) return null
+    return toFeedPost(result.docs[0] as unknown as PayloadPost)
   } catch {
     console.warn('[posts] DB unavailable')
     return null
