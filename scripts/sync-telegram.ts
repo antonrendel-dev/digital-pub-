@@ -1,6 +1,7 @@
 /**
  * Telegram channel sync script
  * Fetches posts via Bot API (full quality photos) and t.me/s/ (text).
+ * Writes to Payload CMS REST API — no direct DB access.
  * Run: npm run sync
  */
 
@@ -8,9 +9,10 @@ import 'dotenv/config'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { PostType } from '../generated/prisma'
-import { prisma } from '../lib/prisma'
 import { matchTags, TAG_KEYWORDS } from '../lib/tag-matcher'
+
+// Local type — replaces Prisma's generated PostType enum
+type PostType = 'vacancy' | 'resume'
 
 // Read bot config from env vars (set in .env file)
 const BOT_TOKEN =
@@ -37,10 +39,16 @@ const ADMIN_CHAT_ID =
     }
     throw new Error('ADMIN_ID not set in environment and legacy .env not found')
   })()
+
 const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`
 const TG_FILE = `https://api.telegram.org/file/bot${BOT_TOKEN}`
 
 const IMAGES_DIR = path.join(process.cwd(), 'public', 'images', 'posts')
+
+// Payload REST API config — required for sync
+// Note: PAYLOAD_API_KEY is not resolved at module load time to allow test imports.
+// savePost() and main() will throw at runtime if the key is absent.
+const PAYLOAD_BASE_URL = process.env.PAYLOAD_BASE_URL ?? 'https://d-pub.ru'
 
 const CHANNELS: { username: string; type: PostType }[] = [
   { username: 'web_vacancy', type: 'vacancy' },
@@ -342,137 +350,90 @@ function parseSalary(text: string): string | null {
 // for testability (pure module, no side effects). Re-exported below for
 // backwards compatibility.
 
-/** Assign tags to a post based on text content */
-async function assignTags(postId: number, text: string): Promise<number> {
-  const matchedSlugs = matchTags(text)
-  if (matchedSlugs.length === 0) return 0
-
-  const tags = await prisma.tag.findMany({
-    where: { slug: { in: matchedSlugs } },
-  })
-
-  if (tags.length === 0) return 0
-
-  await prisma.postTag.createMany({
-    data: tags.map((tag) => ({ postId, tagId: tag.id })),
-    skipDuplicates: true,
-  })
-
-  return tags.length
+/**
+ * Load tag slug→id map from Payload REST API.
+ * Public endpoint — no auth required for read.
+ * Returns empty map on any error (posts will be saved without tags).
+ */
+export async function loadTagMap(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(`${PAYLOAD_BASE_URL}/api/tags?limit=200`)
+    if (!res.ok) return {}
+    const data = await res.json() as { docs?: Array<{ id: string; slug: string }> }
+    const map: Record<string, string> = {}
+    for (const tag of data.docs ?? []) {
+      map[tag.slug] = tag.id
+    }
+    return map
+  } catch {
+    return {}
+  }
 }
 
-async function savePost(post: TelegramPost): Promise<boolean> {
-  const existing = await prisma.post.findUnique({
-    where: {
-      telegramMessageId_channelUsername: {
-        telegramMessageId: post.messageId,
-        channelUsername: post.channelUsername,
-      },
-    },
-  })
+/**
+ * Resolve matched tag slugs to Payload tag IDs.
+ * Slugs not found in tagMap are silently dropped.
+ */
+export function resolveTagIds(matchedSlugs: string[], tagMap: Record<string, string>): string[] {
+  return matchedSlugs.map(slug => tagMap[slug]).filter(Boolean)
+}
 
-  if (existing) return false
+/**
+ * Save a post to Payload via REST API.
+ * Returns true if created (2xx), false if duplicate (409) or error.
+ * Never logs PAYLOAD_API_KEY or Authorization header.
+ */
+export async function savePost(post: TelegramPost, tagMap: Record<string, string>): Promise<boolean> {
+  // Resolve API key at call time — throws if not set (not at module load, to allow test imports)
+  const PAYLOAD_API_KEY = process.env.PAYLOAD_API_KEY ?? (() => {
+    throw new Error('PAYLOAD_API_KEY not set in environment')
+  })()
 
   const title = parseTitle(post.text)
-  const created = await prisma.post.create({
-    data: {
-      type: post.type,
-      title,
-      slug: generateSlug(title, post.messageId),
-      description: post.text,
-      company: parseCompany(post.text),
-      salary: parseSalary(post.text),
-      imageUrl: post.imageUrl,
-      status: 'published',
-      source: 'telegram',
-      telegramMessageId: post.messageId,
-      channelUsername: post.channelUsername,
+  const tagIds = resolveTagIds(matchTags(`${title} ${post.text}`), tagMap)
+
+  const body = {
+    type: post.type,
+    title,
+    slug: generateSlug(title, post.messageId),
+    description: post.text,
+    company: parseCompany(post.text),
+    salary: parseSalary(post.text),
+    imageUrl: post.imageUrl,
+    status: 'published',
+    source: 'telegram',
+    telegramMessageId: post.messageId,
+    channelUsername: post.channelUsername,
+    tags: tagIds,
+  }
+
+  const res = await fetch(`${PAYLOAD_BASE_URL}/api/posts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `users API-Key ${PAYLOAD_API_KEY}`,
     },
+    body: JSON.stringify(body),
   })
 
-  // Auto-assign tags
-  const tagCount = await assignTags(created.id, `${title} ${post.text}`)
-  if (tagCount > 0) {
-    console.log(`    Assigned ${tagCount} tags to post ${created.id}`)
+  if (res.status === 409) return false  // duplicate — normal dedup, no log
+  if (!res.ok) {
+    // Log only status and URL — never log PAYLOAD_API_KEY or Authorization header
+    console.error(`[sync] Failed to save post: ${res.status} ${PAYLOAD_BASE_URL}/api/posts`)
+    return false
   }
 
   return true
 }
 
-/** Backfill tags for existing posts that have no tags assigned */
-async function backfillTags() {
-  console.log('\nBackfilling tags for existing posts...')
-  const posts = await prisma.post.findMany({
-    where: {
-      status: 'published',
-      tags: { none: {} },
-    },
-    select: { id: true, title: true, description: true },
-  })
-
-  let tagged = 0
-  for (const post of posts) {
-    const text = `${post.title} ${post.description ?? ''}`
-    const count = await assignTags(post.id, text)
-    if (count > 0) tagged++
-  }
-  console.log(`  Backfilled tags for ${tagged} out of ${posts.length} untagged posts`)
-}
-
-/** Backfill images: re-download low-quality photos via Bot API */
-async function backfillImages() {
-  console.log('\nBackfilling low-quality images via Bot API...')
-  const MIN_QUALITY_SIZE = 60_000 // Files under 60KB are likely 800x419 thumbnails
-
-  const posts = await prisma.post.findMany({
-    where: {
-      status: 'published',
-      imageUrl: { not: null },
-      channelUsername: { not: null },
-      telegramMessageId: { not: null },
-    },
-    select: { id: true, imageUrl: true, channelUsername: true, telegramMessageId: true },
-  })
-
-  let upgraded = 0
-  for (const post of posts) {
-    if (!post.imageUrl || !post.channelUsername || !post.telegramMessageId) continue
-
-    // Check if local file exists and is small (low quality)
-    const localFile = path.join(process.cwd(), 'public', post.imageUrl)
-    if (!fs.existsSync(localFile)) continue
-
-    const stat = fs.statSync(localFile)
-    if (stat.size >= MIN_QUALITY_SIZE) continue // Already good quality
-
-    console.log(`  Upgrading ${post.imageUrl} (${Math.round(stat.size / 1024)} KB)...`)
-
-    const newPath = await downloadPhotoViaBotAPI(post.channelUsername, post.telegramMessageId)
-    if (newPath) {
-      // Verify the new file is actually larger
-      const newFile = path.join(process.cwd(), 'public', newPath)
-      const newStat = fs.statSync(newFile)
-      if (newStat.size > stat.size) {
-        await prisma.post.update({
-          where: { id: post.id },
-          data: { imageUrl: newPath },
-        })
-        upgraded++
-      }
-    }
-
-    // Rate limit
-    await new Promise((r) => setTimeout(r, 300))
-  }
-
-  console.log(`  Upgraded ${upgraded} images to full quality`)
-}
-
 async function main() {
   console.log('Starting Telegram sync...')
   console.log(`Images will be saved to: ${IMAGES_DIR}`)
-  let totalNew = 0
 
+  const tagMap = await loadTagMap()
+  console.log(`Loaded ${Object.keys(tagMap).length} tags from Payload`)
+
+  let totalNew = 0
   for (const channel of CHANNELS) {
     console.log(`\nFetching @${channel.username}...`)
     const posts = await fetchChannelPosts(channel.username, channel.type)
@@ -480,25 +441,17 @@ async function main() {
 
     let newCount = 0
     for (const post of posts) {
-      const isNew = await savePost(post)
+      const isNew = await savePost(post, tagMap)
       if (isNew) newCount++
     }
-
     console.log(`  Saved ${newCount} new posts`)
     totalNew += newCount
   }
 
-  // Backfill tags for existing untagged posts
-  await backfillTags()
-
-  // Backfill low-quality images with full-quality via Bot API
-  await backfillImages()
-
   console.log(`\nSync complete. Total new posts: ${totalNew}`)
-  await prisma.$disconnect()
 }
 
-// Export for testing
+// Export for testing and backwards compatibility
 export { matchTags, TAG_KEYWORDS }
 
 /** Sanitize error messages to prevent bot token leakage */
@@ -507,13 +460,15 @@ function sanitizeError(e: unknown): string {
   return msg.replace(/bot[0-9]+:[A-Za-z0-9_-]+/g, 'bot***:***')
 }
 
-main().catch(async (e) => {
-  const msg = sanitizeError(e)
-  const cause = e instanceof Error && e.cause ? String((e.cause as Error).message ?? e.cause) : ''
-  const stack = e instanceof Error ? e.stack : ''
-  console.error('Sync failed:', msg)
-  if (cause) console.error('Cause:', cause)
-  if (stack) console.error('Stack:', stack)
-  await prisma.$disconnect()
-  process.exit(1)
-})
+// Run only when executed directly (not when imported by tests)
+if (require.main === module) {
+  main().catch((e) => {
+    const msg = sanitizeError(e)
+    const cause = e instanceof Error && e.cause ? String((e.cause as Error).message ?? e.cause) : ''
+    const stack = e instanceof Error ? e.stack : ''
+    console.error('Sync failed:', msg)
+    if (cause) console.error('Cause:', cause)
+    if (stack) console.error('Stack:', stack)
+    process.exit(1)
+  })
+}
