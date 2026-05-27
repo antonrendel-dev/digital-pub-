@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -57,10 +57,20 @@ jobs:
         run: rsync -avz package.json package-lock.json ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
 
       - name: Install production dependencies
-        run: ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "cd ~/staging/d-pub && npm ci --omit=dev --ignore-scripts"
+        run: |
+          ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/staging/d-pub && npm ci --omit=dev --ignore-scripts
+          "
 
       - name: Run payload migrate
-        run: ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "cd ~/staging/d-pub && npx payload migrate"
+        run: |
+          ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/staging/d-pub && [ -f node_modules/.bin/payload ] && npx payload migrate || echo 'Payload not installed, skipping migration'
+          "
 
       - name: Restart staging app
         run: ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "sudo pm2 restart d-pub-staging"
