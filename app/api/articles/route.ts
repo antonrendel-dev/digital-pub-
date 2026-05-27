@@ -40,7 +40,8 @@ export async function POST(req: Request) {
   try {
     const article = await payload.create({
       collection: 'articles',
-      data: body as Record<string, unknown>,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: body as any,
       overrideAccess: false,
       user,
     })
