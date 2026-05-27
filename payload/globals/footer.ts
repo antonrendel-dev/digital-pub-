@@ -15,6 +15,10 @@ import { revalidatePath } from 'next/cache'
 export const Footer: GlobalConfig = {
   slug: 'footer',
   label: 'Footer',
+  access: {
+    read: () => true,
+    update: ({ req }) => req.user?.role === 'admin',
+  },
   fields: [
     {
       name: 'socialLinks',

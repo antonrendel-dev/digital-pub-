@@ -102,11 +102,12 @@ export const Posts: CollectionConfig = {
       type: 'text',
       validate: (val: string | null | undefined) => {
         if (!val) return true
-        if (/^https:\/\/.+/.test(val)) return true
-        return 'imageUrl должен начинаться с https://'
+        if (val.startsWith('http://')) return 'imageUrl должен использовать HTTPS, не HTTP'
+        if (/^javascript:/i.test(val)) return 'Недопустимый imageUrl'
+        return true
       },
       admin: {
-        description: 'URL изображения (только HTTPS)',
+        description: 'URL изображения (HTTPS или локальный путь /images/posts/...)',
       },
     },
     {

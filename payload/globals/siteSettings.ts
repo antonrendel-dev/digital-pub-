@@ -9,6 +9,10 @@ import { revalidatePath } from 'next/cache'
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   label: 'Настройки сайта',
+  access: {
+    read: () => true,
+    update: ({ req }) => req.user?.role === 'admin',
+  },
   fields: [
     {
       name: 'siteName',

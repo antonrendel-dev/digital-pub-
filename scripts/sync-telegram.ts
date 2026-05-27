@@ -359,7 +359,7 @@ export async function loadTagMap(): Promise<Record<string, string>> {
   try {
     const res = await fetch(`${PAYLOAD_BASE_URL}/api/tags?limit=200`)
     if (!res.ok) return {}
-    const data = await res.json() as { docs?: Array<{ id: string; slug: string }> }
+    const data = (await res.json()) as { docs?: Array<{ id: string; slug: string }> }
     const map: Record<string, string> = {}
     for (const tag of data.docs ?? []) {
       map[tag.slug] = tag.id
@@ -375,7 +375,7 @@ export async function loadTagMap(): Promise<Record<string, string>> {
  * Slugs not found in tagMap are silently dropped.
  */
 export function resolveTagIds(matchedSlugs: string[], tagMap: Record<string, string>): string[] {
-  return matchedSlugs.map(slug => tagMap[slug]).filter(Boolean)
+  return matchedSlugs.map((slug) => tagMap[slug]).filter(Boolean)
 }
 
 /**
@@ -383,11 +383,16 @@ export function resolveTagIds(matchedSlugs: string[], tagMap: Record<string, str
  * Returns true if created (2xx), false if duplicate (409) or error.
  * Never logs PAYLOAD_API_KEY or Authorization header.
  */
-export async function savePost(post: TelegramPost, tagMap: Record<string, string>): Promise<boolean> {
+export async function savePost(
+  post: TelegramPost,
+  tagMap: Record<string, string>
+): Promise<boolean> {
   // Resolve API key at call time — throws if not set (not at module load, to allow test imports)
-  const PAYLOAD_API_KEY = process.env.PAYLOAD_API_KEY ?? (() => {
-    throw new Error('PAYLOAD_API_KEY not set in environment')
-  })()
+  const PAYLOAD_API_KEY =
+    process.env.PAYLOAD_API_KEY ??
+    (() => {
+      throw new Error('PAYLOAD_API_KEY not set in environment')
+    })()
 
   const title = parseTitle(post.text)
   const tagIds = resolveTagIds(matchTags(`${title} ${post.text}`), tagMap)
@@ -411,12 +416,12 @@ export async function savePost(post: TelegramPost, tagMap: Record<string, string
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `users API-Key ${PAYLOAD_API_KEY}`,
+      Authorization: `users API-Key ${PAYLOAD_API_KEY}`,
     },
     body: JSON.stringify(body),
   })
 
-  if (res.status === 409) return false  // duplicate — normal dedup, no log
+  if (res.status === 409) return false // duplicate — normal dedup, no log
   if (!res.ok) {
     // Log only status and URL — never log PAYLOAD_API_KEY or Authorization header
     console.error(`[sync] Failed to save post: ${res.status} ${PAYLOAD_BASE_URL}/api/posts`)
@@ -465,7 +470,8 @@ if (require.main === module) {
   main().catch((e) => {
     const msg = sanitizeError(e)
     const cause = e instanceof Error && e.cause ? String((e.cause as Error).message ?? e.cause) : ''
-    const stack = e instanceof Error ? e.stack : ''
+    const stack =
+      e instanceof Error ? (e.stack ?? '').replace(/bot[0-9]+:[A-Za-z0-9_-]+/g, 'bot***:***') : ''
     console.error('Sync failed:', msg)
     if (cause) console.error('Cause:', cause)
     if (stack) console.error('Stack:', stack)

@@ -166,4 +166,103 @@ _Round 1:_
 
 - `npx tsc --noEmit` → 0 errors
 - `npm test -- --testPathPatterns=sync-telegram` → 9 passed, 0 failures
-- Smoke: no prisma imports ✓, no PAYLOAD_API_KEY in console._ ✓, no Authorization in console._ ✓, 409 handled ✓, no backfill functions ✓, no prisma.$disconnect ✓
+- Smoke: no prisma imports ✓, no PAYLOAD*API_KEY in console.* ✓, no Authorization in console.\_ ✓, 409 handled ✓, no backfill functions ✓, no prisma.$disconnect ✓
+
+---
+
+## Task 12: Code Audit — 2026-05-27
+
+### Summary
+
+Проверено 15 файлов: 5 collections, 4 globals, 2 lib-слоя, sitemap, API route, sync script, postUtils. Prisma полностью удалена из продуктивного кода. Критических блокеров нет, но обнаружено 2 серьёзные проблемы (P1): утечка BOT_TOKEN через необработанный stack trace и двойная инициализация Payload в sitemap.ts. Плюс 3 находки уровня P2.
+
+### Findings
+
+#### P0 — Критические (блокируют деплой)
+
+- нет
+
+#### P1 — Важные (должны быть исправлены до деплоя)
+
+- **`scripts/sync-telegram.ts` строки 468–471**: `e.stack` логируется сырым без прогона через `sanitizeError`. Стек вызовов Node.js fetch-ошибок может содержать полный URL запроса, включая `https://api.telegram.org/bot<BOT_TOKEN>/...`. `sanitizeError` применяется только к `e.message` (строка 469), но `stack` (строка 471) выводится напрямую через `console.error('Stack:', stack)`. При любом сетевом сбое токен будет виден в логах.
+
+- **`app/sitemap.ts` строки 53 и 89**: `getPayload({ config })` вызывается дважды в одной функции — два раздельных await внутри двух разных try/catch блоков. Payload v3 не гарантирует дедупликацию инициализации на уровне вызова (это singleton, но двойной вызов — лишняя нагрузка и потенциальный race в SSR-контексте). Оба блока должны использовать одну переменную `payload`.
+
+#### P2 — Улучшения
+
+- **`app/api/articles/route.ts` строка 4–11**: GET-обработчик вызывает `getPayload({ config })` без `req.headers`, то есть без контекста пользователя. Payload применит access-функцию с `req.user === null`, что даст фильтр `{ status: { equals: 'published' } }`. Это корректно по логике, но намерение нигде явно не задокументировано — при рефакторинге легко случайно добавить `overrideAccess: true`.
+
+- **`lib/tags.ts` строка 44**: Комментарий «acceptable for current scale (<50k posts)» сопровождает `limit: 10000` на полную загрузку коллекции posts для подсчёта тегов в памяти. При росте до 10k+ постов запрос начнёт падать по таймауту или памяти. Нет ни алерта, ни throttle-защиты. Это архитектурный долг без конкретного срока.
+
+- **`payload/collections/posts.ts` строка 14**: afterChange hook объявлен как синхронная стрелка (не `async`), тогда как в других collections (tags, articles) хуки `async`. `revalidatePath` синхронный, так что функционально это не баг, но нарушает единообразие и создаёт путаницу при code review.
+
+### Grep results
+
+- Prisma imports в app/lib/components: CLEAN
+- getPayload в client components: CLEAN
+- revalidatePath не из next/cache: CLEAN (все хуки импортируют из `next/cache`)
+
+### Files reviewed
+
+- `/home/claude/projects/digital-pub-/payload/collections/tags.ts`
+- `/home/claude/projects/digital-pub-/payload/collections/posts.ts`
+- `/home/claude/projects/digital-pub-/payload/collections/articles.ts`
+- `/home/claude/projects/digital-pub-/payload/collections/media.ts`
+- `/home/claude/projects/digital-pub-/payload/collections/users.ts`
+- `/home/claude/projects/digital-pub-/payload/globals/navbar.ts`
+- `/home/claude/projects/digital-pub-/payload/globals/footer.ts`
+- `/home/claude/projects/digital-pub-/payload/globals/socialChannels.ts`
+- `/home/claude/projects/digital-pub-/payload/globals/siteSettings.ts`
+- `/home/claude/projects/digital-pub-/lib/tags.ts`
+- `/home/claude/projects/digital-pub-/lib/posts.ts`
+- `/home/claude/projects/digital-pub-/lib/postUtils.ts`
+- `/home/claude/projects/digital-pub-/app/sitemap.ts`
+- `/home/claude/projects/digital-pub-/app/api/articles/route.ts`
+- `/home/claude/projects/digital-pub-/scripts/sync-telegram.ts`
+
+## Task 13: Security Audit — 2026-05-27
+
+### Summary
+
+Аудит охватил auth flow /api/articles, access control по всем коллекциям и globals, утечку секретов в логах sync-скрипта, CSP конфигурацию, защиту PAYLOAD_SECRET. Найдено 2 P1 и 2 P2/P3 — деплой заблокирован.
+
+### Findings
+
+| #   | Area                                                   | Severity | Finding                                                                                                                                                                                                                                                                                                                  | Status                     |
+| --- | ------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| 1   | Globals (navbar, footer, siteSettings, socialChannels) | P1       | Ни у одного GlobalConfig нет блока `access`. Дефолт Payload v3 для `update` на globals — любой аутентифицированный пользователь. Пользователь с ролью `agent` или `sync` может перезаписать navbar, footer, siteSettings и socialChannels.                                                                               | Fixed required             |
+| 2   | Posts collection + sync script                         | P1       | Контракт нарушен: `imageUrl.validate` требует `https://`, но `downloadImageLocally()` в sync-скрипте возвращает `/images/posts/{filename}` (локальный путь). При деградации Bot API (fallback branch) каждый пост с изображением будет отклонён Payload — `savePost()` вернёт false, картинки не синхронизируются молча. | Fixed required             |
+| 3   | CSP public pages                                       | P2       | `unsafe-eval` присутствует в публичном CSP-блоке (строка 31 next.config.mjs). Оправдание через Yandex.Metrika не задокументировано. Если метрика не требует eval — директиву нужно удалить из публичных страниц.                                                                                                         | Accepted / Review required |
+| 4   | Users collection                                       | P3       | Поле `role` не имеет field-level `access.update`. Admin может менять роль любого пользователя — это допустимо только если admin-роль намеренно полностью доверенная. Отсутствует документация этого решения.                                                                                                             | Accepted                   |
+
+### Verdict
+
+BLOCK — найдены P1 (#1, #2), нужно исправить до деплоя.
+
+## Task 14: Test Audit — 2026-05-27
+
+**Результат:** PASS
+
+**Покрытие по модулям:**
+
+- lib/tags.ts: 3/3 тестов — OK
+- lib/posts.ts: 3/4 тестов — MISSING: `getPostBySlug - unknown slug returns null` (тест существует только как параметр мока в `async-params.test.ts`, unit-теста в `posts.test.ts` нет)
+- lib/postUtils.ts: 0/3 тестов — MISSING: `getPrimaryCategorySlug - specialization tag wins`, `getPrimaryCategorySlug - falls back to first tag`, `getPrimaryCategorySlug - falls back to "other"` (файл `tests/unit/` не содержит теста для postUtils вообще)
+- scripts/migrate-tags.ts: 3/3 тестов — OK (count assertion, 6-field spot check, Lexical JSON validity через `toRichText`)
+- scripts/migrate-posts.ts: 3/3 тестов — OK (count assertion, tags relationship non-empty, field-level spot check)
+- scripts/sync-telegram.ts: 2/2 тестов — OK (dedup 409 пропускает без throw, 201 возвращает true)
+
+**npm test:** все 135 тестов прошли (4 todo pre-existing), 0 failures
+
+**Критические пробелы:**
+
+- lib/postUtils.ts: отсутствуют все 3 теста `getPrimaryCategorySlug` — модуль не покрыт совсем
+- lib/posts.ts: отсутствует тест `getPostBySlug - unknown slug returns null`
+
+Ранее обозначенные как "КРИТИЧНО" пробелы по факту закрыты:
+
+- DB-unavailable graceful degradation: покрыт в `posts.test.ts` (`getPublishedPosts` + `getPostsByTypePaginated` через `catch`)
+- dedup 409: покрыт в `sync-telegram.test.ts` (`skips post on 409 response`)
+- Lexical JSON validity: покрыт в `migrate-tags.test.ts` через `toRichText` с `toMatchObject({ root: { type: 'root', children: [...] } })`
+
+**Следующий шаг:** нужны дополнительные тесты для lib/postUtils.ts (3 теста `getPrimaryCategorySlug`) и lib/posts.ts (1 тест `getPostBySlug - unknown slug returns null`)

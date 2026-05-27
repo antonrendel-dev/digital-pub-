@@ -16,6 +16,10 @@ import { revalidatePath } from 'next/cache'
 export const SocialChannels: GlobalConfig = {
   slug: 'social-channels',
   label: 'Социальные каналы',
+  access: {
+    read: () => true,
+    update: ({ req }) => req.user?.role === 'admin',
+  },
   fields: [
     {
       name: 'channels',

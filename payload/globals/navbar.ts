@@ -15,6 +15,10 @@ import { revalidatePath } from 'next/cache'
 export const Navbar: GlobalConfig = {
   slug: 'navbar',
   label: 'Navbar',
+  access: {
+    read: () => true,
+    update: ({ req }) => req.user?.role === 'admin',
+  },
   fields: [
     {
       name: 'slogan',

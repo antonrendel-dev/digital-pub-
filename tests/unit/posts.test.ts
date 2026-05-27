@@ -49,6 +49,17 @@ describe('getPublishedPosts', () => {
   })
 })
 
+describe('getPostBySlug', () => {
+  it('unknown slug returns null', async () => {
+    mockGetPayload.mockResolvedValue({
+      find: jest.fn().mockResolvedValue({ docs: [], totalDocs: 0, totalPages: 0 }),
+    } as any)
+    const { getPostBySlug } = await import('../../lib/posts')
+    const result = await getPostBySlug('nonexistent-slug')
+    expect(result).toBeNull()
+  })
+})
+
 describe('getPostsByTypePaginated', () => {
   it('returns correct shape { posts, total, totalPages }', async () => {
     mockGetPayload.mockResolvedValue({
