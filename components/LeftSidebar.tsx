@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { SOCIAL_CHANNELS } from '@/lib/config'
 
 interface SubCardProps {
   type: 'tg' | 'mx' | 'vk'
@@ -71,6 +70,26 @@ const VkIcon = () => (
   </div>
 )
 
+export interface SocialChannel {
+  name: string
+  url: string
+  subscribers?: string
+}
+
+const DEFAULT_CHANNELS: SocialChannel[] = [
+  { name: 'Telegram', url: 'https://t.me/+69rdOEDrfvgyMDMy', subscribers: '14 200 подписчиков' },
+  {
+    name: 'Макс',
+    url: 'https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ',
+    subscribers: '6 800 подписчиков',
+  },
+  {
+    name: 'ВКонтакте',
+    url: 'https://vk.com/digital_pub_vacancies',
+    subscribers: '9 300 подписчиков',
+  },
+]
+
 interface LeftSidebarProps {
   stats?: {
     vacancyCount: number
@@ -78,59 +97,48 @@ interface LeftSidebarProps {
     companyCount: number
     newToday: number
   }
+  channels?: SocialChannel[]
 }
 
-export default function LeftSidebar({ stats }: LeftSidebarProps) {
+export default function LeftSidebar({ stats, channels }: LeftSidebarProps) {
+  const socialChannels = channels ?? DEFAULT_CHANNELS
   return (
     <div className="space-y-6">
       {/* Subscribe cards - wrapped in border container per mockup */}
       <div className="bg-bg-card border border-border rounded-xl p-4 space-y-3">
         <h3 className="s-lbl">Вакансии в соцсетях</h3>
-        <a
-          href="https://t.me/+69rdOEDrfvgyMDMy"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block no-underline text-inherit"
-        >
-          <SubCard
-            type="tg"
-            icon={<TgIcon />}
-            title="Telegram"
-            subscribers={SOCIAL_CHANNELS.telegram.subscribers}
-            desc="Свежие вакансии каждый день прямо в Telegram."
-            btnColor="bg-brand-tg"
-          />
-        </a>
-        <a
-          href="https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block no-underline text-inherit"
-        >
-          <SubCard
-            type="mx"
-            icon={<MxIcon />}
-            title="Макс"
-            subscribers={SOCIAL_CHANNELS.max.subscribers}
-            desc="Те же вакансии в экосистеме ВКонтакте."
-            btnColor="bg-brand-mx"
-          />
-        </a>
-        <a
-          href="https://vk.com/digital_pub_vacancies"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block no-underline text-inherit"
-        >
-          <SubCard
-            type="vk"
-            icon={<VkIcon />}
-            title="ВКонтакте"
-            subscribers={SOCIAL_CHANNELS.vk.subscribers}
-            desc="Вакансии и карьерные советы в вашей ленте ВК."
-            btnColor="bg-brand-vk"
-          />
-        </a>
+        {socialChannels.map((ch) => {
+          const name = ch.name
+          const type: 'tg' | 'mx' | 'vk' =
+            name === 'Telegram' ? 'tg' : name === 'Макс' ? 'mx' : 'vk'
+          const icon = name === 'Telegram' ? <TgIcon /> : name === 'Макс' ? <MxIcon /> : <VkIcon />
+          const btnColor =
+            name === 'Telegram' ? 'bg-brand-tg' : name === 'Макс' ? 'bg-brand-mx' : 'bg-brand-vk'
+          const desc =
+            name === 'Telegram'
+              ? 'Свежие вакансии каждый день прямо в Telegram.'
+              : name === 'Макс'
+                ? 'Те же вакансии в экосистеме ВКонтакте.'
+                : 'Вакансии и карьерные советы в вашей ленте ВК.'
+          return (
+            <a
+              key={name}
+              href={ch.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block no-underline text-inherit"
+            >
+              <SubCard
+                type={type}
+                icon={icon}
+                title={name}
+                subscribers={ch.subscribers ?? ''}
+                desc={desc}
+                btnColor={btnColor}
+              />
+            </a>
+          )
+        })}
       </div>
 
       {/* Stats - wrapped in border container per mockup */}

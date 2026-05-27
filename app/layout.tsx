@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import { Suspense } from 'react'
 import MetrikaHit from '@/components/MetrikaHit'
+import Footer from '@/components/Footer'
 import './globals.css'
 
 const inter = Inter({
@@ -110,6 +111,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        <Footer />
 
         {/* Yandex.Metrika */}
         {YANDEX_METRIKA_ID && (

@@ -1,7 +1,14 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { getArticles, formatArticleDate } from '@/lib/articles'
-import PageShell from '@/components/PageShell'
+import { getPayload } from 'payload'
+import config from '@payload-config'
+import {
+  getArticles,
+  formatArticleDate,
+  mergeAndSortArticles,
+  type MergedArticle,
+} from '@/lib/articles'
+import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
 
 export const metadata: Metadata = {
@@ -18,8 +25,43 @@ export const metadata: Metadata = {
   },
 }
 
-export default function ArticlesPage() {
-  const articles = getArticles()
+export default async function ArticlesPage() {
+  // MDX articles
+  const mdxRaw = getArticles()
+  const mdxArticles: MergedArticle[] = mdxRaw.map((a) => ({
+    slug: a.slug,
+    title: a.title,
+    description: a.description ?? '',
+    publishedAt: a.publishedAt ?? null,
+    tags: a.tags ?? [],
+    source: 'mdx' as const,
+  }))
+
+  // Payload articles
+  let payloadArticles: MergedArticle[] = []
+  try {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'articles',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      where: { status: { equals: 'published' } } as any,
+      sort: '-publishedAt',
+      limit: 100,
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    payloadArticles = (result.docs as any[]).map((a) => ({
+      slug: a.slug,
+      title: a.title,
+      description: a.description ?? '',
+      publishedAt: a.publishedAt ?? null,
+      tags: [],
+      source: 'payload' as const,
+    }))
+  } catch {
+    // Payload unavailable — show MDX only
+  }
+
+  const allArticles = mergeAndSortArticles(mdxArticles, payloadArticles)
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -34,8 +76,8 @@ export default function ArticlesPage() {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: 'Статьи о карьере в digital',
-    numberOfItems: articles.length,
-    itemListElement: articles.map((article, i) => ({
+    numberOfItems: allArticles.length,
+    itemListElement: allArticles.map((article, i) => ({
       '@type': 'ListItem',
       position: i + 1,
       url: `https://d-pub.ru/articles/${article.slug}`,
@@ -44,7 +86,7 @@ export default function ArticlesPage() {
   }
 
   return (
-    <PageShell>
+    <PageShellWrapper>
       <JsonLd data={breadcrumbLd} />
       <JsonLd data={itemListLd} />
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -53,15 +95,15 @@ export default function ArticlesPage() {
           Полезные материалы для фрилансеров и digital-специалистов
         </p>
 
-        {articles.length === 0 ? (
+        {allArticles.length === 0 ? (
           <div className="py-9 text-center text-text-light text-sm border border-dashed border-border rounded-lg">
             Статьи скоро появятся
           </div>
         ) : (
           <div className="space-y-5">
-            {articles.map((article) => (
+            {allArticles.map((article) => (
               <Link
-                key={article.slug}
+                key={`${article.source}-${article.slug}`}
                 href={`/articles/${article.slug}`}
                 className="block bg-bg-card border border-border rounded-xl p-6 no-underline hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
               >
@@ -75,7 +117,7 @@ export default function ArticlesPage() {
                         </span>
                       )}
                       <span className="text-xs text-text-light">
-                        {formatArticleDate(article.publishedAt)}
+                        {article.publishedAt ? formatArticleDate(article.publishedAt) : ''}
                       </span>
                     </div>
                     <h2 className="text-lg font-semibold text-text mb-2">{article.title}</h2>
@@ -88,6 +130,6 @@ export default function ArticlesPage() {
           </div>
         )}
       </div>
-    </PageShell>
+    </PageShellWrapper>
   )
 }

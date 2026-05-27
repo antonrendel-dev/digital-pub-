@@ -3,8 +3,10 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
+import { getPayload } from 'payload'
+import config from '@payload-config'
 import { getArticleBySlug, getArticles, formatArticleDate } from '@/lib/articles'
-import PageShell from '@/components/PageShell'
+import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
 import {
   getRelatedCategoriesForArticle,
@@ -27,8 +29,47 @@ interface Props {
   params: Promise<{ slug: string }>
 }
 
+async function findPayloadArticle(slug: string) {
+  try {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'articles',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      where: { slug: { equals: slug }, status: { equals: 'published' } } as any,
+      limit: 1,
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (result.docs.length > 0) return result.docs[0] as any
+  } catch {
+    // Payload unavailable — fallback to MDX
+  }
+  return null
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
+
+  const payloadArticle = await findPayloadArticle(slug)
+  if (payloadArticle) {
+    const title = payloadArticle.metaTitle ?? payloadArticle.title
+    const description = payloadArticle.metaDescription ?? payloadArticle.description ?? ''
+    const url = `https://d-pub.ru/articles/${slug}`
+    return {
+      title,
+      description,
+      alternates: { canonical: url },
+      openGraph: {
+        title,
+        description,
+        url,
+        type: 'article',
+        publishedTime: payloadArticle.publishedAt,
+        authors: ['Диджитал Паб'],
+      },
+      twitter: { card: 'summary_large_image', title, description },
+    }
+  }
+
   const article = getArticleBySlug(slug)
   if (!article) return { title: 'Статья не найдена' }
 
@@ -59,6 +100,116 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Props) {
   const { slug } = await params
+
+  const payloadArticle = await findPayloadArticle(slug)
+
+  if (payloadArticle) {
+    const allArticles = getArticles()
+    const related = allArticles.slice(0, 3)
+    const relatedCategories = getRelatedCategoriesForArticle([])
+
+    const articleLd = {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: payloadArticle.title,
+      description: payloadArticle.description ?? '',
+      datePublished: payloadArticle.publishedAt,
+      dateModified: payloadArticle.publishedAt,
+      author: { '@type': 'Organization', name: 'Диджитал Паб', url: 'https://d-pub.ru' },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Диджитал Паб',
+        logo: { '@type': 'ImageObject', url: 'https://d-pub.ru/logo.png' },
+      },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': `https://d-pub.ru/articles/${slug}` },
+    }
+
+    const breadcrumbLd = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
+        { '@type': 'ListItem', position: 2, name: 'Статьи', item: 'https://d-pub.ru/articles' },
+        { '@type': 'ListItem', position: 3, name: payloadArticle.title },
+      ],
+    }
+
+    return (
+      <PageShellWrapper>
+        <JsonLd data={articleLd} />
+        <JsonLd data={breadcrumbLd} />
+        <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
+          <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
+            <Link
+              href="/"
+              className="text-text-muted no-underline hover:text-accent transition-colors"
+            >
+              Главная
+            </Link>
+            <span className="text-text-light">&rsaquo;</span>
+            <Link
+              href="/articles"
+              className="text-text-muted no-underline hover:text-accent transition-colors"
+            >
+              Статьи
+            </Link>
+            <span className="text-text-light">&rsaquo;</span>
+            <span className="text-text-light truncate">{payloadArticle.title}</span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
+            <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
+              <h1 className="text-2xl font-bold text-text tracking-tight leading-snug mb-3">
+                {payloadArticle.title}
+              </h1>
+              <div className="flex items-center gap-3 mb-6">
+                {payloadArticle.publishedAt && (
+                  <span className="text-sm text-text-light">
+                    {formatArticleDate(payloadArticle.publishedAt)}
+                  </span>
+                )}
+              </div>
+              {/* Lexical content placeholder — full renderer in Task 15 */}
+              <div className="prose prose-sm max-w-none text-text-muted">
+                {payloadArticle.content ? (
+                  <pre className="whitespace-pre-wrap text-xs bg-bg-card border border-border rounded p-4 overflow-auto">
+                    {JSON.stringify(payloadArticle.content, null, 2)}
+                  </pre>
+                ) : (
+                  <p className="text-text-light italic">Контент недоступен</p>
+                )}
+              </div>
+            </article>
+
+            <aside className="hidden lg:flex flex-col gap-4">
+              <RelatedCategoriesBlock categories={relatedCategories} />
+              {related.length > 0 && (
+                <div className="bg-bg-card border border-border rounded-xl p-4">
+                  <div className="s-lbl mb-3">Другие статьи</div>
+                  {related.map((r) => (
+                    <Link
+                      key={r.slug}
+                      href={`/articles/${r.slug}`}
+                      className="block py-2.5 border-b border-border-light last:border-none last:pb-0 no-underline group"
+                    >
+                      <div className="text-[12.5px] text-text font-medium leading-snug mb-0.5 group-hover:text-accent transition-colors">
+                        {r.title}
+                      </div>
+                      <div className="text-[11px] text-text-light">
+                        {formatArticleDate(r.publishedAt)}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </aside>
+          </div>
+        </div>
+      </PageShellWrapper>
+    )
+  }
+
+  // Fallback: MDX article
   const article = getArticleBySlug(slug)
   if (!article) notFound()
 
@@ -106,7 +257,7 @@ export default async function ArticlePage({ params }: Props) {
   }
 
   return (
-    <PageShell>
+    <PageShellWrapper>
       <JsonLd data={articleLd} />
       <JsonLd data={breadcrumbLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
@@ -191,6 +342,6 @@ export default async function ArticlePage({ params }: Props) {
           </aside>
         </div>
       </div>
-    </PageShell>
+    </PageShellWrapper>
   )
 }

@@ -102,6 +102,28 @@ export function getArticleBySlug(slug: string): Article | null {
   }
 }
 
+export type MergedArticle = {
+  slug: string
+  title: string
+  description: string
+  publishedAt: string | null
+  tags: string[]
+  source: 'mdx' | 'payload'
+}
+
+/** Merge MDX and Payload articles and sort by publishedAt descending. Articles without a date go to the end. */
+export function mergeAndSortArticles(
+  mdxArticles: MergedArticle[],
+  payloadArticles: MergedArticle[]
+): MergedArticle[] {
+  return [...mdxArticles, ...payloadArticles].sort((a, b) => {
+    if (!a.publishedAt && !b.publishedAt) return 0
+    if (!a.publishedAt) return 1
+    if (!b.publishedAt) return -1
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  })
+}
+
 /** Format date for article display */
 export function formatArticleDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -117,11 +139,29 @@ export function formatArticleDate(dateStr: string): string {
  * No custom components, no script/iframe.
  */
 export const MDX_ALLOWED_ELEMENTS = [
-  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'p', 'ul', 'ol', 'li',
-  'a', 'img',
-  'code', 'pre',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'p',
+  'ul',
+  'ol',
+  'li',
+  'a',
+  'img',
+  'code',
+  'pre',
   'blockquote',
-  'table', 'thead', 'tbody', 'tr', 'th', 'td',
-  'strong', 'em', 'br', 'hr',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+  'strong',
+  'em',
+  'br',
+  'hr',
 ] as const

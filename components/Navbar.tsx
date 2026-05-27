@@ -8,9 +8,10 @@ interface NavbarProps {
   onSearch: (query: string) => void
   onDarkToggle: () => void
   isDark: boolean
+  slogan?: string
 }
 
-export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) {
+export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: NavbarProps) {
   const [query, setQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -45,7 +46,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark }: NavbarProps) 
                 диджитал<em>паб</em>
               </div>
               <div className="text-xs text-text-muted hidden sm:block">
-                Место, где встречаются хорошие люди
+                {slogan ?? 'Место, где встречаются хорошие люди'}
               </div>
             </div>
           </Link>

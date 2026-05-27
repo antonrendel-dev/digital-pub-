@@ -1,4 +1,4 @@
-import { getArticles, getArticleBySlug } from '@/lib/articles'
+import { getArticles, getArticleBySlug, mergeAndSortArticles } from '@/lib/articles'
 
 // Reference slug — one of the real articles checked into content/articles/.
 // Used to assert getArticleBySlug() on a known-existing file without
@@ -92,5 +92,76 @@ describe('articles', () => {
       // Should contain a Russian month name
       expect(result).toMatch(/\d+\s+\S+\s+2026/)
     })
+  })
+})
+
+describe('mergeAndSortArticles', () => {
+  const mdxArticles = [
+    {
+      slug: 'mdx-old',
+      title: 'Old MDX',
+      description: 'desc',
+      publishedAt: '2024-01-01',
+      tags: [],
+      source: 'mdx' as const,
+    },
+    {
+      slug: 'mdx-new',
+      title: 'New MDX',
+      description: 'desc',
+      publishedAt: '2024-06-01',
+      tags: [],
+      source: 'mdx' as const,
+    },
+  ]
+  const payloadArticles = [
+    {
+      slug: 'payload-mid',
+      title: 'Mid Payload',
+      description: 'desc',
+      publishedAt: '2024-03-15',
+      tags: [],
+      source: 'payload' as const,
+    },
+  ]
+
+  it('mergeAndSortArticles_sortsPayloadAndMdxByPublishedAtDescending', () => {
+    const result = mergeAndSortArticles(mdxArticles, payloadArticles)
+    expect(result[0].slug).toBe('mdx-new')
+    expect(result[1].slug).toBe('payload-mid')
+    expect(result[2].slug).toBe('mdx-old')
+  })
+
+  it('mergeAndSortArticles_putsMissingDateAtEnd', () => {
+    const noDate = [
+      {
+        slug: 'no-date',
+        title: 'No Date',
+        description: '',
+        publishedAt: null,
+        tags: [],
+        source: 'payload' as const,
+      },
+    ]
+    const result = mergeAndSortArticles(mdxArticles, noDate)
+    expect(result[result.length - 1].slug).toBe('no-date')
+  })
+
+  it('mergeAndSortArticles_returnsCorrectShape', () => {
+    const result = mergeAndSortArticles(mdxArticles, payloadArticles)
+    for (const item of result) {
+      expect(item).toHaveProperty('slug')
+      expect(item).toHaveProperty('title')
+      expect(item).toHaveProperty('description')
+      expect(item).toHaveProperty('publishedAt')
+      expect(item).toHaveProperty('tags')
+      expect(item).toHaveProperty('source')
+    }
+  })
+
+  it('mergeAndSortArticles_emptyPayloadArray_returnsMdxOnly', () => {
+    const result = mergeAndSortArticles(mdxArticles, [])
+    expect(result).toHaveLength(2)
+    expect(result.every((r) => r.source === 'mdx')).toBe(true)
   })
 })

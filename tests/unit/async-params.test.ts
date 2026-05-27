@@ -50,6 +50,16 @@ jest.mock('remark-gfm', () => ({
   default: jest.fn(),
 }))
 
+// payload and @payload-config are not available in jest node env
+jest.mock('payload', () => ({
+  getPayload: jest.fn().mockResolvedValue({
+    find: jest.fn().mockResolvedValue({ docs: [] }),
+    findGlobal: jest.fn().mockResolvedValue({}),
+  }),
+}))
+
+jest.mock('@payload-config', () => ({}), { virtual: true })
+
 // Helper: run an async function, return the error (or null if no error)
 async function runSafe(fn: () => Promise<unknown>): Promise<Error | null> {
   try {
@@ -66,9 +76,8 @@ describe('Next.js 15 async params — page components', () => {
   })
 
   it('category_page_awaits_params', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const err = await runSafe(() =>
-      CategoryPage({ params: Promise.resolve({ category: 'smm' }) } as any)
+    const err = await runSafe(
+      () => CategoryPage({ params: Promise.resolve({ category: 'smm' }) } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     )
     // Must not throw TypeError (would indicate params was not awaited)
     expect(err).not.toBeInstanceOf(TypeError)
@@ -77,9 +86,8 @@ describe('Next.js 15 async params — page components', () => {
   })
 
   it('category_slug_page_awaits_params', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const err = await runSafe(() =>
-      VacancyPage({ params: Promise.resolve({ category: 'smm', slug: 'test' }) } as any)
+    const err = await runSafe(
+      () => VacancyPage({ params: Promise.resolve({ category: 'smm', slug: 'test' }) } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     )
     expect(err).not.toBeInstanceOf(TypeError)
     expect(jest.mocked(getPostBySlug)).toHaveBeenCalledWith('test')
@@ -93,9 +101,8 @@ describe('Next.js 15 async params — page components', () => {
   })
 
   it('articles_slug_page_awaits_params', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const err = await runSafe(() =>
-      ArticlePage({ params: Promise.resolve({ slug: 'test-slug' }) } as any)
+    const err = await runSafe(
+      () => ArticlePage({ params: Promise.resolve({ slug: 'test-slug' }) } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     )
     expect(err).not.toBeInstanceOf(TypeError)
     expect(jest.mocked(getArticleBySlug)).toHaveBeenCalledWith('test-slug')
@@ -139,10 +146,9 @@ describe('Next.js 15 async params — generateMetadata', () => {
   })
 
   it('vacancy_slug_generate_metadata_awaits_params', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await vacancySlugMeta({
       params: Promise.resolve({ category: 'smm', slug: 'test-vacancy' }),
-    } as any)
+    } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     expect(result).toHaveProperty('title')
     expect(jest.mocked(getPostBySlug)).toHaveBeenCalledWith('test-vacancy')
   })
@@ -161,10 +167,9 @@ describe('Next.js 15 async searchParams — listing pages generateMetadata', () 
   })
 
   it('vacancies_listing_generate_metadata_awaits_searchparams', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await vacanciesListingMeta({
       searchParams: Promise.resolve({ page: '2' }),
-    } as any)
+    } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     expect(result).toHaveProperty('title')
     expect((result.alternates as { canonical?: string })?.canonical).toContain('page=2')
   })

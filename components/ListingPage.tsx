@@ -7,7 +7,6 @@ import LeftSidebar from './LeftSidebar'
 import RightSidebar from './RightSidebar'
 import TagsSidebar from './TagsSidebar'
 import Feed from './feed/Feed'
-import Footer from './Footer'
 import { FeedPost } from '@/lib/posts'
 import { useTheme } from '@/lib/hooks/useTheme'
 
@@ -132,7 +131,6 @@ export default function ListingPage({
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   )
 }

@@ -5,7 +5,6 @@ import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
 import Feed from './feed/Feed'
 import RightSidebar from './RightSidebar'
-import Footer from './Footer'
 import { FeedPost } from '@/lib/posts'
 import { useTheme } from '@/lib/hooks/useTheme'
 
@@ -59,7 +58,6 @@ export default function HomePage({ posts, stats, articles, tags, seoHtml }: Home
           )}
         </div>
       </main>
-      <Footer />
     </div>
   )
 }
