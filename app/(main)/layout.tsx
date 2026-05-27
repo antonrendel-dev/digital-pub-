@@ -20,8 +20,7 @@ const DEFAULT_DESCRIPTION =
 
 const YANDEX_METRIKA_ID = process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID || ''
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ''
-const IS_PRODUCTION =
-  (process.env.NEXT_PUBLIC_SITE_URL || 'https://d-pub.ru') === 'https://d-pub.ru'
+const IS_PRODUCTION = !process.env.PAYLOAD_PUSH_DB
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -1,10 +1,7 @@
 import type { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://d-pub.ru'
-  const isProduction = siteUrl === 'https://d-pub.ru'
-
-  if (!isProduction) {
+  if (process.env.PAYLOAD_PUSH_DB) {
     return {
       rules: { userAgent: '*', disallow: '/' },
     }
@@ -12,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
 
   return {
     rules: { userAgent: '*', allow: '/' },
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: 'https://d-pub.ru/sitemap.xml',
   }
 }
