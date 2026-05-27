@@ -1,0 +1,56 @@
+[
+  {
+    "priority": "P1",
+    "category": "Information Disclosure / Error Handling",
+    "finding": "Line 41: `err.message` from payload.create() is returned verbatim in the HTTP 400 response. Payload's internal error messages can include DB constraint details (e.g. 'duplicate key value violates unique constraint \"articles_slug_idx\"'), ORM query fragments, or field-level internal names. This leaks schema topology to unauthenticated callers who can probe by sending crafted payloads.",
+    "suggestion": "Map Payload ValidationError (check `err.name === 'ValidationError'` or `err instanceof payload.errors.ValidationError`) to a sanitised response with only field-level user-facing messages. For all other error types return a generic 'Internal server error' with status 500 and log the full error server-side only."
+  },
+  {
+    "priority": "P1",
+    "category": "Mass Assignment / Privilege Escalation via Body",
+    "finding": "Line 36: `body as Record<string, unknown>` is passed directly to `payload.create()` without any allow-list or strip-list. Although Payload's access control prevents changing `role` through the users collection, the articles collection has no `beforeOperation` / `beforeChange` hook stripping unexpected fields. A caller with `agent` role can inject: (1) `status: 'published'` — bypassing the expected draft-first flow; (2) `publishedAt` set to an arbitrary past date for backdating; (3) any future field added to the schema without a corresponding API guard will be immediately writable. The `status` field has no per-role write restriction at the field level.",
+    "suggestion": "Add a `beforeOperation` hook (or explicit allow-list in the route) that strips all fields an `agent` is not permitted to set: at minimum enforce `status = 'draft'` and strip `publishedAt` for non-admin callers. Alternatively add field-level `access.update` on the `status` field in `articles.ts` so only admins can set it to `published`."
+  },
+  {
+    "priority": "P1",
+    "category": "API Key Logged in Plaintext",
+    "finding": "payload.config.ts line 69: `console.log('[payload onInit] Sync API Key:', syncUser.apiKey)` prints a live secret to stdout. In a production environment stdout is typically captured by a logging aggregator (PM2 logs, systemd journal, Docker logs). This violates the project's own CRITICAL rule: 'PAYLOAD_API_KEY and other secrets must NEVER appear in logs'. The API key is a bearer credential equivalent to a password for the `sync` role.",
+    "suggestion": "Remove the console.log entirely. The operator workflow should be: generate the key once via the Payload admin UI (Users edit), copy it manually, and store it in the `.env` on the red server. If a one-time seed log is absolutely required, mask all but the last 4 characters and label it clearly as 'copy this once, it will not be shown again'."
+  },
+  {
+    "priority": "P2",
+    "category": "Missing Rate Limiting",
+    "finding": "No rate limiting exists anywhere in the codebase (confirmed: no middleware.ts, no upstash/limiter imports). The POST endpoint authenticates via API key — a high-volume brute-force or credential-stuffing attack against `payload.auth()` is unconstrained. The GET endpoint is also unconstrained and will happily serve all published articles on every request, making it trivially DoS-able through high-frequency polling.",
+    "suggestion": "Add rate limiting at the Next.js middleware layer (e.g. `@upstash/ratelimit` + Vercel KV, or a simple in-process token bucket for non-serverless). At minimum: POST /api/articles — 60 req/min per IP; GET /api/articles — 300 req/min per IP."
+  },
+  {
+    "priority": "P2",
+    "category": "Missing CORS Configuration",
+    "finding": "No CORS headers are set on `app/api/articles/route.ts` and no CORS policy is defined in `payload.config.ts` (no `cors` key). Next.js by default applies no CORS restrictions to API routes, meaning any origin can make credentialed cross-origin requests if the browser sends the right headers. For a public GET endpoint this is acceptable; for the authenticated POST endpoint it means a malicious site can trick an authenticated admin into issuing a POST if CSRF protection is also absent.",
+    "suggestion": "Set explicit CORS in `payload.config.ts`: `cors: ['https://d-pub.ru', 'https://staging.d-pub.ru']`. For the custom route add an `OPTIONS` handler returning `Access-Control-Allow-Origin: https://d-pub.ru` and `Access-Control-Allow-Methods: GET, POST`. This is defence-in-depth alongside Payload's token-based auth."
+  },
+  {
+    "priority": "P2",
+    "category": "GET Endpoint — Pagination & Data Exposure",
+    "finding": "Line 6-10: `payload.find()` is called with no `limit` parameter. Payload's default limit is 10 but this is a configuration value that can change. More importantly, the full Payload response envelope is returned verbatim: `{ docs, totalDocs, totalPages, hasNextPage, nextPage, ... }`. The `docs` array includes ALL fields returned by the read access control, including `metaTitle`, `metaDescription`, and richText `content` blobs — potentially large. There is no pagination cursor from the caller, so each request always fetches page 1.",
+    "suggestion": "Explicitly set `limit` and parse `page` from query params (with a max cap, e.g. 50). Consider projecting only fields needed by the public consumer via the `select` option to avoid over-fetching and accidental future field exposure."
+  },
+  {
+    "priority": "P2",
+    "category": "Missing CSRF Protection",
+    "finding": "The POST handler relies solely on `Authorization: users API-Key <token>` header for authentication. Standard Payload browser sessions use a cookie-based JWT. If any browser-based admin session exists alongside this endpoint, a CSRF attack could trigger the POST endpoint from a malicious page (assuming SameSite cookie policy is not Strict). The route has no `X-Requested-With` or CSRF token check.",
+    "suggestion": "If this endpoint is intended for machine-to-machine use only (API key auth), document that explicitly and ensure the Payload cookie auth cannot satisfy `payload.auth()` for this route. If browser sessions must also work, add a CSRF token check."
+  },
+  {
+    "priority": "P3",
+    "category": "Type Casting Bypasses TypeScript Safety",
+    "finding": "Line 37: `req as Parameters<typeof payload.create>[0]['req']` is an unsafe cast that silences TypeScript. The native `Request` object passed from Next.js route handlers is not the same type as Payload's internal `PayloadRequest`. While this works at runtime because Payload reads only the headers/body it needs, future Payload upgrades may add required fields to `PayloadRequest` that are missing on the native `Request`, causing silent runtime failures rather than compile-time errors.",
+    "suggestion": "Use Payload's `createLocalReq` utility or pass `undefined` if the req context is not needed for audit logging. If audit logging IS needed, import `PayloadRequest` and construct it properly rather than casting."
+  },
+  {
+    "priority": "P3",
+    "category": "Missing HSTS Header",
+    "finding": "`next.config.mjs` defines security headers but does not include `Strict-Transport-Security`. Without HSTS, a first-visit HTTP request can be downgraded before the browser enforces HTTPS, enabling MITM attacks that could steal API keys from the `Authorization` header.",
+    "suggestion": "Add `{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }` to both header blocks in `next.config.mjs`."
+  }
+]

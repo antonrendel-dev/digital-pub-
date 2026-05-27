@@ -54,6 +54,10 @@ export const Articles: CollectionConfig = {
       type: 'select',
       options: ['draft', 'published'],
       defaultValue: 'draft',
+      access: {
+        create: ({ req }) => req.user?.role === 'admin',
+        update: ({ req }) => req.user?.role === 'admin',
+      },
     },
   ],
 }

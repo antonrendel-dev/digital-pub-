@@ -1,0 +1,72 @@
+[
+  {
+    "priority": "P1",
+    "file": "app/api/articles/route.ts",
+    "line_hint": 40,
+    "finding": "Forbidden error from payload.create() — which has HTTP status 403 — is caught and re-emitted as 400. The catch block uses `err instanceof Error` (which Forbidden satisfies since APIError extends Error), extracts `err.message`, and always returns status 400. If the duplicate-role guard at line 22 passes (e.g. future role expansion), or if Payload's internal access check fires for any reason, the caller gets 400 instead of 403. The `err.status` field on APIError is never consulted.",
+    "suggestion": "Check `err instanceof APIError` (or at minimum check `(err as any).status`) before defaulting to 400. Map the error's `.status` to the response status: `const status = err instanceof APIError ? err.status : 400`. Import `APIError` from 'payload'."
+  },
+  {
+    "priority": "P1",
+    "file": "app/api/articles/route.ts",
+    "line_hint": 4,
+    "finding": "GET handler passes no `req` and no `overrideAccess: false` to `payload.find()`. According to Payload v3 Local API docs (confirmed in find.d.ts): `overrideAccess` defaults to `true` when not provided. This means the `read` access control function defined in articles.ts (line 8) — which restricts non-admins to published-only — is **bypassed entirely** by the Local API. The `where: { status: { equals: 'published' } }` filter in the route is the only guard, but it is a client-supplied constraint, not an enforced access policy. If anyone removes or modifies it the access silently opens. The route must either pass `overrideAccess: false` (letting Payload enforce the access function) or keep the explicit filter — but the current arrangement gives a false sense of security.",
+    "suggestion": "Add `overrideAccess: false` to `payload.find()` and remove the manual `where` filter, deferring fully to the access control function in the collection config. This ensures a single source of truth. If the explicit filter must stay for performance reasons, also add `overrideAccess: false` so both layers are active."
+  },
+  {
+    "priority": "P1",
+    "file": "app/api/articles/route.ts",
+    "line_hint": 37,
+    "finding": "The `req` cast `req as Parameters<typeof payload.create>[0]['req']` is structurally unsafe. `payload.create` expects `req?: Partial<PayloadRequest>`. `PayloadRequest` extends `Partial<Request>` and additionally requires `context`, `i18n`, `user`, `payload`, etc. The native `Request` object does NOT have these Payload-specific properties. Casting with `as` silences TypeScript but at runtime `req.user` on this object will be `undefined` — meaning Payload's access control function receives `req.user === undefined` (unauthenticated), even though auth was already validated above. This means the create access guard `req.user?.role === 'agent'` in articles.ts evaluates to `false` and Payload throws `Forbidden`.",
+    "suggestion": "Do not pass the raw `Request` as `req`. Instead use `createPayloadRequest` (exported from 'payload') to construct a proper `PayloadRequest`, or use the `user` option directly: `payload.create({ collection: 'articles', data: ..., overrideAccess: false, user: user })`. Passing `user` explicitly is the documented approach for Local API calls that need to thread the authenticated user."
+  },
+  {
+    "priority": "P1",
+    "file": "tests/unit/api-articles.test.ts",
+    "line_hint": 89,
+    "finding": "Tests `post_admin_token_returns_201` and `post_agent_token_returns_201` mock `payload.create` to succeed unconditionally. This means they do not test the actual code path where `req` is passed to `payload.create` — the core behaviour under review (P1 finding above). The tests would pass even if the `req` cast bug causes a 403 in production, because the mock bypasses Payload's real access check. These tests provide false confidence.",
+    "suggestion": "Add a test that mocks `payload.create` to throw `new Forbidden()` (simulating Payload rejecting due to bad req.user) and assert the route returns 403, not 400. This directly validates the error-status-mapping bug (P1 finding in route.ts:40)."
+  },
+  {
+    "priority": "P2",
+    "file": "app/api/articles/route.ts",
+    "line_hint": 40,
+    "finding": "Error message leakage: `err.message` from Payload errors is forwarded directly to the HTTP response. For `ValidationError`, `isPublic` is true and the message contains field names — acceptable. But for unexpected errors (DB connection failure, Prisma constraint violation, etc.) `err instanceof Error` is true and the internal message (which may include table names, column names, connection strings) leaks to the caller. Payload's `APIError.isPublic` flag explicitly encodes whether the message is safe to expose.",
+    "suggestion": "Only expose the message if the error is a public APIError: `const message = (err instanceof APIError && err.isPublic) ? err.message : 'Internal server error'`. For non-public errors, log internally with payload.logger.error and return a generic message."
+  },
+  {
+    "priority": "P2",
+    "file": "app/api/articles/route.ts",
+    "line_hint": 5,
+    "finding": "`getPayload({ config })` is called on every request with no error handling. If `getPayload` throws (e.g. DB pool exhausted, config validation error on cold start), the unhandled exception propagates to Next.js and returns an unformatted 500. This is inconsistent with the structured error responses returned elsewhere.",
+    "suggestion": "Wrap `getPayload` calls in try/catch or add a top-level handler, return `Response.json({ error: 'Service unavailable' }, { status: 503 })` and log the error."
+  },
+  {
+    "priority": "P2",
+    "file": "app/api/articles/route.ts",
+    "line_hint": 13,
+    "finding": "`payload.auth({ headers: req.headers })` is called before `getPayload` is used for the second time in POST, but `getPayload` is also called in GET without auth. If `payload.auth` throws (e.g. malformed Authorization header with unexpected format), the exception is unhandled and will surface as a 500.",
+    "suggestion": "Wrap `payload.auth()` in try/catch and return 401 on failure."
+  },
+  {
+    "priority": "P2",
+    "file": "tests/unit/api-articles.test.ts",
+    "line_hint": 1,
+    "finding": "The `get_excludes_draft` test only validates that `payload.find` was called with the correct `where` clause. It does not verify that draft documents are actually absent from the response. If the mock returned a mix of draft and published docs, the test would still pass. The test name implies exclusion behaviour but the assertion only covers the query parameter, not the result.",
+    "suggestion": "Either rename the test to `get_passes_published_filter_to_payload` (accurate), or additionally mock `find` to return a mixed array and assert that draft items are filtered from the response."
+  },
+  {
+    "priority": "P3",
+    "file": "app/api/articles/route.ts",
+    "line_hint": 22,
+    "finding": "Role check `user.role !== 'agent' && user.role !== 'admin'` duplicates the access control logic already defined in `articles.ts` (line 7). If a new role is added to the `create` access list in the collection config, this route guard must be updated separately. Two sources of truth.",
+    "suggestion": "Remove the manual role check. Rely solely on `overrideAccess: false` + correct `req`/`user` threading so Payload enforces its own access control. The route-level check is redundant and creates drift risk."
+  },
+  {
+    "priority": "P3",
+    "file": "app/api/articles/route.ts",
+    "line_hint": 5,
+    "finding": "No logging anywhere in the route. Auth failures, forbidden access attempts, and create errors are silently swallowed (only returned as HTTP responses). This makes security-relevant events invisible in logs.",
+    "suggestion": "Add structured logging for 401/403 responses (include user id if available) and for caught errors in the create block."
+  }
+]

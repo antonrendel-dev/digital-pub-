@@ -119,6 +119,31 @@ Rejected: SA-5 (DB guard — pg throws at connect), SA-7 (unsafe-eval intentiona
 - DB_CONNECTION_STRING: no DATABASE_URI/DATABASE_URL in payload.config.ts ✓
 - withPayload() wrapping next.config.mjs ✓
 
+## Task 10: Agent API Route (/api/articles)
+
+**Status:** Done
+**Commit:** pending
+**Agent:** main agent
+
+**Summary:** Created `app/api/articles/route.ts` with GET (public, `overrideAccess: false` — delegates filtering to the collection's `read` access function) and POST (agent/admin create via `payload.auth({ headers })` + manual role check + `user` threaded into `payload.create()` with `overrideAccess: false`). P1 post-review fixes: removed API key from `console.log` in `payload.config.ts` (replaced with safe logger hint); added field-level `status` access control in `articles.ts` (agent cannot publish directly); fixed `req` cast to pass `user` directly; fixed error handler to preserve `err.status` and not leak non-public messages; GET now uses Payload access control instead of manual `where` filter.
+
+**Deviations:** Added `post_create_validation_error_returns_400` as a 9th test (P1 from test-reviewer — catch branch was uncovered). `post_invalid_token_returns_401` now mocks `auth` throwing (not returning `user: null`) to distinguish "malformed token" from "no token" — route wraps `payload.auth()` in try/catch returning 401 on any auth exception.
+
+**Reviews:**
+
+_Round 1:_
+
+- code-reviewer: 3 P1 findings (req cast, Forbidden as 400, GET overrideAccess default), 3 P2, 2 P3 → all P1 fixed → [logs/working/task-10/code-reviewer-1.json]
+- security-auditor: 3 P1 findings (API key in logs, mass assignment on status, error leakage), 4 P2/P3 → all P1 fixed → [logs/working/task-10/security-auditor-1.json]
+- test-reviewer: 2 P1 findings (duplicate 401 test, missing ValidationError test), 5 P2/P3 → all P1 fixed → [logs/working/task-10/test-reviewer-1.json]
+
+**Verification:**
+
+- `npx tsc --noEmit` → 0 errors
+- `npm test` → 139 passed, 4 todo, 0 failures
+- No `overrideAccess: true` in route.ts ✓
+- No secrets in logs ✓
+
 ## Task 11: Sync Script Migration (Prisma → Payload REST API)
 
 **Status:** Done
@@ -141,4 +166,4 @@ _Round 1:_
 
 - `npx tsc --noEmit` → 0 errors
 - `npm test -- --testPathPatterns=sync-telegram` → 9 passed, 0 failures
-- Smoke: no prisma imports ✓, no PAYLOAD_API_KEY in console.* ✓, no Authorization in console.* ✓, 409 handled ✓, no backfill functions ✓, no prisma.$disconnect ✓
+- Smoke: no prisma imports ✓, no PAYLOAD_API_KEY in console._ ✓, no Authorization in console._ ✓, 409 handled ✓, no backfill functions ✓, no prisma.$disconnect ✓

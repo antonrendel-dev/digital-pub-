@@ -55,7 +55,7 @@ export default buildConfig({
         },
       })
 
-      const syncUser = await payload.create({
+      await payload.create({
         collection: 'users',
         data: {
           email: 'sync@d-pub.ru',
@@ -64,9 +64,9 @@ export default buildConfig({
         },
       })
 
-      // API key logged once — copy to PAYLOAD_API_KEY on the red server
-      // eslint-disable-next-line no-console
-      console.log('[payload onInit] Sync API Key:', syncUser.apiKey)
+      payload.logger.info(
+        '[payload onInit] Sync user created — copy apiKey from Payload admin UI (Users → sync@d-pub.ru) to PAYLOAD_API_KEY on the server'
+      )
     } catch (err) {
       payload.logger.error({ err }, '[payload onInit] user seed failed')
     }
