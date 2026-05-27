@@ -60,7 +60,12 @@ jobs:
         run: rsync -avz package.json package-lock.json ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
       - name: Install production dependencies
-        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "bash -l -c 'cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts'"
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts
+          "
 
       - name: Restart app
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "touch ~/d-pub.ru/reload"
