@@ -56,5 +56,11 @@ jobs:
       - name: Deploy content/
         run: rsync -avz content/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/content/
 
+      - name: Deploy package files
+        run: rsync -avz package.json package-lock.json ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
+
+      - name: Install production dependencies
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts"
+
       - name: Restart app
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "touch ~/d-pub.ru/reload"
