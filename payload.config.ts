@@ -29,6 +29,7 @@ export default buildConfig({
       connectionString: process.env.DB_CONNECTION_STRING,
     },
     push: process.env.PAYLOAD_PUSH_DB === 'true',
+    migrationDir: './payload-migrations',
   }),
   collections: [Tags, Posts, Articles, Media, Users],
   globals: [Navbar, Footer, SocialChannels, SiteSettings],

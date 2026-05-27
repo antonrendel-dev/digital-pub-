@@ -1,5 +1,4 @@
 import type { GlobalConfig } from 'payload'
-import { revalidatePath } from 'next/cache'
 
 /**
  * SiteSettings Global
@@ -46,8 +45,13 @@ export const SiteSettings: GlobalConfig = {
   ],
   hooks: {
     afterChange: [
-      () => {
-        revalidatePath('/', 'layout')
+      async () => {
+        try {
+          const { revalidatePath } = await import('next/cache')
+          revalidatePath('/', 'layout')
+        } catch {
+          // no-op outside Next.js (e.g., payload CLI)
+        }
       },
     ],
   },

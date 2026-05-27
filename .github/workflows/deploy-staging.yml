@@ -30,6 +30,19 @@ jobs:
           PAYLOAD_SECRET: ${{ secrets.STAGING_PAYLOAD_SECRET }}
           NEXT_PUBLIC_YANDEX_METRIKA_ID: ${{ secrets.NEXT_PUBLIC_YANDEX_METRIKA_ID }}
 
+      - name: Compile payload config for CLI
+        run: |
+          npx esbuild payload.config.ts \
+            --bundle=true \
+            --platform=node \
+            --format=esm \
+            --external:payload \
+            --external:'@payloadcms/*' \
+            --external:crypto \
+            --external:next \
+            --external:'next/*' \
+            --outfile=payload.config.compiled.mjs
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -55,8 +68,8 @@ jobs:
       - name: Deploy payload-migrations/
         run: rsync -avz --ignore-missing-args payload-migrations/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/payload-migrations/
 
-      - name: Deploy payload source (needed for payload migrate)
-        run: rsync -avz tsconfig.json payload.config.ts payload ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
+      - name: Deploy payload compiled config
+        run: rsync -avz payload.config.compiled.mjs ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
 
       - name: Deploy package files
         run: rsync -avz package.json package-lock.json ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
@@ -72,7 +85,9 @@ jobs:
       - name: Run payload migrate
         run: |
           ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
-            cd ~/staging/d-pub && [ -f node_modules/.bin/payload ] && /usr/bin/node node_modules/.bin/payload migrate || echo 'Payload migrate failed or not installed'
+            cd ~/staging/d-pub && [ -f node_modules/.bin/payload ] && \
+              PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs /usr/bin/node node_modules/.bin/payload migrate || \
+              echo 'Payload migrate failed or not installed'
           "
 
       - name: Restart staging app

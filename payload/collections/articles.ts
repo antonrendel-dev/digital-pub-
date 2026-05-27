@@ -1,5 +1,4 @@
 import type { CollectionConfig } from 'payload'
-import { revalidatePath } from 'next/cache'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -12,8 +11,13 @@ export const Articles: CollectionConfig = {
   hooks: {
     afterChange: [
       async ({ doc }: { doc: { slug: string } }) => {
-        revalidatePath('/articles', 'layout')
-        revalidatePath(`/articles/${doc.slug}`, 'page')
+        try {
+          const { revalidatePath } = await import('next/cache')
+          revalidatePath('/articles', 'layout')
+          revalidatePath(`/articles/${doc.slug}`, 'page')
+        } catch {
+          // no-op outside Next.js (e.g., payload CLI)
+        }
       },
     ],
   },

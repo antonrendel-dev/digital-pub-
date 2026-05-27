@@ -1,6 +1,5 @@
 import type { CollectionConfig } from 'payload'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { revalidatePath } from 'next/cache'
 
 export const Tags: CollectionConfig = {
   slug: 'tags',
@@ -50,8 +49,13 @@ export const Tags: CollectionConfig = {
   hooks: {
     afterChange: [
       async ({ doc }) => {
-        revalidatePath(`/vacancies/${doc.slug}`, 'page')
-        revalidatePath('/', 'layout')
+        try {
+          const { revalidatePath } = await import('next/cache')
+          revalidatePath(`/vacancies/${doc.slug}`, 'page')
+          revalidatePath('/', 'layout')
+        } catch {
+          // no-op outside Next.js (e.g., payload CLI)
+        }
       },
     ],
   },
