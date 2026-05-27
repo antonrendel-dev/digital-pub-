@@ -53,5 +53,8 @@ jobs:
       - name: Deploy public/
         run: rsync -avz public/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/public/
 
+      - name: Deploy content/
+        run: rsync -avz content/ ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/content/
+
       - name: Restart staging app
         run: ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "sudo pm2 restart d-pub-staging"

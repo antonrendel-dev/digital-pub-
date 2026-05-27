@@ -53,5 +53,8 @@ jobs:
       - name: Deploy public/
         run: rsync -avz public/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/public/
 
+      - name: Deploy content/
+        run: rsync -avz content/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/content/
+
       - name: Restart app
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "touch ~/d-pub.ru/reload"
