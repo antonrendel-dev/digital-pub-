@@ -1,0 +1,36 @@
+{
+  "reviewer": "code-reviewer",
+  "task": "task-11",
+  "round": 1,
+  "verdict": "approve_with_minor",
+  "summary": "Implementation is clean and correct. Prisma fully removed, Payload REST API integrated properly. require.main guard prevents test side effects. Export surface adequate for testing.",
+  "findings": [
+    {
+      "id": "CR-1",
+      "severity": "minor",
+      "file": "scripts/sync-telegram.ts",
+      "line": 388,
+      "finding": "PAYLOAD_API_KEY is re-resolved on every savePost() call via process.env lookup + IIFE. This is intentional (test isolation) but could be extracted to a helper getPayloadApiKey() for clarity.",
+      "action": "skip",
+      "reason": "Inline resolution is explicit and self-documenting via comment. Extracting to helper adds no functional value in this file scope."
+    },
+    {
+      "id": "CR-2",
+      "severity": "minor",
+      "file": "scripts/sync-telegram.ts",
+      "line": 370,
+      "finding": "resolveTagIds uses .filter(Boolean) which has return type string[] but TypeScript infers (string | undefined)[]. Works at runtime but could be typed more precisely with .filter((id): id is string => Boolean(id)).",
+      "action": "skip",
+      "reason": "TypeScript compiles cleanly (npx tsc --noEmit passes). The .filter(Boolean) pattern is idiomatic and accepted by the compiler here."
+    },
+    {
+      "id": "CR-3",
+      "severity": "low",
+      "file": "scripts/sync-telegram.ts",
+      "line": 430,
+      "finding": "main() does not validate PAYLOAD_API_KEY before starting the loop — if key is missing, first savePost() call will throw and the error will be caught by the catch handler. This is acceptable but an early check in main() would give a cleaner startup message.",
+      "action": "skip",
+      "reason": "The error message 'PAYLOAD_API_KEY not set in environment' is clear enough. Adding early validation would change the accepted spec pattern."
+    }
+  ]
+}

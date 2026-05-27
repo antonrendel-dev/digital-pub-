@@ -118,3 +118,27 @@ Rejected: SA-5 (DB guard — pg throws at connect), SA-7 (unsafe-eval intentiona
 - stub files: 5 collections + 4 globals confirmed
 - DB_CONNECTION_STRING: no DATABASE_URI/DATABASE_URL in payload.config.ts ✓
 - withPayload() wrapping next.config.mjs ✓
+
+## Task 11: Sync Script Migration (Prisma → Payload REST API)
+
+**Status:** Done
+**Commit:** da129d5
+**Agent:** main agent
+
+**Summary:** Removed all Prisma imports and dependencies from `scripts/sync-telegram.ts`. Replaced `assignTags`/`savePost` (Prisma) with `loadTagMap()` (GET /api/tags) + `resolveTagIds()` + `savePost(post, tagMap)` (POST /api/posts). Deleted `backfillTags` and `backfillImages` functions entirely. Added `require.main === module` guard to prevent `main()` execution on test import. PAYLOAD_API_KEY resolved at call-time inside `savePost()` to avoid module-load throw during test imports.
+
+**Deviations:** PAYLOAD_API_KEY validation moved from module load time to `savePost()` call time — spec showed it as a top-level throw, but that pattern breaks Jest imports. Functionally equivalent at runtime; key absence throws with the same message on first sync attempt.
+
+**Reviews:**
+
+_Round 1:_
+
+- code-reviewer: 3 minor/low findings, all skipped — no action required → [logs/working/task-11/code-reviewer-1.json]
+- security-auditor: approve — no secrets in logs confirmed → [logs/working/task-11/security-auditor-1.json]
+- test-reviewer: approve — all 3 TDD anchors passing → [logs/working/task-11/test-reviewer-1.json]
+
+**Verification:**
+
+- `npx tsc --noEmit` → 0 errors
+- `npm test -- --testPathPatterns=sync-telegram` → 9 passed, 0 failures
+- Smoke: no prisma imports ✓, no PAYLOAD_API_KEY in console.* ✓, no Authorization in console.* ✓, 409 handled ✓, no backfill functions ✓, no prisma.$disconnect ✓
