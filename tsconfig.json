@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2015",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,9 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "@payload-config": ["./payload.config.ts"]
     }
   },
   "include": [
@@ -35,10 +30,5 @@
     ".next/types/**/*.ts",
     ".next-dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "node_modules_old",
-    "v1",
-    "_files"
-  ]
+  "exclude": ["node_modules", "node_modules_old", "v1", "_files"]
 }

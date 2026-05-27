@@ -1,3 +1,5 @@
+import { withPayload } from '@payloadcms/next/withPayload'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
@@ -18,7 +20,7 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: [
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
@@ -36,8 +38,28 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/admin(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
+              "font-src 'self' fonts.gstatic.com data:",
+              "img-src 'self' data: blob:",
+              "connect-src 'self'",
+              "frame-src 'self'",
+              "frame-ancestors 'self'",
+              "worker-src blob: 'self'",
+            ].join('; '),
+          },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
     ]
   },
-};
+}
 
-export default nextConfig;
+export default withPayload(nextConfig)
