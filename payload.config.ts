@@ -12,9 +12,17 @@ import { SocialChannels } from './payload/globals/socialChannels'
 import { SiteSettings } from './payload/globals/siteSettings'
 import crypto from 'crypto'
 
+const payloadSecret = process.env.PAYLOAD_SECRET
+if (!payloadSecret || payloadSecret.length < 32) {
+  throw new Error(
+    '[Payload] PAYLOAD_SECRET env var is required and must be at least 32 characters. ' +
+      'Generate with: openssl rand -hex 32'
+  )
+}
+
 export default buildConfig({
-  serverURL: 'https://d-pub.ru',
-  secret: process.env.PAYLOAD_SECRET || '',
+  serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru',
+  secret: payloadSecret,
   editor: lexicalEditor({}),
   db: postgresAdapter({
     pool: {
@@ -27,13 +35,22 @@ export default buildConfig({
     user: Users.slug,
   },
   onInit: async (payload) => {
-    const { totalDocs } = await payload.count({ collection: 'users' })
-    if (totalDocs === 0) {
+    if (!process.env.PAYLOAD_ADMIN_EMAIL || !process.env.PAYLOAD_ADMIN_PASSWORD) {
+      payload.logger.warn(
+        '[payload onInit] PAYLOAD_ADMIN_EMAIL or PAYLOAD_ADMIN_PASSWORD not set — skipping user seed'
+      )
+      return
+    }
+
+    try {
+      const { totalDocs } = await payload.count({ collection: 'users' })
+      if (totalDocs > 0) return
+
       await payload.create({
         collection: 'users',
         data: {
-          email: process.env.PAYLOAD_ADMIN_EMAIL || 'admin@d-pub.ru',
-          password: process.env.PAYLOAD_ADMIN_PASSWORD || '',
+          email: process.env.PAYLOAD_ADMIN_EMAIL,
+          password: process.env.PAYLOAD_ADMIN_PASSWORD,
           role: 'admin',
         },
       })
@@ -44,12 +61,14 @@ export default buildConfig({
           email: 'sync@d-pub.ru',
           password: crypto.randomBytes(32).toString('hex'),
           role: 'sync',
-          enableAPIKey: true,
         },
       })
 
+      // API key logged once — copy to PAYLOAD_API_KEY on the red server
       // eslint-disable-next-line no-console
       console.log('[payload onInit] Sync API Key:', syncUser.apiKey)
+    } catch (err) {
+      payload.logger.error({ err }, '[payload onInit] user seed failed')
     }
   },
 })

@@ -18,7 +18,8 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        // All public routes — excludes /admin to prevent CSP merging
+        source: '/((?!admin).*)',
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -39,8 +40,12 @@ const nextConfig = {
         ],
       },
       {
+        // Admin panel — scoped CSP that allows Lexical editor web workers and iframes
         source: '/admin(.*)',
         headers: [
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
             key: 'Content-Security-Policy',
             value: [
@@ -49,13 +54,12 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
               "font-src 'self' fonts.gstatic.com data:",
               "img-src 'self' data: blob:",
-              "connect-src 'self'",
+              "connect-src 'self' ws://localhost:* wss://localhost:*",
               "frame-src 'self'",
               "frame-ancestors 'self'",
               "worker-src blob: 'self'",
             ].join('; '),
           },
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
         ],
       },
     ]
