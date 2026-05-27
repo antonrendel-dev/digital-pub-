@@ -17,12 +17,15 @@
 ## Access Information
 
 **App server (NetAngels):**
+
 ```
 ssh c48127@91.201.52.231
 ```
+
 Корень приложения: `~/d-pub.ru/`, исходники: `~/d-pub.ru/app/`
 
 **Front proxy:**
+
 ```
 ssh root@144.31.204.181
 ```
@@ -33,15 +36,15 @@ ssh root@144.31.204.181
 
 ## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `DB_CONNECTION_STRING` | PostgreSQL connection string (актуальное имя на NetAngels) |
-| `NEXTAUTH_SECRET` | Random secret for NextAuth session signing |
-| `NEXTAUTH_URL` | Full site URL (https://d-pub.ru) |
-| `ADMIN_EMAIL` | Admin login email |
-| `ADMIN_PASSWORD_HASH` | Bcrypt hash of admin password |
-| `TELEGRAM_CHANNELS` | Comma-separated Telegram channel usernames to sync |
-| `SYNC_INTERVAL_MINUTES` | How often to run Telegram sync (default: 10) |
+| Variable                | Description                                                |
+| ----------------------- | ---------------------------------------------------------- |
+| `DB_CONNECTION_STRING`  | PostgreSQL connection string (актуальное имя на NetAngels) |
+| `NEXTAUTH_SECRET`       | Random secret for NextAuth session signing                 |
+| `NEXTAUTH_URL`          | Full site URL (https://d-pub.ru)                           |
+| `ADMIN_EMAIL`           | Admin login email                                          |
+| `ADMIN_PASSWORD_HASH`   | Bcrypt hash of admin password                              |
+| `TELEGRAM_CHANNELS`     | Comma-separated Telegram channel usernames to sync         |
+| `SYNC_INTERVAL_MINUTES` | How often to run Telegram sync (default: 10)               |
 
 ---
 
@@ -87,9 +90,16 @@ cd ~/d-pub.ru/ && touch reload
 
 ## Environments
 
-**Production-like:** https://d-pub.ru — закрыт от индексации, деплой ручной с `main` или активной ветки.
+**Production:** https://d-pub.ru — деплой из ветки `main` через GitHub Actions (rsync на NetAngels).
 
-Staging нет.
+**Staging:** https://staging.d-pub.ru — деплой из ветки `dev` через GitHub Actions.
+
+- Next.js запущен прямо на красном сервере (144.31.204.181) на порту 3002
+- Nginx на красном сервере проксирует staging.d-pub.ru → localhost:3002
+- Prod идёт через туннель на NetAngels, staging — нет
+- GitHub Secrets: `STAGING_HOST`=144.31.204.181, `STAGING_USER`=claude, `STAGING_SSH_KEY`
+
+**Workflow:** feature-ветка → merge в `dev` → автодеплой на staging → тест → merge в `main` → продакшн.
 
 ---
 
@@ -112,6 +122,7 @@ Staging нет.
 **Прод сейчас:** **стабилизирован** (2026-05-13 ~15:00). На сервере `.next/` восстановлен из бэкапа NetAngels от 12 мая через узкий restore. Сайт работает с диска, не с памяти. Node-процесс может перезагрузиться — поднимется с этой рабочей сборкой.
 
 **Что НЕ ДЕЛАТЬ:**
+
 - `npm run build` на сервере (перезапишет рабочую `.next/` сломанной)
 - `touch reload` после неудачного `npm run build`
 
@@ -120,6 +131,7 @@ Staging нет.
 #### Диагностика (5+ часов 2026-05-13)
 
 **Стек ошибки:**
+
 ```
 TypeError: Cannot read properties of null (reading 'useContext')
   at t.useContext (next-server/app-page.runtime.prod.js)
@@ -130,8 +142,9 @@ TypeError: Cannot read properties of null (reading 'useContext')
 `h` — это auto-generated Next.js ErrorBoundary который оборачивает каждую App Router страницу при build. Внутри он вызывает `usePathname()` → `useContext(PathnameContext)`. В prerender context отсутствует → null → crash.
 
 **Гипотезы — ОТВЕРГНУТЫ:**
+
 - ❌ Node v22 несовместимость — на Node v20.20.2 та же ошибка
-- ❌ Наш refactor (postUtils, sitemap, _count) — откат к pre-refactor коммиту `8b3f6fa` → та же ошибка
+- ❌ Наш refactor (postUtils, sitemap, \_count) — откат к pre-refactor коммиту `8b3f6fa` → та же ошибка
 - ❌ `export const dynamic = 'force-dynamic'` на pages — не помогает
 - ❌ `pages/_document.tsx`, `pages/_error.tsx`, `app/global-error.tsx`, `pages/404.tsx`, `pages/500.tsx` — не помогают
 - ❌ `PageShell` как server-component (theme в отдельный ThemeWrapper client) — не помогает
@@ -142,6 +155,7 @@ TypeError: Cannot read properties of null (reading 'useContext')
 - ❌ Минимальный `next.config.mjs` — не помогает
 
 **Что РАБОТАЕТ (известный good baseline):**
+
 - Clean-room Next 14.2.35 + React 18 + Node v20 = **PASS** (доказано в `/tmp/test-next/`)
 - В нашем проекте: schema без `output`, lib/prisma.ts simplified (только `import { PrismaClient } from '@prisma/client'`), все 9 pages stub'ы, layout минимальный → **PASS** (Monitor `bfdxrbwji` 2026-05-13)
 
@@ -154,6 +168,7 @@ TypeError: Cannot read properties of null (reading 'useContext')
 **Цель:** найти и устранить конкретный импорт-триггер, выкатить рабочий build на прод.
 
 **Шаг 1 — Baseline.** Установить known-good:
+
 - `prisma/schema.prisma` — удалить `output = "../generated/prisma"`
 - `lib/prisma.ts` — упростить: `import { PrismaClient } from '@prisma/client'` + singleton, без adapter/Pool
 - `prisma/seed.ts`, `scripts/sync-telegram.ts` — поменять `'../generated/prisma'` → `'@prisma/client'`
@@ -169,6 +184,7 @@ TypeError: Cannot read properties of null (reading 'useContext')
 **Шаг 4 — Поиск конкретного импорта.** Внутри виновной страницы — закомментировать импорты по одному, найти строку-триггер.
 
 **Шаг 5 — Fix.** Природа фикса зависит от триггера. Варианты:
+
 - Динамический импорт через `next/dynamic` с `ssr: false`
 - `'use client'` директива на компоненте
 - Заменить пакет на server-safe аналог
@@ -199,6 +215,7 @@ TypeError: Cannot read properties of null (reading 'useContext')
 На сервере `~/d-pub.ru/app/` **не git-репо** (rsync установлен, но pipeline не настроен).
 
 Процедура deploy после починки build:
+
 1. На dev: `NODE_ENV=development npm run build` → exit 0, `.next-dev/` готова
 2. `rsync -avz --delete .next-dev/ c48127@91.201.52.231:~/d-pub.ru/app/.next/`
 3. На сервере: `cd ~/d-pub.ru/ && touch reload`
