@@ -4,7 +4,8 @@ import PageShell from '@/components/PageShell'
 
 export const metadata: Metadata = {
   title: 'Страница не найдена',
-  description: 'Запрашиваемая страница не найдена. Перейдите к вакансиям, резюме или статьям на Диджитал Паб.',
+  description:
+    'Запрашиваемая страница не найдена. Перейдите к вакансиям, резюме или статьям на Диджитал Паб.',
   robots: { index: false, follow: true },
 }
 
@@ -15,8 +16,8 @@ export default function NotFound() {
         <div className="text-6xl font-bold text-accent mb-4">404</div>
         <h1 className="text-2xl font-bold text-text mb-3">Страница не найдена</h1>
         <p className="text-text-muted mb-8">
-          Возможно, вакансия была удалена или ссылка устарела.
-          Попробуйте найти нужное через навигацию.
+          Возможно, вакансия была удалена или ссылка устарела. Попробуйте найти нужное через
+          навигацию.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

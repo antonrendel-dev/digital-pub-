@@ -1,12 +1,16 @@
-import CategoryPage, { generateMetadata as categoryMeta } from '@/app/vacancies/[category]/page'
+import CategoryPage, {
+  generateMetadata as categoryMeta,
+} from '@/app/(main)/vacancies/[category]/page'
 import VacancyPage, {
   generateMetadata as vacancySlugMeta,
-} from '@/app/vacancies/[category]/[slug]/page'
-import TagPage, { generateMetadata as resumesTagMeta } from '@/app/resumes/tag/[tagSlug]/page'
-import ArticlePage, { generateMetadata as articlesMeta } from '@/app/articles/[slug]/page'
-import PostPage, { generateMetadata as postMeta } from '@/app/post/[id]/page'
-import { generateMetadata as vacanciesListingMeta } from '@/app/vacancies/page'
-import { generateMetadata as resumesListingMeta } from '@/app/resumes/page'
+} from '@/app/(main)/vacancies/[category]/[slug]/page'
+import TagPage, {
+  generateMetadata as resumesTagMeta,
+} from '@/app/(main)/resumes/tag/[tagSlug]/page'
+import ArticlePage, { generateMetadata as articlesMeta } from '@/app/(main)/articles/[slug]/page'
+import PostPage, { generateMetadata as postMeta } from '@/app/(main)/post/[id]/page'
+import { generateMetadata as vacanciesListingMeta } from '@/app/(main)/vacancies/page'
+import { generateMetadata as resumesListingMeta } from '@/app/(main)/resumes/page'
 import { getTagBySlug } from '@/lib/tags'
 import { getPostBySlug, getPostById } from '@/lib/posts'
 import { getArticleBySlug } from '@/lib/articles'
