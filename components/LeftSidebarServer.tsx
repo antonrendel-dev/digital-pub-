@@ -1,20 +1,6 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import LeftSidebar, { type SocialChannel } from './LeftSidebar'
-
-const DEFAULT_CHANNELS: SocialChannel[] = [
-  { name: 'Telegram', url: 'https://t.me/+69rdOEDrfvgyMDMy', subscribers: '14 200 подписчиков' },
-  {
-    name: 'Макс',
-    url: 'https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ',
-    subscribers: '6 800 подписчиков',
-  },
-  {
-    name: 'ВКонтакте',
-    url: 'https://vk.com/digital_pub_vacancies',
-    subscribers: '9 300 подписчиков',
-  },
-]
+import LeftSidebar, { DEFAULT_CHANNELS, type SocialChannel } from './LeftSidebar'
 
 interface LeftSidebarServerProps {
   stats?: {

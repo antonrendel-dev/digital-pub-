@@ -110,8 +110,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        {children}
-        <Footer />
+        <div className="flex flex-col min-h-screen">
+          {children}
+          <Footer />
+        </div>
 
         {/* Yandex.Metrika */}
         {YANDEX_METRIKA_ID && (

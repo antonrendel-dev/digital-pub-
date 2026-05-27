@@ -76,7 +76,7 @@ export interface SocialChannel {
   subscribers?: string
 }
 
-const DEFAULT_CHANNELS: SocialChannel[] = [
+export const DEFAULT_CHANNELS: SocialChannel[] = [
   { name: 'Telegram', url: 'https://t.me/+69rdOEDrfvgyMDMy', subscribers: '14 200 подписчиков' },
   {
     name: 'Макс',
