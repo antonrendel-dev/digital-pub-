@@ -17,6 +17,7 @@ export const Users: CollectionConfig = {
       type: 'select',
       options: ['admin', 'agent', 'sync'],
       defaultValue: 'agent',
+      saveToJWT: true,
     },
   ],
 }
