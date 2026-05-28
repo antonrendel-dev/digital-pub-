@@ -21,7 +21,9 @@ if (!payloadSecret || payloadSecret.length < 32) {
 }
 
 export default buildConfig({
-  serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru',
+  serverURL:
+    process.env.NEXT_PUBLIC_SERVER_URL ||
+    (process.env.PAYLOAD_PUSH_DB === 'true' ? 'https://staging.d-pub.ru' : 'https://d-pub.ru'),
   secret: payloadSecret,
   editor: lexicalEditor({}),
   db: postgresAdapter({
