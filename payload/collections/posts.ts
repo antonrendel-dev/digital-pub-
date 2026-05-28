@@ -2,6 +2,10 @@ import type { CollectionConfig } from 'payload'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
+  labels: {
+    singular: 'Пост',
+    plural: 'Вакансии и резюме',
+  },
   access: {
     read: () => true,
     create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'sync',

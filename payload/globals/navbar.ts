@@ -13,7 +13,7 @@ import type { GlobalConfig } from 'payload'
  */
 export const Navbar: GlobalConfig = {
   slug: 'navbar',
-  label: 'Navbar',
+  label: 'Навигация (меню)',
   access: {
     read: () => true,
     update: ({ req }) => req.user?.role === 'admin',

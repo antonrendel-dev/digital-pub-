@@ -3,6 +3,10 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 
 export const Tags: CollectionConfig = {
   slug: 'tags',
+  labels: {
+    singular: 'Тег',
+    plural: 'Теги',
+  },
   access: {
     read: () => true,
     create: ({ req }) => req.user?.role === 'admin',

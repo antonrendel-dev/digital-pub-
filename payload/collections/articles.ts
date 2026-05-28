@@ -2,6 +2,10 @@ import type { CollectionConfig } from 'payload'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
+  labels: {
+    singular: 'Статья',
+    plural: 'Статьи',
+  },
   access: {
     create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'agent',
     read: ({ req }) => (req.user?.role === 'admin' ? true : { status: { equals: 'published' } }),

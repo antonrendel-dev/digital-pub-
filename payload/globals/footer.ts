@@ -13,7 +13,7 @@ import type { GlobalConfig } from 'payload'
  */
 export const Footer: GlobalConfig = {
   slug: 'footer',
-  label: 'Footer',
+  label: 'Подвал сайта',
   access: {
     read: () => true,
     update: ({ req }) => req.user?.role === 'admin',
