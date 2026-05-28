@@ -20,56 +20,58 @@ const DEFAULT_DESCRIPTION =
 
 const YANDEX_METRIKA_ID = process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID || ''
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || ''
-const IS_PRODUCTION = !process.env.PAYLOAD_PUSH_DB
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: 'Диджитал Паб — вакансии и резюме в digital',
-    template: '%s | Диджитал Паб',
-  },
-  description: DEFAULT_DESCRIPTION,
-  icons: {
-    icon: [{ url: '/favicon.ico', sizes: '32x32' }, { url: '/logo.png' }],
-    apple: '/logo.png',
-  },
-  robots: {
-    index: IS_PRODUCTION,
-    follow: IS_PRODUCTION,
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'ru_RU',
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    title: 'Диджитал Паб — вакансии и резюме в digital',
+export async function generateMetadata(): Promise<Metadata> {
+  const isProduction = !process.env.PAYLOAD_PUSH_DB
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: 'Диджитал Паб — вакансии и резюме в digital',
+      template: '%s | Диджитал Паб',
+    },
     description: DEFAULT_DESCRIPTION,
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Диджитал Паб — агрегатор вакансий и резюме',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Диджитал Паб — вакансии и резюме в digital',
-    description: DEFAULT_DESCRIPTION,
-    images: ['/og-image.png'],
-  },
-  alternates: {
-    canonical: SITE_URL,
-  },
-  verification: {
-    ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION
-      ? { yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION }
-      : {}),
-    ...(process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION
-      ? { google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION }
-      : {}),
-  },
+    icons: {
+      icon: [{ url: '/favicon.ico', sizes: '32x32' }, { url: '/logo.png' }],
+      apple: '/logo.png',
+    },
+    robots: {
+      index: isProduction,
+      follow: isProduction,
+    },
+    openGraph: {
+      type: 'website',
+      locale: 'ru_RU',
+      url: SITE_URL,
+      siteName: SITE_NAME,
+      title: 'Диджитал Паб — вакансии и резюме в digital',
+      description: DEFAULT_DESCRIPTION,
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'Диджитал Паб — агрегатор вакансий и резюме',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Диджитал Паб — вакансии и резюме в digital',
+      description: DEFAULT_DESCRIPTION,
+      images: ['/og-image.png'],
+    },
+    alternates: {
+      canonical: SITE_URL,
+    },
+    verification: {
+      ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION
+        ? { yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION }
+        : {}),
+      ...(process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION
+        ? { google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION }
+        : {}),
+    },
+  }
 }
 
 const websiteJsonLd = {
