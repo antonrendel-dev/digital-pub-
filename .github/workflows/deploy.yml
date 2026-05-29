@@ -151,7 +151,7 @@ jobs:
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             export ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
             cd ~/d-pub.ru/app && \
-            PAYLOAD_CONFIG_PATH=$(pwd)/payload.config.compiled.mjs \
+            PAYLOAD_CONFIG_PATH=\$HOME/d-pub.ru/app/payload.config.compiled.mjs \
             node --experimental-require-module scripts/seed.compiled.js 2>&1
           " || true)
           echo "$SEED_OUTPUT"
