@@ -112,7 +112,10 @@ jobs:
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             touch ~/d-pub.ru/reload && sleep 8
-            echo '=== test next start output ==='
-            cd ~/d-pub.ru && timeout 10 node node_modules/.bin/next start --port 19999 > /tmp/next-test.log 2>&1 || true
-            cat /tmp/next-test.log
+            echo '=== node versions ==='
+            /usr/bin/node --version 2>/dev/null || echo 'no /usr/bin/node'
+            source ~/.nvm/nvm.sh 2>/dev/null && node --version || true
+            ls ~/bin/node 2>/dev/null || ls /usr/local/bin/node 2>/dev/null || true
+            echo '=== test with nvm node ==='
+            (source ~/.nvm/nvm.sh 2>/dev/null && cd ~/d-pub.ru && timeout 10 node node_modules/.bin/next start --port 19999 > /tmp/next-test.log 2>&1 || true) && cat /tmp/next-test.log
           "
