@@ -76,6 +76,11 @@ jobs:
             --platform=node \
             --format=cjs \
             --outfile=scripts/seed-tags.compiled.js
+          npx esbuild scripts/seed-articles.ts \
+            --bundle=true \
+            --platform=node \
+            --format=cjs \
+            --outfile=scripts/seed-articles.compiled.js
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -124,7 +129,7 @@ jobs:
       - name: Deploy scripts/
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/scripts"
-          rsync -avz scripts/seed.compiled.js scripts/sync-telegram.compiled.js scripts/seed-tags.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/scripts/
+          rsync -avz scripts/seed.compiled.js scripts/sync-telegram.compiled.js scripts/seed-tags.compiled.js scripts/seed-articles.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/scripts/
 
       - name: Deploy package files and next.config
         run: rsync -avz package.json package-lock.json next.config.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
@@ -219,6 +224,21 @@ jobs:
           else
             echo "Could not get API key: ${SYNC_RESP:0:300}"
           fi
+
+      - name: Seed articles into Payload CMS
+        continue-on-error: true
+        run: |
+          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
+          if [ -z "$ADMIN_PASSWORD" ]; then exit 0; fi
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/d-pub.ru/app && \
+              ADMIN_EMAIL='in-ekb@mail.ru' \
+              ADMIN_PASSWORD='$ADMIN_PASSWORD' \
+              PAYLOAD_BASE_URL='https://d-pub.ru' \
+              node scripts/seed-articles.compiled.js 2>&1 | tail -20
+          "
 
       - name: Seed tags with SEO data
         continue-on-error: true

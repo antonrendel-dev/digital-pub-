@@ -13,6 +13,7 @@ interface FeedProps {
   externalTag?: string
   onExternalTagConsumed: () => void
   pageTitle?: string
+  stats?: { vacancyCount: number; resumeCount: number }
 }
 
 export default function Feed({
@@ -21,6 +22,7 @@ export default function Feed({
   externalTag,
   onExternalTagConsumed,
   pageTitle,
+  stats,
 }: FeedProps) {
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set())
   const [visible, setVisible] = useState(PAGE_SIZE)
@@ -101,7 +103,7 @@ export default function Feed({
             ? `${sorted.length} результатов`
             : pageTitle
               ? `${sorted.length} объявлений`
-              : `${vacancies.length} вакансий \u00B7 ${resumes.length} резюме`}
+              : `${stats?.vacancyCount ?? vacancies.length} вакансий \u00B7 ${stats?.resumeCount ?? resumes.length} резюме`}
         </span>
       </div>
 

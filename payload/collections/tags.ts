@@ -42,15 +42,24 @@ export const Tags: CollectionConfig = {
     {
       name: 'seoTitle',
       type: 'text',
+      admin: { group: 'SEO' },
     },
     {
       name: 'seoDescription',
       type: 'textarea',
+      admin: {
+        group: 'SEO',
+        description: 'Meta-description страницы тега (до 160 символов)',
+      },
     },
     {
       name: 'seoText',
       type: 'richText',
       editor: lexicalEditor({}),
+      admin: {
+        group: 'SEO',
+        description: 'SEO-текст внизу страницы категории (необязательно)',
+      },
     },
   ],
   hooks: {
