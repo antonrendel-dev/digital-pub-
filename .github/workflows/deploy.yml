@@ -109,4 +109,10 @@ jobs:
           "
 
       - name: Restart app
-        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "touch ~/d-pub.ru/reload"
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            touch ~/d-pub.ru/reload && sleep 8
+            echo '=== .env ===' && ls -la ~/d-pub.ru/.env 2>/dev/null || echo 'NO .env FILE'
+            echo '=== hello.js ===' && head -5 ~/d-pub.ru/hello.js 2>/dev/null || echo 'no hello.js'
+            echo '=== app log ===' && tail -20 ~/logs/node.log 2>/dev/null || tail -20 ~/d-pub.ru/app.log 2>/dev/null || echo 'no log'
+          "
