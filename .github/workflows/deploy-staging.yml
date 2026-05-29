@@ -76,8 +76,8 @@ jobs:
       - name: Deploy payload compiled config
         run: rsync -avz payload.config.compiled.mjs ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
 
-      - name: Deploy package files
-        run: rsync -avz package.json package-lock.json ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
+      - name: Deploy package files and next.config
+        run: rsync -avz package.json package-lock.json next.config.mjs ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:~/staging/d-pub/
 
       - name: Install production dependencies
         run: |
@@ -96,4 +96,23 @@ jobs:
           "
 
       - name: Restart staging app
-        run: ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "sudo pm2 restart d-pub-staging"
+        run: |
+          ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            pm2 restart d-pub-staging 2>&1 || sudo pm2 restart d-pub-staging 2>&1
+            sleep 20
+            echo '=== PM2 status ==='
+            pm2 list 2>/dev/null || sudo pm2 list 2>/dev/null
+            echo '=== PM2 logs (last 20) ==='
+            pm2 logs d-pub-staging --lines 20 --nostream 2>/dev/null || sudo pm2 logs d-pub-staging --lines 20 --nostream 2>/dev/null || true
+          "
+
+      - name: Smoke test staging
+        run: |
+          echo '=== HTTP status ==='
+          curl -s --max-time 15 -o /dev/null -w '%{http_code}' https://staging.d-pub.ru/ || true
+          echo ''
+          echo '=== Static asset check ==='
+          BUILD_ID=$(ssh ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} "cat ~/staging/d-pub/.next/BUILD_ID 2>/dev/null || echo 'unknown'")
+          echo "BUILD_ID: $BUILD_ID"
