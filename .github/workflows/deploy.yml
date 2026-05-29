@@ -180,23 +180,18 @@ jobs:
 
       - name: Run Telegram sync
         run: |
-          ssh-keyscan -H 144.31.204.181 >> ~/.ssh/known_hosts 2>/dev/null
-          echo "=== Checking red server for bot credentials ==="
-          BOT_ENV=$(ssh -o StrictHostKeyChecking=no claude@144.31.204.181 "cat /opt/bots/telegram-bot-vac/.env 2>/dev/null || echo 'FILE_NOT_FOUND'" 2>&1) || BOT_ENV="SSH_FAILED"
-          echo "Red server response: ${BOT_ENV:0:50}"
-          BOT_TOKEN=$(echo "$BOT_ENV" | grep '^BOT_TOKEN=' | cut -d= -f2-)
-          ADMIN_ID=$(echo "$BOT_ENV" | grep '^ADMIN_ID=' | cut -d= -f2-)
+          BOT_TOKEN='${{ secrets.BOT_TOKEN }}'
+          ADMIN_ID='${{ secrets.ADMIN_ID }}'
           if [ -z "$BOT_TOKEN" ]; then
-            echo "Could not read BOT_TOKEN from red server (got: $BOT_ENV), skipping sync"
+            echo "BOT_TOKEN not set — sync runs manually from red server. Skipping."
           else
-            echo "Got bot credentials, running sync..."
             ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
               export NVM_DIR=\"\$HOME/.nvm\"
               [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
               export BOT_TOKEN='$BOT_TOKEN'
               export ADMIN_ID='$ADMIN_ID'
               cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
-            " || echo 'Sync failed or skipped (non-critical)'
+            " || echo 'Sync failed (non-critical)'
           fi
 
       - name: Smoke test + capture errors
