@@ -166,7 +166,7 @@ const TAGS = [
 ]
 
 async function seedTags() {
-  const adminEmail = process.env.ADMIN_EMAIL ?? 'antonrendel@gmail.com'
+  const adminEmail = process.env.ADMIN_EMAIL ?? 'in-ekb@mail.ru'
   const adminPassword = process.env.ADMIN_PASSWORD
   if (!adminPassword) throw new Error('ADMIN_PASSWORD not set')
 

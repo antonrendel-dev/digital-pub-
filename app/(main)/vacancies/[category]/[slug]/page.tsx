@@ -37,15 +37,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Description (160 chars max)
   let desc: string
   if (isResume) {
-    desc = `Соискатель: ${post.title}`
-    if (post.salary) desc += `. Ожидания: ${post.salary}`
-    if (tagNames) desc += `. ${tagNames}`
-    desc += '. Ищет работу в digital — d-pub.ru'
-  } else {
-    desc = post.company ? `${post.company} ищет ${post.title}` : `Вакансия: ${post.title}`
+    desc = `Резюме: ${post.title}`
     if (post.salary) desc += `. Зарплата: ${post.salary}`
     if (tagNames) desc += `. ${tagNames}`
-    desc += '. Смотри на d-pub.ru'
+    desc += '. Ищет работу в digital — Диджитал Паб'
+  } else {
+    desc = `Вакансия: ${post.title}`
+    if (post.company) desc += ` в ${post.company}`
+    if (post.salary) desc += `. Зарплата: ${post.salary}`
+    if (tagNames) desc += `. ${tagNames}`
+    desc += '. Актуальные digital-вакансии — Диджитал Паб'
   }
   if (desc.length > 160) desc = desc.slice(0, 157) + '...'
 

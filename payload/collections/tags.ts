@@ -7,6 +7,9 @@ export const Tags: CollectionConfig = {
     singular: 'Тег',
     plural: 'Теги',
   },
+  admin: {
+    useAsTitle: 'name',
+  },
   access: {
     read: () => true,
     create: ({ req }) => req.user?.role === 'admin',

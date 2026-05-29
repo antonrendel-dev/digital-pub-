@@ -53,7 +53,7 @@ export async function getPublishedPosts(): Promise<FeedPost[]> {
     const payload = await getPayload({ config })
     const result = await payload.find({
       collection: 'posts',
-      where: { status: { equals: 'published' }, description: { not_equals: null } },
+      where: { status: { equals: 'published' } },
       limit: 100,
       sort: '-createdAt',
     })
