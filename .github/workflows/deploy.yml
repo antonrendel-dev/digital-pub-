@@ -98,7 +98,7 @@ jobs:
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             cd ~/d-pub.ru && [ -f node_modules/.bin/payload ] && \
-              PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs /usr/bin/node node_modules/.bin/payload migrate || \
+              PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs node node_modules/.bin/payload migrate || \
               echo 'Payload not installed, skipping migration'
           "
 
@@ -108,14 +108,23 @@ jobs:
             echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
           "
 
+      - name: Diagnose platform startup
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            echo '=== hello.js content ===' && cat ~/d-pub.ru/hello.js 2>/dev/null || echo 'no hello.js'
+            echo '=== Procfile ===' && cat ~/d-pub.ru/Procfile 2>/dev/null || echo 'no Procfile'
+            echo '=== .node-version ===' && cat ~/d-pub.ru/.node-version 2>/dev/null || echo 'no .node-version'
+            echo '=== running node processes ===' && ps aux 2>/dev/null | grep -i node | grep -v grep || echo 'no node processes'
+            echo '=== PATH ===' && echo \$PATH
+            echo '=== which node ===' && which node 2>/dev/null || echo 'no node in PATH'
+            echo '=== env node from nvm ===' && source ~/.nvm/nvm.sh 2>/dev/null && which node && node --version
+            echo '=== ls home/bin ===' && ls ~/bin/ 2>/dev/null || echo 'no ~/bin'
+            echo '=== app logs last 30 ===' && tail -30 ~/d-pub.ru/app.log 2>/dev/null || tail -30 ~/logs/app.log 2>/dev/null || echo 'no app.log found'
+          "
+
       - name: Restart app
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            touch ~/d-pub.ru/reload && sleep 8
-            echo '=== node versions ==='
-            /usr/bin/node --version 2>/dev/null || echo 'no /usr/bin/node'
-            source ~/.nvm/nvm.sh 2>/dev/null && node --version || true
-            ls ~/bin/node 2>/dev/null || ls /usr/local/bin/node 2>/dev/null || true
-            echo '=== test with nvm node ==='
-            (source ~/.nvm/nvm.sh 2>/dev/null && cd ~/d-pub.ru && timeout 10 node node_modules/.bin/next start --port 19999 > /tmp/next-test.log 2>&1 || true) && cat /tmp/next-test.log
+            touch ~/d-pub.ru/reload
+            echo 'reload triggered'
           "
