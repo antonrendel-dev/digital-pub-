@@ -151,7 +151,7 @@ jobs:
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             export ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
             cd ~/d-pub.ru/app && \
-            PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs \
+            PAYLOAD_CONFIG_PATH=$(pwd)/payload.config.compiled.mjs \
             node --experimental-require-module scripts/seed.compiled.js 2>&1
           " || true)
           echo "$SEED_OUTPUT"
@@ -181,10 +181,13 @@ jobs:
       - name: Run Telegram sync
         run: |
           ssh-keyscan -H 144.31.204.181 >> ~/.ssh/known_hosts 2>/dev/null
-          BOT_TOKEN=$(ssh claude@144.31.204.181 "grep '^BOT_TOKEN=' /opt/bots/telegram-bot-vac/.env 2>/dev/null | cut -d= -f2-" || echo "")
-          ADMIN_ID=$(ssh claude@144.31.204.181 "grep '^ADMIN_ID=' /opt/bots/telegram-bot-vac/.env 2>/dev/null | cut -d= -f2-" || echo "")
+          echo "=== Checking red server for bot credentials ==="
+          BOT_ENV=$(ssh -o StrictHostKeyChecking=no claude@144.31.204.181 "cat /opt/bots/telegram-bot-vac/.env 2>/dev/null || echo 'FILE_NOT_FOUND'" 2>&1) || BOT_ENV="SSH_FAILED"
+          echo "Red server response: ${BOT_ENV:0:50}"
+          BOT_TOKEN=$(echo "$BOT_ENV" | grep '^BOT_TOKEN=' | cut -d= -f2-)
+          ADMIN_ID=$(echo "$BOT_ENV" | grep '^ADMIN_ID=' | cut -d= -f2-)
           if [ -z "$BOT_TOKEN" ]; then
-            echo "Could not read BOT_TOKEN from red server, skipping sync"
+            echo "Could not read BOT_TOKEN from red server (got: $BOT_ENV), skipping sync"
           else
             echo "Got bot credentials, running sync..."
             ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
