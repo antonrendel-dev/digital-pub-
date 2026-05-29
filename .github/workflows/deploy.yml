@@ -117,14 +117,12 @@ jobs:
             echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
           "
 
-      - name: Restart app
+      - name: Restart app and verify
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            echo '=== etc/environment files ===' && ls -la ~/d-pub.ru/etc/environment/ 2>/dev/null
-            echo '=== runit log before restart ===' && tail -10 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
-            echo '=== memory ===' && free -h 2>/dev/null | head -3
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
             sleep 30
-            echo '=== runit log after restart ===' && tail -20 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
-            echo '=== new pid ===' && pgrep -f 'next-server' 2>/dev/null | head -1
+            echo '=== runit log last 30 ===' && tail -30 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
           "
+          sleep 5
+          curl -s -o /dev/null -w 'site HTTP %{http_code}\n' https://d-pub.ru/
