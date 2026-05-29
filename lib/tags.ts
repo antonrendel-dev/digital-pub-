@@ -2,6 +2,7 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { slugSchema, toFeedPost } from './posts'
+import { convertLexicalToHTML } from '@payloadcms/richtext-lexical/html'
 
 export interface TagWithCount {
   id: number
@@ -88,6 +89,22 @@ export async function getTagBySlug(slug: string): Promise<TagDetail | null> {
 
     if (!result.docs.length) return null
     const tag = result.docs[0] as any
+    const rawSeoText = tag.seoText
+    let seoText: string | null = null
+    if (rawSeoText != null) {
+      if (typeof rawSeoText === 'string') {
+        seoText = rawSeoText || null
+      } else if (typeof rawSeoText === 'object') {
+        try {
+          const html = convertLexicalToHTML({ data: rawSeoText })
+          // Strip tags to check for actual text content (empty Lexical → "<p></p>")
+          const textOnly = html.replace(/<[^>]*>/g, '').trim()
+          seoText = textOnly ? html : null
+        } catch {
+          // empty or invalid Lexical state — fall through to seoDescription
+        }
+      }
+    }
     return {
       id: tag.id,
       name: tag.name,
@@ -96,7 +113,7 @@ export async function getTagBySlug(slug: string): Promise<TagDetail | null> {
       h1: tag.h1 ?? null,
       seoTitle: tag.seoTitle ?? null,
       seoDescription: tag.seoDescription ?? null,
-      seoText: tag.seoText ?? null,
+      seoText,
     }
   } catch (err) {
     console.error('[tags] DB error:', err)
