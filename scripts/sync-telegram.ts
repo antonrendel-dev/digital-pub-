@@ -448,8 +448,18 @@ export async function savePost(
   })
 
   if (res.status === 409) return false // duplicate — normal dedup, no log
+  if (res.status === 400) {
+    const body = await res.text()
+    // Payload returns 400 (not 409) for unique constraint violations
+    if (body.includes('unique') || body.includes('duplicate') || body.includes('Duplicate')) {
+      return false // treat as duplicate, no log
+    }
+    console.error(
+      `[sync] Failed to save post: 400 ${PAYLOAD_BASE_URL}/api/posts — ${body.slice(0, 200)}`
+    )
+    return false
+  }
   if (!res.ok) {
-    // Log only status and URL — never log PAYLOAD_API_KEY or Authorization header
     console.error(`[sync] Failed to save post: ${res.status} ${PAYLOAD_BASE_URL}/api/posts`)
     return false
   }
