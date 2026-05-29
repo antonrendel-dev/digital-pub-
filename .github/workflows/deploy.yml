@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -56,6 +56,22 @@ jobs:
               --outfile="$out"
           done
 
+      - name: Compile seed and sync scripts
+        run: |
+          npx esbuild scripts/seed.ts \
+            --bundle=true \
+            --platform=node \
+            --format=esm \
+            --external:payload \
+            --external:'@payloadcms/*' \
+            --external:crypto \
+            --outfile=scripts/seed.compiled.mjs
+          npx esbuild scripts/sync-telegram.ts \
+            --bundle=true \
+            --platform=node \
+            --format=cjs \
+            --outfile=scripts/sync-telegram.compiled.js
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -100,6 +116,11 @@ jobs:
       - name: Deploy payload compiled config
         run: rsync -avz payload.config.compiled.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
+      - name: Deploy scripts/
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/scripts"
+          rsync -avz scripts/seed.compiled.mjs scripts/sync-telegram.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/scripts/
+
       - name: Deploy package files and next.config
         run: rsync -avz package.json package-lock.json next.config.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
@@ -123,6 +144,26 @@ jobs:
               echo 'Payload not installed, skipping migration'
           "
 
+      - name: Seed users + write PAYLOAD_API_KEY
+        run: |
+          SEED_OUTPUT=$(ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            export ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
+            cd ~/d-pub.ru/app && \
+            PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs \
+            node --experimental-require-module scripts/seed.compiled.mjs 2>&1
+          ")
+          echo "$SEED_OUTPUT"
+          API_KEY=$(echo "$SEED_OUTPUT" | grep '\[seed\] PAYLOAD_API_KEY=' | head -1 | sed 's/.*PAYLOAD_API_KEY=//')
+          if [ -n "$API_KEY" ]; then
+            ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+              "echo 'PAYLOAD_API_KEY=$API_KEY' >> ~/d-pub.ru/app/.env"
+            echo "PAYLOAD_API_KEY written to server .env"
+          else
+            echo "WARNING: could not extract PAYLOAD_API_KEY from seed output"
+          fi
+
       - name: Verify deploy
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
@@ -135,6 +176,14 @@ jobs:
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
             sleep 25
           "
+
+      - name: Run Telegram sync
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
+          " || echo 'Sync failed or skipped (non-critical)'
 
       - name: Smoke test + capture errors
         run: |
