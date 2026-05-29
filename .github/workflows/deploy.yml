@@ -52,6 +52,15 @@ jobs:
       - name: Add server to known hosts
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Write .env on server
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'printf "DB_CONNECTION_STRING=%s\nDATABASE_URL=%s\nPAYLOAD_SECRET=%s\nNEXT_PUBLIC_SERVER_URL=https://d-pub.ru\nNEXT_PUBLIC_YANDEX_METRIKA_ID=%s\n" \
+            "${{ secrets.DATABASE_URL }}" \
+            "${{ secrets.DATABASE_URL }}" \
+            "${{ secrets.PAYLOAD_SECRET }}" \
+            "${{ secrets.NEXT_PUBLIC_YANDEX_METRIKA_ID }}" \
+            > ~/d-pub.ru/.env'
+
       - name: Deploy .next/
         run: rsync -avz --delete --exclude='cache/' .next/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/.next/
 
