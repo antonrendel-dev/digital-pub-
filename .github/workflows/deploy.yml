@@ -120,7 +120,11 @@ jobs:
       - name: Restart app
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            touch ~/d-pub.ru/reload
-            sleep 15
-            echo '=== proc env after restart ===' && APP_PID=\$(pgrep -f 'next-server' 2>/dev/null | head -1); echo \"pid=\$APP_PID\"; [ -n \"\$APP_PID\" ] && tr '\0' '\n' < /proc/\$APP_PID/environ 2>/dev/null | grep -E 'PAYLOAD_SECRET|DATABASE_URL|DB_CONNECTION|PORT|NODE' | sed 's/=.*/=REDACTED/' || echo 'no pid'
+            echo '=== etc/environment files ===' && ls -la ~/d-pub.ru/etc/environment/ 2>/dev/null
+            echo '=== runit log before restart ===' && tail -10 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
+            echo '=== memory ===' && free -h 2>/dev/null | head -3
+            rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
+            sleep 30
+            echo '=== runit log after restart ===' && tail -20 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
+            echo '=== new pid ===' && pgrep -f 'next-server' 2>/dev/null | head -1
           "
