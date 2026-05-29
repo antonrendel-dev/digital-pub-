@@ -68,8 +68,8 @@ export async function getTagsWithCounts(): Promise<TagWithCount[]> {
     }
 
     return Array.from(tagMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'ru'))
-  } catch {
-    console.warn('[tags] DB unavailable')
+  } catch (err) {
+    console.error('[tags] DB error:', err)
     return []
   }
 }
@@ -98,8 +98,8 @@ export async function getTagBySlug(slug: string): Promise<TagDetail | null> {
       seoDescription: tag.seoDescription ?? null,
       seoText: tag.seoText ?? null,
     }
-  } catch {
-    console.warn('[tags] DB unavailable')
+  } catch (err) {
+    console.error('[tags] DB error:', err)
     return null
   }
 }
@@ -131,8 +131,8 @@ export async function getPostsByTag(tagSlug: string) {
     })
 
     return (posts.docs as unknown as PayloadPost[]).map(toFeedPost)
-  } catch {
-    console.warn('[tags] DB unavailable')
+  } catch (err) {
+    console.error('[tags] DB error:', err)
     return []
   }
 }
@@ -182,8 +182,8 @@ export async function getStats() {
       companyCount,
       newToday: newTodayResult.totalDocs,
     }
-  } catch {
-    console.warn('[tags] DB unavailable')
+  } catch (err) {
+    console.error('[tags] DB error:', err)
     return { vacancyCount: 0, resumeCount: 0, companyCount: 0, newToday: 0 }
   }
 }
