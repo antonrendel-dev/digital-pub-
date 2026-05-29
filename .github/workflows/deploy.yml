@@ -52,8 +52,17 @@ jobs:
       - name: Add server to known hosts
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Write .env on server
+      - name: Write env vars to server (NetAngels etc/environment)
         run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            mkdir -p ~/d-pub.ru/etc/environment
+            printf '%s' '${{ secrets.DATABASE_URL }}' > ~/d-pub.ru/etc/environment/DATABASE_URL
+            printf '%s' '${{ secrets.DATABASE_URL }}' > ~/d-pub.ru/etc/environment/DB_CONNECTION_STRING
+            printf '%s' '${{ secrets.PAYLOAD_SECRET }}' > ~/d-pub.ru/etc/environment/PAYLOAD_SECRET
+            printf '%s' 'https://d-pub.ru' > ~/d-pub.ru/etc/environment/NEXT_PUBLIC_SERVER_URL
+            printf '%s' '${{ secrets.NEXT_PUBLIC_YANDEX_METRIKA_ID }}' > ~/d-pub.ru/etc/environment/NEXT_PUBLIC_YANDEX_METRIKA_ID
+            echo '22' > ~/d-pub.ru/.nvmrc
+          "
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'printf "DB_CONNECTION_STRING=%s\nDATABASE_URL=%s\nPAYLOAD_SECRET=%s\nNEXT_PUBLIC_SERVER_URL=https://d-pub.ru\nNEXT_PUBLIC_YANDEX_METRIKA_ID=%s\n" \
             "${{ secrets.DATABASE_URL }}" \
             "${{ secrets.DATABASE_URL }}" \
@@ -108,17 +117,10 @@ jobs:
             echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
           "
 
-      - name: Diagnose envrc and running env
-        run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            echo '=== .envrc content (platform env) ===' && cat ~/d-pub.ru/.envrc 2>/dev/null || echo 'no .envrc'
-            echo '=== etc/ dir ===' && ls -la ~/d-pub.ru/etc/ 2>/dev/null || echo 'no etc dir'
-            echo '=== proc environ keys ===' && APP_PID=\$(pgrep -f 'next-server' 2>/dev/null | head -1); echo \"pid=\$APP_PID\"; [ -n \"\$APP_PID\" ] && tr '\0' '\n' < /proc/\$APP_PID/environ 2>/dev/null | grep -o '^[^=]*' | sort || echo 'no pid or no proc'
-          "
-
       - name: Restart app
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             touch ~/d-pub.ru/reload
-            echo 'reload triggered'
+            sleep 15
+            echo '=== proc env after restart ===' && APP_PID=\$(pgrep -f 'next-server' 2>/dev/null | head -1); echo \"pid=\$APP_PID\"; [ -n \"\$APP_PID\" ] && tr '\0' '\n' < /proc/\$APP_PID/environ 2>/dev/null | grep -E 'PAYLOAD_SECRET|DATABASE_URL|DB_CONNECTION|PORT|NODE' | sed 's/=.*/=REDACTED/' || echo 'no pid'
           "
