@@ -153,7 +153,7 @@ jobs:
             cd ~/d-pub.ru/app && \
             PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs \
             node --experimental-require-module scripts/seed.compiled.mjs 2>&1
-          ")
+          " || true)
           echo "$SEED_OUTPUT"
           API_KEY=$(echo "$SEED_OUTPUT" | grep '\[seed\] PAYLOAD_API_KEY=' | head -1 | sed 's/.*PAYLOAD_API_KEY=//')
           if [ -n "$API_KEY" ]; then
@@ -162,6 +162,7 @@ jobs:
             echo "PAYLOAD_API_KEY written to server .env"
           else
             echo "WARNING: could not extract PAYLOAD_API_KEY from seed output"
+            echo "Seed output was: $SEED_OUTPUT"
           fi
 
       - name: Verify deploy

@@ -14,12 +14,15 @@ async function seed() {
   if (totalDocs === 0) {
     const adminEmail = process.env.ADMIN_EMAIL || 'antonrendel@gmail.com'
     const adminPassword = process.env.ADMIN_PASSWORD
-    if (!adminPassword) throw new Error('ADMIN_PASSWORD not set')
-    await payload.create({
-      collection: 'users',
-      data: { email: adminEmail, password: adminPassword, role: 'admin' },
-    })
-    console.log('[seed] Created admin user:', adminEmail)
+    if (!adminPassword) {
+      console.log('[seed] WARN: ADMIN_PASSWORD not set, skipping admin creation')
+    } else {
+      await payload.create({
+        collection: 'users',
+        data: { email: adminEmail, password: adminPassword, role: 'admin' },
+      })
+      console.log('[seed] Created admin user:', adminEmail)
+    }
   } else {
     console.log(`[seed] ${totalDocs} user(s) already exist`)
   }
