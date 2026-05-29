@@ -179,15 +179,19 @@ jobs:
           "
 
       - name: Run Telegram sync
-        if: ${{ secrets.BOT_TOKEN != '' }}
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            export BOT_TOKEN='${{ secrets.BOT_TOKEN }}'
-            export ADMIN_ID='${{ secrets.ADMIN_ID }}'
-            cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
-          " || echo 'Sync failed or skipped (non-critical)'
+          BOT_TOKEN_VAL='${{ secrets.BOT_TOKEN }}'
+          if [ -z "$BOT_TOKEN_VAL" ]; then
+            echo "BOT_TOKEN not set in GitHub secrets, skipping sync"
+          else
+            ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+              export NVM_DIR=\"\$HOME/.nvm\"
+              [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+              export BOT_TOKEN='${{ secrets.BOT_TOKEN }}'
+              export ADMIN_ID='${{ secrets.ADMIN_ID }}'
+              cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
+            " || echo 'Sync failed or skipped (non-critical)'
+          fi
 
       - name: Smoke test + capture errors
         run: |
