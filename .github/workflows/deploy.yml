@@ -93,13 +93,30 @@ jobs:
               echo 'Payload not installed, skipping migration'
           "
 
+      - name: Find pm2 and show process info
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            echo '=== which pm2 ===' && which pm2 2>&1 || true
+            echo '=== find pm2 ===' && find /usr /home -name pm2 -type f 2>/dev/null | head -5 || true
+            echo '=== ps aux pm2 ===' && ps aux | grep pm2 | grep -v grep || true
+            echo '=== ps aux node ===' && ps aux | grep next | grep -v grep || true
+            echo '=== port 3001 ===' && ss -tlnp 2>/dev/null | grep 3001 || netstat -tlnp 2>/dev/null | grep 3001 || true
+          "
+
       - name: Restart app
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            (sudo pm2 restart digital-pub 2>/dev/null && sudo pm2 save) ||
-            (pm2 restart digital-pub 2>/dev/null && pm2 save) ||
-            (sudo pm2 start ~/d-pub.ru/app/node_modules/.bin/next --name digital-pub --cwd ~/d-pub.ru/app -- start --port 3001 && sudo pm2 save) ||
-            (pm2 start ~/d-pub.ru/app/node_modules/.bin/next --name digital-pub --cwd ~/d-pub.ru/app -- start --port 3001 && pm2 save)
+            PM2=\$(which pm2 2>/dev/null || find /usr /home -name pm2 -type f 2>/dev/null | head -1)
+            if [ -n \"\$PM2\" ]; then
+              \$PM2 restart digital-pub 2>/dev/null || \$PM2 start ~/d-pub.ru/app/node_modules/.bin/next --name digital-pub --cwd ~/d-pub.ru/app -- start --port 3001
+              \$PM2 save
+            else
+              echo 'PM2 not found — killing port 3001 and restarting'
+              fuser -k 3001/tcp 2>/dev/null || kill \$(ss -tlnp 2>/dev/null | grep 3001 | grep -o 'pid=[0-9]*' | cut -d= -f2) 2>/dev/null || true
+              nohup node ~/d-pub.ru/app/node_modules/.bin/next start --port 3001 &
+            fi
           "
