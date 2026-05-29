@@ -120,8 +120,12 @@ jobs:
       - name: Restart app and verify
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            echo '=== app/BUILD_ID ===' && cat ~/d-pub.ru/app/.next/BUILD_ID 2>/dev/null || echo 'no app/.next/BUILD_ID'
+            echo '=== root BUILD_ID ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null
+            APP_PID=\$(pgrep -f 'next-server' 2>/dev/null | head -1)
+            echo '=== process CWD ===' && readlink /proc/\$APP_PID/cwd 2>/dev/null || echo 'no pid'
+            echo '=== process PWD env ===' && tr '\0' '\n' < /proc/\$APP_PID/environ 2>/dev/null | grep '^PWD=' | sed 's/=.*/=.../' || echo 'no env'
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
-            sleep 35
-            echo '=== runit log last 40 ===' && tail -40 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
-            echo '=== running build ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null
+            sleep 30
+            echo '=== runit log last 20 ===' && tail -20 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
           "
