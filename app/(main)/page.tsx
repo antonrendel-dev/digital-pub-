@@ -5,7 +5,7 @@ import { getStats, getTagsWithCounts } from '@/lib/tags'
 import { getArticles, formatArticleDate } from '@/lib/articles'
 
 export const metadata: Metadata = {
-  title: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб',
+  title: { absolute: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб' },
   description:
     'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. SMM, аналитика, дизайн, маркетинг — новые предложения каждый день.',
   alternates: { canonical: 'https://d-pub.ru' },
