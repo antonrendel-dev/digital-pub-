@@ -93,16 +93,19 @@ jobs:
               echo 'Payload not installed, skipping migration'
           "
 
-      - name: Find pm2 and show process info
+      - name: Diagnose production server
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            echo '=== which pm2 ===' && which pm2 2>&1 || true
-            echo '=== find pm2 ===' && find /usr /home -name pm2 -type f 2>/dev/null | head -5 || true
-            echo '=== ps aux pm2 ===' && ps aux | grep pm2 | grep -v grep || true
-            echo '=== ps aux node ===' && ps aux | grep next | grep -v grep || true
-            echo '=== port 3001 ===' && ss -tlnp 2>/dev/null | grep 3001 || netstat -tlnp 2>/dev/null | grep 3001 || true
+            echo '=== node version ===' && node --version 2>&1 || true
+            echo '=== npm global list ===' && npm list -g --depth=0 2>&1 | grep -E 'pm2|next' || true
+            echo '=== all listening ports ===' && ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null || true
+            echo '=== all node processes ===' && ps aux | grep -E 'node|next|pm2' | grep -v grep || true
+            echo '=== nginx sites ===' && ls /etc/nginx/sites-enabled/ 2>/dev/null || ls /etc/nginx/conf.d/ 2>/dev/null || true
+            echo '=== nginx d-pub config ===' && cat /etc/nginx/sites-enabled/*d-pub* 2>/dev/null || cat /etc/nginx/conf.d/*d-pub* 2>/dev/null || true
+            echo '=== d-pub.ru app dir ===' && ls ~/d-pub.ru/app/ 2>/dev/null || true
+            echo '=== d-pub.ru app BUILD_ID ===' && cat ~/d-pub.ru/app/.next/BUILD_ID 2>/dev/null || true
           "
 
       - name: Restart app
@@ -110,13 +113,17 @@ jobs:
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            PM2=\$(which pm2 2>/dev/null || find /usr /home -name pm2 -type f 2>/dev/null | head -1)
-            if [ -n \"\$PM2\" ]; then
-              \$PM2 restart digital-pub 2>/dev/null || \$PM2 start ~/d-pub.ru/app/node_modules/.bin/next --name digital-pub --cwd ~/d-pub.ru/app -- start --port 3001
-              \$PM2 save
-            else
-              echo 'PM2 not found — killing port 3001 and restarting'
-              fuser -k 3001/tcp 2>/dev/null || kill \$(ss -tlnp 2>/dev/null | grep 3001 | grep -o 'pid=[0-9]*' | cut -d= -f2) 2>/dev/null || true
-              nohup node ~/d-pub.ru/app/node_modules/.bin/next start --port 3001 &
-            fi
+            APP_DIR=\"\$HOME/d-pub.ru/app\"
+            NODE_BIN=\"\$APP_DIR/node_modules/.bin/next\"
+            NEXT_PORT=3001
+            echo '=== killing existing next process on port ==='
+            fuser -k \${NEXT_PORT}/tcp 2>/dev/null || true
+            sleep 1
+            echo '=== starting app ==='
+            cd \$APP_DIR
+            PORT=\$NEXT_PORT nohup node \$NODE_BIN start --port \$NEXT_PORT > /tmp/digital-pub.log 2>&1 &
+            echo \$! > /tmp/digital-pub.pid
+            sleep 3
+            echo '=== checking port ===' && ss -tlnp 2>/dev/null | grep \$NEXT_PORT || true
+            echo '=== last log lines ===' && tail -5 /tmp/digital-pub.log 2>/dev/null || true
           "
