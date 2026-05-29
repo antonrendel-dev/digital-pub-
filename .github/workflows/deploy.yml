@@ -144,25 +144,52 @@ jobs:
               echo 'Payload not installed, skipping migration'
           "
 
-      - name: Seed users + write PAYLOAD_API_KEY
+      - name: Create sync user via REST API
         run: |
-          SEED_OUTPUT=$(ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            export ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
-            cd ~/d-pub.ru/app && \
-            PAYLOAD_CONFIG_PATH=\$HOME/d-pub.ru/app/payload.config.compiled.mjs \
-            node --experimental-require-module scripts/seed.compiled.js 2>&1
-          " || true)
-          echo "$SEED_OUTPUT"
-          API_KEY=$(echo "$SEED_OUTPUT" | grep '\[seed\] PAYLOAD_API_KEY=' | head -1 | sed 's/.*PAYLOAD_API_KEY=//')
+          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
+          if [ -z "$ADMIN_PASSWORD" ]; then
+            echo "ADMIN_PASSWORD secret not set — skipping sync user creation"
+            exit 0
+          fi
+
+          # Login as admin
+          LOGIN=$(curl -s --max-time 15 -X POST https://d-pub.ru/api/users/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"antonrendel@gmail.com\",\"password\":\"$ADMIN_PASSWORD\"}")
+          TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
+          if [ -z "$TOKEN" ]; then
+            echo "Admin login failed: ${LOGIN:0:200}"
+            exit 0
+          fi
+          echo "Admin login OK"
+
+          # Try to create sync user
+          SYNC_RESP=$(curl -s --max-time 15 -X POST https://d-pub.ru/api/users \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer $TOKEN" \
+            -d "{\"email\":\"sync@d-pub.ru\",\"password\":\"$(openssl rand -hex 16)\",\"role\":\"sync\",\"enableAPIKey\":true}")
+          API_KEY=$(echo "$SYNC_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('doc',{}).get('apiKey',''))" 2>/dev/null)
+
+          # If user already exists — fetch and regenerate key
+          if [ -z "$API_KEY" ]; then
+            USERS=$(curl -s --max-time 15 "https://d-pub.ru/api/users?where[email][equals]=sync%40d-pub.ru" \
+              -H "Authorization: Bearer $TOKEN")
+            SYNC_ID=$(echo "$USERS" | python3 -c "import json,sys; docs=json.load(sys.stdin).get('docs',[]); print(docs[0]['id'] if docs else '')" 2>/dev/null)
+            if [ -n "$SYNC_ID" ]; then
+              UPD=$(curl -s --max-time 15 -X PATCH "https://d-pub.ru/api/users/$SYNC_ID" \
+                -H 'Content-Type: application/json' \
+                -H "Authorization: Bearer $TOKEN" \
+                -d '{"enableAPIKey":true}')
+              API_KEY=$(echo "$UPD" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('doc',{}).get('apiKey',''))" 2>/dev/null)
+            fi
+          fi
+
           if [ -n "$API_KEY" ]; then
             ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
               "echo 'PAYLOAD_API_KEY=$API_KEY' >> ~/d-pub.ru/app/.env"
             echo "PAYLOAD_API_KEY written to server .env"
           else
-            echo "WARNING: could not extract PAYLOAD_API_KEY from seed output"
-            echo "Seed output was: $SEED_OUTPUT"
+            echo "Could not get API key: ${SYNC_RESP:0:300}"
           fi
 
       - name: Verify deploy
