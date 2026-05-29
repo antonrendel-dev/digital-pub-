@@ -119,6 +119,18 @@ jobs:
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
-            sleep 20
-            echo '=== runit log ===' && tail -15 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
+            sleep 25
+          "
+
+      - name: Smoke test + capture errors
+        run: |
+          echo '=== HTTP status ==='
+          curl -s -o /dev/null -w '%{http_code}' https://d-pub.ru/ || true
+          echo ''
+          echo '=== API /api/posts ==='
+          curl -s https://d-pub.ru/api/posts?limit=1 | head -c 500 || true
+          echo ''
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            echo '=== runit log last 30 ==='
+            tail -30 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
           "
