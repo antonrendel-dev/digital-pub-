@@ -94,4 +94,10 @@ jobs:
           "
 
       - name: Restart app
-        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "touch ~/d-pub.ru/reload"
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            pm2 restart digital-pub || pm2 start ~/d-pub.ru/app/node_modules/.bin/next --name digital-pub --cwd ~/d-pub.ru/app -- start --port 3001
+            pm2 save
+          "
