@@ -78,12 +78,16 @@ jobs:
       - name: Install production dependencies
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             cd ~/d-pub.ru && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
           "
 
       - name: Run payload migrate
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             cd ~/d-pub.ru && [ -f node_modules/.bin/payload ] && \
               PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs /usr/bin/node node_modules/.bin/payload migrate || \
               echo 'Payload not installed, skipping migration'
