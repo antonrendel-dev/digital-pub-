@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "test": "jest",
     "prepare": "husky",
-    "sync": "tsx --env-file=.env scripts/sync-telegram.ts"
+    "sync": "tsx --env-file=.env scripts/sync-telegram.ts",
+    "seed-tags": "tsx --env-file=.env scripts/seed-tags.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.85.0",

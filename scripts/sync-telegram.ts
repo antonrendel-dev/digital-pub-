@@ -181,22 +181,29 @@ async function downloadImageLocally(url: string, filename: string): Promise<stri
   }
 }
 
-/** Fetch the last ~20 posts from a public Telegram channel via t.me/s/ */
-async function fetchChannelPosts(channelUsername: string, type: PostType): Promise<TelegramPost[]> {
-  const url = `https://t.me/s/${channelUsername}`
+async function fetchPagePosts(
+  channelUsername: string,
+  type: PostType,
+  beforeId: string | null,
+  seenIds: Set<string>
+): Promise<{ posts: TelegramPost[]; minId: string | null }> {
+  const url = beforeId
+    ? `https://t.me/s/${channelUsername}?before=${beforeId}`
+    : `https://t.me/s/${channelUsername}`
+
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; bot)' },
   })
 
   if (!res.ok) {
     console.error(`Failed to fetch ${url}: ${res.status}`)
-    return []
+    return { posts: [], minId: null }
   }
 
   const html = await res.text()
   const posts: TelegramPost[] = []
+  let minId: string | null = null
 
-  // Split HTML into individual message blocks
   const messageBlocks = html.split(/data-post="[^/]+\//).slice(1)
 
   for (const block of messageBlocks) {
@@ -204,7 +211,11 @@ async function fetchChannelPosts(channelUsername: string, type: PostType): Promi
     if (!idMatch) continue
     const messageId = idMatch[1]
 
-    // Check if this message has a photo (look for photo_wrap with CDN background-image)
+    if (seenIds.has(messageId)) continue
+    seenIds.add(messageId)
+
+    if (!minId || Number(messageId) < Number(minId)) minId = messageId
+
     const hasPhoto =
       /tgme_widget_message_photo_wrap[^>]*style="[^"]*background-image:\s*url\('https?:\/\/cdn/.test(
         block
@@ -213,12 +224,10 @@ async function fetchChannelPosts(channelUsername: string, type: PostType): Promi
     let imageUrl: string | null = null
 
     if (hasPhoto) {
-      // Try Bot API first for full-quality (1200x628) images
       const botApiPath = await downloadPhotoViaBotAPI(channelUsername, messageId)
       if (botApiPath) {
         imageUrl = botApiPath
       } else {
-        // Fallback: use the background-image URL from t.me/s/ (800x419)
         const bgImageMatch = block.match(
           /tgme_widget_message_photo_wrap[^>]*style="[^"]*background-image:\s*url\('([^']+)'\)/
         )
@@ -227,17 +236,12 @@ async function fetchChannelPosts(channelUsername: string, type: PostType): Promi
           const fallbackUrl = bgImageMatch[1]
           const localFilename = `${channelUsername}_${messageId}.jpg`
           const localPath = await downloadImageLocally(fallbackUrl, localFilename)
-          if (localPath) {
-            imageUrl = localPath
-          }
+          if (localPath) imageUrl = localPath
         }
       }
-
-      // Rate limit: small delay between Bot API calls to avoid 429
       await new Promise((r) => setTimeout(r, 300))
     }
 
-    // Extract text
     const textMatch = block.match(/class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/)
     if (!textMatch) continue
 
@@ -257,7 +261,29 @@ async function fetchChannelPosts(channelUsername: string, type: PostType): Promi
     }
   }
 
-  return posts
+  return { posts, minId }
+}
+
+/** Fetch posts from a public Telegram channel via t.me/s/ with pagination */
+async function fetchChannelPosts(channelUsername: string, type: PostType): Promise<TelegramPost[]> {
+  const allPosts: TelegramPost[] = []
+  const seenIds = new Set<string>()
+  let beforeId: string | null = null
+  const maxPages = 8 // ~160 posts per channel
+
+  for (let page = 0; page < maxPages; page++) {
+    const { posts, minId } = await fetchPagePosts(channelUsername, type, beforeId, seenIds)
+    allPosts.push(...posts)
+
+    if (posts.length === 0 || !minId) break
+
+    beforeId = minId
+    console.log(`  Page ${page + 1}: ${posts.length} posts (oldest id: ${minId})`)
+
+    await new Promise((r) => setTimeout(r, 500))
+  }
+
+  return allPosts
 }
 
 function parseTitle(text: string): string {
@@ -422,8 +448,18 @@ export async function savePost(
   })
 
   if (res.status === 409) return false // duplicate — normal dedup, no log
+  if (res.status === 400) {
+    const body = await res.text()
+    // Payload returns 400 (not 409) for unique constraint violations
+    if (body.includes('unique') || body.includes('duplicate') || body.includes('Duplicate')) {
+      return false // treat as duplicate, no log
+    }
+    console.error(
+      `[sync] Failed to save post: 400 ${PAYLOAD_BASE_URL}/api/posts — ${body.slice(0, 200)}`
+    )
+    return false
+  }
   if (!res.ok) {
-    // Log only status and URL — never log PAYLOAD_API_KEY or Authorization header
     console.error(`[sync] Failed to save post: ${res.status} ${PAYLOAD_BASE_URL}/api/posts`)
     return false
   }

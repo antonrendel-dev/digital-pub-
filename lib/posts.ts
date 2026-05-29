@@ -58,8 +58,8 @@ export async function getPublishedPosts(): Promise<FeedPost[]> {
       sort: '-createdAt',
     })
     return (result.docs as unknown as PayloadPost[]).map(toFeedPost)
-  } catch {
-    console.warn('[posts] DB unavailable')
+  } catch (err) {
+    console.error('[posts] DB error:', err)
     return []
   }
 }
@@ -78,8 +78,8 @@ export async function getPostsByType(type: 'vacancy' | 'resume'): Promise<FeedPo
       sort: '-createdAt',
     })
     return (result.docs as unknown as PayloadPost[]).map(toFeedPost)
-  } catch {
-    console.warn('[posts] DB unavailable')
+  } catch (err) {
+    console.error('[posts] DB error:', err)
     return []
   }
 }
@@ -94,8 +94,8 @@ export async function getPostById(id: number): Promise<FeedPost | null> {
     })
     if (!result.docs.length) return null
     return toFeedPost(result.docs[0] as unknown as PayloadPost)
-  } catch {
-    console.warn('[posts] DB unavailable')
+  } catch (err) {
+    console.error('[posts] DB error:', err)
     return null
   }
 }
@@ -123,8 +123,8 @@ export async function getPostsByTypePaginated(
       total: result.totalDocs,
       totalPages: result.totalPages,
     }
-  } catch {
-    console.warn('[posts] DB unavailable')
+  } catch (err) {
+    console.error('[posts] DB error:', err)
     return { posts: [], total: 0, totalPages: 0 }
   }
 }
@@ -142,8 +142,8 @@ export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
     })
     if (!result.docs.length) return null
     return toFeedPost(result.docs[0] as unknown as PayloadPost)
-  } catch {
-    console.warn('[posts] DB unavailable')
+  } catch (err) {
+    console.error('[posts] DB error:', err)
     return null
   }
 }

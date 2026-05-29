@@ -17,29 +17,55 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getPostBySlug(slug)
   if (!post) return { title: 'Вакансия не найдена' }
 
-  const rawTitle = `${post.title}${post.salary ? ` (${post.salary})` : ''} — вакансия`
-  const title = rawTitle.length > 60 ? rawTitle.slice(0, 57) + '...' : rawTitle
+  const isResume = post.type === 'resume'
+  const tagNames = (post.tags ?? [])
+    .slice(0, 2)
+    .map((t: { name: string }) => t.name)
+    .join(', ')
 
-  const rawDesc = `${post.company ? post.company + ': ' : ''}${post.title}.${post.salary ? ' Зарплата: ' + post.salary + '.' : ''} Смотреть на Диджитал Паб.`
-  const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
+  // Title (60 chars max before template adds " | Диджитал Паб")
+  let titleBase: string
+  if (isResume) {
+    titleBase = `Резюме: ${post.title}`
+    if (titleBase.length > 50) titleBase = titleBase.slice(0, 47) + '...'
+  } else {
+    titleBase = post.company ? `${post.title} — ${post.company}` : post.title
+    if (titleBase.length > 50)
+      titleBase = post.title.length > 50 ? post.title.slice(0, 47) + '...' : post.title
+  }
+
+  // Description (160 chars max)
+  let desc: string
+  if (isResume) {
+    desc = `Соискатель: ${post.title}`
+    if (post.salary) desc += `. Ожидания: ${post.salary}`
+    if (tagNames) desc += `. ${tagNames}`
+    desc += '. Ищет работу в digital — d-pub.ru'
+  } else {
+    desc = post.company ? `${post.company} ищет ${post.title}` : `Вакансия: ${post.title}`
+    if (post.salary) desc += `. Зарплата: ${post.salary}`
+    if (tagNames) desc += `. ${tagNames}`
+    desc += '. Смотри на d-pub.ru'
+  }
+  if (desc.length > 160) desc = desc.slice(0, 157) + '...'
 
   const url = `https://d-pub.ru/vacancies/${category}/${slug}`
 
   return {
-    title,
-    description,
+    title: titleBase,
+    description: desc,
     alternates: { canonical: url },
     openGraph: {
-      title,
-      description,
+      title: titleBase,
+      description: desc,
       url,
       type: 'website',
       images: post.imageUrl ? [{ url: post.imageUrl, alt: post.title }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
-      title,
-      description,
+      title: titleBase,
+      description: desc,
     },
   }
 }

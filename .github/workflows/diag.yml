@@ -17,7 +17,7 @@ jobs:
       - name: Add server to known hosts
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Read runit log + env check
+      - name: Read runit log + env check + bot status
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             echo '=== Last 50 lines of runit log ==='
@@ -31,4 +31,21 @@ jobs:
             echo '=== Process env check ==='
             APP_PID=\$(pgrep -f 'node.*server.js' 2>/dev/null | head -1)
             [ -n \"\$APP_PID\" ] && grep -oP 'DB_CONNECTION_STRING=[^\x00]+' /proc/\$APP_PID/environ 2>/dev/null | cut -c1-50 || echo 'process not found or no access'
+            echo '=== Telegram bot ==='
+            ls -la /opt/bots/telegram-bot-vac/ 2>/dev/null || echo 'bot dir not found at /opt/bots/telegram-bot-vac/'
+            echo '=== Bot process? ==='
+            pgrep -a -f 'telegram-bot-vac\|bot-vac' 2>/dev/null || echo 'no bot process found'
+            echo '=== Bot logs (last 20) ==='
+            tail -20 /opt/bots/telegram-bot-vac/logs/*.log 2>/dev/null || \
+            tail -20 /opt/bots/telegram-bot-vac/*.log 2>/dev/null || \
+            echo 'no logs found'
+            echo '=== DB posts count ==='
+            cd ~/d-pub.ru/app && \
+            export NVM_DIR=\"\$HOME/.nvm\" && \
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\" && \
+            node -e \"
+              const { Client } = require('pg');
+              const c = new Client({ connectionString: process.env.DATABASE_URL || process.env.DB_CONNECTION_STRING });
+              c.connect().then(() => c.query('SELECT COUNT(*) FROM posts')).then(r => { console.log('posts count:', r.rows[0].count); c.end(); }).catch(e => console.error('DB error:', e.message));
+            \" 2>/dev/null || echo 'pg check failed'
           "

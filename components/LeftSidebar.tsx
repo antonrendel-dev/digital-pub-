@@ -10,33 +10,38 @@ interface SubCardProps {
   subscribers: string
   desc: string
   btnColor: string
+  url: string
 }
 
-function SubCard({ type, icon, title, subscribers, desc, btnColor }: SubCardProps) {
+function SubCard({ type, icon, title, subscribers, desc, btnColor, url }: SubCardProps) {
   const [subscribed, setSubscribed] = useState(false)
 
   const bgClass = type === 'tg' ? 'bg-bg-sub-tg' : type === 'mx' ? 'bg-bg-sub-mx' : 'bg-bg-sub-vk'
 
   return (
-    <div className={`${bgClass} rounded-lg p-3 hover:opacity-90 transition`}>
-      <div className="flex items-center gap-2 mb-1">
-        <div className="flex-shrink-0">{icon}</div>
-        <div>
-          <div className="text-sm font-medium text-text">{title}</div>
-          <div className="text-xs text-text-light">{subscribers}</div>
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block no-underline text-inherit"
+    >
+      <div className={`${bgClass} rounded-lg p-3 hover:opacity-90 transition`}>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="flex-shrink-0">{icon}</div>
+          <div>
+            <div className="text-sm font-medium text-text">{title}</div>
+            <div className="text-xs text-text-light">{subscribers}</div>
+          </div>
+        </div>
+        <div className="text-xs text-text-muted mb-2">{desc}</div>
+        <div
+          className={`block w-full text-center py-1.5 rounded-md text-xs font-medium text-white cursor-pointer transition-opacity hover:opacity-85 ${btnColor}`}
+          onClick={() => setSubscribed(true)}
+        >
+          {subscribed ? '✓ Подписан' : 'Подписаться'}
         </div>
       </div>
-      <div className="text-xs text-text-muted mb-2">{desc}</div>
-      <button
-        className={`block w-full text-center py-1.5 rounded-md text-xs font-medium text-white border-none cursor-pointer transition-opacity hover:opacity-85 ${btnColor}`}
-        onClick={(e) => {
-          e.preventDefault()
-          setSubscribed(true)
-        }}
-      >
-        {subscribed ? '\u2713 Подписан' : 'Подписаться'}
-      </button>
-    </div>
+    </a>
   )
 }
 
@@ -121,22 +126,16 @@ export default function LeftSidebar({ stats, channels }: LeftSidebarProps) {
                 ? 'Те же вакансии в экосистеме ВКонтакте.'
                 : 'Вакансии и карьерные советы в вашей ленте ВК.'
           return (
-            <a
+            <SubCard
               key={name}
-              href={ch.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block no-underline text-inherit"
-            >
-              <SubCard
-                type={type}
-                icon={icon}
-                title={name}
-                subscribers={ch.subscribers ?? ''}
-                desc={desc}
-                btnColor={btnColor}
-              />
-            </a>
+              type={type}
+              icon={icon}
+              title={name}
+              subscribers={ch.subscribers ?? ''}
+              desc={desc}
+              btnColor={btnColor}
+              url={ch.url}
+            />
           )
         })}
       </div>

@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -43,6 +43,34 @@ jobs:
             --external:next \
             --external:'next/*' \
             --outfile=payload.config.compiled.mjs
+
+      - name: Compile payload migrations to CJS
+        run: |
+          for f in payload-migrations/*.ts; do
+            [ -f "$f" ] || continue
+            out="${f%.ts}.js"
+            npx esbuild "$f" \
+              --bundle=false \
+              --platform=node \
+              --format=cjs \
+              --outfile="$out"
+          done
+
+      - name: Compile seed and sync scripts
+        run: |
+          npx esbuild scripts/seed.ts \
+            --bundle=true \
+            --platform=node \
+            --format=cjs \
+            --external:payload \
+            --external:'@payloadcms/*' \
+            --external:crypto \
+            --outfile=scripts/seed.compiled.js
+          npx esbuild scripts/sync-telegram.ts \
+            --bundle=true \
+            --platform=node \
+            --format=cjs \
+            --outfile=scripts/sync-telegram.compiled.js
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -88,6 +116,11 @@ jobs:
       - name: Deploy payload compiled config
         run: rsync -avz payload.config.compiled.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
+      - name: Deploy scripts/
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/scripts"
+          rsync -avz scripts/seed.compiled.js scripts/sync-telegram.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/scripts/
+
       - name: Deploy package files and next.config
         run: rsync -avz package.json package-lock.json next.config.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
@@ -105,7 +138,9 @@ jobs:
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             cd ~/d-pub.ru/app && [ -f node_modules/.bin/payload ] && \
-              PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs node node_modules/.bin/payload migrate || \
+              rm -f payload-migrations/*.ts && \
+              PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs \
+              node --experimental-require-module node_modules/.bin/payload migrate || \
               echo 'Payload not installed, skipping migration'
           "
 
@@ -119,6 +154,92 @@ jobs:
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
-            sleep 20
-            echo '=== runit log ===' && tail -15 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
+            sleep 45
+          "
+
+      - name: Create sync user via REST API
+        continue-on-error: true
+        run: |
+          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
+          if [ -z "$ADMIN_PASSWORD" ]; then
+            echo "ADMIN_PASSWORD secret not set — skipping sync user creation"
+            exit 0
+          fi
+
+          # Wait for app to be ready (retry up to 5 times)
+          TOKEN=""
+          for i in 1 2 3 4 5; do
+            LOGIN=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users/login \
+              -H 'Content-Type: application/json' \
+              -d "{\"email\":\"in-ekb@mail.ru\",\"password\":\"$ADMIN_PASSWORD\"}")
+            TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
+            if [ -n "$TOKEN" ]; then
+              echo "Admin login OK (attempt $i)"
+              break
+            fi
+            echo "Attempt $i failed (${LOGIN:0:100}), retrying in 15s..."
+            sleep 15
+          done
+
+          if [ -z "$TOKEN" ]; then
+            echo "Admin login failed after 5 attempts — skipping"
+            exit 0
+          fi
+
+          # Try to create sync user
+          SYNC_RESP=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer $TOKEN" \
+            -d "{\"email\":\"sync@d-pub.ru\",\"password\":\"$(openssl rand -hex 16)\",\"role\":\"sync\",\"enableAPIKey\":true}")
+          API_KEY=$(echo "$SYNC_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('doc',{}).get('apiKey',''))" 2>/dev/null)
+
+          # If user already exists — fetch and regenerate key
+          if [ -z "$API_KEY" ]; then
+            USERS=$(curl -s --max-time 20 "https://d-pub.ru/api/users?where[email][equals]=sync%40d-pub.ru" \
+              -H "Authorization: Bearer $TOKEN")
+            SYNC_ID=$(echo "$USERS" | python3 -c "import json,sys; docs=json.load(sys.stdin).get('docs',[]); print(docs[0]['id'] if docs else '')" 2>/dev/null)
+            if [ -n "$SYNC_ID" ]; then
+              UPD=$(curl -s --max-time 20 -X PATCH "https://d-pub.ru/api/users/$SYNC_ID" \
+                -H 'Content-Type: application/json' \
+                -H "Authorization: Bearer $TOKEN" \
+                -d '{"enableAPIKey":true}')
+              API_KEY=$(echo "$UPD" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('doc',{}).get('apiKey',''))" 2>/dev/null)
+            fi
+          fi
+
+          if [ -n "$API_KEY" ]; then
+            ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+              "echo 'PAYLOAD_API_KEY=$API_KEY' >> ~/d-pub.ru/app/.env"
+            echo "PAYLOAD_API_KEY written to server .env"
+          else
+            echo "Could not get API key: ${SYNC_RESP:0:300}"
+          fi
+
+      - name: Run Telegram sync
+        run: |
+          BOT_TOKEN='${{ secrets.BOT_TOKEN }}'
+          ADMIN_ID='${{ secrets.ADMIN_ID }}'
+          if [ -z "$BOT_TOKEN" ]; then
+            echo "BOT_TOKEN not set — sync runs manually from red server. Skipping."
+          else
+            ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+              export NVM_DIR=\"\$HOME/.nvm\"
+              [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+              export BOT_TOKEN='$BOT_TOKEN'
+              export ADMIN_ID='$ADMIN_ID'
+              cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
+            " || echo 'Sync failed (non-critical)'
+          fi
+
+      - name: Smoke test + capture errors
+        run: |
+          echo '=== HTTP status ==='
+          curl -s --max-time 15 -o /dev/null -w '%{http_code}' https://d-pub.ru/ || true
+          echo ''
+          echo '=== API /api/posts ==='
+          curl -s --max-time 15 'https://d-pub.ru/api/posts?limit=1' | head -c 500 || true
+          echo ''
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            echo '=== runit log last 30 ==='
+            tail -30 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
           "
