@@ -4,12 +4,12 @@ import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
 import { getArticles } from '@/lib/articles'
 import PageShell from '@/components/PageShell'
-import TileCard from '@/components/feed/TileCard'
+import VacancyGrid from '@/components/VacancyGrid'
 import TagsSidebar from '@/components/TagsSidebar'
 import JsonLd from '@/components/JsonLd'
 import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/components/RelatedArticles'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 interface Props {
   params: Promise<{ category: string }>
@@ -124,20 +124,7 @@ export default async function CategoryPage({ params }: Props) {
                 Пока нет вакансий в категории {tag.name}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {posts.map((post) => (
-                  <TileCard key={post.id} post={post} />
-                ))}
-              </div>
-            )}
-
-            {/* Load more placeholder */}
-            {posts.length > 20 && (
-              <div className="mt-6 text-center">
-                <button className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 rounded-full cursor-pointer transition border-none">
-                  Показать ещё
-                </button>
-              </div>
+              <VacancyGrid posts={posts} />
             )}
 
             {/* SEO text */}

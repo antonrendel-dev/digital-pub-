@@ -40,26 +40,29 @@ export const Tags: CollectionConfig = {
       type: 'text',
     },
     {
-      name: 'seoTitle',
-      type: 'text',
-      admin: { group: 'SEO' },
-    },
-    {
-      name: 'seoDescription',
-      type: 'textarea',
-      admin: {
-        group: 'SEO',
-        description: 'Meta-description страницы тега (до 160 символов)',
-      },
-    },
-    {
-      name: 'seoText',
-      type: 'richText',
-      editor: lexicalEditor({}),
-      admin: {
-        group: 'SEO',
-        description: 'SEO-текст внизу страницы категории (необязательно)',
-      },
+      type: 'collapsible',
+      label: 'SEO',
+      fields: [
+        {
+          name: 'seoTitle',
+          type: 'text',
+        },
+        {
+          name: 'seoDescription',
+          type: 'textarea',
+          admin: {
+            description: 'Meta-description страницы тега (до 160 символов)',
+          },
+        },
+        {
+          name: 'seoText',
+          type: 'richText',
+          editor: lexicalEditor({}),
+          admin: {
+            description: 'SEO-текст внизу страницы категории',
+          },
+        },
+      ],
     },
   ],
   hooks: {
