@@ -53,77 +53,47 @@ jobs:
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy .next/
-        run: rsync -avz --delete --exclude='cache/' .next/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/.next/
+        run: rsync -avz --delete --exclude='cache/' .next/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/.next/
 
       - name: Deploy lib/
-        run: rsync -avz lib/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/lib/
+        run: rsync -avz lib/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/lib/
 
       - name: Deploy public/
-        run: rsync -avz --exclude=uploads/ public/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/public/
+        run: rsync -avz --exclude=uploads/ public/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/public/
 
       - name: Deploy content/
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/content"
-          rsync -avz content/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/content/
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/content"
+          rsync -avz content/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/content/
 
       - name: Deploy payload-migrations/
-        run: rsync -avz --ignore-missing-args payload-migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/payload-migrations/
+        run: rsync -avz --ignore-missing-args payload-migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/payload-migrations/
 
       - name: Deploy payload compiled config
-        run: rsync -avz payload.config.compiled.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
+        run: rsync -avz payload.config.compiled.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/
 
       - name: Deploy package files
-        run: rsync -avz package.json package-lock.json ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
+        run: rsync -avz package.json package-lock.json ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/
 
       - name: Install production dependencies
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
+            cd ~/d-pub.ru && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
           "
 
       - name: Run payload migrate
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru/app && [ -f node_modules/.bin/payload ] && \
+            cd ~/d-pub.ru && [ -f node_modules/.bin/payload ] && \
               PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs /usr/bin/node node_modules/.bin/payload migrate || \
               echo 'Payload not installed, skipping migration'
           "
 
-      - name: Diagnose production server
+      - name: Verify deploy
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            echo '=== node version ===' && node --version 2>&1 || true
-            echo '=== npm global list ===' && npm list -g --depth=0 2>&1 | grep -E 'pm2|next' || true
-            echo '=== all listening ports ===' && ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null || true
-            echo '=== all node processes ===' && ps aux | grep -E 'node|next|pm2' | grep -v grep || true
-            echo '=== nginx sites ===' && ls /etc/nginx/sites-enabled/ 2>/dev/null || ls /etc/nginx/conf.d/ 2>/dev/null || true
-            echo '=== nginx d-pub config ===' && cat /etc/nginx/sites-enabled/*d-pub* 2>/dev/null || cat /etc/nginx/conf.d/*d-pub* 2>/dev/null || true
-            echo '=== d-pub.ru app dir ===' && ls ~/d-pub.ru/app/ 2>/dev/null || true
-            echo '=== d-pub.ru app BUILD_ID ===' && cat ~/d-pub.ru/app/.next/BUILD_ID 2>/dev/null || true
+            echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
           "
 
       - name: Restart app
-        run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            APP_DIR=\"\$HOME/d-pub.ru/app\"
-            NODE_BIN=\"\$APP_DIR/node_modules/.bin/next\"
-            NEXT_PORT=3001
-            echo '=== killing existing next process on port ==='
-            fuser -k \${NEXT_PORT}/tcp 2>/dev/null || true
-            sleep 1
-            echo '=== starting app ==='
-            cd \$APP_DIR
-            PORT=\$NEXT_PORT nohup node \$NODE_BIN start --port \$NEXT_PORT > /tmp/digital-pub.log 2>&1 &
-            echo \$! > /tmp/digital-pub.pid
-            sleep 3
-            echo '=== checking port ===' && ss -tlnp 2>/dev/null | grep \$NEXT_PORT || true
-            echo '=== last log lines ===' && tail -5 /tmp/digital-pub.log 2>/dev/null || true
-          "
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "touch ~/d-pub.ru/reload"
