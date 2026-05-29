@@ -52,12 +52,10 @@ jobs:
       - name: Add server to known hosts
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Write env vars to server (NetAngels etc/environment)
+      - name: Write env vars (NetAngels etc/environment + .env)
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             mkdir -p ~/d-pub.ru/etc/environment
-            printf '%s' '${{ secrets.DATABASE_URL }}' > ~/d-pub.ru/etc/environment/DATABASE_URL
-            printf '%s' '${{ secrets.DATABASE_URL }}' > ~/d-pub.ru/etc/environment/DB_CONNECTION_STRING
             printf '%s' '${{ secrets.PAYLOAD_SECRET }}' > ~/d-pub.ru/etc/environment/PAYLOAD_SECRET
             printf '%s' 'https://d-pub.ru' > ~/d-pub.ru/etc/environment/NEXT_PUBLIC_SERVER_URL
             printf '%s' '${{ secrets.NEXT_PUBLIC_YANDEX_METRIKA_ID }}' > ~/d-pub.ru/etc/environment/NEXT_PUBLIC_YANDEX_METRIKA_ID
@@ -68,37 +66,37 @@ jobs:
             "${{ secrets.DATABASE_URL }}" \
             "${{ secrets.PAYLOAD_SECRET }}" \
             "${{ secrets.NEXT_PUBLIC_YANDEX_METRIKA_ID }}" \
-            > ~/d-pub.ru/.env'
+            > ~/d-pub.ru/app/.env'
 
       - name: Deploy .next/
-        run: rsync -avz --delete --exclude='cache/' .next/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/.next/
+        run: rsync -avz --delete --exclude='cache/' .next/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/.next/
 
       - name: Deploy lib/
-        run: rsync -avz lib/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/lib/
+        run: rsync -avz lib/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/lib/
 
       - name: Deploy public/
-        run: rsync -avz --exclude=uploads/ public/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/public/
+        run: rsync -avz --exclude=uploads/ public/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/public/
 
       - name: Deploy content/
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/content"
-          rsync -avz content/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/content/
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/content"
+          rsync -avz content/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/content/
 
       - name: Deploy payload-migrations/
-        run: rsync -avz --ignore-missing-args payload-migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/payload-migrations/
+        run: rsync -avz --ignore-missing-args payload-migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/payload-migrations/
 
       - name: Deploy payload compiled config
-        run: rsync -avz payload.config.compiled.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/
+        run: rsync -avz payload.config.compiled.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
-      - name: Deploy package files
-        run: rsync -avz package.json package-lock.json ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/
+      - name: Deploy package files and next.config
+        run: rsync -avz package.json package-lock.json next.config.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
       - name: Install production dependencies
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
+            cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
           "
 
       - name: Run payload migrate
@@ -106,7 +104,7 @@ jobs:
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru && [ -f node_modules/.bin/payload ] && \
+            cd ~/d-pub.ru/app && [ -f node_modules/.bin/payload ] && \
               PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs node node_modules/.bin/payload migrate || \
               echo 'Payload not installed, skipping migration'
           "
@@ -114,18 +112,13 @@ jobs:
       - name: Verify deploy
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
+            echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/app/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
           "
 
-      - name: Restart app and verify
+      - name: Restart app
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            echo '=== app/BUILD_ID ===' && cat ~/d-pub.ru/app/.next/BUILD_ID 2>/dev/null || echo 'no app/.next/BUILD_ID'
-            echo '=== root BUILD_ID ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null
-            APP_PID=\$(pgrep -f 'next-server' 2>/dev/null | head -1)
-            echo '=== process CWD ===' && readlink /proc/\$APP_PID/cwd 2>/dev/null || echo 'no pid'
-            echo '=== process PWD env ===' && tr '\0' '\n' < /proc/\$APP_PID/environ 2>/dev/null | grep '^PWD=' | sed 's/=.*/=.../' || echo 'no env'
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
-            sleep 30
-            echo '=== runit log last 20 ===' && tail -20 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
+            sleep 20
+            echo '=== runit log ===' && tail -15 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
           "

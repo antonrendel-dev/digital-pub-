@@ -13,17 +13,6 @@ import { SiteSettings } from './payload/globals/siteSettings'
 import crypto from 'crypto'
 
 const payloadSecret = process.env.PAYLOAD_SECRET
-console.log(
-  '[Payload diag] PAYLOAD_SECRET defined:',
-  !!payloadSecret,
-  'len:',
-  payloadSecret?.length ?? 0
-)
-console.log('[Payload diag] CWD:', process.cwd())
-console.log(
-  '[Payload diag] env keys with PAYLOAD:',
-  Object.keys(process.env).filter((k) => k.includes('PAYLOAD'))
-)
 if (!payloadSecret || payloadSecret.length < 32) {
   throw new Error(
     '[Payload] PAYLOAD_SECRET env var is required and must be at least 32 characters. ' +
