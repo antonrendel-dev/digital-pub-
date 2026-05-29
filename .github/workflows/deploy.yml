@@ -154,10 +154,11 @@ jobs:
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
-            sleep 30
+            sleep 45
           "
 
       - name: Create sync user via REST API
+        continue-on-error: true
         run: |
           ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
           if [ -z "$ADMIN_PASSWORD" ]; then
@@ -165,16 +166,25 @@ jobs:
             exit 0
           fi
 
-          # Login as admin
-          LOGIN=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users/login \
-            -H 'Content-Type: application/json' \
-            -d "{\"email\":\"antonrendel@gmail.com\",\"password\":\"$ADMIN_PASSWORD\"}")
-          TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
+          # Wait for app to be ready (retry up to 5 times)
+          TOKEN=""
+          for i in 1 2 3 4 5; do
+            LOGIN=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users/login \
+              -H 'Content-Type: application/json' \
+              -d "{\"email\":\"antonrendel@gmail.com\",\"password\":\"$ADMIN_PASSWORD\"}")
+            TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
+            if [ -n "$TOKEN" ]; then
+              echo "Admin login OK (attempt $i)"
+              break
+            fi
+            echo "Attempt $i failed (${LOGIN:0:100}), retrying in 15s..."
+            sleep 15
+          done
+
           if [ -z "$TOKEN" ]; then
-            echo "Admin login failed: ${LOGIN:0:200}"
+            echo "Admin login failed after 5 attempts — skipping"
             exit 0
           fi
-          echo "Admin login OK"
 
           # Try to create sync user
           SYNC_RESP=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users \
