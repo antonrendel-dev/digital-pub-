@@ -108,15 +108,14 @@ jobs:
             echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
           "
 
-      - name: Diagnose runit service
+      - name: Diagnose env and server config
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            echo '=== app log (runit) ===' && cat ~/d-pub.ru/log/node-runlog/current 2>/dev/null | tail -50 || echo 'no current log'
-            echo '=== service run script ===' && find ~/service ~/supervise ~/d-pub.ru -maxdepth 3 -name 'run' 2>/dev/null -exec echo '--- {}' \; -exec cat {} \; 2>/dev/null || echo 'no run scripts found'
-            echo '=== ls ~/service ===' && ls ~/service/ 2>/dev/null || echo 'no ~/service dir'
-            echo '=== ls ~/supervise ===' && ls ~/supervise/ 2>/dev/null || echo 'no ~/supervise dir'
-            echo '=== svstat ===' && svstat ~/service/* 2>/dev/null || echo 'no svstat'
-            echo '=== all running processes ===' && ps aux 2>/dev/null | grep -v '\[' | grep -v sshd | grep -v bash | grep -v ps
+            echo '=== .env key names only ===' && grep -o '^[^=]*' ~/d-pub.ru/.env 2>/dev/null || echo 'no .env'
+            echo '=== .env file size ===' && wc -c ~/d-pub.ru/.env 2>/dev/null || echo 'no .env'
+            echo '=== server next.config.mjs ===' && cat ~/d-pub.ru/next.config.mjs 2>/dev/null || echo 'no next.config.mjs on server'
+            echo '=== app running env (proc) ===' && APP_PID=\$(pgrep -f 'next-server' 2>/dev/null | head -1) && [ -n \"\$APP_PID\" ] && tr '\0' '\n' < /proc/\$APP_PID/environ 2>/dev/null | grep -E 'PAYLOAD_SECRET|DATABASE_URL|DB_CONNECTION' | sed 's/=.*/=REDACTED/' || echo 'no next-server pid found or no proc access'
+            echo '=== ls app startup dir ===' && ls -la ~/d-pub.ru/ | head -20
           "
 
       - name: Restart app
