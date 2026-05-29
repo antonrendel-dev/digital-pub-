@@ -119,7 +119,7 @@ jobs:
             cd ~/d-pub.ru/app && [ -f node_modules/.bin/payload ] && \
               rm -f payload-migrations/*.ts && \
               PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs \
-              node node_modules/.bin/payload migrate || \
+              node --experimental-require-module node_modules/.bin/payload migrate || \
               echo 'Payload not installed, skipping migration'
           "
 
