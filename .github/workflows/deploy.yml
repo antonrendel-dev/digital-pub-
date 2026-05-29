@@ -61,11 +61,11 @@ jobs:
           npx esbuild scripts/seed.ts \
             --bundle=true \
             --platform=node \
-            --format=esm \
+            --format=cjs \
             --external:payload \
             --external:'@payloadcms/*' \
             --external:crypto \
-            --outfile=scripts/seed.compiled.mjs
+            --outfile=scripts/seed.compiled.js
           npx esbuild scripts/sync-telegram.ts \
             --bundle=true \
             --platform=node \
@@ -119,7 +119,7 @@ jobs:
       - name: Deploy scripts/
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/scripts"
-          rsync -avz scripts/seed.compiled.mjs scripts/sync-telegram.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/scripts/
+          rsync -avz scripts/seed.compiled.js scripts/sync-telegram.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/scripts/
 
       - name: Deploy package files and next.config
         run: rsync -avz package.json package-lock.json next.config.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
@@ -152,7 +152,7 @@ jobs:
             export ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
             cd ~/d-pub.ru/app && \
             PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs \
-            node --experimental-require-module scripts/seed.compiled.mjs 2>&1
+            node --experimental-require-module scripts/seed.compiled.js 2>&1
           " || true)
           echo "$SEED_OUTPUT"
           API_KEY=$(echo "$SEED_OUTPUT" | grep '\[seed\] PAYLOAD_API_KEY=' | head -1 | sed 's/.*PAYLOAD_API_KEY=//')
@@ -179,10 +179,13 @@ jobs:
           "
 
       - name: Run Telegram sync
+        if: ${{ secrets.BOT_TOKEN != '' }}
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            export BOT_TOKEN='${{ secrets.BOT_TOKEN }}'
+            export ADMIN_ID='${{ secrets.ADMIN_ID }}'
             cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
           " || echo 'Sync failed or skipped (non-critical)'
 
