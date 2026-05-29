@@ -144,6 +144,19 @@ jobs:
               echo 'Payload not installed, skipping migration'
           "
 
+      - name: Verify deploy
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/app/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
+          "
+
+      - name: Restart app
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
+            sleep 30
+          "
+
       - name: Create sync user via REST API
         run: |
           ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
@@ -153,7 +166,7 @@ jobs:
           fi
 
           # Login as admin
-          LOGIN=$(curl -s --max-time 15 -X POST https://d-pub.ru/api/users/login \
+          LOGIN=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users/login \
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"antonrendel@gmail.com\",\"password\":\"$ADMIN_PASSWORD\"}")
           TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
@@ -164,7 +177,7 @@ jobs:
           echo "Admin login OK"
 
           # Try to create sync user
-          SYNC_RESP=$(curl -s --max-time 15 -X POST https://d-pub.ru/api/users \
+          SYNC_RESP=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users \
             -H 'Content-Type: application/json' \
             -H "Authorization: Bearer $TOKEN" \
             -d "{\"email\":\"sync@d-pub.ru\",\"password\":\"$(openssl rand -hex 16)\",\"role\":\"sync\",\"enableAPIKey\":true}")
@@ -172,11 +185,11 @@ jobs:
 
           # If user already exists — fetch and regenerate key
           if [ -z "$API_KEY" ]; then
-            USERS=$(curl -s --max-time 15 "https://d-pub.ru/api/users?where[email][equals]=sync%40d-pub.ru" \
+            USERS=$(curl -s --max-time 20 "https://d-pub.ru/api/users?where[email][equals]=sync%40d-pub.ru" \
               -H "Authorization: Bearer $TOKEN")
             SYNC_ID=$(echo "$USERS" | python3 -c "import json,sys; docs=json.load(sys.stdin).get('docs',[]); print(docs[0]['id'] if docs else '')" 2>/dev/null)
             if [ -n "$SYNC_ID" ]; then
-              UPD=$(curl -s --max-time 15 -X PATCH "https://d-pub.ru/api/users/$SYNC_ID" \
+              UPD=$(curl -s --max-time 20 -X PATCH "https://d-pub.ru/api/users/$SYNC_ID" \
                 -H 'Content-Type: application/json' \
                 -H "Authorization: Bearer $TOKEN" \
                 -d '{"enableAPIKey":true}')
@@ -191,19 +204,6 @@ jobs:
           else
             echo "Could not get API key: ${SYNC_RESP:0:300}"
           fi
-
-      - name: Verify deploy
-        run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/app/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
-          "
-
-      - name: Restart app
-        run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
-            sleep 25
-          "
 
       - name: Run Telegram sync
         run: |
