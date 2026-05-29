@@ -44,6 +44,18 @@ jobs:
             --external:'next/*' \
             --outfile=payload.config.compiled.mjs
 
+      - name: Compile payload migrations to CJS
+        run: |
+          for f in payload-migrations/*.ts; do
+            [ -f "$f" ] || continue
+            out="${f%.ts}.js"
+            npx esbuild "$f" \
+              --bundle=false \
+              --platform=node \
+              --format=cjs \
+              --outfile="$out"
+          done
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -105,8 +117,9 @@ jobs:
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             cd ~/d-pub.ru/app && [ -f node_modules/.bin/payload ] && \
+              rm -f payload-migrations/*.ts && \
               PAYLOAD_CONFIG_PATH=./payload.config.compiled.mjs \
-              node --experimental-require-module node_modules/.bin/payload migrate || \
+              node node_modules/.bin/payload migrate || \
               echo 'Payload not installed, skipping migration'
           "
 
