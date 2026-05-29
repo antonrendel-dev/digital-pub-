@@ -108,18 +108,15 @@ jobs:
             echo '=== BUILD_ID deployed ===' && cat ~/d-pub.ru/.next/BUILD_ID 2>/dev/null || echo 'BUILD_ID not found'
           "
 
-      - name: Diagnose platform startup
+      - name: Diagnose runit service
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            echo '=== hello.js content ===' && cat ~/d-pub.ru/hello.js 2>/dev/null || echo 'no hello.js'
-            echo '=== Procfile ===' && cat ~/d-pub.ru/Procfile 2>/dev/null || echo 'no Procfile'
-            echo '=== .node-version ===' && cat ~/d-pub.ru/.node-version 2>/dev/null || echo 'no .node-version'
-            echo '=== running node processes ===' && ps aux 2>/dev/null | grep -i node | grep -v grep || echo 'no node processes'
-            echo '=== PATH ===' && echo \$PATH
-            echo '=== which node ===' && which node 2>/dev/null || echo 'no node in PATH'
-            echo '=== env node from nvm ===' && source ~/.nvm/nvm.sh 2>/dev/null && which node && node --version
-            echo '=== ls home/bin ===' && ls ~/bin/ 2>/dev/null || echo 'no ~/bin'
-            echo '=== app logs last 30 ===' && tail -30 ~/d-pub.ru/app.log 2>/dev/null || tail -30 ~/logs/app.log 2>/dev/null || echo 'no app.log found'
+            echo '=== app log (runit) ===' && cat ~/d-pub.ru/log/node-runlog/current 2>/dev/null | tail -50 || echo 'no current log'
+            echo '=== service run script ===' && find ~/service ~/supervise ~/d-pub.ru -maxdepth 3 -name 'run' 2>/dev/null -exec echo '--- {}' \; -exec cat {} \; 2>/dev/null || echo 'no run scripts found'
+            echo '=== ls ~/service ===' && ls ~/service/ 2>/dev/null || echo 'no ~/service dir'
+            echo '=== ls ~/supervise ===' && ls ~/supervise/ 2>/dev/null || echo 'no ~/supervise dir'
+            echo '=== svstat ===' && svstat ~/service/* 2>/dev/null || echo 'no svstat'
+            echo '=== all running processes ===' && ps aux 2>/dev/null | grep -v '\[' | grep -v sshd | grep -v bash | grep -v ps
           "
 
       - name: Restart app
