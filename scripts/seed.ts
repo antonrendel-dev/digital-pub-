@@ -12,7 +12,7 @@ async function seed() {
   // Create admin user if DB is empty
   const { totalDocs } = await payload.find({ collection: 'users', limit: 0 })
   if (totalDocs === 0) {
-    const adminEmail = process.env.ADMIN_EMAIL || 'antonrendel@gmail.com'
+    const adminEmail = process.env.ADMIN_EMAIL || 'in-ekb@mail.ru'
     const adminPassword = process.env.ADMIN_PASSWORD
     if (!adminPassword) {
       console.log('[seed] WARN: ADMIN_PASSWORD not set, skipping admin creation')

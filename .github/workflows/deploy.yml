@@ -171,7 +171,7 @@ jobs:
           for i in 1 2 3 4 5; do
             LOGIN=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users/login \
               -H 'Content-Type: application/json' \
-              -d "{\"email\":\"antonrendel@gmail.com\",\"password\":\"$ADMIN_PASSWORD\"}")
+              -d "{\"email\":\"in-ekb@mail.ru\",\"password\":\"$ADMIN_PASSWORD\"}")
             TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
             if [ -n "$TOKEN" ]; then
               echo "Admin login OK (attempt $i)"
