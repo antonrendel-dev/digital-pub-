@@ -110,13 +110,13 @@ export default async function ArticlesPage() {
                 <div className="flex flex-col md:flex-row md:items-start gap-4">
                   <div className="w-full md:w-48 h-32 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex-shrink-0 flex items-center justify-center text-blue-300 text-xs" />
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       {article.tags.length > 0 && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full">
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full whitespace-nowrap">
                           {article.tags[0]}
                         </span>
                       )}
-                      <span className="text-xs text-text-light">
+                      <span className="text-xs text-text-light whitespace-nowrap">
                         {article.publishedAt ? formatArticleDate(article.publishedAt) : ''}
                       </span>
                     </div>

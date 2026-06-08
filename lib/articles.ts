@@ -111,12 +111,14 @@ export type MergedArticle = {
   source: 'mdx' | 'payload'
 }
 
-/** Merge MDX and Payload articles and sort by publishedAt descending. Articles without a date go to the end. */
+/** Merge MDX and Payload articles, deduplicate by slug (MDX preferred), sort by publishedAt descending. */
 export function mergeAndSortArticles(
   mdxArticles: MergedArticle[],
   payloadArticles: MergedArticle[]
 ): MergedArticle[] {
-  return [...mdxArticles, ...payloadArticles].sort((a, b) => {
+  const mdxSlugs = new Set(mdxArticles.map((a) => a.slug))
+  const uniquePayload = payloadArticles.filter((a) => !mdxSlugs.has(a.slug))
+  return [...mdxArticles, ...uniquePayload].sort((a, b) => {
     if (!a.publishedAt && !b.publishedAt) return 0
     if (!a.publishedAt) return 1
     if (!b.publishedAt) return -1
