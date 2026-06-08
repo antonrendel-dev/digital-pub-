@@ -103,7 +103,7 @@ export default async function ArticlePage({ params }: Props) {
 
   const payloadArticle = await findPayloadArticle(slug)
 
-  if (payloadArticle) {
+  if (payloadArticle && payloadArticle.content) {
     const allArticles = getArticles()
     const related = allArticles.slice(0, 3)
     const relatedCategories = getRelatedCategoriesForArticle([])
