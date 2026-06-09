@@ -1,5 +1,11 @@
 import Link from 'next/link'
-import { cleanDescription, formatDateShort, getPrimaryCategorySlug, type FeedPost } from '@/lib/postUtils'
+import {
+  cleanDescription,
+  formatDateShort,
+  getPrimaryCategorySlug,
+  type FeedPost,
+} from '@/lib/postUtils'
+import { buildVacancyH1 } from '@/lib/vacancy-meta'
 import TagsSidebar, { TagData } from './TagsSidebar'
 
 function formatDateLong(iso: string): string {
@@ -18,14 +24,21 @@ interface PostDetailProps {
   allTags?: TagData[]
 }
 
-export default function PostDetail({ post, related, categorySlug, categoryName, allTags }: PostDetailProps) {
+export default function PostDetail({
+  post,
+  related,
+  categorySlug,
+  categoryName,
+  allTags,
+}: PostDetailProps) {
   const typeLabel = post.type === 'vacancy' ? 'Вакансия' : 'Резюме'
   const typeHref = post.type === 'vacancy' ? '/vacancies' : '/resumes'
 
   // Determine primary category for breadcrumb
   const primaryTag = post.tags?.find((t) => t.tagType === 'specialization') || post.tags?.[0]
   const effectiveCategorySlug = categorySlug || getPrimaryCategorySlug(post)
-  const effectiveCategoryName = categoryName || primaryTag?.name || (post.type === 'vacancy' ? 'Вакансии' : 'Резюме')
+  const effectiveCategoryName =
+    categoryName || primaryTag?.name || (post.type === 'vacancy' ? 'Вакансии' : 'Резюме')
 
   const tgLink =
     post.channelUsername && post.telegramMessageId
@@ -40,15 +53,23 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
     <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
-        <Link href="/" className="text-text-muted no-underline hover:text-accent transition-colors">Главная</Link>
+        <Link href="/" className="text-text-muted no-underline hover:text-accent transition-colors">
+          Главная
+        </Link>
         <span className="text-text-light">&rsaquo;</span>
-        <Link href={typeHref} className="text-text-muted no-underline hover:text-accent transition-colors">
+        <Link
+          href={typeHref}
+          className="text-text-muted no-underline hover:text-accent transition-colors"
+        >
           {post.type === 'vacancy' ? 'Вакансии' : 'Резюме'}
         </Link>
         {post.type === 'vacancy' && (
           <>
             <span className="text-text-light">&rsaquo;</span>
-            <Link href={`/vacancies/${effectiveCategorySlug}/`} className="text-text-muted no-underline hover:text-accent transition-colors">
+            <Link
+              href={`/vacancies/${effectiveCategorySlug}/`}
+              className="text-text-muted no-underline hover:text-accent transition-colors"
+            >
               {effectiveCategoryName}
             </Link>
           </>
@@ -65,11 +86,17 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
               {typeLabel}
             </span>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-text mb-3">{post.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-text mb-3">
+              {buildVacancyH1(post, categoryName)}
+            </h1>
 
             <div className="flex items-center gap-3 flex-wrap mb-3.5">
-              {post.company && <span className="text-sm font-semibold text-text">{post.company}</span>}
-              <span className="text-sm text-text-light ml-auto">{formatDateLong(post.createdAt)}</span>
+              {post.company && (
+                <span className="text-sm font-semibold text-text">{post.company}</span>
+              )}
+              <span className="text-sm text-text-light ml-auto">
+                {formatDateLong(post.createdAt)}
+              </span>
             </div>
 
             {post.salary && (
@@ -80,13 +107,19 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
 
             {post.imageUrl && (
               <div className="mb-4 rounded-lg overflow-hidden">
-                <img src={post.imageUrl} alt={post.title} className="w-full h-auto max-h-[300px] object-cover block" />
+                <img
+                  src={post.imageUrl}
+                  alt={post.title}
+                  className="w-full h-auto max-h-[300px] object-cover block"
+                />
               </div>
             )}
 
             <div className="text-sm leading-7 text-text-muted mb-7">
               {paragraphs.map((line, i) => (
-                <p key={i} className="mb-2.5 last:mb-0">{line}</p>
+                <p key={i} className="mb-2.5 last:mb-0">
+                  {line}
+                </p>
               ))}
             </div>
 
@@ -99,7 +132,19 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
                   className="inline-flex items-center justify-center bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-6 py-3 rounded-full no-underline transition-colors min-h-[44px]"
                 >
                   Откликнуться в Telegram
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  <svg
+                    className="w-4 h-4 ml-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
                 </a>
               ) : (
                 <button className="inline-flex items-center justify-center bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-6 py-3 rounded-full border-none cursor-pointer transition-colors min-h-[44px]">
@@ -177,7 +222,14 @@ export default function PostDetail({ post, related, categorySlug, categoryName, 
           <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4 text-center">
             <div className="text-sm font-semibold text-text mb-2">Вы работодатель?</div>
             <p className="text-xs text-text-muted mb-3">Разместите вакансию через нашего бота</p>
-            <a href="https://t.me/resume_vac_bot" target="_blank" rel="noopener noreferrer" className="inline-block bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-xs px-4 py-2 rounded-full transition no-underline">Разместить вакансию</a>
+            <a
+              href="https://t.me/resume_vac_bot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-xs px-4 py-2 rounded-full transition no-underline"
+            >
+              Разместить вакансию
+            </a>
           </div>
         </aside>
       </div>

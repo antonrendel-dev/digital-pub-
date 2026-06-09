@@ -62,27 +62,25 @@ export function buildVacancyTitle(post: PostForMeta): string {
   const format = slugs.map((s) => FORMAT_TAGS[s]).find(Boolean) ?? null
 
   const titleNorm = normalizeTitle(post.title)
-  const brand = '— Диджитал Паб'
 
-  // Build candidate with all parts
+  // Build candidate with all parts (brand appended by layout template)
   const parts = ['Вакансия']
   if (level) parts.push(level)
   parts.push(titleNorm)
   if (format) parts.push(format)
-  const full = parts.join(' ') + ' ' + brand
+  const full = parts.join(' ')
 
-  if (full.length <= 60) return full
+  if (full.length <= 45) return full
 
   // Drop level first, try again
-  const noLevel = ['Вакансия', titleNorm, format].filter(Boolean).join(' ') + ' ' + brand
-  if (noLevel.length <= 60) return noLevel
+  const noLevel = ['Вакансия', titleNorm, format].filter(Boolean).join(' ')
+  if (noLevel.length <= 45) return noLevel
 
   // Drop format too
-  const minimal = `Вакансия ${titleNorm} ${brand}`
-  if (minimal.length <= 60) return minimal
+  const minimal = `Вакансия ${titleNorm}`
+  if (minimal.length <= 45) return minimal
 
-  // Title itself is too long — truncate it
-  return truncate(`Вакансия ${titleNorm} ${brand}`, 60)
+  return truncate(`Вакансия ${titleNorm}`, 45)
 }
 
 export function buildVacancyDescription(post: PostForMeta): string {
@@ -121,10 +119,121 @@ export function buildVacancyDescription(post: PostForMeta): string {
   return truncate(desc, 155)
 }
 
+// ─── H1 builder ──────────────────────────────────────────────────────────────
+//
+// Rule: H1 must NOT duplicate <title> verbatim.
+//   <title> = "Вакансия [Level] {title} [format] — Диджитал Паб"  (SERP snippet)
+//   H1      = "[Level] {profession}[ — {format}][ · {salary}]"    (on-page header)
+//
+// Priority chain:
+//   P0 — post.title is human-readable (not a hashtag / all-caps slug)
+//        → "[Level] {cleanTitle}[ — {format}][ · {salary}]"
+//   P1 — post.title is raw/hashtag, but category tag is known
+//        → "[Level] {categoryName}-специалист[ — {format}][ · {salary}]"
+//   P2 — only categoryName from URL param is available
+//        → "Вакансия в {categoryName}[ — {format}][ · {salary}]"
+//   P3 — nothing usable
+//        → "Digital-вакансия"
+//
+// For resumes (post.type === 'resume') suffix changes:
+//   P0/P1 → "[Level] {profession} — резюме[ · {salary}]"
+//   P2    → "Резюме специалиста по {categoryName}"
+
+const RESUME_SUFFIX = '— резюме'
+
+/**
+ * Returns true when the raw Telegram title looks like a human-readable label
+ * rather than a hashtag or a slug (e.g. "SEO", "#МЕНЕДЖЕР", "TARGET_LEAD").
+ *
+ * Heuristics:
+ *  - strip leading "#"
+ *  - if only uppercase letters / digits / underscores / hyphens with no spaces → slug
+ *  - if fewer than 4 visible chars after stripping → too short, treat as slug
+ */
+function isHumanReadable(raw: string): boolean {
+  const cleaned = raw.replace(/^#+/, '').trim()
+  if (cleaned.length < 4) return false
+  // All-caps token without spaces → hashtag/slug pattern
+  if (/^[A-ZА-ЯЁ0-9_\-]+$/.test(cleaned)) return false
+  return true
+}
+
+function buildProfession(raw: string): string {
+  // Strip leading #, collapse whitespace, sentence-case
+  return raw
+    .replace(/^#+\s*/, '')
+    .replace(/[_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/^./, (c) => c.toUpperCase())
+}
+
+interface PostForH1 extends PostForMeta {
+  type?: 'vacancy' | 'resume'
+}
+
+export function buildVacancyH1(post: PostForH1, categoryName?: string | null): string {
+  const slugs = extractTagSlugs(post.tags)
+  const level = slugs.map((s) => LEVEL_TAGS[s]).find(Boolean) ?? null
+  const format = slugs.map((s) => FORMAT_TAGS[s]).find(Boolean) ?? null
+  const isResume = post.type === 'resume'
+
+  // ── P0: human-readable title ─────────────────────────────────────────────
+  if (isHumanReadable(post.title)) {
+    const profession = buildProfession(post.title)
+    const parts: string[] = []
+    if (level) parts.push(level)
+    parts.push(profession)
+
+    if (isResume) {
+      parts.push(RESUME_SUFFIX)
+      if (post.salary) parts.push(`· ${post.salary}`)
+    } else {
+      if (format) parts.push(`— ${format}`)
+      if (post.salary) parts.push(`· ${post.salary}`)
+    }
+
+    return parts.join(' ')
+  }
+
+  // ── P1: category from tags or categoryName param ─────────────────────────
+  const catFromTags = slugs.map((s) => CATEGORY_TAGS[s]).find(Boolean) ?? null
+  const catLabel = catFromTags ?? categoryName ?? null
+
+  if (catLabel) {
+    const base = `${catLabel}-специалист`
+    const parts: string[] = []
+    if (level) parts.push(level)
+    parts.push(base)
+
+    if (isResume) {
+      parts.push('ищет работу')
+      if (post.salary) parts.push(`· ${post.salary}`)
+    } else {
+      if (format) parts.push(`— ${format}`)
+      if (post.salary) parts.push(`· ${post.salary}`)
+    }
+
+    return parts.join(' ').replace(/^./, (c) => c.toUpperCase())
+  }
+
+  // ── P2: only categoryName from URL ───────────────────────────────────────
+  if (categoryName) {
+    if (isResume) return `Резюме специалиста по ${categoryName}`
+    const parts = [`Вакансия в ${categoryName}`]
+    if (format) parts.push(`— ${format}`)
+    if (post.salary) parts.push(`· ${post.salary}`)
+    return parts.join(' ')
+  }
+
+  // ── P3: fallback ─────────────────────────────────────────────────────────
+  return isResume ? 'Резюме специалиста' : 'Digital-вакансия'
+}
+
 export function buildResumeTitle(post: PostForMeta): string {
   const titleNorm = normalizeTitle(post.title)
-  const candidate = `Резюме: ${titleNorm} — Диджитал Паб`
-  return truncate(candidate, 60)
+  return truncate(`Резюме: ${titleNorm}`, 45)
 }
 
 export function buildResumeDescription(post: PostForMeta): string {
