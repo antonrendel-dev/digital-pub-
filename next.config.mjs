@@ -12,6 +12,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.telesco.pe',
       },
+      {
+        protocol: 'https',
+        hostname: 'd-pub.ru',
+      },
+      {
+        protocol: 'https',
+        hostname: 'staging.d-pub.ru',
+      },
     ],
   },
   async headers() {
