@@ -58,7 +58,7 @@ export default async function ArticlesPage() {
       publishedAt: a.publishedAt ?? null,
       tags: [],
       source: 'payload' as const,
-      imageUrl: a.imageUrl ?? undefined,
+      imageUrl: typeof a.image === 'object' && a.image?.url ? a.image.url : undefined,
     }))
   } catch {
     // Payload unavailable — show MDX only

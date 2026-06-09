@@ -160,12 +160,12 @@ export default async function ArticlePage({ params }: Props) {
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
             <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
-              {payloadArticle.imageUrl && (
+              {payloadArticle.image?.url && (
                 <Image
-                  src={payloadArticle.imageUrl}
+                  src={payloadArticle.image.url}
                   alt={payloadArticle.title}
-                  width={1200}
-                  height={1200}
+                  width={payloadArticle.image.width ?? 1200}
+                  height={payloadArticle.image.height ?? 1200}
                   className="w-full h-auto rounded-lg mb-5"
                 />
               )}

@@ -61,16 +61,11 @@ export const Articles: CollectionConfig = {
       },
     },
     {
-      name: 'imageUrl',
-      type: 'text',
-      validate: (val: string | null | undefined) => {
-        if (!val) return true
-        if (val.startsWith('http://')) return 'imageUrl должен использовать HTTPS, не HTTP'
-        if (/^javascript:/i.test(val)) return 'Недопустимый imageUrl'
-        return true
-      },
+      name: 'image',
+      type: 'upload',
+      relationTo: 'media',
       admin: {
-        description: 'URL изображения (HTTPS или локальный путь /images/...)',
+        description: 'Изображение статьи',
       },
     },
     {
