@@ -5,6 +5,12 @@ import { getTagBySlug, getTagsWithCounts } from '@/lib/tags'
 import PageShell from '@/components/PageShell'
 import PostDetail from '@/components/PostDetail'
 import JsonLd from '@/components/JsonLd'
+import {
+  buildVacancyTitle,
+  buildVacancyDescription,
+  buildResumeTitle,
+  buildResumeDescription,
+} from '@/lib/vacancy-meta'
 
 export const revalidate = 300 // ISR: refresh every 5 minutes
 
@@ -18,37 +24,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!post) return { title: 'Вакансия не найдена' }
 
   const isResume = post.type === 'resume'
-  const tagNames = (post.tags ?? [])
-    .slice(0, 2)
-    .map((t: { name: string }) => t.name)
-    .join(', ')
-
-  // Title (60 chars max before template adds " | Диджитал Паб")
-  let titleBase: string
-  if (isResume) {
-    titleBase = `Резюме: ${post.title}`
-    if (titleBase.length > 50) titleBase = titleBase.slice(0, 47) + '...'
-  } else {
-    titleBase = post.company ? `${post.title} — ${post.company}` : post.title
-    if (titleBase.length > 50)
-      titleBase = post.title.length > 50 ? post.title.slice(0, 47) + '...' : post.title
-  }
-
-  // Description (160 chars max)
-  let desc: string
-  if (isResume) {
-    desc = `Резюме: ${post.title}`
-    if (post.salary) desc += `. Зарплата: ${post.salary}`
-    if (tagNames) desc += `. ${tagNames}`
-    desc += '. Ищет работу в digital — Диджитал Паб'
-  } else {
-    desc = `Вакансия: ${post.title}`
-    if (post.company) desc += ` в ${post.company}`
-    if (post.salary) desc += `. Зарплата: ${post.salary}`
-    if (tagNames) desc += `. ${tagNames}`
-    desc += '. Актуальные digital-вакансии — Диджитал Паб'
-  }
-  if (desc.length > 160) desc = desc.slice(0, 157) + '...'
+  const titleBase = isResume ? buildResumeTitle(post) : buildVacancyTitle(post)
+  const desc = isResume ? buildResumeDescription(post) : buildVacancyDescription(post)
 
   const url = `https://d-pub.ru/vacancies/${category}/${slug}`
 
