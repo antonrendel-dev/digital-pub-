@@ -161,15 +161,13 @@ export default async function ArticlePage({ params }: Props) {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
             <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
               {payloadArticle.imageUrl && (
-                <div className="w-full h-64 rounded-lg overflow-hidden mb-5">
-                  <Image
-                    src={payloadArticle.imageUrl}
-                    alt={payloadArticle.title}
-                    width={800}
-                    height={400}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                <Image
+                  src={payloadArticle.imageUrl}
+                  alt={payloadArticle.title}
+                  width={1200}
+                  height={1200}
+                  className="w-full h-auto rounded-lg mb-5"
+                />
               )}
               <h1 className="text-2xl font-bold text-text tracking-tight leading-snug mb-3">
                 {payloadArticle.title}
@@ -296,15 +294,13 @@ export default async function ArticlePage({ params }: Props) {
           {/* Main */}
           <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
             {article.imageUrl && (
-              <div className="w-full h-64 rounded-lg overflow-hidden mb-5">
-                <Image
-                  src={article.imageUrl}
-                  alt={article.title}
-                  width={800}
-                  height={400}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <Image
+                src={article.imageUrl}
+                alt={article.title}
+                width={1200}
+                height={1200}
+                className="w-full h-auto rounded-lg mb-5"
+              />
             )}
             <h1 className="text-2xl font-bold text-text tracking-tight leading-snug mb-3">
               {article.title}
