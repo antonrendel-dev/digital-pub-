@@ -117,14 +117,20 @@ export type MergedArticle = {
   imageUrl?: string
 }
 
-/** Merge MDX and Payload articles, deduplicate by slug (Payload preferred), sort by publishedAt descending. */
+/** Merge MDX and Payload articles, deduplicate by slug (MDX preferred for content, Payload for image), sort by publishedAt descending. */
 export function mergeAndSortArticles(
   mdxArticles: MergedArticle[],
   payloadArticles: MergedArticle[]
 ): MergedArticle[] {
-  const payloadSlugs = new Set(payloadArticles.map((a) => a.slug))
-  const uniqueMdx = mdxArticles.filter((a) => !payloadSlugs.has(a.slug))
-  return [...payloadArticles, ...uniqueMdx].sort((a, b) => {
+  const payloadBySlug = new Map(payloadArticles.map((a) => [a.slug, a]))
+  // MDX articles enriched with Payload image if available
+  const enrichedMdx = mdxArticles.map((a) => {
+    const p = payloadBySlug.get(a.slug)
+    return p?.imageUrl ? { ...a, imageUrl: p.imageUrl } : a
+  })
+  const mdxSlugs = new Set(mdxArticles.map((a) => a.slug))
+  const uniquePayload = payloadArticles.filter((a) => !mdxSlugs.has(a.slug))
+  return [...enrichedMdx, ...uniquePayload].sort((a, b) => {
     if (!a.publishedAt && !b.publishedAt) return 0
     if (!a.publishedAt) return 1
     if (!b.publishedAt) return -1

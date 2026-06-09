@@ -104,7 +104,10 @@ export default async function ArticlePage({ params }: Props) {
 
   const payloadArticle = await findPayloadArticle(slug)
 
-  if (payloadArticle) {
+  // Extract Payload image regardless of whether Payload has content
+  const payloadImageUrl: string | null = payloadArticle?.image?.url ?? null
+
+  if (payloadArticle && payloadArticle.content) {
     const allArticles = getArticles()
     const related = allArticles.slice(0, 3)
     const relatedCategories = getRelatedCategoriesForArticle([])
@@ -293,9 +296,9 @@ export default async function ArticlePage({ params }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
           {/* Main */}
           <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
-            {article.imageUrl && (
+            {(payloadImageUrl ?? article.imageUrl) && (
               <Image
-                src={article.imageUrl}
+                src={(payloadImageUrl ?? article.imageUrl)!}
                 alt={article.title}
                 width={1200}
                 height={1200}
