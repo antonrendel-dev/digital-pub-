@@ -15,6 +15,7 @@ const frontmatterSchema = z.object({
   metaDescription: z.string().optional(),
   publishedAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
   tags: z.array(z.string()).optional().default([]),
+  imageUrl: z.string().optional(),
 })
 
 export interface Article {
@@ -26,6 +27,7 @@ export interface Article {
   publishedAt: string
   tags: string[]
   content: string
+  imageUrl?: string
 }
 
 export interface ArticleMeta {
@@ -36,6 +38,7 @@ export interface ArticleMeta {
   metaDescription?: string
   publishedAt: string
   tags: string[]
+  imageUrl?: string
 }
 
 /** Get all articles sorted by date (newest first) */
@@ -60,6 +63,7 @@ export function getArticles(): ArticleMeta[] {
         metaDescription: parsed.data.metaDescription,
         publishedAt: parsed.data.publishedAt,
         tags: parsed.data.tags,
+        imageUrl: parsed.data.imageUrl,
       })
     } catch {
       // Skip invalid files
@@ -99,6 +103,7 @@ export function getArticleBySlug(slug: string): Article | null {
     publishedAt: parsed.data.publishedAt,
     tags: parsed.data.tags,
     content,
+    imageUrl: parsed.data.imageUrl,
   }
 }
 
@@ -109,6 +114,7 @@ export type MergedArticle = {
   publishedAt: string | null
   tags: string[]
   source: 'mdx' | 'payload'
+  imageUrl?: string
 }
 
 /** Merge MDX and Payload articles, deduplicate by slug (MDX preferred), sort by publishedAt descending. */

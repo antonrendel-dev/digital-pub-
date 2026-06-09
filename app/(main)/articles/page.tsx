@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 import { getPayload } from 'payload'
 import config from '@payload-config'
@@ -35,6 +36,7 @@ export default async function ArticlesPage() {
     publishedAt: a.publishedAt ?? null,
     tags: a.tags ?? [],
     source: 'mdx' as const,
+    imageUrl: a.imageUrl,
   }))
 
   // Payload articles
@@ -56,6 +58,7 @@ export default async function ArticlesPage() {
       publishedAt: a.publishedAt ?? null,
       tags: [],
       source: 'payload' as const,
+      imageUrl: a.imageUrl ?? undefined,
     }))
   } catch {
     // Payload unavailable — show MDX only
@@ -108,7 +111,17 @@ export default async function ArticlesPage() {
                 className="block bg-bg-card border border-border rounded-xl p-6 no-underline hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
               >
                 <div className="flex flex-col md:flex-row md:items-start gap-4">
-                  <div className="w-full md:w-48 h-32 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex-shrink-0 flex items-center justify-center text-blue-300 text-xs" />
+                  <div className="w-full md:w-48 h-32 rounded-lg flex-shrink-0 overflow-hidden bg-gradient-to-br from-blue-100 to-blue-50">
+                    {article.imageUrl && (
+                      <Image
+                        src={article.imageUrl}
+                        alt={article.title}
+                        width={192}
+                        height={128}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       {article.tags.length > 0 && (

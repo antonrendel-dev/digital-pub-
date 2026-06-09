@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import remarkGfm from 'remark-gfm'
 import { getPayload } from 'payload'
@@ -159,6 +160,17 @@ export default async function ArticlePage({ params }: Props) {
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
             <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
+              {payloadArticle.imageUrl && (
+                <div className="w-full h-64 rounded-lg overflow-hidden mb-5">
+                  <Image
+                    src={payloadArticle.imageUrl}
+                    alt={payloadArticle.title}
+                    width={800}
+                    height={400}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
               <h1 className="text-2xl font-bold text-text tracking-tight leading-snug mb-3">
                 {payloadArticle.title}
               </h1>
@@ -283,6 +295,17 @@ export default async function ArticlePage({ params }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
           {/* Main */}
           <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
+            {article.imageUrl && (
+              <div className="w-full h-64 rounded-lg overflow-hidden mb-5">
+                <Image
+                  src={article.imageUrl}
+                  alt={article.title}
+                  width={800}
+                  height={400}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
             <h1 className="text-2xl font-bold text-text tracking-tight leading-snug mb-3">
               {article.title}
             </h1>
