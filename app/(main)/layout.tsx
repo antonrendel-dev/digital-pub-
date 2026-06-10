@@ -84,14 +84,7 @@ const websiteJsonLd = {
       '@type': 'ImageObject',
       url: `${SITE_URL}/logo.png`,
     },
-  },
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: `${SITE_URL}/vacancies?q={search_term_string}`,
-    },
-    'query-input': 'required name=search_term_string',
+    sameAs: ['https://t.me/+69rdOEDrfvgyMDMy', 'https://vk.com/digital_pub_vacancies'],
   },
 }
 

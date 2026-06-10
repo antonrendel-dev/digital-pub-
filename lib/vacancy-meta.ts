@@ -70,17 +70,17 @@ export function buildVacancyTitle(post: PostForMeta): string {
   if (format) parts.push(format)
   const full = parts.join(' ')
 
-  if (full.length <= 45) return full
+  if (full.length <= 53) return full
 
   // Drop level first, try again
   const noLevel = ['Вакансия', titleNorm, format].filter(Boolean).join(' ')
-  if (noLevel.length <= 45) return noLevel
+  if (noLevel.length <= 53) return noLevel
 
   // Drop format too
   const minimal = `Вакансия ${titleNorm}`
-  if (minimal.length <= 45) return minimal
+  if (minimal.length <= 53) return minimal
 
-  return truncate(`Вакансия ${titleNorm}`, 45)
+  return truncate(`Вакансия ${titleNorm}`, 53)
 }
 
 export function buildVacancyDescription(post: PostForMeta): string {
@@ -233,7 +233,7 @@ export function buildVacancyH1(post: PostForH1, categoryName?: string | null): s
 
 export function buildResumeTitle(post: PostForMeta): string {
   const titleNorm = normalizeTitle(post.title)
-  return truncate(`Резюме: ${titleNorm}`, 45)
+  return truncate(`Резюме: ${titleNorm}`, 53)
 }
 
 export function buildResumeDescription(post: PostForMeta): string {

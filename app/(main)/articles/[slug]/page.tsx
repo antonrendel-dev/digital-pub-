@@ -65,7 +65,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         url,
         type: 'article',
         publishedTime: payloadArticle.publishedAt,
+        modifiedTime: payloadArticle.updatedAt ?? payloadArticle.publishedAt,
         authors: ['Диджитал Паб'],
+        ...(payloadArticle.image?.url && {
+          images: [
+            {
+              url: payloadArticle.image.url,
+              width: payloadArticle.image.width ?? 1200,
+              height: payloadArticle.image.height ?? 630,
+              alt: title,
+            },
+          ],
+        }),
       },
       twitter: { card: 'summary_large_image', title, description },
     }
@@ -118,7 +129,7 @@ export default async function ArticlePage({ params }: Props) {
       headline: payloadArticle.title,
       description: payloadArticle.description ?? '',
       datePublished: payloadArticle.publishedAt,
-      dateModified: payloadArticle.publishedAt,
+      dateModified: payloadArticle.updatedAt ?? payloadArticle.publishedAt,
       author: { '@type': 'Organization', name: 'Диджитал Паб', url: 'https://d-pub.ru' },
       publisher: {
         '@type': 'Organization',
@@ -126,6 +137,14 @@ export default async function ArticlePage({ params }: Props) {
         logo: { '@type': 'ImageObject', url: 'https://d-pub.ru/logo.png' },
       },
       mainEntityOfPage: { '@type': 'WebPage', '@id': `https://d-pub.ru/articles/${slug}` },
+      ...(payloadArticle.image?.url && {
+        image: {
+          '@type': 'ImageObject',
+          url: payloadArticle.image.url,
+          width: payloadArticle.image.width ?? 1200,
+          height: payloadArticle.image.height ?? 630,
+        },
+      }),
     }
 
     const breadcrumbLd = {
@@ -231,6 +250,7 @@ export default async function ArticlePage({ params }: Props) {
   const relatedCategories = getRelatedCategoriesForArticle(article.tags)
 
   // Schema.org Article
+  const articleImageUrl = payloadImageUrl ?? article.imageUrl ?? null
   const articleLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -256,6 +276,9 @@ export default async function ArticlePage({ params }: Props) {
       '@id': `https://d-pub.ru/articles/${slug}`,
     },
     keywords: article.tags.join(', '),
+    ...(articleImageUrl && {
+      image: { '@type': 'ImageObject', url: articleImageUrl },
+    }),
   }
 
   // BreadcrumbList

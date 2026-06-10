@@ -40,6 +40,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
               width={44}
               height={44}
               className="rounded-lg"
+              priority
             />
             <div>
               <div className="text-lg font-semibold text-text logo-brand">

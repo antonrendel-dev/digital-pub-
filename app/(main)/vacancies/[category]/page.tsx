@@ -8,6 +8,7 @@ import VacancyGrid from '@/components/VacancyGrid'
 import TagsSidebar from '@/components/TagsSidebar'
 import JsonLd from '@/components/JsonLd'
 import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/components/RelatedArticles'
+import { sanitizeSeoHtml } from '@/lib/sanitize'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,7 +134,7 @@ export default async function CategoryPage({ params }: Props) {
                 {tag.seoText ? (
                   <div
                     className="prose prose-sm max-w-none text-text-muted [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-text [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold [&_strong]:text-text"
-                    dangerouslySetInnerHTML={{ __html: tag.seoText }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSeoHtml(tag.seoText) }}
                   />
                 ) : (
                   <p className="text-sm text-text-muted leading-relaxed">{tag.seoDescription}</p>

@@ -34,7 +34,10 @@ export default function ListingPage({
   const { isDark, toggleDark } = useTheme()
   const [searchQuery, setSearchQuery] = useState('')
 
-  const pageTitle = type === 'vacancy' ? 'Вакансии' : 'Резюме'
+  const pageTitle =
+    type === 'vacancy'
+      ? 'Вакансии маркетологов, дизайнеров, SMM и digital-специалистов'
+      : 'Резюме digital-специалистов: маркетинг, дизайн, SMM, аналитика'
   const basePath = type === 'vacancy' ? '/vacancies' : '/resumes'
 
   return (

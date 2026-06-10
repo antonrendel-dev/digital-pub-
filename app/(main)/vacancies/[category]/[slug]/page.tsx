@@ -69,6 +69,24 @@ export default async function VacancyPage({ params }: Props) {
         ? 'INPERSON'
         : undefined
 
+  // validThrough: 30 days after posting
+  const validThrough = new Date(
+    new Date(post.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000
+  ).toISOString()
+
+  // Infer employmentType from tags
+  const levelSlugs: Record<string, string> = {
+    junior: 'INTERN',
+    middle: 'FULL_TIME',
+    senior: 'FULL_TIME',
+  }
+  const employmentType = postTagSlugs.has('freelance')
+    ? 'CONTRACTOR'
+    : postTagSlugs.has('part-time')
+      ? 'PART_TIME'
+      : 'FULL_TIME'
+  void levelSlugs
+
   // Schema.org JobPosting
   const jobPostingLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -76,11 +94,24 @@ export default async function VacancyPage({ params }: Props) {
     title: post.title,
     description: post.description || post.title,
     datePosted: post.createdAt,
+    validThrough,
+    employmentType,
     ...(jobLocationType && { jobLocationType }),
+    ...(jobLocationType === 'TELECOMMUTE' && {
+      applicantLocationRequirements: { '@type': 'Country', name: 'RU' },
+    }),
     ...(post.company && {
       hiringOrganization: {
         '@type': 'Organization',
         name: post.company,
+        sameAs: `https://d-pub.ru/vacancies/${category}`,
+      },
+    }),
+    ...(!post.company && {
+      hiringOrganization: {
+        '@type': 'Organization',
+        name: 'Диджитал Паб',
+        sameAs: 'https://d-pub.ru',
       },
     }),
     ...(post.salary && {

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
+import { sanitizeSeoHtml } from '@/lib/sanitize'
 import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
 import JsonLd from '@/components/JsonLd'
@@ -158,7 +159,7 @@ export default async function TagPage({ params }: Props) {
           <div className="mt-8 pt-6 border-t border-border-light">
             <div
               className="prose prose-sm max-w-none text-text-muted [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-text [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold [&_strong]:text-text"
-              dangerouslySetInnerHTML={{ __html: tag.seoText }}
+              dangerouslySetInnerHTML={{ __html: sanitizeSeoHtml(tag.seoText) }}
             />
           </div>
         )}

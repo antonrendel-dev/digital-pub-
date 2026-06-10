@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   cleanDescription,
@@ -39,6 +40,15 @@ export default function PostDetail({
   const effectiveCategorySlug = categorySlug || getPrimaryCategorySlug(post)
   const effectiveCategoryName =
     categoryName || primaryTag?.name || (post.type === 'vacancy' ? 'Вакансии' : 'Резюме')
+
+  const postTagSlugs = new Set(post.tags?.map((t) => t.slug).filter(Boolean) ?? [])
+  const workFormat = postTagSlugs.has('udalyonka')
+    ? 'Удалённо'
+    : postTagSlugs.has('gibrid')
+      ? 'Гибрид'
+      : postTagSlugs.has('ofis')
+        ? 'В офисе'
+        : null
 
   const tgLink =
     post.channelUsername && post.telegramMessageId
@@ -107,10 +117,14 @@ export default function PostDetail({
 
             {post.imageUrl && (
               <div className="mb-4 rounded-lg overflow-hidden">
-                <img
+                <Image
                   src={post.imageUrl}
                   alt={post.title}
+                  width={800}
+                  height={400}
                   className="w-full h-auto max-h-[300px] object-cover block"
+                  loading="lazy"
+                  sizes="(max-width: 768px) 100vw, 800px"
                 />
               </div>
             )}
@@ -177,10 +191,12 @@ export default function PostDetail({
                   <span className="font-medium text-green-600">{post.salary}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm">
-                <span className="text-text-muted">Формат</span>
-                <span className="font-medium text-text">Удалённо</span>
-              </div>
+              {workFormat && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-muted">Формат</span>
+                  <span className="font-medium text-text">{workFormat}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-text-muted">Опубликовано</span>
                 <span className="font-medium text-text">{formatDateLong(post.createdAt)}</span>

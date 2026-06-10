@@ -10,6 +10,7 @@ export const Media: CollectionConfig = {
     // Files stored in public/uploads — served as /uploads/<filename> by Next.js static file handling
     staticDir: 'public/uploads',
     // Files are served at /uploads/<filename> via Next.js public directory static serving
+    mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'],
   },
   access: {
     read: () => true,

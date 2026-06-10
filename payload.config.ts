@@ -25,6 +25,11 @@ export default buildConfig({
     process.env.NEXT_PUBLIC_SERVER_URL ||
     (process.env.PAYLOAD_PUSH_DB === 'true' ? 'https://staging.d-pub.ru' : 'https://d-pub.ru'),
   secret: payloadSecret,
+  cors: [
+    'https://d-pub.ru',
+    'https://staging.d-pub.ru',
+    ...(process.env.NEXT_PUBLIC_SERVER_URL ? [process.env.NEXT_PUBLIC_SERVER_URL] : []),
+  ],
   editor: lexicalEditor({}),
   db: postgresAdapter({
     pool: {
