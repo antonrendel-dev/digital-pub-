@@ -10,6 +10,7 @@ import JsonLd from '@/components/JsonLd'
 import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/components/RelatedArticles'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { getCategoryFaq } from '@/lib/category-faq'
+import { TAG_H1 } from '@/lib/tagH1'
 
 export const revalidate = 300
 
@@ -123,7 +124,9 @@ export default async function CategoryPage({ params }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
           {/* Content */}
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">{tag.name}-вакансии</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">
+              {TAG_H1[category] ?? `${tag.name}-вакансии`}
+            </h1>
             <p className="text-text-muted mb-4">
               Актуальные вакансии в сфере {tag.name}: удалённая работа, фриланс, полная занятость
             </p>
