@@ -9,6 +9,7 @@ import TagsSidebar from '@/components/TagsSidebar'
 import JsonLd from '@/components/JsonLd'
 import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/components/RelatedArticles'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
+import { getCategoryFaq } from '@/lib/category-faq'
 
 export const revalidate = 300
 
@@ -55,6 +56,7 @@ export default async function CategoryPage({ params }: Props) {
     getTagsWithCounts(),
     getCategoryStats(category),
   ])
+  const faqItems = getCategoryFaq(category)
   const allArticles = getArticles()
   const relatedArticles = getRelatedArticlesForCategory(category, allArticles, 3)
 
@@ -85,10 +87,25 @@ export default async function CategoryPage({ params }: Props) {
     })),
   }
 
+  // FAQPage Schema
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  }
+
   return (
     <PageShell>
       <JsonLd data={breadcrumbLd} />
       <JsonLd data={itemListLd} />
+      <JsonLd data={faqLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-text-muted mb-6">
@@ -162,6 +179,31 @@ export default async function CategoryPage({ params }: Props) {
                 )}
               </article>
             )}
+
+            {/* FAQ block */}
+            <section className="mt-12 pt-8 border-t border-border">
+              <h2 className="text-xl font-bold text-text mb-6">
+                Часто задаваемые вопросы о вакансиях {tag.name}
+              </h2>
+              <div className="space-y-4">
+                {faqItems.map((item, i) => (
+                  <details
+                    key={i}
+                    className="group border border-border rounded-lg overflow-hidden"
+                  >
+                    <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer text-sm font-medium text-text hover:bg-surface transition-colors list-none">
+                      <span>{item.question}</span>
+                      <span className="text-text-muted shrink-0 group-open:rotate-180 transition-transform">
+                        ▾
+                      </span>
+                    </summary>
+                    <div className="px-4 pb-4 pt-2 text-sm text-text-muted leading-relaxed border-t border-border">
+                      {item.answer}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </section>
           </div>
 
           {/* Sidebar */}
