@@ -12,7 +12,7 @@ import {
 import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 300
 
 export const metadata: Metadata = {
   title: 'Карьера в digital: статьи для маркетологов и дизайнеров',

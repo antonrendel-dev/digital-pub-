@@ -4,7 +4,7 @@ import ListingPage from '@/components/ListingPage'
 import JsonLd from '@/components/JsonLd'
 import type { Metadata } from 'next'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 300
 
 const BASE_URL = 'https://d-pub.ru'
 const TITLE = 'Вакансии маркетолога, дизайнера, SMM, аналитика'

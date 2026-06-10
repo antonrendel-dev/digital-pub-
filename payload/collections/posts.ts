@@ -24,6 +24,8 @@ export const Posts: CollectionConfig = {
             }
           }
           revalidatePath('/vacancies', 'layout')
+          revalidatePath('/resumes', 'layout')
+          revalidatePath('/', 'layout')
         } catch {
           // no-op outside Next.js (e.g., payload CLI)
         }

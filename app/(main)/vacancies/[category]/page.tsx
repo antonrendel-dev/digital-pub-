@@ -10,7 +10,7 @@ import JsonLd from '@/components/JsonLd'
 import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/components/RelatedArticles'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 300
 
 interface Props {
   params: Promise<{ category: string }>
