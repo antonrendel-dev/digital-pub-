@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { getPostBySlug, getPostsByType } from '@/lib/posts'
-import { getTagBySlug, getTagsWithCounts } from '@/lib/tags'
+import { getTagBySlug, getTagsWithCounts, getCategoryStats } from '@/lib/tags'
+import { getRoleDescription } from '@/lib/role-description'
+import { getInterviewQuestions } from '@/lib/interview-questions'
 import PageShell from '@/components/PageShell'
 import PostDetail from '@/components/PostDetail'
 import JsonLd from '@/components/JsonLd'
@@ -53,14 +55,20 @@ export default async function VacancyPage({ params }: Props) {
   const post = await getPostBySlug(slug)
   if (!post) notFound()
 
-  const [tag, related, allTags] = await Promise.all([
+  const postTagSlugsArr = (post.tags?.map((pt) => pt.slug).filter(Boolean) ?? []) as string[]
+
+  const [tag, related, allTags, categoryStats] = await Promise.all([
     getTagBySlug(category),
     getPostsByType(post.type).then((posts) => posts.filter((p) => p.id !== post.id).slice(0, 5)),
     getTagsWithCounts(),
+    getCategoryStats(category),
   ])
 
+  const roleDescription = getRoleDescription(postTagSlugsArr)
+  const interviewQuestions = getInterviewQuestions(postTagSlugsArr)
+
   // Determine job location type from post tags
-  const postTagSlugs = new Set(post.tags?.map((pt) => pt.slug).filter(Boolean) ?? [])
+  const postTagSlugs = new Set(postTagSlugsArr)
   const jobLocationType = postTagSlugs.has('udalyonka')
     ? 'TELECOMMUTE'
     : postTagSlugs.has('gibrid')
@@ -157,6 +165,9 @@ export default async function VacancyPage({ params }: Props) {
         categorySlug={category}
         categoryName={tag?.name}
         allTags={allTags}
+        categoryStats={categoryStats}
+        roleDescription={roleDescription}
+        interviewQuestions={interviewQuestions}
       />
     </PageShell>
   )
