@@ -130,16 +130,16 @@ export default async function CategoryPage({ params }: Props) {
 
             {/* Category stats */}
             <div className="flex flex-wrap gap-3 mb-6">
-              <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-3 py-2 text-sm">
+              <div className="flex items-center gap-1.5 bg-bg-card border border-border rounded-lg px-3 py-2 text-sm">
                 <span className="text-text-muted">Всего вакансий:</span>
                 <strong className="text-text">{categoryStats.total}</strong>
               </div>
-              <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-3 py-2 text-sm">
+              <div className="flex items-center gap-1.5 bg-bg-card border border-border rounded-lg px-3 py-2 text-sm">
                 <span className="text-green-500 font-medium">+{categoryStats.newThisWeek}</span>
                 <span className="text-text-muted">за неделю</span>
               </div>
               {categoryStats.avgSalary && (
-                <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-3 py-2 text-sm">
+                <div className="flex items-center gap-1.5 bg-bg-card border border-border rounded-lg px-3 py-2 text-sm">
                   <span className="text-text-muted">Средняя зарплата:</span>
                   <strong className="text-text">{categoryStats.avgSalary}</strong>
                 </div>
@@ -191,7 +191,7 @@ export default async function CategoryPage({ params }: Props) {
                     key={i}
                     className="group border border-border rounded-lg overflow-hidden"
                   >
-                    <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer text-sm font-medium text-text hover:bg-surface transition-colors list-none">
+                    <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer text-sm font-medium text-text hover:bg-bg-card transition-colors list-none">
                       <span>{item.question}</span>
                       <span className="text-text-muted shrink-0 group-open:rotate-180 transition-transform">
                         ▾
