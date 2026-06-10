@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next'
 import { getArticles } from '@/lib/articles'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { getAllFilterCombinations } from '@/lib/spec-filter-meta'
 
 const BASE_URL = 'https://d-pub.ru'
 
@@ -134,5 +135,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return [...staticRoutes, ...tagRoutes, ...articleRoutes, ...postRoutes]
+  // Programmatic SEO filter pages: spec+format and spec+level combinations (72 pages)
+  const filterCombos = getAllFilterCombinations()
+  const filterUrls: MetadataRoute.Sitemap = filterCombos.map(({ category, slug }) => ({
+    url: `${BASE_URL}/vacancies/${category}/${slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }))
+
+  return [...staticRoutes, ...tagRoutes, ...articleRoutes, ...postRoutes, ...filterUrls]
 }

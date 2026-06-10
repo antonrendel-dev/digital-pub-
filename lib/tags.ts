@@ -138,6 +138,45 @@ export async function getPostsByTag(tagSlug: string) {
   }
 }
 
+export async function getPostsByTwoTags(tag1Slug: string, tag2Slug: string) {
+  const p1 = slugSchema.safeParse(tag1Slug)
+  const p2 = slugSchema.safeParse(tag2Slug)
+  if (!p1.success || !p2.success) return []
+
+  try {
+    const payload = await getPayload({ config })
+
+    const [r1, r2] = await Promise.all([
+      payload.find({ collection: 'tags', where: { slug: { equals: tag1Slug } }, limit: 1 }),
+      payload.find({ collection: 'tags', where: { slug: { equals: tag2Slug } }, limit: 1 }),
+    ])
+    if (!r1.docs.length || !r2.docs.length) return []
+    const id1 = (r1.docs[0] as any).id
+    const id2 = (r2.docs[0] as any).id
+
+    // Fetch by the first tag, filter in memory by second
+    const posts = await payload.find({
+      collection: 'posts',
+      where: {
+        status: { equals: 'published' },
+        description: { not_equals: null },
+        type: { equals: 'vacancy' },
+        tags: { in: [id1] },
+      },
+      limit: 200,
+      sort: '-createdAt',
+      depth: 1,
+    })
+
+    return (posts.docs as unknown as PayloadPost[])
+      .filter((p) => p.tags?.some((t) => t.id === id2))
+      .map(toFeedPost)
+  } catch (err) {
+    console.error('[tags] getPostsByTwoTags error:', err)
+    return []
+  }
+}
+
 export async function getStats() {
   try {
     const payload = await getPayload({ config })
