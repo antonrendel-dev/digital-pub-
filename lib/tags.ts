@@ -188,3 +188,76 @@ export async function getStats() {
     return { vacancyCount: 0, resumeCount: 0, companyCount: 0, newToday: 0 }
   }
 }
+
+export interface CategoryStats {
+  total: number
+  newThisWeek: number
+  avgSalary: string | null
+}
+
+export async function getCategoryStats(tagSlug: string): Promise<CategoryStats> {
+  const parsed = slugSchema.safeParse(tagSlug)
+  if (!parsed.success) return { total: 0, newThisWeek: 0, avgSalary: null }
+
+  try {
+    const payload = await getPayload({ config })
+
+    const tagResult = await payload.find({
+      collection: 'tags',
+      where: { slug: { equals: tagSlug } },
+      limit: 1,
+    })
+    if (!tagResult.docs.length) return { total: 0, newThisWeek: 0, avgSalary: null }
+    const tagId = (tagResult.docs[0] as any).id
+
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+
+    const [allPosts, newPosts] = await Promise.all([
+      payload.find({
+        collection: 'posts',
+        where: {
+          status: { equals: 'published' },
+          type: { equals: 'vacancy' },
+          tags: { in: [tagId] },
+        },
+        limit: 500,
+        depth: 0,
+      }),
+      payload.find({
+        collection: 'posts',
+        where: {
+          status: { equals: 'published' },
+          type: { equals: 'vacancy' },
+          tags: { in: [tagId] },
+          createdAt: { greater_than_equal: weekAgo.toISOString() },
+        },
+        limit: 0,
+      }),
+    ])
+
+    // Parse salary numbers from strings like "от 80 000 ₽", "80 000 – 120 000 ₽"
+    const salaries: number[] = (allPosts.docs as any[])
+      .map((p) => p.salary as string | null)
+      .filter(Boolean)
+      .flatMap((s) => {
+        const nums = s!.replace(/\s/g, '').match(/\d{4,7}/g)
+        return nums ? nums.map(Number) : []
+      })
+      .filter((n) => n >= 10000 && n <= 1000000)
+
+    let avgSalary: string | null = null
+    if (salaries.length >= 3) {
+      const avg = Math.round(salaries.reduce((a, b) => a + b, 0) / salaries.length / 1000) * 1000
+      avgSalary = avg.toLocaleString('ru-RU') + ' ₽'
+    }
+
+    return {
+      total: allPosts.totalDocs,
+      newThisWeek: newPosts.totalDocs,
+      avgSalary,
+    }
+  } catch {
+    return { total: 0, newThisWeek: 0, avgSalary: null }
+  }
+}

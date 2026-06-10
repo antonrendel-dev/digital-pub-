@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
+import { getTagBySlug, getPostsByTag, getTagsWithCounts, getCategoryStats } from '@/lib/tags'
 import { getArticles } from '@/lib/articles'
 import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
@@ -51,7 +51,10 @@ export default async function CategoryPage({ params }: Props) {
   if (!tag) notFound()
 
   const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
-  const allTags = await getTagsWithCounts()
+  const [allTags, categoryStats] = await Promise.all([
+    getTagsWithCounts(),
+    getCategoryStats(category),
+  ])
   const allArticles = getArticles()
   const relatedArticles = getRelatedArticlesForCategory(category, allArticles, 3)
 
@@ -104,9 +107,27 @@ export default async function CategoryPage({ params }: Props) {
           {/* Content */}
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">{tag.name}-вакансии</h1>
-            <p className="text-text-muted mb-6">
+            <p className="text-text-muted mb-4">
               Актуальные вакансии в сфере {tag.name}: удалённая работа, фриланс, полная занятость
             </p>
+
+            {/* Category stats */}
+            <div className="flex flex-wrap gap-3 mb-6">
+              <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-3 py-2 text-sm">
+                <span className="text-text-muted">Всего вакансий:</span>
+                <strong className="text-text">{categoryStats.total}</strong>
+              </div>
+              <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-3 py-2 text-sm">
+                <span className="text-green-500 font-medium">+{categoryStats.newThisWeek}</span>
+                <span className="text-text-muted">за неделю</span>
+              </div>
+              {categoryStats.avgSalary && (
+                <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-3 py-2 text-sm">
+                  <span className="text-text-muted">Средняя зарплата:</span>
+                  <strong className="text-text">{categoryStats.avgSalary}</strong>
+                </div>
+              )}
+            </div>
 
             {/* Tags block — mobile/tablet only (desktop: right sidebar) */}
             <div className="lg:hidden mb-6">
