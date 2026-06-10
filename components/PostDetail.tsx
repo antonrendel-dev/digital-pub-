@@ -7,6 +7,7 @@ import {
   type FeedPost,
 } from '@/lib/postUtils'
 import { buildVacancyH1 } from '@/lib/vacancy-meta'
+import { getVacancyContextBlock } from '@/lib/vacancy-context-block'
 import TagsSidebar, { TagData } from './TagsSidebar'
 
 function formatDateLong(iso: string): string {
@@ -42,6 +43,8 @@ export default function PostDetail({
     categoryName || primaryTag?.name || (post.type === 'vacancy' ? 'Вакансии' : 'Резюме')
 
   const postTagSlugs = new Set(post.tags?.map((t) => t.slug).filter(Boolean) ?? [])
+  const tagSlugArr = Array.from(postTagSlugs) as string[]
+  const contextBlock = post.type === 'vacancy' ? getVacancyContextBlock(tagSlugArr) : null
   const workFormat = postTagSlugs.has('udalyonka')
     ? 'Удалённо'
     : postTagSlugs.has('gibrid')
@@ -203,6 +206,21 @@ export default function PostDetail({
               </div>
             </div>
           </div>
+
+          {/* Context block: tips for applicant */}
+          {contextBlock && (
+            <div className="bg-bg-card border border-border rounded-xl p-5 transition-colors duration-200">
+              <h3 className="text-sm font-semibold text-text mb-3">{contextBlock.heading}</h3>
+              <ul className="space-y-2.5">
+                {contextBlock.tips.map((tip, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-text-muted leading-relaxed">
+                    <span className="text-accent shrink-0 mt-0.5">✓</span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Categories & Tags */}
           {allTags && <TagsSidebar tags={allTags} activeSlug={effectiveCategorySlug} />}
