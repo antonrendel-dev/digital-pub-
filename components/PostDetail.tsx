@@ -44,7 +44,16 @@ export default function PostDetail({
 
   const postTagSlugs = new Set(post.tags?.map((t) => t.slug).filter(Boolean) ?? [])
   const tagSlugArr = Array.from(postTagSlugs) as string[]
-  const contextBlock = post.type === 'vacancy' ? getVacancyContextBlock(tagSlugArr) : null
+  const contextBlock =
+    post.type === 'vacancy'
+      ? getVacancyContextBlock({
+          tagSlugs: tagSlugArr,
+          salary: post.salary,
+          company: post.company,
+          createdAt: post.createdAt,
+          description: post.description,
+        })
+      : null
   const workFormat = postTagSlugs.has('udalyonka')
     ? 'Удалённо'
     : postTagSlugs.has('gibrid')
@@ -209,12 +218,15 @@ export default function PostDetail({
 
           {/* Context block: tips for applicant */}
           {contextBlock && (
-            <div className="bg-bg-card border border-border rounded-xl p-5 transition-colors duration-200">
-              <h3 className="text-sm font-semibold text-text mb-3">{contextBlock.heading}</h3>
-              <ul className="space-y-2.5">
+            <div className="border-2 border-accent rounded-xl p-5 bg-bg-card shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg">💡</span>
+                <h3 className="text-sm font-bold text-text">{contextBlock.heading}</h3>
+              </div>
+              <ul className="space-y-3">
                 {contextBlock.tips.map((tip, i) => (
-                  <li key={i} className="flex gap-2 text-xs text-text-muted leading-relaxed">
-                    <span className="text-accent shrink-0 mt-0.5">✓</span>
+                  <li key={i} className="flex gap-2.5 text-xs text-text-muted leading-relaxed">
+                    <span className="text-accent font-bold shrink-0 mt-0.5">→</span>
                     <span>{tip}</span>
                   </li>
                 ))}
