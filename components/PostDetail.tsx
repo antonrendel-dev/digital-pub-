@@ -8,6 +8,8 @@ import {
 } from '@/lib/postUtils'
 import { buildVacancyH1 } from '@/lib/vacancy-meta'
 import { getVacancyContextBlock } from '@/lib/vacancy-context-block'
+import type { CategoryStats } from '@/lib/tags'
+import type { InterviewQuestion } from '@/lib/interview-questions'
 import TagsSidebar, { TagData } from './TagsSidebar'
 
 function formatDateLong(iso: string): string {
@@ -24,6 +26,9 @@ interface PostDetailProps {
   categorySlug?: string
   categoryName?: string
   allTags?: TagData[]
+  categoryStats?: CategoryStats
+  roleDescription?: string | null
+  interviewQuestions?: InterviewQuestion[]
 }
 
 export default function PostDetail({
@@ -32,6 +37,9 @@ export default function PostDetail({
   categorySlug,
   categoryName,
   allTags,
+  categoryStats,
+  roleDescription,
+  interviewQuestions,
 }: PostDetailProps) {
   const typeLabel = post.type === 'vacancy' ? 'Вакансия' : 'Резюме'
   const typeHref = post.type === 'vacancy' ? '/vacancies' : '/resumes'
@@ -185,6 +193,39 @@ export default function PostDetail({
               </Link>
             </div>
           </div>
+
+          {/* Role description */}
+          {roleDescription && post.type === 'vacancy' && (
+            <div className="bg-bg-card border border-border rounded-xl p-6 md:p-8 mt-4 transition-colors duration-200">
+              <h2 className="text-lg font-bold text-text mb-3">О роли {effectiveCategoryName}</h2>
+              <p className="text-sm leading-7 text-text-muted">{roleDescription}</p>
+            </div>
+          )}
+
+          {/* Interview questions */}
+          {interviewQuestions && interviewQuestions.length > 0 && post.type === 'vacancy' && (
+            <div className="bg-bg-card border border-border rounded-xl p-6 md:p-8 mt-4 transition-colors duration-200">
+              <h2 className="text-lg font-bold text-text mb-5">Вопросы на интервью</h2>
+              <div className="space-y-3">
+                {interviewQuestions.map((item, i) => (
+                  <details
+                    key={i}
+                    className="group border border-border rounded-lg overflow-hidden"
+                  >
+                    <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer text-sm font-medium text-text hover:bg-bg-card transition-colors list-none">
+                      <span>{item.question}</span>
+                      <span className="text-text-muted shrink-0 group-open:rotate-180 transition-transform">
+                        ▾
+                      </span>
+                    </summary>
+                    <div className="px-4 pb-4 pt-2 text-sm text-text-muted leading-relaxed border-t border-border">
+                      {item.answer}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          )}
         </main>
 
         {/* Sidebar */}
@@ -231,6 +272,29 @@ export default function PostDetail({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Market context: category stats */}
+          {categoryStats && post.type === 'vacancy' && (
+            <div className="bg-bg-card border border-border rounded-xl p-5 transition-colors duration-200">
+              <h3 className="text-sm font-semibold text-text mb-4">Рынок категории</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-muted">Всего вакансий</span>
+                  <span className="font-semibold text-text">{categoryStats.total}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-muted">Новых за неделю</span>
+                  <span className="font-semibold text-green-600">+{categoryStats.newThisWeek}</span>
+                </div>
+                {categoryStats.avgSalary && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-muted">Средняя зарплата</span>
+                    <span className="font-semibold text-text">{categoryStats.avgSalary}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
