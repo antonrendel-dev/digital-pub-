@@ -73,9 +73,9 @@ export function getSpecFilterH1(specSlug: string, filterSlug: string): string {
   const y = new Date().getFullYear()
   const gen = SPEC_GENITIVE[specSlug] ?? specSlug
   if (FORMAT_SLUGS.includes(filterSlug as FormatSlug)) {
-    if (filterSlug === 'udalyonka') return `Удалённые вакансии ${gen} — ${y}`
+    if (filterSlug === 'udalyonka') return `Вакансии ${gen} удалённо — ${y}`
     if (filterSlug === 'ofis') return `Вакансии ${gen} в офисе — ${y}`
-    return `Гибридные вакансии ${gen} — ${y}`
+    return `Вакансии ${gen} на гибриде — ${y}`
   }
   const level = LEVEL_LABELS[filterSlug] ?? filterSlug
   return `Вакансии ${gen} ${level} — ${y}`

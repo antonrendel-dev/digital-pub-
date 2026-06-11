@@ -158,23 +158,26 @@ export default async function CategoryPage({ params }: Props) {
 
             {/* Filter chips — only for specialization pages */}
             {SPEC_SLUGS.includes(category) && (
-              <div className="mb-6">
+              <div className="mb-6 p-4 bg-purple-50/60 border border-purple-100 rounded-xl dark:bg-purple-900/10 dark:border-purple-800/20">
+                <p className="text-xs font-semibold text-purple-500 uppercase tracking-wide mb-3 dark:text-purple-400">
+                  Уточнить поиск
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {FORMAT_SLUGS.map((f) => (
                     <Link
                       key={f}
                       href={`/vacancies/${category}/${f}`}
-                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm border border-border bg-bg-card text-text-muted hover:border-accent hover:text-text transition-colors no-underline"
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm border border-purple-200 bg-white text-purple-700 font-medium hover:bg-purple-100 hover:border-purple-300 transition-colors no-underline dark:bg-purple-900/20 dark:border-purple-700/40 dark:text-purple-300 dark:hover:bg-purple-800/30"
                     >
                       {FORMAT_CHIP_LABELS[f]}
                     </Link>
                   ))}
-                  <span className="w-px bg-border self-stretch mx-1" />
+                  <span className="w-px bg-purple-200 self-stretch mx-1 dark:bg-purple-700/40" />
                   {LEVEL_SLUGS.map((l) => (
                     <Link
                       key={l}
                       href={`/vacancies/${category}/${l}`}
-                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm border border-border bg-bg-card text-text-muted hover:border-accent hover:text-text transition-colors no-underline"
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm border border-purple-200 bg-white text-purple-700 font-medium hover:bg-purple-100 hover:border-purple-300 transition-colors no-underline dark:bg-purple-900/20 dark:border-purple-700/40 dark:text-purple-300 dark:hover:bg-purple-800/30"
                     >
                       {LEVEL_CHIP_LABELS[l]}
                     </Link>
