@@ -421,7 +421,7 @@ export async function savePost(
     })()
 
   const title = parseTitle(post.text)
-  const tagIds = resolveTagIds(matchTags(`${title} ${post.text}`), tagMap)
+  const tagIds = resolveTagIds(matchTags(title, post.text), tagMap)
 
   const body = {
     type: post.type,

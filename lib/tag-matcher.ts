@@ -11,7 +11,26 @@
  *   - word-boundary aware (Cyrillic-aware via punctuation/space check)
  *   - one match per tag (no duplicates in result)
  *   - returns tag slugs in TAG_KEYWORDS-iteration order
+ *   - SPECIALIZATION tags matched against title only (prevents body mentions
+ *     like "аналитика кампаний" from tagging a vacancy as analitika)
+ *   - FORMAT and LEVEL tags matched against full text
  */
+
+/** Slugs that represent the job specialization — matched against title only. */
+export const SPEC_TAG_SLUGS = new Set([
+  'smm',
+  'seo',
+  'dizajn',
+  'marketing',
+  'menedzher',
+  'target',
+  'razrabotka',
+  'analitika',
+  'finansy',
+  'kreativ',
+  'copywriting',
+  'content',
+])
 
 export const TAG_KEYWORDS: Record<string, string[]> = {
   smm: [
@@ -91,6 +110,7 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
   target: [
     'таргет',
     'таргетолог',
+    'директ',
     'директолог',
     'контекстная реклама',
     'яндекс директ',
@@ -159,27 +179,37 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
   senior: ['senior', 'сеньор', 'ведущий', 'lead'],
 }
 
-/** Match text against tag keywords using word boundary matching. */
-export function matchTags(text: string): string[] {
-  const lowerText = text.toLowerCase()
+const isBoundary = (ch: string) => /[\s\.,;:!?\-—–()\/\[\]{}«»"'#@\n\r]/.test(ch)
+
+function hasKeyword(text: string, keyword: string): boolean {
+  const lower = text.toLowerCase()
+  const kw = keyword.toLowerCase()
+  const idx = lower.indexOf(kw)
+  if (idx === -1) return false
+  const before = idx > 0 ? lower[idx - 1] : ' '
+  const after = idx + kw.length < lower.length ? lower[idx + kw.length] : ' '
+  return (idx === 0 || isBoundary(before)) && (idx + kw.length >= lower.length || isBoundary(after))
+}
+
+/**
+ * Match title + body against tag keywords.
+ *
+ * Specialization tags (smm, seo, dizajn, …) are matched against `title` only.
+ * Format/level tags (udalyonka, junior, …) are matched against the full text.
+ *
+ * Pass body as second argument. If omitted, title is treated as full text
+ * (legacy behaviour — safe for callers that already concatenate title+body).
+ */
+export function matchTags(title: string, body?: string): string[] {
+  const fullText = body !== undefined ? `${title} ${body}` : title
   const matched: string[] = []
 
   for (const [tagSlug, keywords] of Object.entries(TAG_KEYWORDS)) {
+    const searchIn = SPEC_TAG_SLUGS.has(tagSlug) ? title : fullText
     for (const keyword of keywords) {
-      const idx = lowerText.indexOf(keyword.toLowerCase())
-      if (idx === -1) continue
-
-      const before = idx > 0 ? lowerText[idx - 1] : ' '
-      const after = idx + keyword.length < lowerText.length ? lowerText[idx + keyword.length] : ' '
-
-      const isBoundary = (ch: string) => /[\s\.,;:!?\-—–()\/\[\]{}«»"'#@\n\r]/.test(ch)
-
-      if (
-        (idx === 0 || isBoundary(before)) &&
-        (idx + keyword.length >= lowerText.length || isBoundary(after))
-      ) {
+      if (hasKeyword(searchIn, keyword)) {
         matched.push(tagSlug)
-        break // Only match once per tag
+        break
       }
     }
   }
