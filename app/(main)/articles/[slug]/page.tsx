@@ -12,6 +12,7 @@ import JsonLd from '@/components/JsonLd'
 import {
   getRelatedCategoriesForArticle,
   RelatedCategoriesBlock,
+  RelatedArticlesBlock,
 } from '@/components/RelatedArticles'
 
 // Elements NOT in MDX_ALLOWED_ELEMENTS — blocked as defense-in-depth
@@ -350,7 +351,7 @@ export default async function ArticlePage({ params }: Props) {
             </div>
           </article>
 
-          {/* Sidebar */}
+          {/* Sidebar — desktop only */}
           <aside className="hidden lg:flex flex-col gap-4">
             {/* Cross-link: related vacancy categories */}
             <RelatedCategoriesBlock categories={relatedCategories} />
@@ -375,6 +376,12 @@ export default async function ArticlePage({ params }: Props) {
               </div>
             )}
           </aside>
+        </div>
+
+        {/* Mobile: internal links below article (hidden on desktop where sidebar is shown) */}
+        <div className="lg:hidden mt-6 space-y-4">
+          <RelatedCategoriesBlock categories={relatedCategories} />
+          <RelatedArticlesBlock articles={related} />
         </div>
       </div>
     </PageShellWrapper>

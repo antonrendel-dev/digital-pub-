@@ -1,5 +1,67 @@
 import Link from 'next/link'
 
+// Spec→spec internal cross-links (for category pages)
+const RELATED_SPEC_CATEGORIES: Record<string, string[]> = {
+  smm: ['content', 'marketing', 'target'],
+  seo: ['marketing', 'razrabotka', 'analitika'],
+  dizajn: ['razrabotka', 'marketing', 'content'],
+  marketing: ['smm', 'target', 'content'],
+  menedzher: ['marketing', 'analitika', 'razrabotka'],
+  target: ['smm', 'marketing', 'seo'],
+  razrabotka: ['seo', 'analitika', 'dizajn'],
+  analitika: ['seo', 'marketing', 'razrabotka'],
+  finansy: ['analitika', 'menedzher'],
+  kreativ: ['smm', 'content', 'dizajn'],
+  copywriting: ['content', 'smm', 'marketing'],
+  content: ['smm', 'copywriting', 'marketing'],
+}
+
+const SPEC_TAG_NAMES: Record<string, string> = {
+  smm: 'SMM',
+  seo: 'SEO',
+  dizajn: 'Дизайн',
+  marketing: 'Маркетинг',
+  menedzher: 'Менеджер',
+  target: 'Таргет',
+  razrabotka: 'Разработка',
+  analitika: 'Аналитика',
+  finansy: 'Финансы',
+  kreativ: 'Креатив',
+  copywriting: 'Копирайтинг',
+  content: 'Контент',
+}
+
+export function getRelatedSpecCategories(slug: string): { slug: string; name: string }[] {
+  return (RELATED_SPEC_CATEGORIES[slug] ?? []).map((s) => ({
+    slug: s,
+    name: SPEC_TAG_NAMES[s] ?? s,
+  }))
+}
+
+export function RelatedSpecCategoriesBlock({
+  categories,
+}: {
+  categories: { slug: string; name: string }[]
+}) {
+  if (categories.length === 0) return null
+  return (
+    <section className="mt-10 pt-8 border-t border-border">
+      <h2 className="text-base font-semibold text-text mb-4">Смотрите также</h2>
+      <div className="flex flex-wrap gap-2">
+        {categories.map((c) => (
+          <Link
+            key={c.slug}
+            href={`/vacancies/${c.slug}`}
+            className="px-4 py-2 rounded-full text-sm border border-border bg-bg-card text-text-muted no-underline hover:border-accent hover:text-text transition-all"
+          >
+            {c.name} вакансии
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 // Mapping from category slugs to article tag keywords for cross-linking
 const CATEGORY_TO_ARTICLE_TAGS: Record<string, string[]> = {
   smm: ['SMM', 'smm'],
@@ -31,16 +93,15 @@ interface Article {
 export function getRelatedArticlesForCategory(
   categorySlug: string,
   articles: Article[],
-  limit: number = 3,
+  limit: number = 3
 ): Article[] {
   const keywords = CATEGORY_TO_ARTICLE_TAGS[categorySlug] || []
   if (keywords.length === 0) return articles.slice(0, limit)
 
   const scored = articles.map((a) => {
     const score = a.tags.reduce(
-      (s, tag) =>
-        s + (keywords.some((k) => tag.toLowerCase().includes(k.toLowerCase())) ? 1 : 0),
-      0,
+      (s, tag) => s + (keywords.some((k) => tag.toLowerCase().includes(k.toLowerCase())) ? 1 : 0),
+      0
     )
     return { article: a, score }
   })
@@ -54,23 +115,34 @@ export function getRelatedArticlesForCategory(
 
 /** Reverse: find categories related to an article by its tags */
 export function getRelatedCategoriesForArticle(
-  articleTags: string[],
+  articleTags: string[]
 ): { slug: string; name: string }[] {
   const TAG_NAMES: Record<string, string> = {
-    smm: 'SMM', seo: 'SEO', dizajn: 'Дизайн', marketing: 'Маркетинг',
-    target: 'Таргет', razrabotka: 'Разработка', analitika: 'Аналитика',
-    hr: 'HR', udalyonka: 'Удалёнка', finansy: 'Финансы',
-    wordpress: 'WordPress', junior: 'Junior', middle: 'Middle',
-    senior: 'Senior', menedzher: 'Менеджер', ofis: 'Офис', gibrid: 'Гибрид',
+    smm: 'SMM',
+    seo: 'SEO',
+    dizajn: 'Дизайн',
+    marketing: 'Маркетинг',
+    target: 'Таргет',
+    razrabotka: 'Разработка',
+    analitika: 'Аналитика',
+    hr: 'HR',
+    udalyonka: 'Удалёнка',
+    finansy: 'Финансы',
+    wordpress: 'WordPress',
+    junior: 'Junior',
+    middle: 'Middle',
+    senior: 'Senior',
+    menedzher: 'Менеджер',
+    ofis: 'Офис',
+    gibrid: 'Гибрид',
   }
 
   const matches: { slug: string; name: string; score: number }[] = []
 
   for (const [slug, keywords] of Object.entries(CATEGORY_TO_ARTICLE_TAGS)) {
     const score = articleTags.reduce(
-      (s, tag) =>
-        s + (keywords.some((k) => tag.toLowerCase().includes(k.toLowerCase())) ? 1 : 0),
-      0,
+      (s, tag) => s + (keywords.some((k) => tag.toLowerCase().includes(k.toLowerCase())) ? 1 : 0),
+      0
     )
     if (score > 0) {
       matches.push({ slug, name: TAG_NAMES[slug] || slug, score })

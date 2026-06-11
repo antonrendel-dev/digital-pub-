@@ -7,7 +7,12 @@ import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
 import TagsSidebar from '@/components/TagsSidebar'
 import JsonLd from '@/components/JsonLd'
-import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/components/RelatedArticles'
+import {
+  getRelatedArticlesForCategory,
+  RelatedArticlesBlock,
+  getRelatedSpecCategories,
+  RelatedSpecCategoriesBlock,
+} from '@/components/RelatedArticles'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { getCategoryFaq } from '@/lib/category-faq'
 import { TAG_H1 } from '@/lib/tagH1'
@@ -67,6 +72,7 @@ export default async function CategoryPage({ params }: Props) {
   const faqItems = getCategoryFaq(category)
   const allArticles = getArticles()
   const relatedArticles = getRelatedArticlesForCategory(category, allArticles, 3)
+  const relatedSpecCategories = getRelatedSpecCategories(category)
 
   // BreadcrumbList Schema.org
   const breadcrumbLd = {
@@ -206,6 +212,13 @@ export default async function CategoryPage({ params }: Props) {
               <TagsSidebar tags={allTags} activeSlug={category} />
             </div>
 
+            {/* Related articles — mobile/tablet only (desktop sees sidebar) */}
+            {relatedArticles.length > 0 && (
+              <div className="lg:hidden mt-4">
+                <RelatedArticlesBlock articles={relatedArticles} />
+              </div>
+            )}
+
             {/* SEO text */}
             {(tag.seoText || tag.seoDescription) && (
               <article className="mt-12 pt-8 border-t border-border">
@@ -219,6 +232,9 @@ export default async function CategoryPage({ params }: Props) {
                 )}
               </article>
             )}
+
+            {/* Spec→spec cross-links */}
+            <RelatedSpecCategoriesBlock categories={relatedSpecCategories} />
 
             {/* FAQ block */}
             <section className="mt-12 pt-8 border-t border-border">
