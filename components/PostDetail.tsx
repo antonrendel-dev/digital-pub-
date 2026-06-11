@@ -143,7 +143,7 @@ export default function PostDetail({
                   width={800}
                   height={400}
                   className="w-full h-auto max-h-[300px] object-cover block"
-                  loading="lazy"
+                  priority
                   sizes="(max-width: 768px) 100vw, 800px"
                 />
               </div>
