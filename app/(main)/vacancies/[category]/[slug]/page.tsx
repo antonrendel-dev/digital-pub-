@@ -25,6 +25,7 @@ import {
   getSpecNominative,
   getAllFilterCombinations,
 } from '@/lib/spec-filter-meta'
+import { getSpecFilterSeo } from '@/lib/spec-filter-seo'
 
 export const revalidate = 300 // ISR: refresh every 5 minutes
 
@@ -91,6 +92,7 @@ export default async function VacancyPage({ params }: Props) {
     const h1 = getSpecFilterH1(category, slug)
     const specName = getSpecNominative(category)
     const breadcrumbLabel = getSpecFilterBreadcrumb(category, slug)
+    const seoContent = getSpecFilterSeo(category, slug)
 
     const breadcrumbLd = {
       '@context': 'https://schema.org',
@@ -108,9 +110,22 @@ export default async function VacancyPage({ params }: Props) {
       ],
     }
 
+    const faqLd = seoContent?.faqItems?.length
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: seoContent.faqItems.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: { '@type': 'Answer', text: item.answer },
+          })),
+        }
+      : null
+
     return (
       <PageShell>
         <JsonLd data={breadcrumbLd} />
+        {faqLd && <JsonLd data={faqLd} />}
         <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-text-muted mb-6 flex-wrap">
@@ -156,6 +171,41 @@ export default async function VacancyPage({ params }: Props) {
                 </div>
               ) : (
                 <VacancyGrid posts={posts} />
+              )}
+
+              {/* SEO text */}
+              {seoContent?.seoText && (
+                <article className="mt-12 pt-8 border-t border-border">
+                  <div
+                    className="prose prose-sm max-w-none text-text-muted [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold [&_strong]:text-text"
+                    dangerouslySetInnerHTML={{ __html: seoContent.seoText }}
+                  />
+                </article>
+              )}
+
+              {/* FAQ accordion */}
+              {seoContent?.faqItems && seoContent.faqItems.length > 0 && (
+                <section className="mt-12 pt-8 border-t border-border">
+                  <h2 className="text-xl font-bold text-text mb-6">Частые вопросы</h2>
+                  <div className="space-y-3">
+                    {seoContent.faqItems.map((item, i) => (
+                      <details
+                        key={i}
+                        className="group border border-border rounded-lg overflow-hidden"
+                      >
+                        <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer text-sm font-medium text-text hover:bg-bg-card transition-colors list-none">
+                          <span>{item.question}</span>
+                          <span className="text-text-muted shrink-0 group-open:rotate-180 transition-transform">
+                            ▾
+                          </span>
+                        </summary>
+                        <div className="px-4 pb-4 pt-2 text-sm text-text-muted leading-relaxed border-t border-border">
+                          {item.answer}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </section>
               )}
             </div>
 
