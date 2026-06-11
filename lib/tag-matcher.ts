@@ -50,6 +50,8 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
     'рилсмейкер',
     'рилсы',
     'reels',
+    'вконтакте',
+    'телеграм',
   ],
   seo: [
     'seo',
@@ -93,6 +95,7 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
     'growth',
   ],
   menedzher: [
+    'менеджер',
     'проджект',
     'project manager',
     'product manager',
@@ -101,11 +104,13 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
     'продакт менеджер',
     'тим лид',
     'team lead',
+    'team_lead',
     'руководитель проект',
     'руководитель отдел',
     'amocrm',
     'bitrix24',
     'битрикс24',
+    'crm',
   ],
   target: [
     'таргет',

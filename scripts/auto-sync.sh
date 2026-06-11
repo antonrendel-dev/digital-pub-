@@ -26,5 +26,10 @@ echo "=== Rsync images to NetAngels ===" >> "$LOG_FILE"
   "$PROJECT_DIR/public/images/posts/" \
   "$NETANGELS_IMAGES" >> "$LOG_FILE" 2>&1
 
+echo "=== Clear Next.js image optimizer cache on NetAngels ===" >> "$LOG_FILE"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=accept-new \
+  c48127@91.201.52.231 \
+  "rm -rf ~/d-pub.ru/app/.next/cache/images/ && mkdir -p ~/d-pub.ru/app/.next/cache/images/" >> "$LOG_FILE" 2>&1
+
 echo "=== Done: $(date) ===" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"

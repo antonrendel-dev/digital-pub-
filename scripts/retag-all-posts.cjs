@@ -13,11 +13,11 @@ const DRY_RUN = process.argv.includes('--dry-run')
 // ─── Tag keywords (kept in sync with lib/tag-matcher.ts) ──────────────────────
 
 const TAG_KEYWORDS = {
-  smm: ['smm', 'смм', 'соцсети', 'social media', 'инстаграм', 'instagram', 'smm менеджер', 'смм менеджер', 'smm-менеджер', 'смм-менеджер', 'сммщик', 'риллс', 'риллсмейкер', 'рилсмейкер', 'рилсы', 'reels'],
+  smm: ['smm', 'смм', 'соцсети', 'social media', 'инстаграм', 'instagram', 'smm менеджер', 'смм менеджер', 'smm-менеджер', 'смм-менеджер', 'сммщик', 'риллс', 'риллсмейкер', 'рилсмейкер', 'рилсы', 'reels', 'вконтакте', 'телеграм'],
   seo: ['seo', 'сео специалист', 'поисковая оптимизация', 'продвижение сайт', 'семантическое ядро', 'wordstat', 'вордстат', 'seo-специалист', 'seo специалист'],
   dizajn: ['дизайн', 'дизайнер', 'designer', 'figma', 'фигма', 'ui/ux', 'ui ux', 'ux/ui', 'тильда', 'tilda', 'adobe', 'иллюстратор', 'illustrator', 'photoshop', 'фотошоп', 'motion', 'моушн'],
   marketing: ['маркетинг', 'маркетолог', 'performance маркетинг', 'performance marketing', 'контент-маркетинг', 'интернет-маркетинг', 'digital маркетинг', 'бренд-менеджер', 'growth'],
-  menedzher: ['проджект', 'project manager', 'product manager', 'менеджер проект', 'менеджер продукт', 'продакт менеджер', 'тим лид', 'team lead', 'руководитель проект', 'руководитель отдел', 'amocrm', 'bitrix24', 'битрикс24'],
+  menedzher: ['менеджер', 'проджект', 'project manager', 'product manager', 'менеджер проект', 'менеджер продукт', 'продакт менеджер', 'тим лид', 'team lead', 'team_lead', 'руководитель проект', 'руководитель отдел', 'amocrm', 'bitrix24', 'битрикс24', 'crm'],
   target: ['таргет', 'таргетолог', 'директ', 'директолог', 'контекстная реклама', 'яндекс директ', 'yandex direct', 'яндекс.директ', 'vk ads', 'вк реклама', 'mytarget', 'my target', 'ppc специалист', 'контекст специалист'],
   razrabotka: ['разработчик', 'программист', 'прогер', 'developer', 'frontend', 'backend', 'фулстек', 'react', 'python', 'javascript', 'битрикс', 'битрикс24', 'wordpress', 'вордпресс', 'верстальщик', 'верстка', 'opencart', 'open cart', 'joomla'],
   analitika: ['аналитик', 'аналитика', 'analytics', 'data analyst', 'bi'],
