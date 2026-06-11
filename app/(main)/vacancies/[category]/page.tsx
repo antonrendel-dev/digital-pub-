@@ -186,11 +186,6 @@ export default async function CategoryPage({ params }: Props) {
               </div>
             )}
 
-            {/* Tags block — mobile/tablet only (desktop: right sidebar) */}
-            <div className="lg:hidden mb-6">
-              <TagsSidebar tags={allTags} activeSlug={category} />
-            </div>
-
             {/* Count */}
             <div className="flex items-center justify-between mb-5">
               <span className="text-sm text-text-muted">
@@ -205,6 +200,11 @@ export default async function CategoryPage({ params }: Props) {
             ) : (
               <VacancyGrid posts={posts} />
             )}
+
+            {/* Tags block — mobile/tablet only, after listing so it doesn't crowd filter chips */}
+            <div className="lg:hidden mt-6">
+              <TagsSidebar tags={allTags} activeSlug={category} />
+            </div>
 
             {/* SEO text */}
             {(tag.seoText || tag.seoDescription) && (

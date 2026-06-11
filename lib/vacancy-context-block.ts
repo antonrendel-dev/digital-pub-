@@ -157,7 +157,7 @@ export function getVacancyContextBlock(input: VacancyContextInput): ContextBlock
   const intro = buildIntro(input, specSlug)
 
   return {
-    heading: 'Как получить эту вакансию',
+    heading: 'Полезные советы по вакансии',
     tips: intro ? [intro, ...tips] : tips,
   }
 }

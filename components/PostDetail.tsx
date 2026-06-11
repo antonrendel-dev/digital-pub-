@@ -105,7 +105,7 @@ export default function PostDetail({
           </>
         )}
         <span className="text-text-light">&rsaquo;</span>
-        <span className="text-text-light truncate">{post.title}</span>
+        <span className="text-text-light truncate">{buildVacancyH1(post, categoryName)}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
