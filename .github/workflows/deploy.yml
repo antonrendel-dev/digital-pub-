@@ -145,6 +145,7 @@ jobs:
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
+            cd ~/d-pub.ru/app && npm rebuild sharp --verbose 2>&1 | tail -5 || true
           "
 
       - name: Run payload migrate
@@ -287,6 +288,15 @@ jobs:
               cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
             " || echo 'Sync failed (non-critical)'
           fi
+
+      - name: Clear Next.js image cache
+        continue-on-error: true
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            rm -rf ~/d-pub.ru/app/.next/cache/images/
+            mkdir -p ~/d-pub.ru/app/.next/cache/images/
+            echo 'Image cache cleared'
+          "
 
       - name: Smoke test + capture errors
         run: |
