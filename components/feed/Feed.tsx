@@ -1,66 +1,37 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { FeedPost } from '@/lib/posts'
 import { FILTER_CHIPS } from '@/lib/config'
 import JobCard from './JobCard'
 
 const PAGE_SIZE = 10
 
+const CHIP_SLUGS: Record<string, string> = {
+  Удалёнка: 'udalyonka',
+  SMM: 'smm',
+  SEO: 'seo',
+  Дизайн: 'dizajn',
+  Маркетинг: 'marketing',
+  Менеджер: 'menedzher',
+  Таргет: 'target',
+}
+
 interface FeedProps {
   posts: FeedPost[]
   searchQuery: string
-  externalTag?: string
-  onExternalTagConsumed: () => void
   pageTitle?: string
   stats?: { vacancyCount: number; resumeCount: number }
 }
 
-export default function Feed({
-  posts,
-  searchQuery,
-  externalTag,
-  onExternalTagConsumed,
-  pageTitle,
-  stats,
-}: FeedProps) {
-  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set())
+export default function Feed({ posts, searchQuery, pageTitle, stats }: FeedProps) {
   const [visible, setVisible] = useState(PAGE_SIZE)
 
   useEffect(() => {
-    if (externalTag && !activeFilters.has(externalTag)) {
-      setActiveFilters((prev) => new Set([...prev, externalTag]))
-      setVisible(PAGE_SIZE)
-      onExternalTagConsumed()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalTag])
-
-  const toggleChip = useCallback((tag: string) => {
-    setActiveFilters((prev) => {
-      const next = new Set(prev)
-      if (next.has(tag)) next.delete(tag)
-      else next.add(tag)
-      return next
-    })
     setVisible(PAGE_SIZE)
-  }, [])
+  }, [searchQuery])
 
-  const removeFilter = useCallback((tag: string) => {
-    setActiveFilters((prev) => {
-      const next = new Set(prev)
-      next.delete(tag)
-      return next
-    })
-    setVisible(PAGE_SIZE)
-  }, [])
-
-  const clearAll = useCallback(() => {
-    setActiveFilters(new Set())
-    setVisible(PAGE_SIZE)
-  }, [])
-
-  // Search + filter
   let filtered = posts
 
   if (searchQuery) {
@@ -68,23 +39,6 @@ export default function Feed({
     filtered = filtered.filter((p) => {
       const haystack = [p.title, p.description, p.company].filter(Boolean).join(' ').toLowerCase()
       return words.every((word) => haystack.includes(word))
-    })
-  }
-
-  if (activeFilters.size > 0) {
-    filtered = filtered.filter((p) => {
-      // Try tag-based filtering first
-      if (p.tags && p.tags.length > 0) {
-        return [...activeFilters].some((f) =>
-          p.tags.some((tag) => tag.name.toLowerCase() === f.toLowerCase())
-        )
-      }
-      // Fallback to text-based
-      return [...activeFilters].some(
-        (f) =>
-          p.title.toLowerCase().includes(f.toLowerCase()) ||
-          (p.description?.toLowerCase().includes(f.toLowerCase()) ?? false)
-      )
     })
   }
 
@@ -103,47 +57,22 @@ export default function Feed({
             ? `${sorted.length} результатов`
             : pageTitle
               ? `${sorted.length} объявлений`
-              : `${stats?.vacancyCount ?? vacancies.length} вакансий \u00B7 ${stats?.resumeCount ?? resumes.length} резюме`}
+              : `${stats?.vacancyCount ?? vacancies.length} вакансий · ${stats?.resumeCount ?? resumes.length} резюме`}
         </span>
       </div>
 
-      {/* Filter chips */}
+      {/* Filter chips — navigate to category pages */}
       <div className="flex flex-wrap gap-2 mb-4">
         {FILTER_CHIPS.map((chip) => (
-          <button
+          <Link
             key={chip}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer select-none ${
-              activeFilters.has(chip)
-                ? 'bg-accent text-accent-text border border-accent'
-                : 'bg-bg-card text-text-muted border border-border hover:border-text-light hover:text-text'
-            }`}
-            onClick={() => toggleChip(chip)}
+            href={`/vacancies/${CHIP_SLUGS[chip] ?? chip.toLowerCase()}`}
+            className="px-3.5 py-1.5 rounded-full text-sm font-medium transition-all bg-bg-card text-text-muted border border-border hover:border-text-light hover:text-text no-underline"
           >
             {chip}
-          </button>
+          </Link>
         ))}
       </div>
-
-      {/* Active filter pills */}
-      {activeFilters.size > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3 items-center">
-          {[...activeFilters].map((f) => (
-            <span
-              key={f}
-              className="text-xs px-2.5 py-1 rounded-full bg-accent text-accent-text cursor-pointer flex items-center gap-1 font-semibold hover:bg-accent-hover"
-              onClick={() => removeFilter(f)}
-            >
-              {f} &times;
-            </span>
-          ))}
-          <button
-            className="text-xs text-text-light cursor-pointer underline ml-0.5 bg-transparent border-none"
-            onClick={clearAll}
-          >
-            Сбросить все
-          </button>
-        </div>
-      )}
 
       {/* Posts */}
       {sorted.length === 0 ? (

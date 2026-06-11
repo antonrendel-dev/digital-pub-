@@ -56,12 +56,7 @@ export default function ListingPage({
                   <TagsSidebar tags={tags} />
                 </div>
               )}
-              <Feed
-                posts={posts}
-                searchQuery={searchQuery}
-                onExternalTagConsumed={() => {}}
-                pageTitle={pageTitle}
-              />
+              <Feed posts={posts} searchQuery={searchQuery} pageTitle={pageTitle} />
 
               {/* Server-side pagination */}
               {totalPages > 1 && (

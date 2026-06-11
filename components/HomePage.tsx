@@ -41,12 +41,7 @@ export default function HomePage({ posts, stats, articles, tags, seoHtml }: Home
             <aside className="hidden lg:block">
               <LeftSidebar stats={stats} />
             </aside>
-            <Feed
-              posts={posts}
-              searchQuery={searchQuery}
-              onExternalTagConsumed={() => {}}
-              stats={stats}
-            />
+            <Feed posts={posts} searchQuery={searchQuery} stats={stats} />
             <aside className="hidden lg:block">
               <RightSidebar tags={tags} articles={articles} />
             </aside>
