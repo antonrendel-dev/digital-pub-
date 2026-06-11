@@ -78,6 +78,12 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
             >
               Статьи
             </Link>
+            <Link
+              href="/about"
+              className="text-sm font-medium text-text-muted hover:text-text transition-colors"
+            >
+              О сервисе
+            </Link>
           </div>
 
           {/* Right: Search + Buttons */}
@@ -229,6 +235,13 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
               onClick={() => setMenuOpen(false)}
             >
               Статьи
+            </Link>
+            <Link
+              href="/about"
+              className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors"
+              onClick={() => setMenuOpen(false)}
+            >
+              О сервисе
             </Link>
             <div className="pt-3 border-t border-border mt-3">
               <a

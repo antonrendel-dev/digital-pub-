@@ -106,7 +106,7 @@ export default async function VacancyPage({ params }: Props) {
           name: specName,
           item: `https://d-pub.ru/vacancies/${category}`,
         },
-        { '@type': 'ListItem', position: 4, name: breadcrumbLabel },
+        { '@type': 'ListItem', position: 4, name: h1 },
       ],
     }
 
@@ -144,7 +144,7 @@ export default async function VacancyPage({ params }: Props) {
               {specName}
             </Link>
             <span>&#8250;</span>
-            <span className="text-text">{breadcrumbLabel}</span>
+            <span className="text-text">{h1}</span>
           </nav>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">

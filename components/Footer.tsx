@@ -103,6 +103,12 @@ export default async function Footer() {
               >
                 Статьи
               </Link>
+              <Link
+                href="/about"
+                className="block text-sm text-text-light no-underline hover:text-text transition-colors"
+              >
+                О сервисе
+              </Link>
             </div>
           </div>
 
