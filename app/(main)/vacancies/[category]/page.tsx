@@ -11,6 +11,13 @@ import { getRelatedArticlesForCategory, RelatedArticlesBlock } from '@/component
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { getCategoryFaq } from '@/lib/category-faq'
 import { TAG_H1 } from '@/lib/tagH1'
+import {
+  SPEC_SLUGS,
+  FORMAT_SLUGS,
+  LEVEL_SLUGS,
+  FORMAT_CHIP_LABELS,
+  LEVEL_CHIP_LABELS,
+} from '@/lib/spec-filter-meta'
 
 export const revalidate = 300
 
@@ -148,6 +155,33 @@ export default async function CategoryPage({ params }: Props) {
                 </div>
               )}
             </div>
+
+            {/* Filter chips — only for specialization pages */}
+            {SPEC_SLUGS.includes(category) && (
+              <div className="mb-6">
+                <div className="flex flex-wrap gap-2">
+                  {FORMAT_SLUGS.map((f) => (
+                    <Link
+                      key={f}
+                      href={`/vacancies/${category}/${f}`}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm border border-border bg-bg-card text-text-muted hover:border-accent hover:text-text transition-colors no-underline"
+                    >
+                      {FORMAT_CHIP_LABELS[f]}
+                    </Link>
+                  ))}
+                  <span className="w-px bg-border self-stretch mx-1" />
+                  {LEVEL_SLUGS.map((l) => (
+                    <Link
+                      key={l}
+                      href={`/vacancies/${category}/${l}`}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm border border-border bg-bg-card text-text-muted hover:border-accent hover:text-text transition-colors no-underline"
+                    >
+                      {LEVEL_CHIP_LABELS[l]}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Tags block — mobile/tablet only (desktop: right sidebar) */}
             <div className="lg:hidden mb-6">

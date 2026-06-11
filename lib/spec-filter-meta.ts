@@ -7,6 +7,18 @@ export function isFilterSlug(slug: string): slug is FormatSlug | LevelSlug {
   return [...FORMAT_SLUGS, ...LEVEL_SLUGS].includes(slug as never)
 }
 
+export const FORMAT_CHIP_LABELS: Record<string, string> = {
+  udalyonka: 'Удалённо',
+  ofis: 'В офисе',
+  gibrid: 'Гибрид',
+}
+
+export const LEVEL_CHIP_LABELS: Record<string, string> = {
+  junior: 'Junior',
+  middle: 'Middle',
+  senior: 'Senior',
+}
+
 // Имена специализаций в родительном падеже (для "Вакансии КОГО")
 const SPEC_GENITIVE: Record<string, string> = {
   smm: 'SMM-менеджера',
