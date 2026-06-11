@@ -1,9 +1,9 @@
 /**
  * Full retag of all published posts.
  *
- * Unlike retag-posts.ts (additive-only), this script does a clean replace:
- * removes all auto-matched tags from a post, then adds the ones that
- * matchTags() returns based on the current TAG_KEYWORDS dictionary.
+ * Operates on the Payload CMS `posts_rels` table (path='tags') — the actual
+ * table the site reads from. The Prisma `PostTag` model is a separate legacy
+ * table not used by Payload.
  *
  * Only tags whose slugs exist in TAG_KEYWORDS are touched — any tags
  * manually added outside the matcher are left intact.
@@ -14,8 +14,6 @@
 
 import 'dotenv/config'
 import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '../generated/prisma'
 import { matchTags, TAG_KEYWORDS } from '../lib/tag-matcher'
 
 const dbUrl = process.env.DB_CONNECTION_STRING ?? process.env.DATABASE_URL
@@ -23,95 +21,107 @@ if (!dbUrl) {
   console.error('DB_CONNECTION_STRING or DATABASE_URL env var is required')
   process.exit(1)
 }
-const pool = new Pool({ connectionString: dbUrl })
-const adapter = new PrismaPg(pool)
-const prisma = new PrismaClient({ adapter })
 
+const pool = new Pool({ connectionString: dbUrl })
 const DRY_RUN = process.argv.includes('--dry-run')
 
 async function main() {
-  const knownSlugs = Object.keys(TAG_KEYWORDS)
+  const client = await pool.connect()
 
-  // Load all auto-matched tag records from DB
-  const allTags = await prisma.tag.findMany({
-    where: { slug: { in: knownSlugs } },
-  })
-
-  if (allTags.length === 0) {
-    console.error('No matching tags found in DB. Check TAG_KEYWORDS slugs.')
-    process.exit(1)
-  }
-
-  const tagIdBySlug = Object.fromEntries(allTags.map((t) => [t.slug, t.id]))
-  const knownTagIds = new Set(allTags.map((t) => t.id))
-
-  console.log(`Known matcher tags in DB: ${allTags.length}/${knownSlugs.length}`)
-  if (DRY_RUN) console.log('DRY-RUN mode — no DB writes')
-
-  const posts = await prisma.post.findMany({
-    where: { status: 'published' },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      tags: { select: { tagId: true } },
-    },
-  })
-
-  console.log(`\nScanning ${posts.length} published posts...\n`)
-
-  let postsChanged = 0
-  let tagsRemoved = 0
-  let tagsAdded = 0
-
-  for (const post of posts) {
-    const shouldHave = new Set(
-      matchTags(post.title ?? '', post.description ?? undefined)
-        .map((slug) => tagIdBySlug[slug])
-        .filter(Boolean) as number[]
+  try {
+    // Load all known tags from DB
+    const { rows: allTags } = await client.query<{ id: number; slug: string }>(
+      `SELECT id, slug FROM tags WHERE slug = ANY($1)`,
+      [Object.keys(TAG_KEYWORDS)]
     )
 
-    const currentAutoTagIds = new Set(
-      post.tags.map((t) => t.tagId).filter((id) => knownTagIds.has(id))
-    )
-
-    const toRemove = [...currentAutoTagIds].filter((id) => !shouldHave.has(id))
-    const toAdd = [...shouldHave].filter((id) => !currentAutoTagIds.has(id))
-
-    if (toRemove.length === 0 && toAdd.length === 0) continue
-
-    postsChanged++
-    const removeSlugs = toRemove.map((id) => allTags.find((t) => t.id === id)?.slug ?? id)
-    const addSlugs = toAdd.map((id) => allTags.find((t) => t.id === id)?.slug ?? id)
-
-    console.log(`Post #${post.id}: -[${removeSlugs.join(', ')}] +[${addSlugs.join(', ')}]`)
-    console.log(`  "${(post.title ?? '').slice(0, 80)}"`)
-
-    if (!DRY_RUN) {
-      if (toRemove.length > 0) {
-        await prisma.postTag.deleteMany({
-          where: { postId: post.id, tagId: { in: toRemove } },
-        })
-      }
-      if (toAdd.length > 0) {
-        await prisma.postTag.createMany({
-          data: toAdd.map((tagId) => ({ postId: post.id, tagId })),
-          skipDuplicates: true,
-        })
-      }
+    if (allTags.length === 0) {
+      console.error('No matching tags found in DB.')
+      process.exit(1)
     }
 
-    tagsRemoved += toRemove.length
-    tagsAdded += toAdd.length
-  }
+    const tagIdBySlug = Object.fromEntries(allTags.map((t) => [t.slug, t.id]))
+    const knownTagIds = new Set(allTags.map((t) => t.id))
 
-  console.log(`\n--- Summary ---`)
-  console.log(`Posts changed:  ${postsChanged} / ${posts.length}`)
-  console.log(`Tags removed:   ${tagsRemoved}`)
-  console.log(`Tags added:     ${tagsAdded}`)
-  if (DRY_RUN) console.log('(dry-run — nothing written)')
+    console.log(`Known matcher tags in DB: ${allTags.length}/${Object.keys(TAG_KEYWORDS).length}`)
+    if (DRY_RUN) console.log('DRY-RUN mode — no DB writes')
+
+    // Load all published posts
+    const { rows: posts } = await client.query<{
+      id: number
+      title: string
+      description: string | null
+    }>(`SELECT id, title, description FROM posts WHERE status = 'published'`)
+
+    console.log(`\nScanning ${posts.length} published posts...\n`)
+
+    // Load current tags from posts_rels (path='tags')
+    const { rows: currentRels } = await client.query<{ parent_id: number; tags_id: number }>(
+      `SELECT parent_id, tags_id FROM posts_rels WHERE path = 'tags' AND tags_id = ANY($1)`,
+      [Array.from(knownTagIds)]
+    )
+
+    // Build map: postId → Set of current auto-tag IDs
+    const currentTagsByPost = new Map<number, Set<number>>()
+    for (const rel of currentRels) {
+      if (!currentTagsByPost.has(rel.parent_id)) currentTagsByPost.set(rel.parent_id, new Set())
+      currentTagsByPost.get(rel.parent_id)!.add(rel.tags_id)
+    }
+
+    let postsChanged = 0
+    let tagsRemoved = 0
+    let tagsAdded = 0
+
+    for (const post of posts) {
+      const shouldHave = new Set(
+        matchTags(post.title ?? '', post.description ?? undefined)
+          .map((slug) => tagIdBySlug[slug])
+          .filter(Boolean) as number[]
+      )
+
+      const currentAutoTagIds = currentTagsByPost.get(post.id) ?? new Set<number>()
+      const toRemove = [...currentAutoTagIds].filter((id) => !shouldHave.has(id))
+      const toAdd = [...shouldHave].filter((id) => !currentAutoTagIds.has(id))
+
+      if (toRemove.length === 0 && toAdd.length === 0) continue
+
+      postsChanged++
+      const removeSlugs = toRemove.map((id) => allTags.find((t) => t.id === id)?.slug ?? id)
+      const addSlugs = toAdd.map((id) => allTags.find((t) => t.id === id)?.slug ?? id)
+
+      console.log(`Post #${post.id}: -[${removeSlugs.join(', ')}] +[${addSlugs.join(', ')}]`)
+      console.log(`  "${(post.title ?? '').slice(0, 80)}"`)
+
+      if (!DRY_RUN) {
+        if (toRemove.length > 0) {
+          await client.query(
+            `DELETE FROM posts_rels WHERE path = 'tags' AND parent_id = $1 AND tags_id = ANY($2)`,
+            [post.id, toRemove]
+          )
+        }
+        if (toAdd.length > 0) {
+          for (const tagId of toAdd) {
+            await client.query(
+              `INSERT INTO posts_rels (parent_id, path, tags_id) VALUES ($1, 'tags', $2) ON CONFLICT DO NOTHING`,
+              [post.id, tagId]
+            )
+          }
+        }
+      }
+
+      tagsRemoved += toRemove.length
+      tagsAdded += toAdd.length
+    }
+
+    console.log(`\n--- Summary ---`)
+    console.log(`Posts changed:  ${postsChanged} / ${posts.length}`)
+    console.log(`Tags removed:   ${tagsRemoved}`)
+    console.log(`Tags added:     ${tagsAdded}`)
+    if (DRY_RUN) console.log('(dry-run — nothing written)')
+  } finally {
+    client.release()
+    await pool.end()
+  }
 }
 
-main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect())
+main().catch(console.error)
