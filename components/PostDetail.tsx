@@ -75,6 +75,12 @@ export default function PostDetail({
       ? `https://t.me/${post.channelUsername}/${post.telegramMessageId}`
       : null
 
+  // Local paths cause the optimizer to fetch via http:// which nginx 301-redirects to https → empty body → 400.
+  // Converting to absolute https:// makes the optimizer fetch directly via HTTPS → 200.
+  const resolvedImageUrl = post.imageUrl?.startsWith('/')
+    ? `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'}${post.imageUrl}`
+    : post.imageUrl
+
   const paragraphs = cleanDescription(post.description ?? '')
     .split('\n')
     .filter((l) => l.trim())
@@ -135,10 +141,10 @@ export default function PostDetail({
               </div>
             )}
 
-            {post.imageUrl && (
+            {resolvedImageUrl && (
               <div className="mb-4 rounded-lg overflow-hidden">
                 <Image
-                  src={post.imageUrl}
+                  src={resolvedImageUrl}
                   alt={post.title}
                   width={800}
                   height={400}
