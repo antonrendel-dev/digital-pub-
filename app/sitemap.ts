@@ -84,10 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
               t !== null &&
               (t as { tagType: string }).tagType === 'specialization'
           )
-          const firstTag = tags.find(
-            (t): t is { slug: string; tagType: string } => typeof t === 'object' && t !== null
-          )
-          const categorySlug = specTag?.slug ?? firstTag?.slug ?? 'other'
+          const categorySlug = specTag?.slug ?? 'other'
           const updatedAt = p.updatedAt ? new Date(p.updatedAt) : now
 
           // Track max updatedAt per tag slug

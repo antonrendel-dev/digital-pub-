@@ -23,7 +23,7 @@ export interface FeedPost {
 export function getPrimaryCategorySlug(post: FeedPost): string {
   if (!post.tags || post.tags.length === 0) return 'other'
   const specTag = post.tags.find((t) => t.tagType === 'specialization')
-  return specTag ? specTag.slug : post.tags[0].slug
+  return specTag ? specTag.slug : 'other'
 }
 
 const FORMAT_TAGS = ['Удалёнка', 'Офис', 'Гибрид', 'Фриланс', 'Удалённо']
