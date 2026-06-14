@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { getPayload } from 'payload'
 import config from '@payload-config'
@@ -52,7 +53,7 @@ export default async function ArticlesPage() {
       title: a.title,
       description: a.description ?? '',
       publishedAt: a.publishedAt ?? null,
-      tags: [],
+      tags: Array.isArray(a.tags) ? (a.tags as string[]) : [],
       source: 'payload' as const,
       imageUrl: typeof a.image === 'object' && a.image?.url ? a.image.url : undefined,
     }))
@@ -90,7 +91,7 @@ export default async function ArticlesPage() {
       <JsonLd data={itemListLd} />
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">Статьи</h1>
-        <p className="text-text-muted mb-8">
+        <p className="text-text-muted mb-6">
           Полезные материалы для фрилансеров и digital-специалистов
         </p>
 
@@ -99,7 +100,9 @@ export default async function ArticlesPage() {
             Статьи скоро появятся
           </div>
         ) : (
-          <ArticlesGrid articles={allArticles} />
+          <Suspense fallback={<div className="h-10 animate-pulse bg-bg-card rounded-full w-64" />}>
+            <ArticlesGrid articles={allArticles} />
+          </Suspense>
         )}
       </div>
     </PageShellWrapper>

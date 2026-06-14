@@ -69,6 +69,14 @@ export const Articles: CollectionConfig = {
       },
     },
     {
+      name: 'tags',
+      type: 'json',
+      defaultValue: [],
+      admin: {
+        description: 'Теги статьи — JSON-массив строк, например: ["карьера", "резюме"]',
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       options: ['draft', 'published'],

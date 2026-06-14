@@ -3,6 +3,7 @@ import * as migration_20260530_seotext_to_text from './20260530_seotext_to_text'
 import * as migration_20260530_articles_content_to_text from './20260530_articles_content_to_text'
 import * as migration_20260609_articles_image_url from './20260609_articles_image_url'
 import * as migration_20260609_articles_image_upload from './20260609_articles_image_upload'
+import * as migration_20260614_articles_tags from './20260614_articles_tags'
 
 export const migrations = [
   {
@@ -29,5 +30,10 @@ export const migrations = [
     up: migration_20260609_articles_image_upload.up,
     down: migration_20260609_articles_image_upload.down,
     name: '20260609_articles_image_upload',
+  },
+  {
+    up: migration_20260614_articles_tags.up,
+    down: migration_20260614_articles_tags.down,
+    name: '20260614_articles_tags',
   },
 ]
