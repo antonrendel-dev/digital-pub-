@@ -84,10 +84,12 @@ async function main() {
   const token = await getPayloadToken()
   const article = await getArticle(articleId, token)
   if (article.status === 'published') {
-    await sendMessage(`\u2139\uFE0F \u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430:
+    await sendMessage(
+      `\u2139\uFE0F \u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430:
 <b>${article.title}</b>
 
-\u{1F517} ${SITE_URL}/articles/${article.slug}`)
+\u{1F517} ${SITE_URL}/articles/${article.slug}`
+    )
     console.log(
       `[publisher] \u0421\u0442\u0430\u0442\u044C\u044F ${articleId} \u0443\u0436\u0435 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430`
     )

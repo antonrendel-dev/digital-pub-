@@ -5,12 +5,11 @@
  * Вызывается из Python-бота при /content_approve
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const PAYLOAD_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
 const ADMIN_EMAIL = process.env.PAYLOAD_ADMIN_EMAIL || process.env.ADMIN_EMAIL
@@ -35,16 +34,28 @@ function getLatestTopicsFile(): string {
   return path.join(DATA_DIR, files[0])
 }
 
+function askClaude(prompt: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', ['-p', prompt], {
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let out = ''
+    let err = ''
+    child.stdout.on('data', (d: Buffer) => (out += d.toString()))
+    child.stderr.on('data', (d: Buffer) => (err += d.toString()))
+    child.on('close', (code) => {
+      if (code === 0) resolve(out.trim())
+      else reject(new Error(err || `claude завершился с кодом ${code}`))
+    })
+    child.on('error', reject)
+  })
+}
+
 async function generateSeoHtml(
   topic: Topic
 ): Promise<{ html: string; metaTitle: string; metaDesc: string; slug: string }> {
-  const msg = await client.messages.create({
-    model: 'claude-opus-4-5-20251101',
-    max_tokens: 6000,
-    messages: [
-      {
-        role: 'user',
-        content: `Ты опытный SEO-копирайтер для российского рынка digital-вакансий.
+  const raw = await askClaude(`Ты опытный SEO-копирайтер для российского рынка digital-вакансий.
 
 Напиши статью для сайта d-pub.ru — job board для digital-специалистов (маркетологи, SMM, дизайнеры, аналитики).
 
@@ -68,12 +79,8 @@ async function generateSeoHtml(
   "metaTitle": "SEO заголовок до 60 символов",
   "metaDesc": "SEO описание 120-155 символов",
   "html": "<h2>Заголовок</h2><p>Текст...</p>..."
-}`,
-      },
-    ],
-  })
+}`)
 
-  const raw = (msg.content[0] as { type: string; text: string }).text
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Claude не вернул JSON')
   return JSON.parse(jsonMatch[0])

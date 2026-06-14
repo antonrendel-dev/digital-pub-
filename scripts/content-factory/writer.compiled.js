@@ -1,5 +1,5 @@
 // writer.ts
-import Anthropic from '@anthropic-ai/sdk'
+import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
@@ -30,7 +30,6 @@ async function sendMessage(text, extra = {}) {
 }
 
 // writer.ts
-var client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 var DATA_DIR = path.join(import.meta.dirname, 'data')
 var PAYLOAD_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
 var ADMIN_EMAIL = process.env.PAYLOAD_ADMIN_EMAIL || process.env.ADMIN_EMAIL
@@ -47,14 +46,32 @@ function getLatestTopicsFile() {
     )
   return path.join(DATA_DIR, files[0])
 }
+function askClaude(prompt) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', ['-p', prompt], {
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let out = ''
+    let err = ''
+    child.stdout.on('data', (d) => (out += d.toString()))
+    child.stderr.on('data', (d) => (err += d.toString()))
+    child.on('close', (code) => {
+      if (code === 0) resolve(out.trim())
+      else
+        reject(
+          new Error(
+            err ||
+              `claude \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0441\u044F \u0441 \u043A\u043E\u0434\u043E\u043C ${code}`
+          )
+        )
+    })
+    child.on('error', reject)
+  })
+}
 async function generateSeoHtml(topic) {
-  const msg = await client.messages.create({
-    model: 'claude-opus-4-5-20251101',
-    max_tokens: 6e3,
-    messages: [
-      {
-        role: 'user',
-        content: `\u0422\u044B \u043E\u043F\u044B\u0442\u043D\u044B\u0439 SEO-\u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442\u0435\u0440 \u0434\u043B\u044F \u0440\u043E\u0441\u0441\u0438\u0439\u0441\u043A\u043E\u0433\u043E \u0440\u044B\u043D\u043A\u0430 digital-\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439.
+  const raw =
+    await askClaude(`\u0422\u044B \u043E\u043F\u044B\u0442\u043D\u044B\u0439 SEO-\u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442\u0435\u0440 \u0434\u043B\u044F \u0440\u043E\u0441\u0441\u0438\u0439\u0441\u043A\u043E\u0433\u043E \u0440\u044B\u043D\u043A\u0430 digital-\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439.
 
 \u041D\u0430\u043F\u0438\u0448\u0438 \u0441\u0442\u0430\u0442\u044C\u044E \u0434\u043B\u044F \u0441\u0430\u0439\u0442\u0430 d-pub.ru \u2014 job board \u0434\u043B\u044F digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432 (\u043C\u0430\u0440\u043A\u0435\u0442\u043E\u043B\u043E\u0433\u0438, SMM, \u0434\u0438\u0437\u0430\u0439\u043D\u0435\u0440\u044B, \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0438).
 
@@ -78,11 +95,7 @@ async function generateSeoHtml(topic) {
   "metaTitle": "SEO \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A \u0434\u043E 60 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432",
   "metaDesc": "SEO \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 120-155 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432",
   "html": "<h2>\u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A</h2><p>\u0422\u0435\u043A\u0441\u0442...</p>..."
-}`,
-      },
-    ],
-  })
-  const raw = msg.content[0].text
+}`)
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Claude \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON')
   return JSON.parse(jsonMatch[0])
@@ -141,10 +154,12 @@ async function main() {
   console.log(
     `[writer] \u041F\u0438\u0448\u0443 \u0441\u0442\u0430\u0442\u044C\u044E: "${topic.title}"`
   )
-  await sendMessage(`\u270D\uFE0F \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E #${topicNum}:
+  await sendMessage(
+    `\u270D\uFE0F \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E #${topicNum}:
 <b>${topic.title}</b>
 
-\u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~30 \u0441\u0435\u043A\u0443\u043D\u0434...`)
+\u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~30 \u0441\u0435\u043A\u0443\u043D\u0434...`
+  )
   const seo = await generateSeoHtml(topic)
   console.log(
     '[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430, \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A...'

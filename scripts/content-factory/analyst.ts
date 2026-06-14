@@ -5,12 +5,11 @@
  * Cron: 0 9 * * 1 (каждый понедельник в 9:00)
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 
 interface Topic {
@@ -22,20 +21,27 @@ interface Topic {
   trafficEst: string
 }
 
-async function generateTopics(): Promise<Topic[]> {
-  const today = new Date().toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+function askClaude(prompt: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', ['-p', prompt], {
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let out = ''
+    let err = ''
+    child.stdout.on('data', (d: Buffer) => (out += d.toString()))
+    child.stderr.on('data', (d: Buffer) => (err += d.toString()))
+    child.on('close', (code) => {
+      if (code === 0) resolve(out.trim())
+      else reject(new Error(err || `claude завершился с кодом ${code}`))
+    })
+    child.on('error', reject)
   })
+}
 
-  const message = await client.messages.create({
-    model: 'claude-opus-4-5-20251101',
-    max_tokens: 4000,
-    messages: [
-      {
-        role: 'user',
-        content: `Ты SEO-аналитик и контент-стратег для русскоязычного job board d-pub.ru — агрегатора вакансий для digital-специалистов (маркетологи, дизайнеры, SMM, аналитики, копирайтеры, таргетологи) из Telegram-каналов.
+async function generateTopics(): Promise<Topic[]> {
+  const raw =
+    await askClaude(`Ты SEO-аналитик и контент-стратег для русскоязычного job board d-pub.ru — агрегатора вакансий для digital-специалистов (маркетологи, дизайнеры, SMM, аналитики, копирайтеры, таргетологи) из Telegram-каналов.
 
 Аудитория сайта: соискатели (ищут работу в digital) и HR/работодатели (нанимают digital-специалистов).
 
@@ -63,26 +69,28 @@ async function generateTopics(): Promise<Topic[]> {
     "type": "Гайд|Конспект|Сравнение|Кейс|Чеклист",
     "trafficEst": "низкий|средний|высокий"
   }
-]`,
-      },
-    ],
-  })
+]`)
 
-  const raw = (message.content[0] as { type: string; text: string }).text
   const jsonMatch = raw.match(/\[[\s\S]*\]/)
   if (!jsonMatch) throw new Error('Claude не вернул JSON')
   return JSON.parse(jsonMatch[0]) as Topic[]
 }
 
 function formatTopicsMessage(topics: Topic[], date: string): string {
-  const audienceEmoji = { Соискатель: '👤', HR: '💼', Оба: '👥' }
-  const typeEmoji = { Гайд: '📘', Конспект: '📹', Сравнение: '⚖️', Кейс: '💡', Чеклист: '✅' }
-  const trafficEmoji = { низкий: '📉', средний: '📊', высокий: '🚀' }
+  const audienceEmoji: Record<string, string> = { Соискатель: '👤', HR: '💼', Оба: '👥' }
+  const typeEmoji: Record<string, string> = {
+    Гайд: '📘',
+    Конспект: '📹',
+    Сравнение: '⚖️',
+    Кейс: '💡',
+    Чеклист: '✅',
+  }
+  const trafficEmoji: Record<string, string> = { низкий: '📉', средний: '📊', высокий: '🚀' }
 
   const lines = topics.map(
     (t) =>
-      `${t.id}. ${typeEmoji[t.type]} <b>${t.title}</b>\n` +
-      `   🔑 <i>${t.keyword}</i> · ${audienceEmoji[t.audience]} ${t.audience} · ${trafficEmoji[t.trafficEst]} ${t.trafficEst}`
+      `${t.id}. ${typeEmoji[t.type] ?? ''} <b>${t.title}</b>\n` +
+      `   🔑 <i>${t.keyword}</i> · ${audienceEmoji[t.audience] ?? ''} ${t.audience} · ${trafficEmoji[t.trafficEst] ?? ''} ${t.trafficEst}`
   )
 
   return (
@@ -98,14 +106,12 @@ async function main() {
   console.log('[analyst] Генерирую темы...')
   const topics = await generateTopics()
 
-  // Save to file
   fs.mkdirSync(DATA_DIR, { recursive: true })
   const date = new Date().toISOString().split('T')[0]
   const filePath = path.join(DATA_DIR, `topics_${date}.json`)
   fs.writeFileSync(filePath, JSON.stringify({ date, topics }, null, 2))
   console.log(`[analyst] Сохранено: ${filePath}`)
 
-  // Post to Telegram
   const dateRu = new Date().toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',

@@ -1,5 +1,5 @@
 // analyst.ts
-import Anthropic from '@anthropic-ai/sdk'
+import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
@@ -30,21 +30,33 @@ async function sendMessage(text, extra = {}) {
 }
 
 // analyst.ts
-var client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 var DATA_DIR = path.join(import.meta.dirname, 'data')
-async function generateTopics() {
-  const today = /* @__PURE__ */ new Date().toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+function askClaude(prompt) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', ['-p', prompt], {
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let out = ''
+    let err = ''
+    child.stdout.on('data', (d) => (out += d.toString()))
+    child.stderr.on('data', (d) => (err += d.toString()))
+    child.on('close', (code) => {
+      if (code === 0) resolve(out.trim())
+      else
+        reject(
+          new Error(
+            err ||
+              `claude \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0441\u044F \u0441 \u043A\u043E\u0434\u043E\u043C ${code}`
+          )
+        )
+    })
+    child.on('error', reject)
   })
-  const message = await client.messages.create({
-    model: 'claude-opus-4-5-20251101',
-    max_tokens: 4e3,
-    messages: [
-      {
-        role: 'user',
-        content: `\u0422\u044B SEO-\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043D\u0442-\u0441\u0442\u0440\u0430\u0442\u0435\u0433 \u0434\u043B\u044F \u0440\u0443\u0441\u0441\u043A\u043E\u044F\u0437\u044B\u0447\u043D\u043E\u0433\u043E job board d-pub.ru \u2014 \u0430\u0433\u0440\u0435\u0433\u0430\u0442\u043E\u0440\u0430 \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439 \u0434\u043B\u044F digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432 (\u043C\u0430\u0440\u043A\u0435\u0442\u043E\u043B\u043E\u0433\u0438, \u0434\u0438\u0437\u0430\u0439\u043D\u0435\u0440\u044B, SMM, \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0438, \u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442\u0435\u0440\u044B, \u0442\u0430\u0440\u0433\u0435\u0442\u043E\u043B\u043E\u0433\u0438) \u0438\u0437 Telegram-\u043A\u0430\u043D\u0430\u043B\u043E\u0432.
+}
+async function generateTopics() {
+  const raw =
+    await askClaude(`\u0422\u044B SEO-\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043D\u0442-\u0441\u0442\u0440\u0430\u0442\u0435\u0433 \u0434\u043B\u044F \u0440\u0443\u0441\u0441\u043A\u043E\u044F\u0437\u044B\u0447\u043D\u043E\u0433\u043E job board d-pub.ru \u2014 \u0430\u0433\u0440\u0435\u0433\u0430\u0442\u043E\u0440\u0430 \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439 \u0434\u043B\u044F digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432 (\u043C\u0430\u0440\u043A\u0435\u0442\u043E\u043B\u043E\u0433\u0438, \u0434\u0438\u0437\u0430\u0439\u043D\u0435\u0440\u044B, SMM, \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0438, \u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442\u0435\u0440\u044B, \u0442\u0430\u0440\u0433\u0435\u0442\u043E\u043B\u043E\u0433\u0438) \u0438\u0437 Telegram-\u043A\u0430\u043D\u0430\u043B\u043E\u0432.
 
 \u0410\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u044F \u0441\u0430\u0439\u0442\u0430: \u0441\u043E\u0438\u0441\u043A\u0430\u0442\u0435\u043B\u0438 (\u0438\u0449\u0443\u0442 \u0440\u0430\u0431\u043E\u0442\u0443 \u0432 digital) \u0438 HR/\u0440\u0430\u0431\u043E\u0442\u043E\u0434\u0430\u0442\u0435\u043B\u0438 (\u043D\u0430\u043D\u0438\u043C\u0430\u044E\u0442 digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432).
 
@@ -72,11 +84,7 @@ async function generateTopics() {
     "type": "\u0413\u0430\u0439\u0434|\u041A\u043E\u043D\u0441\u043F\u0435\u043A\u0442|\u0421\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435|\u041A\u0435\u0439\u0441|\u0427\u0435\u043A\u043B\u0438\u0441\u0442",
     "trafficEst": "\u043D\u0438\u0437\u043A\u0438\u0439|\u0441\u0440\u0435\u0434\u043D\u0438\u0439|\u0432\u044B\u0441\u043E\u043A\u0438\u0439"
   }
-]`,
-      },
-    ],
-  })
-  const raw = message.content[0].text
+]`)
   const jsonMatch = raw.match(/\[[\s\S]*\]/)
   if (!jsonMatch) throw new Error('Claude \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON')
   return JSON.parse(jsonMatch[0])
@@ -92,8 +100,8 @@ function formatTopicsMessage(topics, date) {
   }
   const trafficEmoji = { низкий: '\u{1F4C9}', средний: '\u{1F4CA}', высокий: '\u{1F680}' }
   const lines = topics.map(
-    (t) => `${t.id}. ${typeEmoji[t.type]} <b>${t.title}</b>
-   \u{1F511} <i>${t.keyword}</i> \xB7 ${audienceEmoji[t.audience]} ${t.audience} \xB7 ${trafficEmoji[t.trafficEst]} ${t.trafficEst}`
+    (t) => `${t.id}. ${typeEmoji[t.type] ?? ''} <b>${t.title}</b>
+   \u{1F511} <i>${t.keyword}</i> \xB7 ${audienceEmoji[t.audience] ?? ''} ${t.audience} \xB7 ${trafficEmoji[t.trafficEst] ?? ''} ${t.trafficEst}`
   )
   return (
     `\u{1F4CA} <b>\u041A\u043E\u043D\u0442\u0435\u043D\u0442-\u043F\u043B\u0430\u043D \u2014 ${date}</b>
