@@ -1,5 +1,5 @@
 // Shared Telegram Bot API helper (no polling — HTTP only)
-const BOT_TOKEN = process.env.BOT_TOKEN
+const BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN
 const CHAT_ID = process.env.SEO_LAB_CHAT_ID
 const THREAD_ID = process.env.SEO_LAB_TOPIC_ID ? Number(process.env.SEO_LAB_TOPIC_ID) : undefined
 
