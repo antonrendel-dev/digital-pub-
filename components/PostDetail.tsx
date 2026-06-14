@@ -103,7 +103,7 @@ export default function PostDetail({
           <>
             <span className="text-text-light">&rsaquo;</span>
             <Link
-              href={`/vacancies/${effectiveCategorySlug}/`}
+              href={`/vacancies/${effectiveCategorySlug}`}
               className="text-text-muted no-underline hover:text-accent transition-colors"
             >
               {effectiveCategoryName}

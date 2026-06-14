@@ -56,11 +56,9 @@ export default function TagsSidebar({ tags, activeSlug }: TagsSidebarProps) {
               return (
                 <Link
                   key={tag.slug}
-                  href={`/vacancies/${tag.slug}/`}
+                  href={`/vacancies/${tag.slug}`}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium no-underline transition ${
-                    isActive
-                      ? 'ring-2 ring-accent opacity-100'
-                      : 'hover:opacity-80'
+                    isActive ? 'ring-2 ring-accent opacity-100' : 'hover:opacity-80'
                   } ${group.colorClass}`}
                 >
                   {tag.name}
