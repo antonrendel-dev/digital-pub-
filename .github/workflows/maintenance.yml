@@ -1,0 +1,82 @@
+name: Maintenance (ручной запуск)
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Что запустить'
+        required: true
+        type: choice
+        options:
+          - seed-articles
+          - seed-tags
+          - retag-all-posts
+          - telegram-sync
+          - all
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Seed articles into Payload CMS
+        if: ${{ inputs.task == 'seed-articles' || inputs.task == 'all' }}
+        run: |
+          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
+          if [ -z "$ADMIN_PASSWORD" ]; then echo "ADMIN_PASSWORD not set"; exit 1; fi
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/d-pub.ru/app && \
+              ADMIN_EMAIL='in-ekb@mail.ru' \
+              ADMIN_PASSWORD='$ADMIN_PASSWORD' \
+              PAYLOAD_BASE_URL='https://d-pub.ru' \
+              node scripts/seed-articles.compiled.js 2>&1 | tail -20
+          "
+
+      - name: Seed tags with SEO data
+        if: ${{ inputs.task == 'seed-tags' || inputs.task == 'all' }}
+        run: |
+          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
+          if [ -z "$ADMIN_PASSWORD" ]; then echo "ADMIN_PASSWORD not set"; exit 1; fi
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/d-pub.ru/app && \
+              ADMIN_EMAIL='in-ekb@mail.ru' \
+              ADMIN_PASSWORD='$ADMIN_PASSWORD' \
+              PAYLOAD_BASE_URL='https://d-pub.ru' \
+              node scripts/seed-tags.compiled.js 2>&1 | tail -30
+          "
+
+      - name: Retag all posts
+        if: ${{ inputs.task == 'retag-all-posts' || inputs.task == 'all' }}
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/d-pub.ru/app && node scripts/retag-all-posts.compiled.js 2>&1 | tail -20
+          "
+
+      - name: Telegram sync
+        if: ${{ inputs.task == 'telegram-sync' || inputs.task == 'all' }}
+        run: |
+          BOT_TOKEN='${{ secrets.BOT_TOKEN }}'
+          ADMIN_ID='${{ secrets.ADMIN_ID }}'
+          if [ -z "$BOT_TOKEN" ]; then echo "BOT_TOKEN not set"; exit 1; fi
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            export BOT_TOKEN='$BOT_TOKEN'
+            export ADMIN_ID='$ADMIN_ID'
+            cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
+          "

@@ -22,6 +22,15 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts','**/*.tsx','**/*.css','**/*.mjs') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            nextjs-${{ runner.os }}-
+
       - name: Build
         run: npm run build
         env:
@@ -56,7 +65,7 @@ jobs:
               --outfile="$out"
           done
 
-      - name: Compile seed and sync scripts
+      - name: Compile scripts
         run: |
           npx esbuild scripts/seed.ts \
             --bundle=true \
@@ -170,8 +179,20 @@ jobs:
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
-            sleep 45
           "
+
+      - name: Wait for app to be ready
+        run: |
+          echo "Polling https://d-pub.ru until app responds..."
+          for i in $(seq 1 18); do
+            STATUS=$(curl -s --max-time 5 -o /dev/null -w '%{http_code}' https://d-pub.ru/ 2>/dev/null || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "App is up after $((i * 5))s (status $STATUS)"
+              break
+            fi
+            echo "Attempt $i/18: status=$STATUS — waiting 5s..."
+            sleep 5
+          done
 
       - name: Create sync user via REST API
         continue-on-error: true
@@ -182,7 +203,6 @@ jobs:
             exit 0
           fi
 
-          # Wait for app to be ready (retry up to 5 times)
           TOKEN=""
           for i in 1 2 3 4 5; do
             LOGIN=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users/login \
@@ -202,14 +222,12 @@ jobs:
             exit 0
           fi
 
-          # Try to create sync user
           SYNC_RESP=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users \
             -H 'Content-Type: application/json' \
             -H "Authorization: Bearer $TOKEN" \
             -d "{\"email\":\"sync@d-pub.ru\",\"password\":\"$(openssl rand -hex 16)\",\"role\":\"sync\",\"enableAPIKey\":true}")
           API_KEY=$(echo "$SYNC_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('doc',{}).get('apiKey',''))" 2>/dev/null)
 
-          # If user already exists — fetch and regenerate key
           if [ -z "$API_KEY" ]; then
             USERS=$(curl -s --max-time 20 "https://d-pub.ru/api/users?where[email][equals]=sync%40d-pub.ru" \
               -H "Authorization: Bearer $TOKEN")
@@ -231,74 +249,7 @@ jobs:
             echo "Could not get API key: ${SYNC_RESP:0:300}"
           fi
 
-      - name: Seed articles into Payload CMS
-        continue-on-error: true
-        run: |
-          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
-          if [ -z "$ADMIN_PASSWORD" ]; then exit 0; fi
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru/app && \
-              ADMIN_EMAIL='in-ekb@mail.ru' \
-              ADMIN_PASSWORD='$ADMIN_PASSWORD' \
-              PAYLOAD_BASE_URL='https://d-pub.ru' \
-              node scripts/seed-articles.compiled.js 2>&1 | tail -20
-          "
-
-      - name: Seed tags with SEO data
-        continue-on-error: true
-        run: |
-          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
-          if [ -z "$ADMIN_PASSWORD" ]; then
-            echo "ADMIN_PASSWORD not set — skipping tag seed"
-            exit 0
-          fi
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru/app && \
-              ADMIN_EMAIL='in-ekb@mail.ru' \
-              ADMIN_PASSWORD='$ADMIN_PASSWORD' \
-              PAYLOAD_BASE_URL='https://d-pub.ru' \
-              node scripts/seed-tags.compiled.js 2>&1 | tail -30
-          "
-
-      - name: Retag all posts
-        continue-on-error: true
-        run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru/app && node scripts/retag-all-posts.compiled.js 2>&1 | tail -20
-          "
-
-      - name: Run Telegram sync
-        run: |
-          BOT_TOKEN='${{ secrets.BOT_TOKEN }}'
-          ADMIN_ID='${{ secrets.ADMIN_ID }}'
-          if [ -z "$BOT_TOKEN" ]; then
-            echo "BOT_TOKEN not set — sync runs manually from red server. Skipping."
-          else
-            ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-              export NVM_DIR=\"\$HOME/.nvm\"
-              [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-              export BOT_TOKEN='$BOT_TOKEN'
-              export ADMIN_ID='$ADMIN_ID'
-              cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
-            " || echo 'Sync failed (non-critical)'
-          fi
-
-      - name: Clear Next.js image cache
-        continue-on-error: true
-        run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            rm -rf ~/d-pub.ru/app/.next/cache/images/
-            mkdir -p ~/d-pub.ru/app/.next/cache/images/
-            echo 'Image cache cleared'
-          "
-
-      - name: Smoke test + capture errors
+      - name: Smoke test
         run: |
           echo '=== HTTP status ==='
           curl -s --max-time 15 -o /dev/null -w '%{http_code}' https://d-pub.ru/ || true
