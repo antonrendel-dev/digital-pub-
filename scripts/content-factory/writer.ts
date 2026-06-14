@@ -102,37 +102,108 @@ function askClaude(prompt: string): Promise<string> {
 async function generateSeoHtml(
   topic: Topic
 ): Promise<{ html: string; metaTitle: string; metaDesc: string; slug: string }> {
-  const raw = await askClaude(`Ты опытный SEO-копирайтер для российского рынка digital-вакансий.
+  // ШАГ 1: SEO-рисерч — интент, LSI-слова, структура конкурентов
+  const research = await askClaude(`Ты SEO-аналитик для русскоязычного рынка digital-вакансий.
 
-Напиши статью для сайта d-pub.ru — job board для digital-специалистов (маркетологи, SMM, дизайнеры, аналитики).
+Проведи рисерч для статьи по теме: "${topic.title}"
+Ключевое слово: "${topic.keyword}"
+Аудитория: ${topic.audience}
+
+Выдай JSON строго в таком формате (без лишнего текста):
+{
+  "intent": "информационный|коммерческий|навигационный",
+  "lsi": ["слово1", "слово2", "слово3", "слово4", "слово5", "слово6", "слово7", "слово8"],
+  "painPoints": ["боль читателя 1", "боль читателя 2", "боль читателя 3"],
+  "competitorH2s": ["типичный H2 конкурента 1", "типичный H2 конкурента 2", "типичный H2 конкурента 3"],
+  "uniqueAngle": "чем наша статья будет отличаться и лучше"
+}`)
+
+  const researchMatch = research.match(/\{[\s\S]*\}/)
+  if (!researchMatch) throw new Error('SEO-рисерч не вернул JSON')
+  const seoData = JSON.parse(researchMatch[0]) as {
+    intent: string
+    lsi: string[]
+    painPoints: string[]
+    competitorH2s: string[]
+    uniqueAngle: string
+  }
+
+  // ШАГ 2: Планирование — детальный план с H2/H3
+  const outline = await askClaude(`Ты контент-стратег. Составь детальный план статьи.
 
 ТЕМА: ${topic.title}
-КЛЮЧЕВОЕ СЛОВО: ${topic.keyword}
-АУДИТОРИЯ: ${topic.audience}
+КЛЮЧ: ${topic.keyword}
 ТИП: ${topic.type}
+ИНТЕНТ: ${seoData.intent}
+LSI-слова для включения: ${seoData.lsi.join(', ')}
+Боли аудитории: ${seoData.painPoints.join('; ')}
+Уникальный угол: ${seoData.uniqueAngle}
+
+Требования к плану:
+- 5-7 блоков H2
+- Каждый H2 раскрывает конкретную боль или вопрос аудитории
+- Не дублируй структуру конкурентов: ${seoData.competitorH2s.join('; ')}
+- Финальный блок — призыв смотреть вакансии на d-pub.ru
+
+Выдай JSON (без лишнего текста):
+{
+  "h2s": [
+    { "title": "Заголовок H2", "keyPoints": ["тезис 1", "тезис 2"] }
+  ],
+  "metaTitle": "SEO заголовок до 60 символов с ключом",
+  "metaDesc": "SEO описание 130-155 символов, раскрывает пользу статьи",
+  "slug": "url-slug-latinicej"
+}`)
+
+  const outlineMatch = outline.match(/\{[\s\S]*\}/)
+  if (!outlineMatch) throw new Error('Планировщик не вернул JSON')
+  const plan = JSON.parse(outlineMatch[0]) as {
+    h2s: { title: string; keyPoints: string[] }[]
+    metaTitle: string
+    metaDesc: string
+    slug: string
+  }
+
+  // ШАГ 3: Написание статьи по плану
+  const planText = plan.h2s
+    .map((h, i) => `${i + 1}. ${h.title}\n   Тезисы: ${h.keyPoints.join('; ')}`)
+    .join('\n')
+
+  const article = await askClaude(`Ты опытный SEO-копирайтер для российского рынка digital-вакансий.
+
+Напиши статью для d-pub.ru — job board для digital-специалистов.
+
+ТЕМА: ${topic.title}
+КЛЮЧЕВОЕ СЛОВО: ${topic.keyword} (использовать в первом абзаце и 2-3 раза по тексту)
+LSI-слова (вплети органично): ${seoData.lsi.join(', ')}
+АУДИТОРИЯ: ${topic.audience}
+
+ПЛАН (строго следуй этой структуре):
+${planText}
 
 Требования:
-- Объём: 900-1300 слов
-- Структура: H2 подзаголовки, нумерованные/маркированные списки где уместно
-- Практичность: конкретные советы, примеры, цифры
-- Стиль: профессиональный но живой, без канцелярита
-- Упоминай d-pub.ru как источник вакансий 1-2 раза органично
-- Без вступлений типа "В этой статье мы расскажем..."
-- Начинай сразу с сути
+- Объём: 1200-1600 слов
+- Начинай сразу с сути — без вводных "в этой статье мы..."
+- Каждый H2 раскрывай практически: конкретные советы, цифры, примеры
+- Стиль: профессиональный, живой, без канцелярита
+- Упомяни d-pub.ru как источник вакансий 1-2 раза органично
+- HTML только с тегами: h2, h3, p, ul, ol, li, strong, a
 
 Ответь строго в формате JSON (без лишнего текста):
 {
-  "slug": "transliterated-url-slug",
-  "metaTitle": "SEO заголовок до 60 символов",
-  "metaDesc": "SEO описание 120-155 символов",
-  "html": "<h2>Заголовок</h2><p>Текст...</p>..."
+  "html": "<h2>...</h2><p>...</p>..."
 }`)
 
-  const jsonMatch = raw.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('Claude не вернул JSON')
-  const result = JSON.parse(jsonMatch[0])
-  result.slug = toSlug(result.slug || topic.title)
-  return result
+  const articleMatch = article.match(/\{[\s\S]*\}/)
+  if (!articleMatch) throw new Error('Writer не вернул JSON')
+  const { html } = JSON.parse(articleMatch[0]) as { html: string }
+
+  return {
+    html,
+    metaTitle: plan.metaTitle,
+    metaDesc: plan.metaDesc,
+    slug: toSlug(plan.slug || topic.title),
+  }
 }
 
 async function getPayloadToken(): Promise<string> {
@@ -194,7 +265,8 @@ async function main() {
 
   console.log(`[writer] Пишу статью: "${topic.title}"`)
   await sendMessage(
-    `✍️ Генерирую статью #${topicNum}:\n<b>${topic.title}</b>\n\nЭто займёт ~30 секунд...`
+    `✍️ Генерирую статью #${topicNum}:\n<b>${topic.title}</b>\n\n` +
+      `🔍 SEO-рисерч → 📋 план → ✏️ текст\n\nЭто займёт ~2 минуты...`
   )
 
   const seo = await generateSeoHtml(topic)
