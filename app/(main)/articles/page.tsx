@@ -1,16 +1,10 @@
-import Link from 'next/link'
-import Image from 'next/image'
 import type { Metadata } from 'next'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import {
-  getArticles,
-  formatArticleDate,
-  mergeAndSortArticles,
-  type MergedArticle,
-} from '@/lib/articles'
+import { getArticles, mergeAndSortArticles, type MergedArticle } from '@/lib/articles'
 import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
+import ArticlesGrid from '@/components/ArticlesGrid'
 
 export const revalidate = 300
 
@@ -94,7 +88,7 @@ export default async function ArticlesPage() {
     <PageShellWrapper>
       <JsonLd data={breadcrumbLd} />
       <JsonLd data={itemListLd} />
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">Статьи</h1>
         <p className="text-text-muted mb-8">
           Полезные материалы для фрилансеров и digital-специалистов
@@ -105,44 +99,7 @@ export default async function ArticlesPage() {
             Статьи скоро появятся
           </div>
         ) : (
-          <div className="space-y-5">
-            {allArticles.map((article) => (
-              <Link
-                key={`${article.source}-${article.slug}`}
-                href={`/articles/${article.slug}`}
-                className="block bg-bg-card border border-border rounded-xl p-6 no-underline hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
-              >
-                <div className="flex flex-col md:flex-row md:items-start gap-4">
-                  <div className="w-full md:w-48 h-32 rounded-lg flex-shrink-0 overflow-hidden bg-gradient-to-br from-blue-100 to-blue-50">
-                    {article.imageUrl && (
-                      <Image
-                        src={article.imageUrl}
-                        alt={article.title}
-                        width={192}
-                        height={128}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      {article.tags.length > 0 && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full whitespace-nowrap">
-                          {article.tags[0]}
-                        </span>
-                      )}
-                      <span className="text-xs text-text-light whitespace-nowrap">
-                        {article.publishedAt ? formatArticleDate(article.publishedAt) : ''}
-                      </span>
-                    </div>
-                    <h2 className="text-lg font-semibold text-text mb-2">{article.title}</h2>
-                    <p className="text-sm text-text-muted line-clamp-2">{article.description}</p>
-                    <div className="mt-3 text-sm text-amber-600 font-medium">Читать &rarr;</div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <ArticlesGrid articles={allArticles} />
         )}
       </div>
     </PageShellWrapper>
