@@ -32,6 +32,51 @@ async function sendMessage(text, extra = {}) {
 // writer.ts
 var DATA_DIR = path.join(import.meta.dirname, 'data')
 var PAYLOAD_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+var TRANSLIT = {
+  а: 'a',
+  б: 'b',
+  в: 'v',
+  г: 'g',
+  д: 'd',
+  е: 'e',
+  ё: 'yo',
+  ж: 'zh',
+  з: 'z',
+  и: 'i',
+  й: 'y',
+  к: 'k',
+  л: 'l',
+  м: 'm',
+  н: 'n',
+  о: 'o',
+  п: 'p',
+  р: 'r',
+  с: 's',
+  т: 't',
+  у: 'u',
+  ф: 'f',
+  х: 'kh',
+  ц: 'ts',
+  ч: 'ch',
+  ш: 'sh',
+  щ: 'sch',
+  ъ: '',
+  ы: 'y',
+  ь: '',
+  э: 'e',
+  ю: 'yu',
+  я: 'ya',
+}
+function toSlug(s) {
+  return s
+    .toLowerCase()
+    .split('')
+    .map((c) => TRANSLIT[c] ?? c)
+    .join('')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+}
 var ADMIN_EMAIL = process.env.PAYLOAD_ADMIN_EMAIL || process.env.ADMIN_EMAIL
 var ADMIN_PASSWORD = process.env.PAYLOAD_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD
 function getLatestTopicsFile() {
@@ -98,7 +143,9 @@ async function generateSeoHtml(topic) {
 }`)
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Claude \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON')
-  return JSON.parse(jsonMatch[0])
+  const result = JSON.parse(jsonMatch[0])
+  result.slug = toSlug(result.slug || topic.title)
+  return result
 }
 async function getPayloadToken() {
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD)
@@ -133,8 +180,9 @@ async function createDraft(topic, seo, token) {
     }),
   })
   const data = await res.json()
-  if (!data.doc) throw new Error(`Payload create failed: ${JSON.stringify(data)}`)
-  return String(data.doc.id)
+  const id = data.id ?? data.doc?.id
+  if (!id) throw new Error(`Payload create failed: ${JSON.stringify(data)}`)
+  return String(id)
 }
 async function main() {
   const topicNum = parseInt(process.argv[2])

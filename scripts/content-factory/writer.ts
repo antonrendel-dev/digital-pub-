@@ -12,6 +12,53 @@ import { sendMessage } from './lib/telegram.js'
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const PAYLOAD_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+
+const TRANSLIT: Record<string, string> = {
+  а: 'a',
+  б: 'b',
+  в: 'v',
+  г: 'g',
+  д: 'd',
+  е: 'e',
+  ё: 'yo',
+  ж: 'zh',
+  з: 'z',
+  и: 'i',
+  й: 'y',
+  к: 'k',
+  л: 'l',
+  м: 'm',
+  н: 'n',
+  о: 'o',
+  п: 'p',
+  р: 'r',
+  с: 's',
+  т: 't',
+  у: 'u',
+  ф: 'f',
+  х: 'kh',
+  ц: 'ts',
+  ч: 'ch',
+  ш: 'sh',
+  щ: 'sch',
+  ъ: '',
+  ы: 'y',
+  ь: '',
+  э: 'e',
+  ю: 'yu',
+  я: 'ya',
+}
+
+function toSlug(s: string): string {
+  return s
+    .toLowerCase()
+    .split('')
+    .map((c) => TRANSLIT[c] ?? c)
+    .join('')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80)
+}
 const ADMIN_EMAIL = process.env.PAYLOAD_ADMIN_EMAIL || process.env.ADMIN_EMAIL
 const ADMIN_PASSWORD = process.env.PAYLOAD_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD
 
@@ -83,7 +130,9 @@ async function generateSeoHtml(
 
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Claude не вернул JSON')
-  return JSON.parse(jsonMatch[0])
+  const result = JSON.parse(jsonMatch[0])
+  result.slug = toSlug(result.slug || topic.title)
+  return result
 }
 
 async function getPayloadToken(): Promise<string> {
@@ -121,9 +170,14 @@ async function createDraft(
       publishedAt: new Date().toISOString(),
     }),
   })
-  const data = (await res.json()) as { doc?: { id: string } | { id: number }; errors?: unknown[] }
-  if (!data.doc) throw new Error(`Payload create failed: ${JSON.stringify(data)}`)
-  return String((data.doc as { id: string | number }).id)
+  const data = (await res.json()) as {
+    id?: string | number
+    doc?: { id: string | number }
+    errors?: unknown[]
+  }
+  const id = data.id ?? data.doc?.id
+  if (!id) throw new Error(`Payload create failed: ${JSON.stringify(data)}`)
+  return String(id)
 }
 
 async function main() {

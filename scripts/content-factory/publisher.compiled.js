@@ -68,7 +68,7 @@ async function publishArticle(id, token) {
     body: JSON.stringify({ status: 'published' }),
   })
   const data = await res.json()
-  if (!data.doc) throw new Error(`Payload publish failed: ${JSON.stringify(data)}`)
+  if (!data.id && !data.doc) throw new Error(`Payload publish failed: ${JSON.stringify(data)}`)
 }
 async function main() {
   const articleId = process.argv[2]

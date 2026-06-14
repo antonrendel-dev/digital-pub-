@@ -54,8 +54,8 @@ async function publishArticle(id: string, token: string): Promise<void> {
     },
     body: JSON.stringify({ status: 'published' }),
   })
-  const data = (await res.json()) as { doc?: unknown; errors?: unknown[] }
-  if (!data.doc) throw new Error(`Payload publish failed: ${JSON.stringify(data)}`)
+  const data = (await res.json()) as { id?: unknown; doc?: unknown; errors?: unknown[] }
+  if (!data.id && !data.doc) throw new Error(`Payload publish failed: ${JSON.stringify(data)}`)
 }
 
 async function main() {
