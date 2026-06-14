@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 interface NavbarProps {
   onSearch: (query: string) => void
@@ -15,6 +16,18 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
   const [query, setQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  const navCls = (href: string) => {
+    const active =
+      href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
+    return `text-sm font-medium transition-colors ${active ? 'text-accent font-semibold' : 'text-text-muted hover:text-text'}`
+  }
+  const mobileCls = (href: string) => {
+    const active =
+      href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/')
+    return `block py-3 px-3 text-sm font-medium rounded-lg transition-colors ${active ? 'text-accent font-semibold bg-accent/5' : 'text-text-muted hover:bg-white/60'}`
+  }
 
   const handleSearch = () => {
     if (query.trim()) onSearch(query.trim())
@@ -54,34 +67,19 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
 
           {/* Desktop Nav Links */}
           <div className="hidden lg:flex items-center gap-6">
-            <Link
-              href="/"
-              className="text-sm font-medium text-text hover:text-accent transition-colors"
-            >
+            <Link href="/" className={navCls('/')}>
               Главная
             </Link>
-            <Link
-              href="/vacancies"
-              className="text-sm font-medium text-text-muted hover:text-text transition-colors"
-            >
+            <Link href="/vacancies" className={navCls('/vacancies')}>
               Вакансии
             </Link>
-            <Link
-              href="/resumes"
-              className="text-sm font-medium text-text-muted hover:text-text transition-colors"
-            >
+            <Link href="/resumes" className={navCls('/resumes')}>
               Резюме
             </Link>
-            <Link
-              href="/articles"
-              className="text-sm font-medium text-text-muted hover:text-text transition-colors"
-            >
+            <Link href="/articles" className={navCls('/articles')}>
               Статьи
             </Link>
-            <Link
-              href="/about"
-              className="text-sm font-medium text-text-muted hover:text-text transition-colors"
-            >
+            <Link href="/about" className={navCls('/about')}>
               О сервисе
             </Link>
           </div>
@@ -208,39 +206,31 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
         {/* Mobile menu */}
         {menuOpen && (
           <div className="lg:hidden bg-[#f9fafb] dark:bg-[#0a1530] border-t border-border px-4 py-4 space-y-1 shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
-            <Link
-              href="/"
-              className="block py-3 px-3 text-sm font-medium text-text rounded-lg hover:bg-white/60 transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
+            <Link href="/" className={mobileCls('/')} onClick={() => setMenuOpen(false)}>
               Главная
             </Link>
             <Link
               href="/vacancies"
-              className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors"
+              className={mobileCls('/vacancies')}
               onClick={() => setMenuOpen(false)}
             >
               Вакансии
             </Link>
             <Link
               href="/resumes"
-              className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors"
+              className={mobileCls('/resumes')}
               onClick={() => setMenuOpen(false)}
             >
               Резюме
             </Link>
             <Link
               href="/articles"
-              className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors"
+              className={mobileCls('/articles')}
               onClick={() => setMenuOpen(false)}
             >
               Статьи
             </Link>
-            <Link
-              href="/about"
-              className="block py-3 px-3 text-sm font-medium text-text-muted rounded-lg hover:bg-white/60 transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
+            <Link href="/about" className={mobileCls('/about')} onClick={() => setMenuOpen(false)}>
               О сервисе
             </Link>
             <div className="pt-3 border-t border-border mt-3">

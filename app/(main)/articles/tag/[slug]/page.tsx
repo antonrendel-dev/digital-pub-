@@ -1,28 +1,36 @@
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getArticles, mergeAndSortArticles, type MergedArticle } from '@/lib/articles'
+import { tagBySlug } from '@/lib/article-tags'
 import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
 import ArticlesGrid from '@/components/ArticlesGrid'
+import Link from 'next/link'
 
 export const revalidate = 300
 
-export const metadata: Metadata = {
-  title: 'Карьера в digital: статьи для маркетологов и дизайнеров',
-  description:
-    'Как составить резюме, пройти собеседование и вырасти в digital. Полезные материалы для SMM, маркетологов, дизайнеров и аналитиков.',
-  alternates: { canonical: 'https://d-pub.ru/articles' },
-  openGraph: {
-    title: 'Карьера в digital: статьи для маркетологов и дизайнеров',
-    description:
-      'Как составить резюме, пройти собеседование и вырасти в digital. Полезные материалы для специалистов.',
-    url: 'https://d-pub.ru/articles',
-    type: 'website',
-  },
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const tag = tagBySlug(slug)
+  if (!tag) return {}
+  return {
+    title: tag.pageTitle,
+    description: tag.pageDescription,
+    alternates: { canonical: `https://d-pub.ru/articles/tag/${slug}` },
+  }
 }
 
-export default async function ArticlesPage() {
+export default async function ArticleTagPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const tag = tagBySlug(slug)
+  if (!tag) notFound()
+
   // MDX articles
   const mdxRaw = getArticles()
   const mdxArticles: MergedArticle[] = mdxRaw.map((a) => ({
@@ -57,7 +65,7 @@ export default async function ArticlesPage() {
       imageUrl: typeof a.image === 'object' && a.image?.url ? a.image.url : undefined,
     }))
   } catch {
-    // Payload unavailable — show MDX only
+    // Payload unavailable
   }
 
   const allArticles = mergeAndSortArticles(mdxArticles, payloadArticles)
@@ -68,39 +76,42 @@ export default async function ArticlesPage() {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
       { '@type': 'ListItem', position: 2, name: 'Статьи', item: 'https://d-pub.ru/articles' },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: tag.name,
+        item: `https://d-pub.ru/articles/tag/${slug}`,
+      },
     ],
-  }
-
-  const itemListLd = {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    name: 'Статьи о карьере в digital',
-    numberOfItems: allArticles.length,
-    itemListElement: allArticles.map((article, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      url: `https://d-pub.ru/articles/${article.slug}`,
-      name: article.title,
-    })),
   }
 
   return (
     <PageShellWrapper>
       <JsonLd data={breadcrumbLd} />
-      <JsonLd data={itemListLd} />
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">Статьи</h1>
-        <p className="text-text-muted mb-6">
-          Полезные материалы для фрилансеров и digital-специалистов
-        </p>
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
+          <Link
+            href="/"
+            className="hover:text-accent transition-colors no-underline text-text-muted"
+          >
+            Главная
+          </Link>
+          <span className="text-text-light">&rsaquo;</span>
+          <Link
+            href="/articles"
+            className="hover:text-accent transition-colors no-underline text-text-muted"
+          >
+            Статьи
+          </Link>
+          <span className="text-text-light">&rsaquo;</span>
+          <span className="text-text-light">{tag.name}</span>
+        </nav>
 
-        {allArticles.length === 0 ? (
-          <div className="py-9 text-center text-text-light text-sm border border-dashed border-border rounded-lg">
-            Статьи скоро появятся
-          </div>
-        ) : (
-          <ArticlesGrid articles={allArticles} />
-        )}
+        <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">{tag.pageTitle}</h1>
+        <p className="text-text-muted mb-8">{tag.pageDescription}</p>
+
+        <ArticlesGrid articles={allArticles} activeTag={tag.name} />
       </div>
     </PageShellWrapper>
   )

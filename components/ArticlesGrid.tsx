@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useSearchParams } from 'next/navigation'
 import type { MergedArticle } from '@/lib/articles'
+import { ARTICLE_TAGS } from '@/lib/article-tags'
 
 function formatArticleDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -124,12 +124,16 @@ function ArticleCardList({ article }: { article: MergedArticle }) {
   )
 }
 
-export default function ArticlesGrid({ articles }: { articles: MergedArticle[] }) {
+export default function ArticlesGrid({
+  articles,
+  activeTag = '',
+}: {
+  articles: MergedArticle[]
+  activeTag?: string
+}) {
   const [view, setView] = useState<'grid' | 'list'>('grid')
-  const searchParams = useSearchParams()
-  const activeTag = searchParams.get('tag') ?? ''
 
-  // Unique tags sorted by frequency
+  // Tags that appear in articles AND have a known slug mapping
   const tagCounts = articles
     .flatMap((a) => a.tags)
     .reduce(
@@ -139,16 +143,14 @@ export default function ArticlesGrid({ articles }: { articles: MergedArticle[] }
       },
       {} as Record<string, number>
     )
-  const allTags = Object.entries(tagCounts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([t]) => t)
+  const visibleTags = ARTICLE_TAGS.filter((t) => tagCounts[t.name])
 
   const filtered = activeTag ? articles.filter((a) => a.tags.includes(activeTag)) : articles
 
   return (
     <div>
       {/* Tag pills */}
-      {allTags.length > 0 && (
+      {visibleTags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">
           <Link
             href="/articles"
@@ -160,17 +162,17 @@ export default function ArticlesGrid({ articles }: { articles: MergedArticle[] }
           >
             Все статьи
           </Link>
-          {allTags.map((tag) => (
+          {visibleTags.map((tag) => (
             <Link
-              key={tag}
-              href={activeTag === tag ? '/articles' : `/articles?tag=${encodeURIComponent(tag)}`}
+              key={tag.slug}
+              href={`/articles/tag/${tag.slug}`}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors no-underline whitespace-nowrap ${
-                activeTag === tag
+                activeTag === tag.name
                   ? 'bg-accent text-white'
                   : 'bg-bg-card border border-border text-text-muted hover:text-text hover:border-accent'
               }`}
             >
-              {tag}
+              {tag.name}
             </Link>
           ))}
         </div>
@@ -182,14 +184,18 @@ export default function ArticlesGrid({ articles }: { articles: MergedArticle[] }
           <span className="text-sm text-text-muted">
             Раздел: <span className="font-medium text-text">{activeTag}</span>
           </span>
-          <span className="text-xs text-text-light">— {filtered.length} статей</span>
+          <Link href="/articles" className="text-xs text-accent hover:underline">
+            ← Все статьи
+          </Link>
         </div>
       )}
 
       {/* View toggle + count */}
       <div className="flex items-center justify-between mb-5">
         <span className="text-sm text-text-muted">
-          {activeTag ? `${filtered.length} из ${articles.length}` : `${articles.length} материалов`}
+          {activeTag
+            ? `${filtered.length} из ${articles.length} материалов`
+            : `${articles.length} материалов`}
         </span>
         <div className="flex items-center gap-1 p-1 bg-bg-card border border-border rounded-lg">
           <button

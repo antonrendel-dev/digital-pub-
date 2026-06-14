@@ -335,7 +335,7 @@ export default function PostDetail({
           )}
 
           {/* CTA */}
-          <div className="bg-amber-50 border border-amber-200/50 rounded-xl p-4 text-center">
+          <div className="bg-bg-card border border-border rounded-xl p-4 text-center">
             <div className="text-sm font-semibold text-text mb-2">Вы работодатель?</div>
             <p className="text-xs text-text-muted mb-3">Разместите вакансию через нашего бота</p>
             <a
