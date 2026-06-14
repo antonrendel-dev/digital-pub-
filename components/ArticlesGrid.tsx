@@ -4,7 +4,14 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { MergedArticle } from '@/lib/articles'
-import { formatArticleDate } from '@/lib/articles'
+
+function formatArticleDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
 
 function GridIcon() {
   return (
