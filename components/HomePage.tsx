@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
 import Feed from './feed/Feed'
@@ -41,12 +42,24 @@ export default function HomePage({ posts, stats, articles, tags, seoHtml }: Home
             <aside className="hidden lg:block">
               <LeftSidebar stats={stats} />
             </aside>
-            <Feed
-              posts={posts}
-              searchQuery={searchQuery}
-              onExternalTagConsumed={() => {}}
-              stats={stats}
-            />
+            <div>
+              <div className="mb-4 rounded-xl overflow-hidden border border-border">
+                <Image
+                  src="/images/hero-pub.webp"
+                  alt="Диджитал Паб — место встречи digital-специалистов"
+                  width={900}
+                  height={450}
+                  className="w-full object-cover"
+                  priority
+                />
+              </div>
+              <Feed
+                posts={posts}
+                searchQuery={searchQuery}
+                onExternalTagConsumed={() => {}}
+                stats={stats}
+              />
+            </div>
             <aside className="hidden lg:block">
               <RightSidebar tags={tags} articles={articles} />
             </aside>
