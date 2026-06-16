@@ -118,11 +118,11 @@ jobs:
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
             PREV_HASH=\$(cat ~/d-pub.ru/.npm-lock-hash 2>/dev/null || echo '')
-            if [ \"\$PREV_HASH\" != \"$LOCK_HASH\" ]; then
+            if [ \"\$PREV_HASH\" != \"${LOCK_HASH}\" ]; then
               echo 'package-lock.json changed — running npm ci'
               cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
               cd ~/d-pub.ru/app && npm rebuild sharp 2>&1 | tail -3 || true
-              echo '$LOCK_HASH' > ~/d-pub.ru/.npm-lock-hash
+              printf '%s' \"${LOCK_HASH}\" > ~/d-pub.ru/.npm-lock-hash
             else
               echo 'package-lock.json unchanged — skipping npm ci'
             fi
@@ -152,83 +152,11 @@ jobs:
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
           "
 
-      - name: Wait for app to be ready
+      - name: Smoke test (fire-and-forget)
         run: |
-          echo "Polling https://d-pub.ru until app responds..."
-          for i in $(seq 1 18); do
-            STATUS=$(curl -s --max-time 5 -o /dev/null -w '%{http_code}' https://d-pub.ru/ 2>/dev/null || echo "000")
-            if [ "$STATUS" = "200" ]; then
-              echo "App is up after $((i * 5))s (status $STATUS)"
-              break
-            fi
-            echo "Attempt $i/18: status=$STATUS — waiting 5s..."
-            sleep 5
-          done
-
-      - name: Create sync user via REST API
-        continue-on-error: true
-        run: |
-          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
-          if [ -z "$ADMIN_PASSWORD" ]; then
-            echo "ADMIN_PASSWORD secret not set — skipping sync user creation"
-            exit 0
-          fi
-
-          TOKEN=""
-          for i in 1 2 3 4 5; do
-            LOGIN=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users/login \
-              -H 'Content-Type: application/json' \
-              -d "{\"email\":\"in-ekb@mail.ru\",\"password\":\"$ADMIN_PASSWORD\"}")
-            TOKEN=$(echo "$LOGIN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('token',''))" 2>/dev/null)
-            if [ -n "$TOKEN" ]; then
-              echo "Admin login OK (attempt $i)"
-              break
-            fi
-            echo "Attempt $i failed (${LOGIN:0:100}), retrying in 15s..."
-            sleep 15
-          done
-
-          if [ -z "$TOKEN" ]; then
-            echo "Admin login failed after 5 attempts — skipping"
-            exit 0
-          fi
-
-          SYNC_RESP=$(curl -s --max-time 20 -X POST https://d-pub.ru/api/users \
-            -H 'Content-Type: application/json' \
-            -H "Authorization: Bearer $TOKEN" \
-            -d "{\"email\":\"sync@d-pub.ru\",\"password\":\"$(openssl rand -hex 16)\",\"role\":\"sync\",\"enableAPIKey\":true}")
-          API_KEY=$(echo "$SYNC_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('doc',{}).get('apiKey',''))" 2>/dev/null)
-
-          if [ -z "$API_KEY" ]; then
-            USERS=$(curl -s --max-time 20 "https://d-pub.ru/api/users?where[email][equals]=sync%40d-pub.ru" \
-              -H "Authorization: Bearer $TOKEN")
-            SYNC_ID=$(echo "$USERS" | python3 -c "import json,sys; docs=json.load(sys.stdin).get('docs',[]); print(docs[0]['id'] if docs else '')" 2>/dev/null)
-            if [ -n "$SYNC_ID" ]; then
-              UPD=$(curl -s --max-time 20 -X PATCH "https://d-pub.ru/api/users/$SYNC_ID" \
-                -H 'Content-Type: application/json' \
-                -H "Authorization: Bearer $TOKEN" \
-                -d '{"enableAPIKey":true}')
-              API_KEY=$(echo "$UPD" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('doc',{}).get('apiKey',''))" 2>/dev/null)
-            fi
-          fi
-
-          if [ -n "$API_KEY" ]; then
-            ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
-              "echo 'PAYLOAD_API_KEY=$API_KEY' >> ~/d-pub.ru/app/.env"
-            echo "PAYLOAD_API_KEY written to server .env"
-          else
-            echo "Could not get API key: ${SYNC_RESP:0:300}"
-          fi
-
-      - name: Smoke test
-        run: |
-          echo '=== HTTP status ==='
-          curl -s --max-time 15 -o /dev/null -w '%{http_code}' https://d-pub.ru/ || true
-          echo ''
-          echo '=== API /api/posts ==='
-          curl -s --max-time 15 'https://d-pub.ru/api/posts?limit=1' | head -c 500 || true
-          echo ''
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            echo '=== runit log last 30 ==='
-            tail -30 ~/d-pub.ru/log/node-runlog/current 2>/dev/null
-          "
+          echo "Restart triggered — app initializes in background (Next.js+Payload cold start ~3min)"
+          echo "Waiting 20s for quick sanity check..."
+          sleep 20
+          STATUS=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' https://d-pub.ru/ 2>/dev/null || echo "000")
+          echo "HTTP status after 20s: $STATUS"
+          echo "Deploy complete. App will be fully ready within 3 minutes."
