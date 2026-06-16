@@ -10,7 +10,6 @@ import { getArticleBySlug, getArticles, formatArticleDate } from '@/lib/articles
 import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
 import {
-  getRelatedCategoriesForArticle,
   getRelatedCategoriesForTitleAndTags,
   RelatedCategoriesBlock,
   RelatedArticlesBlock,
@@ -248,7 +247,7 @@ export default async function ArticlePage({ params }: Props) {
 
   const allArticles = getArticles()
   const related = allArticles.filter((a) => a.slug !== article.slug).slice(0, 3)
-  const relatedCategories = getRelatedCategoriesForArticle(article.tags)
+  const relatedCategories = getRelatedCategoriesForTitleAndTags(article.title, article.tags)
 
   // Schema.org Article
   const articleImageUrl = payloadImageUrl ?? article.imageUrl ?? null
