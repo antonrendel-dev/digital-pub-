@@ -95,10 +95,10 @@ async function main() {
   console.log(`[scheduler] Осталось одобренных тем: ${remaining}`)
 
   // Уведомляем если тем остаётся мало
-  if (remaining <= 3) {
+  if (remaining <= 6) {
     await sendMessage(
       `⚠️ <b>Контент-завод: тем осталось мало (${remaining})</b>\n\n` +
-        `Одобри новые темы или запусти аналитика:\n<code>/content_plan</code>`
+        `Запусти аналитика и одобри новые темы:\n<code>/content_plan</code>`
     )
   }
 

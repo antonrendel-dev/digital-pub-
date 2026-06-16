@@ -7,7 +7,8 @@
       "keyword": "резюме smm специалиста",
       "audience": "Соискатель",
       "type": "Гайд",
-      "trafficEst": "высокий"
+      "trafficEst": "высокий",
+      "published": true
     },
     {
       "id": 2,
@@ -15,7 +16,8 @@
       "keyword": "работа в диджитал телеграм",
       "audience": "Соискатель",
       "type": "Гайд",
-      "trafficEst": "высокий"
+      "trafficEst": "высокий",
+      "published": true
     },
     {
       "id": 3,
@@ -23,7 +25,9 @@
       "keyword": "зарплата smm специалиста",
       "audience": "Оба",
       "type": "Конспект",
-      "trafficEst": "высокий"
+      "trafficEst": "высокий",
+      "approved": true,
+      "published": true
     },
     {
       "id": 4,
@@ -31,7 +35,8 @@
       "keyword": "тестовое задание для smm",
       "audience": "Оба",
       "type": "Гайд",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 5,
@@ -39,7 +44,8 @@
       "keyword": "портфолио маркетолога",
       "audience": "Соискатель",
       "type": "Чеклист",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 6,
@@ -47,7 +53,8 @@
       "keyword": "как написать вакансию маркетолог",
       "audience": "HR",
       "type": "Гайд",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 7,
@@ -55,7 +62,8 @@
       "keyword": "вопросы на собеседовании маркетолог",
       "audience": "Оба",
       "type": "Гайд",
-      "trafficEst": "высокий"
+      "trafficEst": "высокий",
+      "approved": true
     },
     {
       "id": 8,
@@ -63,7 +71,8 @@
       "keyword": "как нанять таргетолога",
       "audience": "HR",
       "type": "Чеклист",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 9,
@@ -71,7 +80,8 @@
       "keyword": "фриланс или штат маркетолог",
       "audience": "Соискатель",
       "type": "Сравнение",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 10,
@@ -79,7 +89,8 @@
       "keyword": "как договориться о повышении зарплаты",
       "audience": "Соискатель",
       "type": "Гайд",
-      "trafficEst": "высокий"
+      "trafficEst": "высокий",
+      "approved": true
     },
     {
       "id": 11,
@@ -87,7 +98,8 @@
       "keyword": "smm или таргетолог кого нанять",
       "audience": "HR",
       "type": "Сравнение",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 12,
@@ -95,7 +107,8 @@
       "keyword": "карьера smm специалиста",
       "audience": "Соискатель",
       "type": "Гайд",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 13,
@@ -103,7 +116,8 @@
       "keyword": "испытательный срок новая работа",
       "audience": "Соискатель",
       "type": "Гайд",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 14,
@@ -111,7 +125,8 @@
       "keyword": "онбординг нового сотрудника",
       "audience": "HR",
       "type": "Чеклист",
-      "trafficEst": "низкий"
+      "trafficEst": "низкий",
+      "approved": true
     },
     {
       "id": 15,
@@ -119,7 +134,8 @@
       "keyword": "как оценить портфолио дизайнера",
       "audience": "HR",
       "type": "Чеклист",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 16,
@@ -127,7 +143,8 @@
       "keyword": "личный бренд маркетолога",
       "audience": "Соискатель",
       "type": "Гайд",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 17,
@@ -135,7 +152,8 @@
       "keyword": "найм удалённой команды маркетинг",
       "audience": "HR",
       "type": "Конспект",
-      "trafficEst": "низкий"
+      "trafficEst": "низкий",
+      "approved": true
     },
     {
       "id": 18,
@@ -143,7 +161,8 @@
       "keyword": "выгорание маркетолог",
       "audience": "Соискатель",
       "type": "Конспект",
-      "trafficEst": "низкий"
+      "trafficEst": "низкий",
+      "approved": true
     },
     {
       "id": 19,
@@ -151,7 +170,8 @@
       "keyword": "аналитика маркетолог собеседование",
       "audience": "Оба",
       "type": "Конспект",
-      "trafficEst": "низкий"
+      "trafficEst": "низкий",
+      "approved": true
     },
     {
       "id": 20,
@@ -159,7 +179,8 @@
       "keyword": "soft skills маркетолог",
       "audience": "HR",
       "type": "Гайд",
-      "trafficEst": "низкий"
+      "trafficEst": "низкий",
+      "approved": true
     },
     {
       "id": 21,
@@ -167,7 +188,8 @@
       "keyword": "нанять джуниора маркетолога",
       "audience": "HR",
       "type": "Сравнение",
-      "trafficEst": "низкий"
+      "trafficEst": "низкий",
+      "approved": true
     },
     {
       "id": 22,
@@ -175,7 +197,8 @@
       "keyword": "портфолио копирайтера с нуля",
       "audience": "Соискатель",
       "type": "Гайд",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 23,
@@ -183,7 +206,8 @@
       "keyword": "удалённая работа digital специалист",
       "audience": "Соискатель",
       "type": "Гайд",
-      "trafficEst": "средний"
+      "trafficEst": "средний",
+      "approved": true
     },
     {
       "id": 24,
@@ -191,7 +215,8 @@
       "keyword": "стоимость найма маркетолога",
       "audience": "HR",
       "type": "Кейс",
-      "trafficEst": "низкий"
+      "trafficEst": "низкий",
+      "approved": true
     },
     {
       "id": 25,
@@ -199,7 +224,8 @@
       "keyword": "аналитик данных или маркетолог аналитик",
       "audience": "Оба",
       "type": "Сравнение",
-      "trafficEst": "низкий"
+      "trafficEst": "низкий",
+      "approved": true
     }
   ]
 }
