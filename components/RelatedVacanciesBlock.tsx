@@ -96,7 +96,7 @@ export default async function RelatedVacanciesBlock({ categories }: Props) {
   const categorySlug = matchedCategory.slug
 
   return (
-    <div className="my-8 rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/40 shadow-sm">
+    <div className="my-8 rounded-xl overflow-hidden border border-blue-700 dark:border-blue-700/60 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-800/40">
         <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export default async function RelatedVacanciesBlock({ categories }: Props) {
       </div>
 
       {/* Vacancy list */}
-      <div className="bg-amber-50 dark:bg-amber-950/30 divide-y divide-amber-100 dark:divide-amber-800/30">
+      <div className="bg-amber-50 dark:bg-bg-card divide-y divide-amber-100 dark:divide-blue-800/30">
         {vacancies.map((vacancy) => {
           const href = vacancy.slug
             ? `/vacancies/${categorySlug}/${vacancy.slug}`
