@@ -113,30 +113,32 @@ export function getRelatedArticlesForCategory(
     .map((s) => s.article)
 }
 
+const TAG_NAMES: Record<string, string> = {
+  smm: 'SMM',
+  seo: 'SEO',
+  dizajn: 'Дизайн',
+  marketing: 'Маркетинг',
+  target: 'Таргет',
+  razrabotka: 'Разработка',
+  analitika: 'Аналитика',
+  hr: 'HR',
+  udalyonka: 'Удалёнка',
+  finansy: 'Финансы',
+  wordpress: 'WordPress',
+  junior: 'Junior',
+  middle: 'Middle',
+  senior: 'Senior',
+  menedzher: 'Менеджер',
+  ofis: 'Офис',
+  gibrid: 'Гибрид',
+  copywriting: 'Копирайтинг',
+  content: 'Контент',
+}
+
 /** Reverse: find categories related to an article by its tags */
 export function getRelatedCategoriesForArticle(
   articleTags: string[]
 ): { slug: string; name: string }[] {
-  const TAG_NAMES: Record<string, string> = {
-    smm: 'SMM',
-    seo: 'SEO',
-    dizajn: 'Дизайн',
-    marketing: 'Маркетинг',
-    target: 'Таргет',
-    razrabotka: 'Разработка',
-    analitika: 'Аналитика',
-    hr: 'HR',
-    udalyonka: 'Удалёнка',
-    finansy: 'Финансы',
-    wordpress: 'WordPress',
-    junior: 'Junior',
-    middle: 'Middle',
-    senior: 'Senior',
-    menedzher: 'Менеджер',
-    ofis: 'Офис',
-    gibrid: 'Гибрид',
-  }
-
   const matches: { slug: string; name: string; score: number }[] = []
 
   for (const [slug, keywords] of Object.entries(CATEGORY_TO_ARTICLE_TAGS)) {
@@ -150,6 +152,49 @@ export function getRelatedCategoriesForArticle(
   }
 
   return matches.sort((a, b) => b.score - a.score).slice(0, 4)
+}
+
+// Keyword matching by article title for Payload articles without tags
+const TITLE_KEYWORDS: Record<string, string[]> = {
+  smm: ['smm'],
+  seo: ['seo'],
+  dizajn: ['дизайн', 'дизайнер', 'ui/ux'],
+  marketing: ['маркетинг', 'маркетолог'],
+  target: ['таргет', 'таргетолог'],
+  razrabotka: ['разработка', 'разработчик'],
+  analitika: ['аналитик', 'аналитика'],
+  hr: ['hr', 'рекрутинг', 'найм'],
+  copywriting: ['копирайтинг', 'копирайтер'],
+  content: ['контент-менеджер', 'контент-маркетолог'],
+  menedzher: ['менеджер проекта', 'проджект'],
+}
+
+/**
+ * Find related categories by tags first, then fall back to title keyword matching.
+ * Used for Payload articles which may not have tags set.
+ */
+export function getRelatedCategoriesForTitleAndTags(
+  title: string,
+  tags?: string[]
+): { slug: string; name: string }[] {
+  // Try tag-based matching first
+  if (tags && tags.length > 0) {
+    const fromTags = getRelatedCategoriesForArticle(tags)
+    if (fromTags.length > 0) return fromTags
+  }
+
+  // Fallback: keyword matching on title
+  const titleLower = title.toLowerCase()
+  const matches: { slug: string; name: string }[] = []
+
+  for (const [slug, keywords] of Object.entries(TITLE_KEYWORDS)) {
+    if (keywords.some((kw) => titleLower.includes(kw.toLowerCase()))) {
+      matches.push({ slug, name: TAG_NAMES[slug] || slug })
+      if (matches.length >= 4) break
+    }
+  }
+
+  return matches
 }
 
 /** Component: show related articles on a category page */

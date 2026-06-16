@@ -11,9 +11,11 @@ import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
 import {
   getRelatedCategoriesForArticle,
+  getRelatedCategoriesForTitleAndTags,
   RelatedCategoriesBlock,
   RelatedArticlesBlock,
 } from '@/components/RelatedArticles'
+import RelatedVacanciesBlock from '@/components/RelatedVacanciesBlock'
 
 // Elements NOT in MDX_ALLOWED_ELEMENTS — blocked as defense-in-depth
 const mdxComponents = {
@@ -122,7 +124,7 @@ export default async function ArticlePage({ params }: Props) {
   if (payloadArticle && payloadArticle.content) {
     const allArticles = getArticles()
     const related = allArticles.slice(0, 3)
-    const relatedCategories = getRelatedCategoriesForArticle([])
+    const relatedCategories = getRelatedCategoriesForTitleAndTags(payloadArticle.title)
 
     const articleLd = {
       '@context': 'https://schema.org',
@@ -206,6 +208,10 @@ export default async function ArticlePage({ params }: Props) {
                 className="prose prose-sm max-w-none text-text-muted [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-text [&_h3]:mt-4 [&_h3]:mb-2 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_a]:text-accent [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-text-muted [&_blockquote]:my-4 [&_strong]:font-semibold [&_strong]:text-text [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:text-sm [&_table]:my-4 [&_th]:bg-border-light [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-text [&_th]:border [&_th]:border-border [&_td]:px-3 [&_td]:py-2 [&_td]:border [&_td]:border-border [&_td]:text-text-muted"
                 dangerouslySetInnerHTML={{ __html: payloadArticle.content }}
               />
+              <RelatedVacanciesBlock categories={relatedCategories} />
+              <div className="mt-8 pt-6 border-t border-border">
+                <RelatedCategoriesBlock categories={relatedCategories} />
+              </div>
             </article>
 
             <aside className="hidden lg:flex flex-col gap-4">
@@ -340,6 +346,10 @@ export default async function ArticlePage({ params }: Props) {
                 options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
                 components={mdxComponents}
               />
+            </div>
+            <RelatedVacanciesBlock categories={relatedCategories} />
+            <div className="mt-8 pt-6 border-t border-border">
+              <RelatedCategoriesBlock categories={relatedCategories} />
             </div>
           </article>
 
