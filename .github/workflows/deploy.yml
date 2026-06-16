@@ -64,37 +64,6 @@ jobs:
               --outfile="$out"
           done
 
-      - name: Compile scripts
-        run: |
-          npx esbuild scripts/seed.ts \
-            --bundle=true \
-            --platform=node \
-            --format=cjs \
-            --external:payload \
-            --external:'@payloadcms/*' \
-            --external:crypto \
-            --outfile=scripts/seed.compiled.js
-          npx esbuild scripts/sync-telegram.ts \
-            --bundle=true \
-            --platform=node \
-            --format=cjs \
-            --outfile=scripts/sync-telegram.compiled.js
-          npx esbuild scripts/seed-tags.ts \
-            --bundle=true \
-            --platform=node \
-            --format=cjs \
-            --outfile=scripts/seed-tags.compiled.js
-          npx esbuild scripts/seed-articles.ts \
-            --bundle=true \
-            --platform=node \
-            --format=cjs \
-            --outfile=scripts/seed-articles.compiled.js
-          npx esbuild scripts/retag-all-posts.ts \
-            --bundle=true \
-            --platform=node \
-            --format=cjs \
-            --outfile=scripts/retag-all-posts.compiled.js
-
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -139,21 +108,24 @@ jobs:
       - name: Deploy payload compiled config
         run: rsync -avz payload.config.compiled.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
-      - name: Deploy scripts/
-        run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/scripts"
-          rsync -avz scripts/seed.compiled.js scripts/sync-telegram.compiled.js scripts/seed-tags.compiled.js scripts/seed-articles.compiled.js scripts/retag-all-posts.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/scripts/
-
       - name: Deploy package files and next.config
         run: rsync -avz package.json package-lock.json next.config.mjs ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
 
       - name: Install production dependencies
         run: |
+          LOCK_HASH="${{ hashFiles('package-lock.json') }}"
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             export NVM_DIR=\"\$HOME/.nvm\"
             [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
-            cd ~/d-pub.ru/app && npm rebuild sharp --verbose 2>&1 | tail -5 || true
+            PREV_HASH=\$(cat ~/d-pub.ru/.npm-lock-hash 2>/dev/null || echo '')
+            if [ \"\$PREV_HASH\" != \"$LOCK_HASH\" ]; then
+              echo 'package-lock.json changed — running npm ci'
+              cd ~/d-pub.ru/app && npm ci --omit=dev --ignore-scripts --legacy-peer-deps
+              cd ~/d-pub.ru/app && npm rebuild sharp 2>&1 | tail -3 || true
+              echo '$LOCK_HASH' > ~/d-pub.ru/.npm-lock-hash
+            else
+              echo 'package-lock.json unchanged — skipping npm ci'
+            fi
           "
 
       - name: Run payload migrate
