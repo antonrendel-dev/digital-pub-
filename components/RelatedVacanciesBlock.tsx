@@ -96,47 +96,64 @@ export default async function RelatedVacanciesBlock({ categories }: Props) {
   const categorySlug = matchedCategory.slug
 
   return (
-    <div className="my-8 rounded-xl border border-accent/20 bg-accent/5 overflow-hidden">
+    <div className="my-8 rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/40 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 bg-accent/10">
-        <span className="text-sm font-semibold text-accent">
-          Актуальные вакансии: {categoryName}
-        </span>
+      <div className="flex items-center justify-between px-5 py-3.5 bg-amber-400 dark:bg-amber-500/80">
+        <div className="flex items-center gap-2">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 15 15"
+            fill="none"
+            className="shrink-0 text-amber-900 dark:text-amber-100"
+          >
+            <path
+              d="M5.5 2a.5.5 0 0 0-.5.5V4H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2V2.5a.5.5 0 0 0-.5-.5h-4ZM6 4V3h3v1H6Zm-3 1h9v7H3V5Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span className="text-sm font-bold text-amber-900 dark:text-amber-100 tracking-tight">
+            Актуальные вакансии — {categoryName}
+          </span>
+        </div>
         <Link
           href={`/vacancies/${categorySlug}`}
-          className="text-xs text-accent hover:underline no-underline"
+          className="text-xs font-medium text-amber-800 dark:text-amber-200 hover:underline no-underline whitespace-nowrap"
         >
-          Все вакансии &rarr;
+          Смотреть все &rarr;
         </Link>
       </div>
 
       {/* Vacancy list */}
-      {vacancies.map((vacancy) => {
-        const href =
-          vacancy.slug
+      <div className="bg-amber-50 dark:bg-amber-950/30 divide-y divide-amber-100 dark:divide-amber-800/30">
+        {vacancies.map((vacancy) => {
+          const href = vacancy.slug
             ? `/vacancies/${categorySlug}/${vacancy.slug}`
             : `/post/${vacancy.id}`
 
-        const firstSentence = vacancy.description
-          ? vacancy.description.split(/[.!?]/)[0].trim()
-          : null
+          const firstSentence = vacancy.description
+            ? vacancy.description.split(/[.!?]/)[0].trim()
+            : null
 
-        const meta = [vacancy.company, vacancy.salary].filter(Boolean).join(' • ')
+          const meta = [vacancy.company, vacancy.salary].filter(Boolean).join(' • ')
 
-        return (
-          <Link
-            key={vacancy.id}
-            href={href}
-            className="flex flex-col gap-0.5 px-5 py-3 border-t border-accent/10 hover:bg-accent/5 transition-colors no-underline"
-          >
-            <span className="text-sm font-medium text-text">{vacancy.title}</span>
-            {meta && <span className="text-xs text-text-muted">{meta}</span>}
-            {firstSentence && (
-              <span className="text-xs text-text-light line-clamp-1">{firstSentence}</span>
-            )}
-          </Link>
-        )
-      })}
+          return (
+            <Link
+              key={vacancy.id}
+              href={href}
+              className="flex flex-col gap-0.5 px-5 py-3.5 hover:bg-amber-100/70 dark:hover:bg-amber-900/20 transition-colors no-underline group"
+            >
+              <span className="text-sm font-semibold text-text group-hover:text-accent transition-colors">
+                {vacancy.title}
+              </span>
+              {meta && <span className="text-xs text-text-muted">{meta}</span>}
+              {firstSentence && (
+                <span className="text-xs text-text-light line-clamp-1">{firstSentence}</span>
+              )}
+            </Link>
+          )
+        })}
+      </div>
     </div>
   )
 }
