@@ -1,11 +1,13 @@
 /**
  * Content Factory — Writer (MDX Edition)
- * Берёт тему по номеру, пишет SEO-статью как MDX файл, делает git push.
+ * Берёт тему по номеру, пишет SEO-статью как MDX файл,
+ * генерирует картинку через Codex CLI, делает git push.
  * Запуск: node writer.compiled.js <topicNum>
  */
 
 import { execSync, spawn } from 'child_process'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
 
@@ -14,6 +16,9 @@ const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
 const ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
 const IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+
+const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
+const CODEX_HOME = path.join(os.homedir(), '.codex')
 
 const TRANSLIT: Record<string, string> = {
   а: 'a',
@@ -111,6 +116,103 @@ function askClaude(prompt: string): Promise<string> {
   })
 }
 
+// ─── Codex image generation ─────────────────────────────────────────────────
+
+function snapshotGeneratedImages(): Set<string> {
+  const generatedDir = path.join(CODEX_HOME, 'generated_images')
+  const images = new Set<string>()
+  if (!fs.existsSync(generatedDir)) return images
+  for (const session of fs.readdirSync(generatedDir)) {
+    const sessionDir = path.join(generatedDir, session)
+    try {
+      for (const file of fs.readdirSync(sessionDir)) {
+        if (file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.jpg')) {
+          images.add(path.join(sessionDir, file))
+        }
+      }
+    } catch {}
+  }
+  return images
+}
+
+function findNewImage(before: Set<string>): string | null {
+  const after = snapshotGeneratedImages()
+  for (const img of after) {
+    if (!before.has(img)) return img
+  }
+  return null
+}
+
+function convertToWebP(srcPng: string, destWebp: string): void {
+  // Use sharp from project node_modules via inline script
+  const script = `
+    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+      .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
+      .then(() => process.exit(0))
+      .catch(e => { console.error(e.message); process.exit(1); })
+  `
+  execSync(`node --input-type=module`, {
+    input: script,
+    cwd: PROJECT_ROOT,
+    timeout: 30000,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  })
+}
+
+async function generateImageWithCodex(imagePrompt: string, slug: string): Promise<string | null> {
+  if (!fs.existsSync(CODEX_BIN)) {
+    console.log('[writer] Codex CLI не найден, пропускаю генерацию картинки')
+    return null
+  }
+
+  const before = snapshotGeneratedImages()
+  const fullPrompt =
+    `Generate a pixel-art style hero image for a blog article. ` +
+    `Style: flat pixel art, vibrant colors, 16-bit game aesthetic, wide-format landscape. ` +
+    `Scene: ${imagePrompt}. ` +
+    `Use your image generation tool to create this image now.`
+
+  console.log('[writer] Запускаю Codex для генерации картинки...')
+
+  await new Promise<void>((resolve) => {
+    const child = spawn(
+      CODEX_BIN,
+      ['exec', '--dangerously-bypass-approvals-and-sandbox', fullPrompt],
+      {
+        env: { ...process.env, CODEX_HOME },
+        stdio: 'pipe',
+        timeout: 120000,
+      }
+    )
+    // Resolve regardless of exit code — check for image file instead
+    child.on('close', () => resolve())
+    child.on('error', () => resolve())
+  })
+
+  const newImage = findNewImage(before)
+  if (!newImage) {
+    console.log('[writer] Codex не создал новое изображение')
+    return null
+  }
+
+  console.log(`[writer] Новое изображение: ${newImage}`)
+  fs.mkdirSync(IMAGES_DIR, { recursive: true })
+  const destWebp = path.join(IMAGES_DIR, `${slug}.webp`)
+
+  try {
+    convertToWebP(newImage, destWebp)
+    console.log(`[writer] WebP сохранён: ${destWebp}`)
+    return `/images/posts/${slug}.webp`
+  } catch (e) {
+    console.warn('[writer] Конвертация в WebP не удалась, копирую PNG:', (e as Error).message)
+    const destPng = path.join(IMAGES_DIR, `${slug}.png`)
+    fs.copyFileSync(newImage, destPng)
+    return `/images/posts/${slug}.png`
+  }
+}
+
+// ─── Article generation ──────────────────────────────────────────────────────
+
 interface ArticleResult {
   markdown: string
   metaTitle: string
@@ -136,7 +238,7 @@ async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
   "competitorH2s": ["типичный H2 конкурента 1", "типичный H2 конкурента 2", "типичный H2 конкурента 3"],
   "uniqueAngle": "чем наша статья будет отличаться и лучше",
   "tags": ["тег1", "тег2"],
-  "imagePrompt": "English prompt for pixel-art hero image 900x450 for this article (describe scene, not text)"
+  "imagePrompt": "English prompt for pixel-art hero image 900x450 for this article (describe scene, objects, no text)"
 }`)
 
   const researchMatch = research.match(/\{[\s\S]*\}/)
@@ -217,7 +319,6 @@ ${planText}
   "markdown": "## Заголовок\\n\\nТекст статьи в Markdown..."
 }`)
 
-  // Try to find and parse the outermost JSON object
   let markdown = ''
   const articleMatch = article.match(/\{[\s\S]*\}/)
   if (!articleMatch) throw new Error('Writer не вернул JSON')
@@ -225,7 +326,6 @@ ${planText}
     const parsed = JSON.parse(articleMatch[0]) as { markdown: string }
     markdown = parsed.markdown
   } catch {
-    // Fallback: if Claude returned markdown without JSON wrapper, use as-is
     const mdStart = article.indexOf('## ')
     if (mdStart !== -1) {
       markdown = article.slice(mdStart)
@@ -244,8 +344,14 @@ ${planText}
   }
 }
 
-function buildMdxFrontmatter(topic: Topic, result: ArticleResult, publishedAt: string): string {
+function buildMdxFrontmatter(
+  topic: Topic,
+  result: ArticleResult,
+  publishedAt: string,
+  imageUrl: string | null
+): string {
   const tags = result.tags.length ? JSON.stringify(result.tags) : '[]'
+  const imageLine = imageUrl ? `\nimageUrl: "${imageUrl}"` : ''
   return `---
 title: "${topic.title.replace(/"/g, '\\"')}"
 slug: "${result.slug}"
@@ -253,14 +359,21 @@ description: "${result.metaDesc.replace(/"/g, '\\"')}"
 metaTitle: "${result.metaTitle.replace(/"/g, '\\"')}"
 metaDescription: "${result.metaDesc.replace(/"/g, '\\"')}"
 publishedAt: "${publishedAt}"
-tags: ${tags}
+tags: ${tags}${imageLine}
 ---
 `
 }
 
-function gitCommitAndPush(slug: string, title: string): void {
+function gitCommitAndPush(slug: string, title: string, hasImage: boolean): void {
   const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
   execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  if (hasImage) {
+    // Stage any new image files
+    execSync(`git add "public/images/posts/${slug}.*" 2>/dev/null || true`, {
+      cwd: PROJECT_ROOT,
+      shell: '/bin/bash',
+    })
+  }
   const message = `feat: add article "${title}"`
   execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
@@ -281,22 +394,35 @@ async function main() {
   console.log(`[writer] Пишу статью: "${topic.title}"`)
   await sendMessage(
     `✍️ Генерирую статью #${topicNum}:\n<b>${topic.title}</b>\n\n` +
-      `🔍 SEO-рисерч → 📋 план → ✏️ текст\n\nЭто займёт ~2 минуты...`
+      `🔍 SEO-рисерч → 📋 план → ✏️ текст → 🎨 картинка\n\nЭто займёт ~3 минуты...`
   )
 
+  // ШАГ 1-3: Генерируем статью
   const result = await generateMdxArticle(topic)
   console.log(`[writer] Статья написана, slug: ${result.slug}`)
 
-  // Проверяем что статья с таким slug не существует
+  // Проверяем что slug не занят
   const mdxPath = path.join(ARTICLES_DIR, `${result.slug}.mdx`)
   if (fs.existsSync(mdxPath)) {
-    const newSlug = `${result.slug}-${Date.now().toString(36)}`
-    console.log(`[writer] Slug ${result.slug} уже занят, использую ${newSlug}`)
-    result.slug = newSlug
+    result.slug = `${result.slug}-${Date.now().toString(36)}`
+    console.log(`[writer] Slug скорректирован: ${result.slug}`)
   }
 
+  // ШАГ 4: Генерируем картинку через Codex
+  console.log('[writer] Генерирую картинку...')
+  const imageUrl = result.imagePrompt
+    ? await generateImageWithCodex(result.imagePrompt, result.slug)
+    : null
+
+  if (imageUrl) {
+    console.log(`[writer] Картинка готова: ${imageUrl}`)
+  } else {
+    console.log('[writer] Картинка не сгенерирована, публикуем без неё')
+  }
+
+  // Пишем MDX файл
   const publishedAt = new Date().toISOString().split('T')[0]
-  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt)
+  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + result.markdown
 
   fs.mkdirSync(ARTICLES_DIR, { recursive: true })
@@ -305,7 +431,7 @@ async function main() {
 
   // Git commit и push
   try {
-    gitCommitAndPush(result.slug, topic.title)
+    gitCommitAndPush(result.slug, topic.title, imageUrl !== null)
     console.log('[writer] Git push выполнен ✓')
   } catch (e) {
     console.error('[writer] Git push не удался:', e)
@@ -313,21 +439,20 @@ async function main() {
     process.exit(1)
   }
 
-  // Обновляем статус темы
   markTopicPublished(topicsFile, topicNum)
 
   const articleUrl = `${SITE_URL}/articles/${result.slug}`
-  const imagePromptText = result.imagePrompt
-    ? `\n\n🎨 <b>Промпт для картинки (Codex Pic):</b>\n<code>${result.imagePrompt}</code>`
-    : ''
+  const imageStatus = imageUrl
+    ? `🎨 Картинка: ✅ автоматически`
+    : `🎨 Картинка: ❌ не сгенерирована (добавь вручную через Codex Pic)`
 
   await sendMessage(
     `✅ <b>Статья опубликована!</b>\n\n` +
       `📌 ${topic.title}\n` +
-      `🔑 ${topic.keyword}\n\n` +
-      `🔗 <a href="${articleUrl}">${articleUrl}</a>` +
-      imagePromptText +
-      `\n\n⏳ Деплой займёт ~3 минуты`
+      `🔑 ${topic.keyword}\n` +
+      `${imageStatus}\n\n` +
+      `🔗 <a href="${articleUrl}">${articleUrl}</a>\n\n` +
+      `⏳ Деплой займёт ~3 минуты`
   )
 
   console.log(`[writer] Готово: ${articleUrl}`)

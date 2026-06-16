@@ -1,6 +1,7 @@
 // writer.ts
 import { execSync, spawn } from 'child_process'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 
 // lib/telegram.ts
@@ -35,6 +36,8 @@ var PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
 var ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
 var IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
 var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+var CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
+var CODEX_HOME = path.join(os.homedir(), '.codex')
 var TRANSLIT = {
   а: 'a',
   б: 'b',
@@ -121,6 +124,94 @@ function askClaude(prompt) {
     child.on('error', reject)
   })
 }
+function snapshotGeneratedImages() {
+  const generatedDir = path.join(CODEX_HOME, 'generated_images')
+  const images = /* @__PURE__ */ new Set()
+  if (!fs.existsSync(generatedDir)) return images
+  for (const session of fs.readdirSync(generatedDir)) {
+    const sessionDir = path.join(generatedDir, session)
+    try {
+      for (const file of fs.readdirSync(sessionDir)) {
+        if (file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.jpg')) {
+          images.add(path.join(sessionDir, file))
+        }
+      }
+    } catch {}
+  }
+  return images
+}
+function findNewImage(before) {
+  const after = snapshotGeneratedImages()
+  for (const img of after) {
+    if (!before.has(img)) return img
+  }
+  return null
+}
+function convertToWebP(srcPng, destWebp) {
+  const script = `
+    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+      .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
+      .then(() => process.exit(0))
+      .catch(e => { console.error(e.message); process.exit(1); })
+  `
+  execSync(`node --input-type=module`, {
+    input: script,
+    cwd: PROJECT_ROOT,
+    timeout: 3e4,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  })
+}
+async function generateImageWithCodex(imagePrompt, slug) {
+  if (!fs.existsSync(CODEX_BIN)) {
+    console.log(
+      '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438'
+    )
+    return null
+  }
+  const before = snapshotGeneratedImages()
+  const fullPrompt = `Generate a pixel-art style hero image for a blog article. Style: flat pixel art, vibrant colors, 16-bit game aesthetic, wide-format landscape. Scene: ${imagePrompt}. Use your image generation tool to create this image now.`
+  console.log(
+    '[writer] \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E Codex \u0434\u043B\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438...'
+  )
+  await new Promise((resolve) => {
+    const child = spawn(
+      CODEX_BIN,
+      ['exec', '--dangerously-bypass-approvals-and-sandbox', fullPrompt],
+      {
+        env: { ...process.env, CODEX_HOME },
+        stdio: 'pipe',
+        timeout: 12e4,
+      }
+    )
+    child.on('close', () => resolve())
+    child.on('error', () => resolve())
+  })
+  const newImage = findNewImage(before)
+  if (!newImage) {
+    console.log(
+      '[writer] Codex \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B \u043D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435'
+    )
+    return null
+  }
+  console.log(
+    `[writer] \u041D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: ${newImage}`
+  )
+  fs.mkdirSync(IMAGES_DIR, { recursive: true })
+  const destWebp = path.join(IMAGES_DIR, `${slug}.webp`)
+  try {
+    convertToWebP(newImage, destWebp)
+    console.log(`[writer] WebP \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${destWebp}`)
+    return `/images/posts/${slug}.webp`
+  } catch (e) {
+    console.warn(
+      '[writer] \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0430\u0446\u0438\u044F \u0432 WebP \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C, \u043A\u043E\u043F\u0438\u0440\u0443\u044E PNG:',
+      e.message
+    )
+    const destPng = path.join(IMAGES_DIR, `${slug}.png`)
+    fs.copyFileSync(newImage, destPng)
+    return `/images/posts/${slug}.png`
+  }
+}
 async function generateMdxArticle(topic) {
   const research =
     await askClaude(`\u0422\u044B SEO-\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0434\u043B\u044F \u0440\u0443\u0441\u0441\u043A\u043E\u044F\u0437\u044B\u0447\u043D\u043E\u0433\u043E \u0440\u044B\u043D\u043A\u0430 digital-\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439.
@@ -137,7 +228,7 @@ async function generateMdxArticle(topic) {
   "competitorH2s": ["\u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0439 H2 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u0430 1", "\u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0439 H2 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u0430 2", "\u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0439 H2 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u0430 3"],
   "uniqueAngle": "\u0447\u0435\u043C \u043D\u0430\u0448\u0430 \u0441\u0442\u0430\u0442\u044C\u044F \u0431\u0443\u0434\u0435\u0442 \u043E\u0442\u043B\u0438\u0447\u0430\u0442\u044C\u0441\u044F \u0438 \u043B\u0443\u0447\u0448\u0435",
   "tags": ["\u0442\u0435\u04331", "\u0442\u0435\u04332"],
-  "imagePrompt": "English prompt for pixel-art hero image 900x450 for this article (describe scene, not text)"
+  "imagePrompt": "English prompt for pixel-art hero image 900x450 for this article (describe scene, objects, no text)"
 }`)
   const researchMatch = research.match(/\{[\s\S]*\}/)
   if (!researchMatch)
@@ -234,8 +325,12 @@ ${planText}
     imagePrompt: seoData.imagePrompt || '',
   }
 }
-function buildMdxFrontmatter(topic, result, publishedAt) {
+function buildMdxFrontmatter(topic, result, publishedAt, imageUrl) {
   const tags = result.tags.length ? JSON.stringify(result.tags) : '[]'
+  const imageLine = imageUrl
+    ? `
+imageUrl: "${imageUrl}"`
+    : ''
   return `---
 title: "${topic.title.replace(/"/g, '\\"')}"
 slug: "${result.slug}"
@@ -243,13 +338,19 @@ description: "${result.metaDesc.replace(/"/g, '\\"')}"
 metaTitle: "${result.metaTitle.replace(/"/g, '\\"')}"
 metaDescription: "${result.metaDesc.replace(/"/g, '\\"')}"
 publishedAt: "${publishedAt}"
-tags: ${tags}
+tags: ${tags}${imageLine}
 ---
 `
 }
-function gitCommitAndPush(slug, title) {
+function gitCommitAndPush(slug, title, hasImage) {
   const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
   execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  if (hasImage) {
+    execSync(`git add "public/images/posts/${slug}.*" 2>/dev/null || true`, {
+      cwd: PROJECT_ROOT,
+      shell: '/bin/bash',
+    })
+  }
   const message = `feat: add article "${title}"`
   execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
@@ -276,9 +377,9 @@ async function main() {
     `\u270D\uFE0F \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E #${topicNum}:
 <b>${topic.title}</b>
 
-\u{1F50D} SEO-\u0440\u0438\u0441\u0435\u0440\u0447 \u2192 \u{1F4CB} \u043F\u043B\u0430\u043D \u2192 \u270F\uFE0F \u0442\u0435\u043A\u0441\u0442
+\u{1F50D} SEO-\u0440\u0438\u0441\u0435\u0440\u0447 \u2192 \u{1F4CB} \u043F\u043B\u0430\u043D \u2192 \u270F\uFE0F \u0442\u0435\u043A\u0441\u0442 \u2192 \u{1F3A8} \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430
 
-\u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~2 \u043C\u0438\u043D\u0443\u0442\u044B...`
+\u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~3 \u043C\u0438\u043D\u0443\u0442\u044B...`
   )
   const result = await generateMdxArticle(topic)
   console.log(
@@ -286,14 +387,28 @@ async function main() {
   )
   const mdxPath = path.join(ARTICLES_DIR, `${result.slug}.mdx`)
   if (fs.existsSync(mdxPath)) {
-    const newSlug = `${result.slug}-${Date.now().toString(36)}`
+    result.slug = `${result.slug}-${Date.now().toString(36)}`
     console.log(
-      `[writer] Slug ${result.slug} \u0443\u0436\u0435 \u0437\u0430\u043D\u044F\u0442, \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u044E ${newSlug}`
+      `[writer] Slug \u0441\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D: ${result.slug}`
     )
-    result.slug = newSlug
+  }
+  console.log(
+    '[writer] \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443...'
+  )
+  const imageUrl = result.imagePrompt
+    ? await generateImageWithCodex(result.imagePrompt, result.slug)
+    : null
+  if (imageUrl) {
+    console.log(
+      `[writer] \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u0433\u043E\u0442\u043E\u0432\u0430: ${imageUrl}`
+    )
+  } else {
+    console.log(
+      '[writer] \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u0430, \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0435\u043C \u0431\u0435\u0437 \u043D\u0435\u0451'
+    )
   }
   const publishedAt = /* @__PURE__ */ new Date().toISOString().split('T')[0]
-  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt)
+  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + result.markdown
   fs.mkdirSync(ARTICLES_DIR, { recursive: true })
   fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
@@ -301,7 +416,7 @@ async function main() {
     `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
   )
   try {
-    gitCommitAndPush(result.slug, topic.title)
+    gitCommitAndPush(result.slug, topic.title, imageUrl !== null)
     console.log('[writer] Git push \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713')
   } catch (e) {
     console.error('[writer] Git push \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:', e)
@@ -311,21 +426,17 @@ ${e.message}`)
   }
   markTopicPublished(topicsFile, topicNum)
   const articleUrl = `${SITE_URL}/articles/${result.slug}`
-  const imagePromptText = result.imagePrompt
-    ? `
-
-\u{1F3A8} <b>\u041F\u0440\u043E\u043C\u043F\u0442 \u0434\u043B\u044F \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438 (Codex Pic):</b>
-<code>${result.imagePrompt}</code>`
-    : ''
+  const imageStatus = imageUrl
+    ? `\u{1F3A8} \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430: \u2705 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438`
+    : `\u{1F3A8} \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430: \u274C \u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u0430 (\u0434\u043E\u0431\u0430\u0432\u044C \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u0447\u0435\u0440\u0435\u0437 Codex Pic)`
   await sendMessage(
     `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>
 
 \u{1F4CC} ${topic.title}
 \u{1F511} ${topic.keyword}
+${imageStatus}
 
-\u{1F517} <a href="${articleUrl}">${articleUrl}</a>` +
-      imagePromptText +
-      `
+\u{1F517} <a href="${articleUrl}">${articleUrl}</a>
 
 \u23F3 \u0414\u0435\u043F\u043B\u043E\u0439 \u0437\u0430\u0439\u043C\u0451\u0442 ~3 \u043C\u0438\u043D\u0443\u0442\u044B`
   )

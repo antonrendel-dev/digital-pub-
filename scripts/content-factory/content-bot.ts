@@ -170,7 +170,8 @@ async function handleMessage(msg: {
       `🤖 <b>Content Factory Bot</b>\n\n` +
         `<b>Команды:</b>\n` +
         `/content_plan — сгенерировать 25 тем (аналитик)\n` +
-        `/content_approve 1 3 7 — одобрить темы для публикации\n` +
+        `/content_approve 1 3 7 — одобрить выбранные темы\n` +
+        `/content_approve_all — одобрить все темы сразу\n` +
         `/content_write 5 — немедленно написать статью #5\n` +
         `/content_next — показать очередь одобренных тем\n` +
         `/content_help — эта справка\n\n` +
@@ -209,6 +210,31 @@ async function handleMessage(msg: {
     msg += `\n\nПоказать очередь: <code>/content_next</code>`
 
     await reply(chatId, threadId, msg)
+    return
+  }
+
+  if (command === '/content_approve_all') {
+    const topicsFile = getLatestTopicsFile()
+    if (!topicsFile) {
+      await reply(chatId, threadId, '❌ Нет файлов с темами. Запусти <code>/content_plan</code>')
+      return
+    }
+
+    const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8')) as {
+      date: string
+      topics: Topic[]
+    }
+    const pending = raw.topics.filter((t) => !t.published)
+    pending.forEach((t) => (t.approved = true))
+    fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+
+    await reply(
+      chatId,
+      threadId,
+      `✅ Все <b>${pending.length}</b> неопубликованных тем одобрены!\n\n` +
+        `⏰ Публикация пн/ср/пт в 09:00 МСК\n\n` +
+        `Очередь: <code>/content_next</code>`
+    )
     return
   }
 
