@@ -98,27 +98,27 @@ export default async function RelatedVacanciesBlock({ categories }: Props) {
   return (
     <div className="my-8 rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/40 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3.5 bg-slate-800 dark:bg-slate-900">
+      <div className="flex items-center justify-between px-5 py-3.5 bg-blue-50 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-800/40">
         <div className="flex items-center gap-2">
           <svg
             width="15"
             height="15"
             viewBox="0 0 15 15"
             fill="none"
-            className="shrink-0 text-amber-400"
+            className="shrink-0 text-blue-600 dark:text-blue-400"
           >
             <path
               d="M5.5 2a.5.5 0 0 0-.5.5V4H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2V2.5a.5.5 0 0 0-.5-.5h-4ZM6 4V3h3v1H6Zm-3 1h9v7H3V5Z"
               fill="currentColor"
             />
           </svg>
-          <span className="text-sm font-bold text-white tracking-tight">
+          <span className="text-sm font-bold text-blue-700 dark:text-blue-300 tracking-tight">
             Актуальные вакансии — {categoryName}
           </span>
         </div>
         <Link
           href={`/vacancies/${categorySlug}`}
-          className="text-xs font-medium text-amber-400 hover:text-amber-300 hover:underline no-underline whitespace-nowrap transition-colors"
+          className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline no-underline whitespace-nowrap"
         >
           Смотреть все &rarr;
         </Link>
