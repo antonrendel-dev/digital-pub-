@@ -11,6 +11,7 @@ import path from 'path'
 import { sendMessage } from './lib/telegram.js'
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
+const ARTICLES_DIR = path.join(import.meta.dirname, '../../content/articles')
 
 interface Topic {
   id: number
@@ -19,6 +20,31 @@ interface Topic {
   audience: 'Соискатель' | 'HR' | 'Оба'
   type: 'Гайд' | 'Конспект' | 'Сравнение' | 'Кейс' | 'Чеклист'
   trafficEst: string
+}
+
+function getPublishedArticleTitles(): string[] {
+  if (!fs.existsSync(ARTICLES_DIR)) return []
+  return fs
+    .readdirSync(ARTICLES_DIR)
+    .filter((f) => f.endsWith('.mdx'))
+    .flatMap((f) => {
+      const raw = fs.readFileSync(path.join(ARTICLES_DIR, f), 'utf-8')
+      const m = raw.match(/^title:\s*["']?(.+?)["']?\s*$/m)
+      return m ? [m[1]] : []
+    })
+}
+
+function getAllPlannedTopics(): Array<{ title: string; keyword: string }> {
+  if (!fs.existsSync(DATA_DIR)) return []
+  return fs
+    .readdirSync(DATA_DIR)
+    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
+    .flatMap((f) => {
+      const { topics } = JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), 'utf-8')) as {
+        topics: Topic[]
+      }
+      return topics.map((t) => ({ title: t.title, keyword: t.keyword }))
+    })
 }
 
 function askClaude(prompt: string): Promise<string> {
@@ -40,12 +66,28 @@ function askClaude(prompt: string): Promise<string> {
 }
 
 async function generateTopics(): Promise<Topic[]> {
+  const publishedTitles = getPublishedArticleTitles()
+  const plannedTopics = getAllPlannedTopics()
+
+  const publishedBlock =
+    publishedTitles.length > 0
+      ? `\nУЖЕ ОПУБЛИКОВАННЫЕ СТАТЬИ (строго не повторять, не пересекаться по теме):\n` +
+        publishedTitles.map((t) => `- ${t}`).join('\n')
+      : ''
+
+  const plannedBlock =
+    plannedTopics.length > 0
+      ? `\nУЖЕ ЗАПЛАНИРОВАННЫЕ ТЕМЫ (не дублировать ни заголовок, ни ключ):\n` +
+        plannedTopics.map((t) => `- ${t.title} [ключ: ${t.keyword}]`).join('\n')
+      : ''
+
   const raw =
     await askClaude(`Ты SEO-аналитик и контент-стратег для русскоязычного job board d-pub.ru — агрегатора вакансий для digital-специалистов (маркетологи, дизайнеры, SMM, аналитики, копирайтеры, таргетологи) из Telegram-каналов.
 
 Аудитория сайта: соискатели (ищут работу в digital) и HR/работодатели (нанимают digital-специалистов).
+${publishedBlock}${plannedBlock}
 
-Составь список 25 тем для статей на блог. Для каждой темы укажи:
+Составь список 25 НОВЫХ тем для статей на блог — уникальных, не пересекающихся с перечисленным выше. Для каждой темы укажи:
 - Заголовок статьи (конкретный, с ключевым словом)
 - Главный поисковый ключ (1-2 слова/фразы, которые ищут)
 - Аудитория: Соискатель / HR / Оба
@@ -58,6 +100,7 @@ async function generateTopics(): Promise<Topic[]> {
 - Разные форматы и аудитории (mix HR и соискателей)
 - Включи 3-4 темы в формате "конспект зарубежного материала" (пересказ зарубежных best practices)
 - Не дублируй то что уже есть на hh.ru или superjob
+- Каждая тема должна закрывать уникальный поисковый запрос — не должно быть двух тем по одной теме с разными формулировками
 
 Ответ строго в формате JSON массива, без лишнего текста:
 [
