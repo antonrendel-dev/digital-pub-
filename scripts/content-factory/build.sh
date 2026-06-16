@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-npx esbuild analyst.ts writer.ts publisher.ts content-bot.ts \
+npx esbuild analyst.ts writer.ts publisher.ts content-bot.ts scheduler.ts \
   --bundle \
   --platform=node \
   --format=esm \
@@ -11,4 +11,4 @@ npx esbuild analyst.ts writer.ts publisher.ts content-bot.ts \
   --outdir=. \
   --out-extension:.js=.compiled.js
 
-echo "✓ analyst  writer  publisher  content-bot"
+echo "✓ analyst  writer  publisher  content-bot  scheduler"

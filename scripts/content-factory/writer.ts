@@ -1,17 +1,19 @@
 /**
- * Content Factory — Writer
- * Берёт тему по номеру, пишет SEO-статью, сохраняет черновик в Payload CMS.
+ * Content Factory — Writer (MDX Edition)
+ * Берёт тему по номеру, пишет SEO-статью как MDX файл, делает git push.
  * Запуск: node writer.compiled.js <topicNum>
- * Вызывается из Python-бота при /content_approve
  */
 
-import { spawn } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
-const PAYLOAD_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
+const ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
+const IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
+const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
 
 const TRANSLIT: Record<string, string> = {
   а: 'a',
@@ -59,8 +61,6 @@ function toSlug(s: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 80)
 }
-const ADMIN_EMAIL = process.env.PAYLOAD_ADMIN_EMAIL || process.env.ADMIN_EMAIL
-const ADMIN_PASSWORD = process.env.PAYLOAD_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD
 
 interface Topic {
   id: number
@@ -69,6 +69,8 @@ interface Topic {
   audience: string
   type: string
   trafficEst: string
+  approved?: boolean
+  published?: boolean
 }
 
 function getLatestTopicsFile(): string {
@@ -79,6 +81,16 @@ function getLatestTopicsFile(): string {
     .reverse()
   if (!files.length) throw new Error('Нет файлов с темами. Сначала запусти analyst.js')
   return path.join(DATA_DIR, files[0])
+}
+
+function markTopicPublished(topicsFile: string, topicId: number): void {
+  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8')) as {
+    date: string
+    topics: Topic[]
+  }
+  const topic = raw.topics.find((t) => t.id === topicId)
+  if (topic) topic.published = true
+  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
 }
 
 function askClaude(prompt: string): Promise<string> {
@@ -99,10 +111,17 @@ function askClaude(prompt: string): Promise<string> {
   })
 }
 
-async function generateSeoHtml(
-  topic: Topic
-): Promise<{ html: string; metaTitle: string; metaDesc: string; slug: string }> {
-  // ШАГ 1: SEO-рисерч — интент, LSI-слова, структура конкурентов
+interface ArticleResult {
+  markdown: string
+  metaTitle: string
+  metaDesc: string
+  slug: string
+  tags: string[]
+  imagePrompt: string
+}
+
+async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
+  // ШАГ 1: SEO-рисерч
   const research = await askClaude(`Ты SEO-аналитик для русскоязычного рынка digital-вакансий.
 
 Проведи рисерч для статьи по теме: "${topic.title}"
@@ -115,7 +134,9 @@ async function generateSeoHtml(
   "lsi": ["слово1", "слово2", "слово3", "слово4", "слово5", "слово6", "слово7", "слово8"],
   "painPoints": ["боль читателя 1", "боль читателя 2", "боль читателя 3"],
   "competitorH2s": ["типичный H2 конкурента 1", "типичный H2 конкурента 2", "типичный H2 конкурента 3"],
-  "uniqueAngle": "чем наша статья будет отличаться и лучше"
+  "uniqueAngle": "чем наша статья будет отличаться и лучше",
+  "tags": ["тег1", "тег2"],
+  "imagePrompt": "English prompt for pixel-art hero image 900x450 for this article (describe scene, not text)"
 }`)
 
   const researchMatch = research.match(/\{[\s\S]*\}/)
@@ -126,9 +147,11 @@ async function generateSeoHtml(
     painPoints: string[]
     competitorH2s: string[]
     uniqueAngle: string
+    tags: string[]
+    imagePrompt: string
   }
 
-  // ШАГ 2: Планирование — детальный план с H2/H3
+  // ШАГ 2: Планирование
   const outline = await askClaude(`Ты контент-стратег. Составь детальный план статьи.
 
 ТЕМА: ${topic.title}
@@ -164,7 +187,7 @@ LSI-слова для включения: ${seoData.lsi.join(', ')}
     slug: string
   }
 
-  // ШАГ 3: Написание статьи по плану
+  // ШАГ 3: Написание статьи в Markdown
   const planText = plan.h2s
     .map((h, i) => `${i + 1}. ${h.title}\n   Тезисы: ${h.keyPoints.join('; ')}`)
     .join('\n')
@@ -186,69 +209,61 @@ ${planText}
 - Начинай сразу с сути — без вводных "в этой статье мы..."
 - Каждый H2 раскрывай практически: конкретные советы, цифры, примеры
 - Стиль: профессиональный, живой, без канцелярита
-- Упомяни d-pub.ru как источник вакансий 1-2 раза органично
-- HTML только с тегами: h2, h3, p, ul, ol, li, strong, a
+- Упомяни d-pub.ru как источник вакансий 1-2 раза органично со ссылкой на [/vacancies](/vacancies)
+- Используй Markdown: ## для H2, ### для H3, **жирный**, *курсив*, таблицы, списки
 
 Ответь строго в формате JSON (без лишнего текста):
 {
-  "html": "<h2>...</h2><p>...</p>..."
+  "markdown": "## Заголовок\\n\\nТекст статьи в Markdown..."
 }`)
 
+  // Try to find and parse the outermost JSON object
+  let markdown = ''
   const articleMatch = article.match(/\{[\s\S]*\}/)
   if (!articleMatch) throw new Error('Writer не вернул JSON')
-  const { html } = JSON.parse(articleMatch[0]) as { html: string }
+  try {
+    const parsed = JSON.parse(articleMatch[0]) as { markdown: string }
+    markdown = parsed.markdown
+  } catch {
+    // Fallback: if Claude returned markdown without JSON wrapper, use as-is
+    const mdStart = article.indexOf('## ')
+    if (mdStart !== -1) {
+      markdown = article.slice(mdStart)
+    } else {
+      throw new Error('Writer не вернул правильный JSON и не нашлось Markdown')
+    }
+  }
 
   return {
-    html,
+    markdown: markdown.trim(),
     metaTitle: plan.metaTitle,
     metaDesc: plan.metaDesc,
     slug: toSlug(plan.slug || topic.title),
+    tags: Array.isArray(seoData.tags) ? seoData.tags : [],
+    imagePrompt: seoData.imagePrompt || '',
   }
 }
 
-async function getPayloadToken(): Promise<string> {
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD)
-    throw new Error('PAYLOAD_ADMIN_EMAIL / PAYLOAD_ADMIN_PASSWORD не заданы')
-  const res = await fetch(`${PAYLOAD_URL}/api/users/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
-  })
-  const data = (await res.json()) as { token?: string; message?: string }
-  if (!data.token) throw new Error(`Payload login failed: ${data.message}`)
-  return data.token
+function buildMdxFrontmatter(topic: Topic, result: ArticleResult, publishedAt: string): string {
+  const tags = result.tags.length ? JSON.stringify(result.tags) : '[]'
+  return `---
+title: "${topic.title.replace(/"/g, '\\"')}"
+slug: "${result.slug}"
+description: "${result.metaDesc.replace(/"/g, '\\"')}"
+metaTitle: "${result.metaTitle.replace(/"/g, '\\"')}"
+metaDescription: "${result.metaDesc.replace(/"/g, '\\"')}"
+publishedAt: "${publishedAt}"
+tags: ${tags}
+---
+`
 }
 
-async function createDraft(
-  topic: Topic,
-  seo: { html: string; metaTitle: string; metaDesc: string; slug: string },
-  token: string
-): Promise<string> {
-  const res = await fetch(`${PAYLOAD_URL}/api/articles`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      title: topic.title,
-      slug: seo.slug,
-      description: seo.metaDesc,
-      metaTitle: seo.metaTitle,
-      metaDescription: seo.metaDesc,
-      content: seo.html,
-      status: 'draft',
-      publishedAt: new Date().toISOString(),
-    }),
-  })
-  const data = (await res.json()) as {
-    id?: string | number
-    doc?: { id: string | number }
-    errors?: unknown[]
-  }
-  const id = data.id ?? data.doc?.id
-  if (!id) throw new Error(`Payload create failed: ${JSON.stringify(data)}`)
-  return String(id)
+function gitCommitAndPush(slug: string, title: string): void {
+  const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
+  execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  const message = `feat: add article "${title}"`
+  execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
 
 async function main() {
@@ -269,22 +284,53 @@ async function main() {
       `🔍 SEO-рисерч → 📋 план → ✏️ текст\n\nЭто займёт ~2 минуты...`
   )
 
-  const seo = await generateSeoHtml(topic)
-  console.log('[writer] Статья написана, сохраняю черновик...')
+  const result = await generateMdxArticle(topic)
+  console.log(`[writer] Статья написана, slug: ${result.slug}`)
 
-  const token = await getPayloadToken()
-  const draftId = await createDraft(topic, seo, token)
+  // Проверяем что статья с таким slug не существует
+  const mdxPath = path.join(ARTICLES_DIR, `${result.slug}.mdx`)
+  if (fs.existsSync(mdxPath)) {
+    const newSlug = `${result.slug}-${Date.now().toString(36)}`
+    console.log(`[writer] Slug ${result.slug} уже занят, использую ${newSlug}`)
+    result.slug = newSlug
+  }
 
-  const adminLink = `${PAYLOAD_URL}/admin/collections/articles/${draftId}`
+  const publishedAt = new Date().toISOString().split('T')[0]
+  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt)
+  const mdxContent = frontmatter + '\n' + result.markdown
+
+  fs.mkdirSync(ARTICLES_DIR, { recursive: true })
+  fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
+  console.log(`[writer] Файл создан: content/articles/${result.slug}.mdx`)
+
+  // Git commit и push
+  try {
+    gitCommitAndPush(result.slug, topic.title)
+    console.log('[writer] Git push выполнен ✓')
+  } catch (e) {
+    console.error('[writer] Git push не удался:', e)
+    await sendMessage(`⚠️ Статья написана, но git push не удался:\n${(e as Error).message}`)
+    process.exit(1)
+  }
+
+  // Обновляем статус темы
+  markTopicPublished(topicsFile, topicNum)
+
+  const articleUrl = `${SITE_URL}/articles/${result.slug}`
+  const imagePromptText = result.imagePrompt
+    ? `\n\n🎨 <b>Промпт для картинки (Codex Pic):</b>\n<code>${result.imagePrompt}</code>`
+    : ''
+
   await sendMessage(
-    `✅ <b>Черновик #${topicNum} готов!</b>\n\n` +
+    `✅ <b>Статья опубликована!</b>\n\n` +
       `📌 ${topic.title}\n` +
-      `🔑 ${topic.keyword} · ${topic.trafficEst} трафик\n\n` +
-      `👀 Просмотр и редактирование:\n${adminLink}\n\n` +
-      `Чтобы опубликовать:\n<code>/content_publish ${draftId}</code>`
+      `🔑 ${topic.keyword}\n\n` +
+      `🔗 <a href="${articleUrl}">${articleUrl}</a>` +
+      imagePromptText +
+      `\n\n⏳ Деплой займёт ~3 минуты`
   )
 
-  console.log(`[writer] Черновик создан: ID=${draftId}, ссылка: ${adminLink}`)
+  console.log(`[writer] Готово: ${articleUrl}`)
 }
 
 main().catch((e) => {

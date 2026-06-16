@@ -1,5 +1,5 @@
 // writer.ts
-import { spawn } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
@@ -31,7 +31,10 @@ async function sendMessage(text, extra = {}) {
 
 // writer.ts
 var DATA_DIR = path.join(import.meta.dirname, 'data')
-var PAYLOAD_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+var PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
+var ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
+var IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
+var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
 var TRANSLIT = {
   а: 'a',
   б: 'b',
@@ -77,8 +80,6 @@ function toSlug(s) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 80)
 }
-var ADMIN_EMAIL = process.env.PAYLOAD_ADMIN_EMAIL || process.env.ADMIN_EMAIL
-var ADMIN_PASSWORD = process.env.PAYLOAD_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD
 function getLatestTopicsFile() {
   const files = fs
     .readdirSync(DATA_DIR)
@@ -90,6 +91,12 @@ function getLatestTopicsFile() {
       '\u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u0443\u0441\u0442\u0438 analyst.js'
     )
   return path.join(DATA_DIR, files[0])
+}
+function markTopicPublished(topicsFile, topicId) {
+  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8'))
+  const topic = raw.topics.find((t) => t.id === topicId)
+  if (topic) topic.published = true
+  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
 }
 function askClaude(prompt) {
   return new Promise((resolve, reject) => {
@@ -114,7 +121,7 @@ function askClaude(prompt) {
     child.on('error', reject)
   })
 }
-async function generateSeoHtml(topic) {
+async function generateMdxArticle(topic) {
   const research =
     await askClaude(`\u0422\u044B SEO-\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0434\u043B\u044F \u0440\u0443\u0441\u0441\u043A\u043E\u044F\u0437\u044B\u0447\u043D\u043E\u0433\u043E \u0440\u044B\u043D\u043A\u0430 digital-\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439.
 
@@ -128,7 +135,9 @@ async function generateSeoHtml(topic) {
   "lsi": ["\u0441\u043B\u043E\u0432\u043E1", "\u0441\u043B\u043E\u0432\u043E2", "\u0441\u043B\u043E\u0432\u043E3", "\u0441\u043B\u043E\u0432\u043E4", "\u0441\u043B\u043E\u0432\u043E5", "\u0441\u043B\u043E\u0432\u043E6", "\u0441\u043B\u043E\u0432\u043E7", "\u0441\u043B\u043E\u0432\u043E8"],
   "painPoints": ["\u0431\u043E\u043B\u044C \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044F 1", "\u0431\u043E\u043B\u044C \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044F 2", "\u0431\u043E\u043B\u044C \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044F 3"],
   "competitorH2s": ["\u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0439 H2 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u0430 1", "\u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0439 H2 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u0430 2", "\u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0439 H2 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u0430 3"],
-  "uniqueAngle": "\u0447\u0435\u043C \u043D\u0430\u0448\u0430 \u0441\u0442\u0430\u0442\u044C\u044F \u0431\u0443\u0434\u0435\u0442 \u043E\u0442\u043B\u0438\u0447\u0430\u0442\u044C\u0441\u044F \u0438 \u043B\u0443\u0447\u0448\u0435"
+  "uniqueAngle": "\u0447\u0435\u043C \u043D\u0430\u0448\u0430 \u0441\u0442\u0430\u0442\u044C\u044F \u0431\u0443\u0434\u0435\u0442 \u043E\u0442\u043B\u0438\u0447\u0430\u0442\u044C\u0441\u044F \u0438 \u043B\u0443\u0447\u0448\u0435",
+  "tags": ["\u0442\u0435\u04331", "\u0442\u0435\u04332"],
+  "imagePrompt": "English prompt for pixel-art hero image 900x450 for this article (describe scene, not text)"
 }`)
   const researchMatch = research.match(/\{[\s\S]*\}/)
   if (!researchMatch)
@@ -192,60 +201,58 @@ ${planText}
 - \u041D\u0430\u0447\u0438\u043D\u0430\u0439 \u0441\u0440\u0430\u0437\u0443 \u0441 \u0441\u0443\u0442\u0438 \u2014 \u0431\u0435\u0437 \u0432\u0432\u043E\u0434\u043D\u044B\u0445 "\u0432 \u044D\u0442\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0435 \u043C\u044B..."
 - \u041A\u0430\u0436\u0434\u044B\u0439 H2 \u0440\u0430\u0441\u043A\u0440\u044B\u0432\u0430\u0439 \u043F\u0440\u0430\u043A\u0442\u0438\u0447\u0435\u0441\u043A\u0438: \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u0435 \u0441\u043E\u0432\u0435\u0442\u044B, \u0446\u0438\u0444\u0440\u044B, \u043F\u0440\u0438\u043C\u0435\u0440\u044B
 - \u0421\u0442\u0438\u043B\u044C: \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u044B\u0439, \u0436\u0438\u0432\u043E\u0439, \u0431\u0435\u0437 \u043A\u0430\u043D\u0446\u0435\u043B\u044F\u0440\u0438\u0442\u0430
-- \u0423\u043F\u043E\u043C\u044F\u043D\u0438 d-pub.ru \u043A\u0430\u043A \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439 1-2 \u0440\u0430\u0437\u0430 \u043E\u0440\u0433\u0430\u043D\u0438\u0447\u043D\u043E
-- HTML \u0442\u043E\u043B\u044C\u043A\u043E \u0441 \u0442\u0435\u0433\u0430\u043C\u0438: h2, h3, p, ul, ol, li, strong, a
+- \u0423\u043F\u043E\u043C\u044F\u043D\u0438 d-pub.ru \u043A\u0430\u043A \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439 1-2 \u0440\u0430\u0437\u0430 \u043E\u0440\u0433\u0430\u043D\u0438\u0447\u043D\u043E \u0441\u043E \u0441\u0441\u044B\u043B\u043A\u043E\u0439 \u043D\u0430 [/vacancies](/vacancies)
+- \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 Markdown: ## \u0434\u043B\u044F H2, ### \u0434\u043B\u044F H3, **\u0436\u0438\u0440\u043D\u044B\u0439**, *\u043A\u0443\u0440\u0441\u0438\u0432*, \u0442\u0430\u0431\u043B\u0438\u0446\u044B, \u0441\u043F\u0438\u0441\u043A\u0438
 
 \u041E\u0442\u0432\u0435\u0442\u044C \u0441\u0442\u0440\u043E\u0433\u043E \u0432 \u0444\u043E\u0440\u043C\u0430\u0442\u0435 JSON (\u0431\u0435\u0437 \u043B\u0438\u0448\u043D\u0435\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430):
 {
-  "html": "<h2>...</h2><p>...</p>..."
+  "markdown": "## \u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A\\n\\n\u0422\u0435\u043A\u0441\u0442 \u0441\u0442\u0430\u0442\u044C\u0438 \u0432 Markdown..."
 }`)
+  let markdown = ''
   const articleMatch = article.match(/\{[\s\S]*\}/)
   if (!articleMatch)
     throw new Error('Writer \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON')
-  const { html } = JSON.parse(articleMatch[0])
+  try {
+    const parsed = JSON.parse(articleMatch[0])
+    markdown = parsed.markdown
+  } catch {
+    const mdStart = article.indexOf('## ')
+    if (mdStart !== -1) {
+      markdown = article.slice(mdStart)
+    } else {
+      throw new Error(
+        'Writer \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u044B\u0439 JSON \u0438 \u043D\u0435 \u043D\u0430\u0448\u043B\u043E\u0441\u044C Markdown'
+      )
+    }
+  }
   return {
-    html,
+    markdown: markdown.trim(),
     metaTitle: plan.metaTitle,
     metaDesc: plan.metaDesc,
     slug: toSlug(plan.slug || topic.title),
+    tags: Array.isArray(seoData.tags) ? seoData.tags : [],
+    imagePrompt: seoData.imagePrompt || '',
   }
 }
-async function getPayloadToken() {
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD)
-    throw new Error(
-      'PAYLOAD_ADMIN_EMAIL / PAYLOAD_ADMIN_PASSWORD \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B'
-    )
-  const res = await fetch(`${PAYLOAD_URL}/api/users/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
-  })
-  const data = await res.json()
-  if (!data.token) throw new Error(`Payload login failed: ${data.message}`)
-  return data.token
+function buildMdxFrontmatter(topic, result, publishedAt) {
+  const tags = result.tags.length ? JSON.stringify(result.tags) : '[]'
+  return `---
+title: "${topic.title.replace(/"/g, '\\"')}"
+slug: "${result.slug}"
+description: "${result.metaDesc.replace(/"/g, '\\"')}"
+metaTitle: "${result.metaTitle.replace(/"/g, '\\"')}"
+metaDescription: "${result.metaDesc.replace(/"/g, '\\"')}"
+publishedAt: "${publishedAt}"
+tags: ${tags}
+---
+`
 }
-async function createDraft(topic, seo, token) {
-  const res = await fetch(`${PAYLOAD_URL}/api/articles`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      title: topic.title,
-      slug: seo.slug,
-      description: seo.metaDesc,
-      metaTitle: seo.metaTitle,
-      metaDescription: seo.metaDesc,
-      content: seo.html,
-      status: 'draft',
-      publishedAt: /* @__PURE__ */ new Date().toISOString(),
-    }),
-  })
-  const data = await res.json()
-  const id = data.id ?? data.doc?.id
-  if (!id) throw new Error(`Payload create failed: ${JSON.stringify(data)}`)
-  return String(id)
+function gitCommitAndPush(slug, title) {
+  const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
+  execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  const message = `feat: add article "${title}"`
+  execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
 async function main() {
   const topicNum = parseInt(process.argv[2])
@@ -273,28 +280,56 @@ async function main() {
 
 \u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~2 \u043C\u0438\u043D\u0443\u0442\u044B...`
   )
-  const seo = await generateSeoHtml(topic)
+  const result = await generateMdxArticle(topic)
   console.log(
-    '[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430, \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A...'
+    `[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430, slug: ${result.slug}`
   )
-  const token = await getPayloadToken()
-  const draftId = await createDraft(topic, seo, token)
-  const adminLink = `${PAYLOAD_URL}/admin/collections/articles/${draftId}`
+  const mdxPath = path.join(ARTICLES_DIR, `${result.slug}.mdx`)
+  if (fs.existsSync(mdxPath)) {
+    const newSlug = `${result.slug}-${Date.now().toString(36)}`
+    console.log(
+      `[writer] Slug ${result.slug} \u0443\u0436\u0435 \u0437\u0430\u043D\u044F\u0442, \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u044E ${newSlug}`
+    )
+    result.slug = newSlug
+  }
+  const publishedAt = /* @__PURE__ */ new Date().toISOString().split('T')[0]
+  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt)
+  const mdxContent = frontmatter + '\n' + result.markdown
+  fs.mkdirSync(ARTICLES_DIR, { recursive: true })
+  fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
+  console.log(
+    `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
+  )
+  try {
+    gitCommitAndPush(result.slug, topic.title)
+    console.log('[writer] Git push \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713')
+  } catch (e) {
+    console.error('[writer] Git push \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:', e)
+    await sendMessage(`\u26A0\uFE0F \u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430, \u043D\u043E git push \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:
+${e.message}`)
+    process.exit(1)
+  }
+  markTopicPublished(topicsFile, topicNum)
+  const articleUrl = `${SITE_URL}/articles/${result.slug}`
+  const imagePromptText = result.imagePrompt
+    ? `
+
+\u{1F3A8} <b>\u041F\u0440\u043E\u043C\u043F\u0442 \u0434\u043B\u044F \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438 (Codex Pic):</b>
+<code>${result.imagePrompt}</code>`
+    : ''
   await sendMessage(
-    `\u2705 <b>\u0427\u0435\u0440\u043D\u043E\u0432\u0438\u043A #${topicNum} \u0433\u043E\u0442\u043E\u0432!</b>
+    `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>
 
 \u{1F4CC} ${topic.title}
-\u{1F511} ${topic.keyword} \xB7 ${topic.trafficEst} \u0442\u0440\u0430\u0444\u0438\u043A
+\u{1F511} ${topic.keyword}
 
-\u{1F440} \u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0438 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435:
-${adminLink}
+\u{1F517} <a href="${articleUrl}">${articleUrl}</a>` +
+      imagePromptText +
+      `
 
-\u0427\u0442\u043E\u0431\u044B \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u0442\u044C:
-<code>/content_publish ${draftId}</code>`
+\u23F3 \u0414\u0435\u043F\u043B\u043E\u0439 \u0437\u0430\u0439\u043C\u0451\u0442 ~3 \u043C\u0438\u043D\u0443\u0442\u044B`
   )
-  console.log(
-    `[writer] \u0427\u0435\u0440\u043D\u043E\u0432\u0438\u043A \u0441\u043E\u0437\u0434\u0430\u043D: ID=${draftId}, \u0441\u0441\u044B\u043B\u043A\u0430: ${adminLink}`
-  )
+  console.log(`[writer] \u0413\u043E\u0442\u043E\u0432\u043E: ${articleUrl}`)
 }
 main().catch((e) => {
   console.error('[writer] \u041E\u0448\u0438\u0431\u043A\u0430:', e)

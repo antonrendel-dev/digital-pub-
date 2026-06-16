@@ -1,5 +1,6 @@
 // content-bot.ts
 import { spawn } from 'child_process'
+import fs from 'fs'
 import path from 'path'
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN
 var ALLOWED_USER_IDS = (process.env.ALLOWED_USER_IDS || '')
@@ -10,6 +11,7 @@ var ALLOWED_USER_IDS = (process.env.ALLOWED_USER_IDS || '')
 if (!BOT_TOKEN) throw new Error('CONTENT_BOT_TOKEN \u043D\u0435 \u0437\u0430\u0434\u0430\u043D')
 var API = `https://api.telegram.org/bot${BOT_TOKEN}`
 var SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
+var DATA_DIR = path.join(SCRIPTS_DIR, 'data')
 async function tgPost(method, body) {
   const res = await fetch(`${API}/${method}`, {
     method: 'POST',
@@ -27,6 +29,53 @@ async function reply(chatId, threadId, text) {
   }
   if (threadId) body.message_thread_id = threadId
   await tgPost('sendMessage', body)
+}
+function getLatestTopicsFile() {
+  if (!fs.existsSync(DATA_DIR)) return null
+  const files = fs
+    .readdirSync(DATA_DIR)
+    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
+    .sort()
+    .reverse()
+  return files.length ? path.join(DATA_DIR, files[0]) : null
+}
+function approveTopics(topicsFile, ids) {
+  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8'))
+  const approved = []
+  const notFound = []
+  for (const id of ids) {
+    const topic = raw.topics.find((t) => t.id === id)
+    if (topic) {
+      topic.approved = true
+      approved.push(id)
+    } else {
+      notFound.push(id)
+    }
+  }
+  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+  return { approved, notFound }
+}
+function getQueueSummary(topicsFile) {
+  const { topics } = JSON.parse(fs.readFileSync(topicsFile, 'utf-8'))
+  const approvedNotPublished = topics.filter((t) => t.approved && !t.published)
+  const published = topics.filter((t) => t.published)
+  const pending = topics.filter((t) => !t.approved && !t.published)
+  if (!approvedNotPublished.length) {
+    return `\u{1F4ED} \u041E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0442\u0435\u043C \u043D\u0435\u0442. \u041E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043E: ${published.length}. \u041E\u0436\u0438\u0434\u0430\u044E\u0442 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u044F: ${pending.length}.`
+  }
+  const lines = approvedNotPublished.map(
+    (t, i) => `${i + 1}. #${t.id} <b>${t.title}</b>
+   \u{1F511} ${t.keyword}`
+  )
+  return (
+    `\u{1F4CB} <b>\u041E\u0447\u0435\u0440\u0435\u0434\u044C \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0439 (${approvedNotPublished.length} \u0442\u0435\u043C):</b>
+
+` +
+    lines.join('\n\n') +
+    `
+
+\u23F0 \u041F\u0443\u0431\u043B\u0438\u043A\u0443\u0435\u0442\u0441\u044F \u043F\u043D/\u0441\u0440/\u043F\u0442 \u0432 09:00 \u041C\u0421\u041A`
+  )
 }
 function runScript(script, args) {
   return new Promise((resolve, reject) => {
@@ -72,9 +121,13 @@ async function handleMessage(msg) {
 
 <b>\u041A\u043E\u043C\u0430\u043D\u0434\u044B:</b>
 /content_plan \u2014 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C 25 \u0442\u0435\u043C (\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A)
-/content_approve 1 3 7 \u2014 \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C writer \u0434\u043B\u044F \u0442\u0435\u043C
-/content_publish 42 \u2014 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u0442\u044C \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A #42
-/content_help \u2014 \u044D\u0442\u0430 \u0441\u043F\u0440\u0430\u0432\u043A\u0430`
+/content_approve 1 3 7 \u2014 \u043E\u0434\u043E\u0431\u0440\u0438\u0442\u044C \u0442\u0435\u043C\u044B \u0434\u043B\u044F \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0438
+/content_write 5 \u2014 \u043D\u0435\u043C\u0435\u0434\u043B\u0435\u043D\u043D\u043E \u043D\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u0441\u0442\u0430\u0442\u044C\u044E #5
+/content_next \u2014 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u043E\u0447\u0435\u0440\u0435\u0434\u044C \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0442\u0435\u043C
+/content_help \u2014 \u044D\u0442\u0430 \u0441\u043F\u0440\u0430\u0432\u043A\u0430
+
+<b>\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u043A\u0430:</b>
+\u041A\u0430\u0436\u0434\u044B\u0439 \u043F\u043D/\u0441\u0440/\u043F\u0442 \u0432 09:00 \u041C\u0421\u041A \u0431\u0435\u0440\u0451\u0442\u0441\u044F \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u0430\u044F \u0442\u0435\u043C\u0430 \u0438 \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0435\u0442\u0441\u044F.`
     )
     return
   }
@@ -95,7 +148,7 @@ ${e.message}`
     return
   }
   if (command === '/content_approve') {
-    const nums = args.filter((a) => /^\d+$/.test(a))
+    const nums = args.filter((a) => /^\d+$/.test(a)).map(Number)
     if (!nums.length) {
       await reply(
         chatId,
@@ -104,47 +157,65 @@ ${e.message}`
       )
       return
     }
-    await reply(
-      chatId,
-      threadId,
-      `\u2705 \u041E\u0434\u043E\u0431\u0440\u0435\u043D\u043E \u0442\u0435\u043C: <b>${nums.length}</b> (${nums.join(', ')})
-\u23F3 \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E...`
-    )
-    for (const num of nums) {
-      runScript('writer', [num]).catch(async (e) => {
-        await reply(
-          chatId,
-          threadId,
-          `\u274C \u041E\u0448\u0438\u0431\u043A\u0430 writer \u0434\u043B\u044F \u0442\u0435\u043C\u044B #${num}:
-${e.message}`
-        )
-      })
-    }
-    return
-  }
-  if (command === '/content_publish') {
-    const id = args[0]
-    if (!id || !/^\d+$/.test(id)) {
+    const topicsFile = getLatestTopicsFile()
+    if (!topicsFile) {
       await reply(
         chatId,
         threadId,
-        '\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: <code>/content_publish 42</code>'
+        '\u274C \u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0417\u0430\u043F\u0443\u0441\u0442\u0438 <code>/content_plan</code>'
+      )
+      return
+    }
+    const { approved, notFound } = approveTopics(topicsFile, nums)
+    let msg2 = `\u2705 \u041E\u0434\u043E\u0431\u0440\u0435\u043D\u043E \u0442\u0435\u043C: <b>${approved.length}</b> (${approved.join(', ')})`
+    if (notFound.length)
+      msg2 += `
+\u26A0\uFE0F \u041D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E: ${notFound.join(', ')}`
+    msg2 += `
+
+\u23F0 \u0411\u0443\u0434\u0443\u0442 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u044B \u043F\u043E \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u044E (\u043F\u043D/\u0441\u0440/\u043F\u0442 09:00 \u041C\u0421\u041A)`
+    msg2 += `
+
+\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u043E\u0447\u0435\u0440\u0435\u0434\u044C: <code>/content_next</code>`
+    await reply(chatId, threadId, msg2)
+    return
+  }
+  if (command === '/content_write') {
+    const num = args[0]
+    if (!num || !/^\d+$/.test(num)) {
+      await reply(
+        chatId,
+        threadId,
+        '\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: <code>/content_write 5</code>'
       )
       return
     }
     await reply(
       chatId,
       threadId,
-      `\u{1F4E4} \u041F\u0443\u0431\u043B\u0438\u043A\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E #${id}...`
+      `\u26A1 \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E \u043D\u0435\u043C\u0435\u0434\u043B\u0435\u043D\u043D\u0443\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u0442\u0435\u043C\u044B #${num}...`
     )
-    runScript('publisher', [id]).catch(async (e) => {
+    runScript('writer', [num]).catch(async (e) => {
       await reply(
         chatId,
         threadId,
-        `\u274C \u041E\u0448\u0438\u0431\u043A\u0430 publisher:
+        `\u274C \u041E\u0448\u0438\u0431\u043A\u0430 writer \u0434\u043B\u044F \u0442\u0435\u043C\u044B #${num}:
 ${e.message}`
       )
     })
+    return
+  }
+  if (command === '/content_next') {
+    const topicsFile = getLatestTopicsFile()
+    if (!topicsFile) {
+      await reply(
+        chatId,
+        threadId,
+        '\u274C \u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0417\u0430\u043F\u0443\u0441\u0442\u0438 <code>/content_plan</code>'
+      )
+      return
+    }
+    await reply(chatId, threadId, getQueueSummary(topicsFile))
     return
   }
 }

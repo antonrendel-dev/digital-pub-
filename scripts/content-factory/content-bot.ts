@@ -6,12 +6,14 @@
  *
  * Команды (работают в любом топике):
  *   /content_plan          — запустить аналитика (генерация 25 тем)
- *   /content_approve 1 3 7 — одобрить темы и запустить writer для каждой
- *   /content_publish <id>  — опубликовать черновик из Payload CMS
+ *   /content_approve 1 3 7 — одобрить темы (записываются в JSON, writer запустится по cron)
+ *   /content_write <num>   — немедленно написать статью по теме №<num>
+ *   /content_next          — показать следующую очередь одобренных тем
  *   /content_help          — справка
  */
 
 import { spawn } from 'child_process'
+import fs from 'fs'
 import path from 'path'
 
 const BOT_TOKEN = process.env.CONTENT_BOT_TOKEN
@@ -25,6 +27,18 @@ if (!BOT_TOKEN) throw new Error('CONTENT_BOT_TOKEN не задан')
 
 const API = `https://api.telegram.org/bot${BOT_TOKEN}`
 const SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
+const DATA_DIR = path.join(SCRIPTS_DIR, 'data')
+
+interface Topic {
+  id: number
+  title: string
+  keyword: string
+  audience: string
+  type: string
+  trafficEst: string
+  approved?: boolean
+  published?: boolean
+}
 
 // ─── Telegram API helpers ───────────────────────────────────────────────────
 
@@ -46,6 +60,64 @@ async function reply(chatId: number, threadId: number | undefined, text: string)
   }
   if (threadId) body.message_thread_id = threadId
   await tgPost('sendMessage', body)
+}
+
+// ─── Topics helpers ─────────────────────────────────────────────────────────
+
+function getLatestTopicsFile(): string | null {
+  if (!fs.existsSync(DATA_DIR)) return null
+  const files = fs
+    .readdirSync(DATA_DIR)
+    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
+    .sort()
+    .reverse()
+  return files.length ? path.join(DATA_DIR, files[0]) : null
+}
+
+function approveTopics(
+  topicsFile: string,
+  ids: number[]
+): { approved: number[]; notFound: number[] } {
+  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8')) as {
+    date: string
+    topics: Topic[]
+  }
+  const approved: number[] = []
+  const notFound: number[] = []
+  for (const id of ids) {
+    const topic = raw.topics.find((t) => t.id === id)
+    if (topic) {
+      topic.approved = true
+      approved.push(id)
+    } else {
+      notFound.push(id)
+    }
+  }
+  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+  return { approved, notFound }
+}
+
+function getQueueSummary(topicsFile: string): string {
+  const { topics } = JSON.parse(fs.readFileSync(topicsFile, 'utf-8')) as {
+    date: string
+    topics: Topic[]
+  }
+  const approvedNotPublished = topics.filter((t) => t.approved && !t.published)
+  const published = topics.filter((t) => t.published)
+  const pending = topics.filter((t) => !t.approved && !t.published)
+
+  if (!approvedNotPublished.length) {
+    return `📭 Одобренных тем нет. Опубликовано: ${published.length}. Ожидают одобрения: ${pending.length}.`
+  }
+
+  const lines = approvedNotPublished.map(
+    (t, i) => `${i + 1}. #${t.id} <b>${t.title}</b>\n   🔑 ${t.keyword}`
+  )
+  return (
+    `📋 <b>Очередь публикаций (${approvedNotPublished.length} тем):</b>\n\n` +
+    lines.join('\n\n') +
+    `\n\n⏰ Публикуется пн/ср/пт в 09:00 МСК`
+  )
 }
 
 // ─── Script runner ──────────────────────────────────────────────────────────
@@ -89,7 +161,7 @@ async function handleMessage(msg: {
   }
 
   const [cmd, ...args] = text.split(/\s+/)
-  const command = cmd.split('@')[0] // strip @botusername
+  const command = cmd.split('@')[0]
 
   if (command === '/content_help') {
     await reply(
@@ -98,9 +170,12 @@ async function handleMessage(msg: {
       `🤖 <b>Content Factory Bot</b>\n\n` +
         `<b>Команды:</b>\n` +
         `/content_plan — сгенерировать 25 тем (аналитик)\n` +
-        `/content_approve 1 3 7 — запустить writer для тем\n` +
-        `/content_publish 42 — опубликовать черновик #42\n` +
-        `/content_help — эта справка`
+        `/content_approve 1 3 7 — одобрить темы для публикации\n` +
+        `/content_write 5 — немедленно написать статью #5\n` +
+        `/content_next — показать очередь одобренных тем\n` +
+        `/content_help — эта справка\n\n` +
+        `<b>Автоматика:</b>\n` +
+        `Каждый пн/ср/пт в 09:00 МСК берётся следующая одобренная тема и публикуется.`
     )
     return
   }
@@ -114,34 +189,49 @@ async function handleMessage(msg: {
   }
 
   if (command === '/content_approve') {
-    const nums = args.filter((a) => /^\d+$/.test(a))
+    const nums = args.filter((a) => /^\d+$/.test(a)).map(Number)
     if (!nums.length) {
       await reply(chatId, threadId, 'Использование: <code>/content_approve 1 3 7</code>')
       return
     }
-    await reply(
-      chatId,
-      threadId,
-      `✅ Одобрено тем: <b>${nums.length}</b> (${nums.join(', ')})\n⏳ Запускаю генерацию...`
-    )
-    for (const num of nums) {
-      runScript('writer', [num]).catch(async (e) => {
-        await reply(chatId, threadId, `❌ Ошибка writer для темы #${num}:\n${e.message}`)
-      })
+
+    const topicsFile = getLatestTopicsFile()
+    if (!topicsFile) {
+      await reply(chatId, threadId, '❌ Нет файлов с темами. Запусти <code>/content_plan</code>')
+      return
     }
+
+    const { approved, notFound } = approveTopics(topicsFile, nums)
+
+    let msg = `✅ Одобрено тем: <b>${approved.length}</b> (${approved.join(', ')})`
+    if (notFound.length) msg += `\n⚠️ Не найдено: ${notFound.join(', ')}`
+    msg += `\n\n⏰ Будут опубликованы по расписанию (пн/ср/пт 09:00 МСК)`
+    msg += `\n\nПоказать очередь: <code>/content_next</code>`
+
+    await reply(chatId, threadId, msg)
     return
   }
 
-  if (command === '/content_publish') {
-    const id = args[0]
-    if (!id || !/^\d+$/.test(id)) {
-      await reply(chatId, threadId, 'Использование: <code>/content_publish 42</code>')
+  if (command === '/content_write') {
+    const num = args[0]
+    if (!num || !/^\d+$/.test(num)) {
+      await reply(chatId, threadId, 'Использование: <code>/content_write 5</code>')
       return
     }
-    await reply(chatId, threadId, `📤 Публикую статью #${id}...`)
-    runScript('publisher', [id]).catch(async (e) => {
-      await reply(chatId, threadId, `❌ Ошибка publisher:\n${e.message}`)
+    await reply(chatId, threadId, `⚡ Запускаю немедленную генерацию темы #${num}...`)
+    runScript('writer', [num]).catch(async (e) => {
+      await reply(chatId, threadId, `❌ Ошибка writer для темы #${num}:\n${e.message}`)
     })
+    return
+  }
+
+  if (command === '/content_next') {
+    const topicsFile = getLatestTopicsFile()
+    if (!topicsFile) {
+      await reply(chatId, threadId, '❌ Нет файлов с темами. Запусти <code>/content_plan</code>')
+      return
+    }
+    await reply(chatId, threadId, getQueueSummary(topicsFile))
     return
   }
 }
