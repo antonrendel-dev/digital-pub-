@@ -129,7 +129,10 @@ export function mergeAndSortArticles(
     return p?.imageUrl ? { ...a, imageUrl: p.imageUrl } : a
   })
   const mdxSlugs = new Set(mdxArticles.map((a) => a.slug))
-  const uniquePayload = payloadArticles.filter((a) => !mdxSlugs.has(a.slug))
+  const mdxTitles = new Set(mdxArticles.map((a) => a.title.toLowerCase().trim()))
+  const uniquePayload = payloadArticles.filter(
+    (a) => !mdxSlugs.has(a.slug) && !mdxTitles.has(a.title.toLowerCase().trim())
+  )
   return [...enrichedMdx, ...uniquePayload].sort((a, b) => {
     if (!a.publishedAt && !b.publishedAt) return 0
     if (!a.publishedAt) return 1
