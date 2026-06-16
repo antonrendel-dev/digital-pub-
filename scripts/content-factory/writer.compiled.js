@@ -180,7 +180,8 @@ async function generateImageWithCodex(imagePrompt, slug) {
       {
         env: { ...process.env, CODEX_HOME },
         stdio: 'pipe',
-        timeout: 12e4,
+        timeout: 24e4,
+        // 4 min — codex image gen took ~125s in testing
       }
     )
     child.on('close', () => resolve())

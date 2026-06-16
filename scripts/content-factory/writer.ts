@@ -181,7 +181,7 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
       {
         env: { ...process.env, CODEX_HOME },
         stdio: 'pipe',
-        timeout: 120000,
+        timeout: 240000, // 4 min — codex image gen took ~125s in testing
       }
     )
     // Resolve regardless of exit code — check for image file instead
