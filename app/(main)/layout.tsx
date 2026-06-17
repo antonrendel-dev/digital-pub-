@@ -1,17 +1,9 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import { Suspense } from 'react'
 import MetrikaHit from '@/components/MetrikaHit'
 import Footer from '@/components/Footer'
 import '../globals.css'
-
-const inter = Inter({
-  subsets: ['cyrillic', 'latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-inter',
-})
 
 const SITE_URL = 'https://d-pub.ru'
 const SITE_NAME = 'Диджитал Паб'
@@ -90,7 +82,7 @@ const websiteJsonLd = {
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={inter.variable}>
+    <div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
