@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import HomePage from '@/components/HomePage'
+import JsonLd from '@/components/JsonLd'
 import { getPublishedPosts } from '@/lib/posts'
 import { getStats, getTagsWithCounts } from '@/lib/tags'
 import { getArticles, formatArticleDate } from '@/lib/articles'
@@ -76,5 +77,87 @@ export default async function Page() {
 
 <p>Читайте наши <a href="/articles">статьи</a> о карьере в digital — обзоры зарплат, советы по составлению резюме и гайды по поиску работы для маркетологов, дизайнеров и аналитиков.</p>`
 
-  return <HomePage posts={posts} stats={stats} articles={articles} tags={tags} seoHtml={seoHtml} />
+  const webPageLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': 'https://d-pub.ru/#webpage',
+    url: 'https://d-pub.ru',
+    name: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб',
+    description:
+      'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. SMM, аналитика, дизайн, маркетинг — новые предложения каждый день.',
+    isPartOf: { '@id': 'https://d-pub.ru/#website' },
+    about: { '@id': 'https://d-pub.ru/#organization' },
+    inLanguage: 'ru',
+    ...(stats.vacancyCount > 0 && {
+      speakable: {
+        '@type': 'SpeakableSpecification',
+        cssSelector: ['h1', '.stats-block'],
+      },
+    }),
+  }
+
+  const itemListLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Категории вакансий в digital',
+    numberOfItems: 8,
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'SMM-вакансии',
+        url: 'https://d-pub.ru/vacancies/smm',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Вакансии маркетолога',
+        url: 'https://d-pub.ru/vacancies/marketing',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: 'Вакансии дизайнера',
+        url: 'https://d-pub.ru/vacancies/dizajn',
+      },
+      {
+        '@type': 'ListItem',
+        position: 4,
+        name: 'SEO-вакансии',
+        url: 'https://d-pub.ru/vacancies/seo',
+      },
+      {
+        '@type': 'ListItem',
+        position: 5,
+        name: 'Вакансии таргетолога',
+        url: 'https://d-pub.ru/vacancies/target',
+      },
+      {
+        '@type': 'ListItem',
+        position: 6,
+        name: 'Вакансии аналитика',
+        url: 'https://d-pub.ru/vacancies/analitika',
+      },
+      {
+        '@type': 'ListItem',
+        position: 7,
+        name: 'Вакансии разработчика',
+        url: 'https://d-pub.ru/vacancies/razrabotka',
+      },
+      {
+        '@type': 'ListItem',
+        position: 8,
+        name: 'Вакансии копирайтера',
+        url: 'https://d-pub.ru/vacancies/copywriting',
+      },
+    ],
+  }
+
+  return (
+    <>
+      <JsonLd data={webPageLd} />
+      <JsonLd data={itemListLd} />
+      <HomePage posts={posts} stats={stats} articles={articles} tags={tags} seoHtml={seoHtml} />
+    </>
+  )
 }

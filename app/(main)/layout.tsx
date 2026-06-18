@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: DEFAULT_DESCRIPTION,
       images: [
         {
-          url: '/og-image.png',
+          url: `${SITE_URL}/og-image.png`,
           width: 1200,
           height: 630,
           alt: 'Диджитал Паб — агрегатор вакансий и резюме',
@@ -45,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title: 'Диджитал Паб — вакансии и резюме в digital',
       description: DEFAULT_DESCRIPTION,
-      images: ['/og-image.png'],
+      images: [`${SITE_URL}/og-image.png`],
     },
     alternates: {
       canonical: SITE_URL,
@@ -61,22 +61,39 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+const organizationLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': `${SITE_URL}/#organization`,
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${SITE_URL}/logo.png`,
+    width: 512,
+    height: 512,
+  },
+  description: DEFAULT_DESCRIPTION,
+  sameAs: ['https://t.me/+69rdOEDrfvgyMDMy', 'https://vk.com/digital_pub_vacancies'],
+}
+
 const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
+  '@id': `${SITE_URL}/#website`,
   name: SITE_NAME,
+  alternateName: 'Диджитал Паб',
   url: SITE_URL,
   description: DEFAULT_DESCRIPTION,
   inLanguage: 'ru',
-  publisher: {
-    '@type': 'Organization',
-    name: SITE_NAME,
-    url: SITE_URL,
-    logo: {
-      '@type': 'ImageObject',
-      url: `${SITE_URL}/logo.png`,
+  publisher: { '@id': `${SITE_URL}/#organization` },
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${SITE_URL}/vacancies?q={search_term_string}`,
     },
-    sameAs: ['https://t.me/+69rdOEDrfvgyMDMy', 'https://vk.com/digital_pub_vacancies'],
+    'query-input': 'required name=search_term_string',
   },
 }
 
@@ -85,7 +102,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <div>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(organizationLd).replace(/</g, '\\u003c'),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }}
       />
       <div className="flex flex-col min-h-screen">
         {children}

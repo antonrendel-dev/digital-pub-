@@ -73,9 +73,12 @@ export default async function ResumesPage({ searchParams }: Props) {
   const collectionPageLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
+    '@id': `${BASE_URL}/resumes#webpage`,
     name: TITLE,
     description: DESCRIPTION,
     url: `${BASE_URL}/resumes`,
+    numberOfItems: total,
+    isPartOf: { '@id': `${BASE_URL}/#website` },
     publisher: {
       '@type': 'Organization',
       name: 'Диджитал Паб',
