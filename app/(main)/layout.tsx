@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: DEFAULT_DESCRIPTION,
       images: [
         {
-          url: `${SITE_URL}/og-image.png`,
+          url: '/og-image.png',
           width: 1200,
           height: 630,
           alt: 'Диджитал Паб — агрегатор вакансий и резюме',
@@ -45,7 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title: 'Диджитал Паб — вакансии и резюме в digital',
       description: DEFAULT_DESCRIPTION,
-      images: [`${SITE_URL}/og-image.png`],
+      images: ['/og-image.png'],
     },
     alternates: {
       canonical: SITE_URL,
