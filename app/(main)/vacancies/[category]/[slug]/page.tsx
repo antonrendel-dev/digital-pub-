@@ -281,13 +281,6 @@ export default async function VacancyPage({ params }: Props) {
         sameAs: `https://d-pub.ru/vacancies/${category}`,
       },
     }),
-    ...(!post.company && {
-      hiringOrganization: {
-        '@type': 'Organization',
-        name: 'Диджитал Паб',
-        sameAs: 'https://d-pub.ru',
-      },
-    }),
     ...(post.salary && {
       baseSalary: {
         '@type': 'MonetaryAmount',
