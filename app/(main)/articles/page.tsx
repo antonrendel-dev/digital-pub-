@@ -89,7 +89,9 @@ export default async function ArticlesPage() {
       <JsonLd data={breadcrumbLd} />
       <JsonLd data={itemListLd} />
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">Статьи</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">
+          Карьера в digital: статьи для маркетологов, дизайнеров и аналитиков
+        </h1>
         <p className="text-text-muted mb-6">
           Полезные материалы для фрилансеров и digital-специалистов
         </p>
