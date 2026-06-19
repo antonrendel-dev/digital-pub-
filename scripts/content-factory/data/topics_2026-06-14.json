@@ -2,6 +2,50 @@
   "date": "2026-06-14",
   "topics": [
     {
+      "id": 26,
+      "title": "Что такое SMM: профессия, обязанности и зарплата в 2026 году",
+      "keyword": "смм это",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "monthlyImpressions": 13867,
+      "priority": "high",
+      "approved": true
+    },
+    {
+      "id": 27,
+      "title": "Зарплата дизайнера в 2026 году: UI/UX, графика, моушн — реальные данные",
+      "keyword": "зарплата дизайнера",
+      "audience": "Оба",
+      "type": "Конспект",
+      "trafficEst": "высокий",
+      "monthlyImpressions": 7139,
+      "priority": "high",
+      "approved": true
+    },
+    {
+      "id": 28,
+      "title": "Как стать аналитиком данных с нуля в 2026 году: навыки, курсы, зарплата",
+      "keyword": "аналитик данных вакансии",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "monthlyImpressions": 3092,
+      "priority": "high",
+      "approved": true
+    },
+    {
+      "id": 29,
+      "title": "Разместить резюме бесплатно: инструкция для digital-специалистов",
+      "keyword": "разместить резюме бесплатно",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "monthlyImpressions": 449,
+      "priority": "high",
+      "approved": true
+    },
+    {
       "id": 1,
       "title": "Резюме SMM-специалиста: структура, примеры и 7 ошибок которые отпугивают HR",
       "keyword": "резюме smm специалиста",
@@ -36,7 +80,8 @@
       "audience": "Оба",
       "type": "Гайд",
       "trafficEst": "средний",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 5,
