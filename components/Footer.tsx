@@ -104,6 +104,12 @@ export default async function Footer() {
                 Статьи
               </Link>
               <Link
+                href="/from-telegram"
+                className="block text-sm text-text-light no-underline hover:text-text transition-colors"
+              >
+                Из Telegram
+              </Link>
+              <Link
                 href="/about"
                 className="block text-sm text-text-light no-underline hover:text-text transition-colors"
               >
