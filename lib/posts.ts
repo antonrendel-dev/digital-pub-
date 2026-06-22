@@ -147,3 +147,36 @@ export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
     return null
   }
 }
+
+export async function getPostsByTool(
+  query: string,
+  page = 1,
+  limit = 20
+): Promise<{ posts: FeedPost[]; total: number; totalPages: number }> {
+  try {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
+      where: {
+        and: [
+          { status: { equals: 'published' } },
+          { type: { equals: 'vacancy' } },
+          {
+            or: [{ title: { like: query } }, { description: { like: query } }],
+          },
+        ],
+      },
+      limit,
+      page,
+      sort: '-createdAt',
+    })
+    return {
+      posts: (result.docs as unknown as PayloadPost[]).map(toFeedPost),
+      total: result.totalDocs,
+      totalPages: result.totalPages,
+    }
+  } catch (err) {
+    console.error('[posts] getPostsByTool error:', err)
+    return { posts: [], total: 0, totalPages: 0 }
+  }
+}
