@@ -19,5 +19,5 @@ export const TAG_H1: Record<string, string> = {
   gibrid: `Гибридная работа в digital — вакансии ${y}`,
   junior: `Вакансии junior-специалистов в digital ${y}`,
   middle: `Вакансии middle-специалистов в digital ${y}`,
-  senior: `Вакансии senior и lead-специалистов в digital ${y}`,
+  senior: `Вакансии senior-специалистов в digital — удалённо и офис ${y}`,
 }
