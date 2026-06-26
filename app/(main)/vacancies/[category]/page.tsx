@@ -41,10 +41,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`
   const url = `https://d-pub.ru/vacancies/${category}`
 
+  const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
+  const hasVacancies = posts.length > 0
+
   return {
     title,
     description,
     alternates: { canonical: url },
+    ...(!hasVacancies && { robots: { index: false, follow: true } }),
     openGraph: {
       title,
       description,

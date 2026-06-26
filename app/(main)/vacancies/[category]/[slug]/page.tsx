@@ -44,10 +44,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = getSpecFilterTitle(category, slug)
     const description = getSpecFilterDescription(category, slug)
     const url = `https://d-pub.ru/vacancies/${category}/${slug}`
+    const filterPosts = await getPostsByTwoTags(category, slug)
+    const hasVacancies = filterPosts.length > 0
     return {
       title,
       description,
       alternates: { canonical: url },
+      ...(!hasVacancies && { robots: { index: false, follow: true } }),
       openGraph: { title, description, url, type: 'website' },
       twitter: { card: 'summary_large_image', title, description },
     }
