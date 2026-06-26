@@ -122,6 +122,11 @@ export default async function ArticlePage({ params }: Props) {
   // Extract Payload image regardless of whether Payload has content
   const payloadImageUrl: string | null = payloadArticle?.image?.url ?? null
 
+  // MDX article may have imageUrl in frontmatter — use as primary cover image
+  // (Payload media images are often generic; MDX covers are always topic-specific)
+  const mdxArticleForImage = getArticleBySlug(slug)
+  const coverImageUrl: string | null = mdxArticleForImage?.imageUrl ?? payloadImageUrl ?? null
+
   if (payloadArticle && payloadArticle.content) {
     const allArticles = getArticles()
     const related = allArticles.slice(0, 3)
@@ -187,12 +192,12 @@ export default async function ArticlePage({ params }: Props) {
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
             <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
-              {payloadArticle.image?.url && (
+              {coverImageUrl && (
                 <Image
-                  src={payloadArticle.image.url}
+                  src={coverImageUrl}
                   alt={payloadArticle.title}
-                  width={payloadArticle.image.width ?? 1200}
-                  height={payloadArticle.image.height ?? 1200}
+                  width={1200}
+                  height={630}
                   className="w-full h-auto rounded-lg mb-5"
                 />
               )}
