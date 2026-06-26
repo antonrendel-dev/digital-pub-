@@ -9,7 +9,8 @@
       "priority": "high",
       "approved": true,
       "category": "smm",
-      "notes": "Позиция 26 в Яндексе — ключ почти в топ-10, статья дотянет"
+      "notes": "Позиция 26 в Яндексе — ключ почти в топ-10, статья дотянет",
+      "published": true
     },
     {
       "id": 31,
@@ -19,7 +20,8 @@
       "priority": "high",
       "approved": true,
       "category": "marketing",
-      "notes": "Информационный запрос с высокой конверсией, аудитория — работодатели"
+      "notes": "Информационный запрос с высокой конверсией, аудитория — работодатели",
+      "published": true
     },
     {
       "id": 26,
@@ -30,7 +32,8 @@
       "trafficEst": "высокий",
       "monthlyImpressions": 13867,
       "priority": "high",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 27,
@@ -41,7 +44,8 @@
       "trafficEst": "высокий",
       "monthlyImpressions": 7139,
       "priority": "high",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 28,
@@ -52,7 +56,8 @@
       "trafficEst": "высокий",
       "monthlyImpressions": 3092,
       "priority": "high",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 29,
