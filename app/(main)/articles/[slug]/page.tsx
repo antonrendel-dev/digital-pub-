@@ -11,8 +11,10 @@ import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
 import {
   getRelatedCategoriesForTitleAndTags,
+  getRelatedToolsForArticle,
   RelatedCategoriesBlock,
   RelatedArticlesBlock,
+  RelatedToolsBlock,
 } from '@/components/RelatedArticles'
 import RelatedVacanciesBlock from '@/components/RelatedVacanciesBlock'
 
@@ -124,6 +126,7 @@ export default async function ArticlePage({ params }: Props) {
     const allArticles = getArticles()
     const related = allArticles.slice(0, 3)
     const relatedCategories = getRelatedCategoriesForTitleAndTags(payloadArticle.title)
+    const relatedTools = getRelatedToolsForArticle(payloadArticle.title)
 
     const articleLd = {
       '@context': 'https://schema.org',
@@ -215,6 +218,7 @@ export default async function ArticlePage({ params }: Props) {
 
             <aside className="hidden lg:flex flex-col gap-4">
               <RelatedCategoriesBlock categories={relatedCategories} />
+              <RelatedToolsBlock tools={relatedTools} />
               {related.length > 0 && (
                 <div className="bg-bg-card border border-border rounded-xl p-4">
                   <div className="s-lbl mb-3">Другие статьи</div>
@@ -248,6 +252,7 @@ export default async function ArticlePage({ params }: Props) {
   const allArticles = getArticles()
   const related = allArticles.filter((a) => a.slug !== article.slug).slice(0, 3)
   const relatedCategories = getRelatedCategoriesForTitleAndTags(article.title, article.tags)
+  const relatedTools = getRelatedToolsForArticle(article.title, article.tags)
 
   // Schema.org Article
   const articleImageUrl = payloadImageUrl ?? article.imageUrl ?? null
@@ -356,6 +361,7 @@ export default async function ArticlePage({ params }: Props) {
           <aside className="hidden lg:flex flex-col gap-4">
             {/* Cross-link: related vacancy categories */}
             <RelatedCategoriesBlock categories={relatedCategories} />
+            <RelatedToolsBlock tools={relatedTools} />
 
             {related.length > 0 && (
               <div className="bg-bg-card border border-border rounded-xl p-4">
@@ -382,6 +388,7 @@ export default async function ArticlePage({ params }: Props) {
         {/* Mobile: internal links below article (hidden on desktop where sidebar is shown) */}
         <div className="lg:hidden mt-6 space-y-4">
           <RelatedCategoriesBlock categories={relatedCategories} />
+          <RelatedToolsBlock tools={relatedTools} />
           <RelatedArticlesBlock articles={related} />
         </div>
       </div>

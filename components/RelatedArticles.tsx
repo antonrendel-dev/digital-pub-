@@ -254,3 +254,89 @@ export function RelatedCategoriesBlock({
     </div>
   )
 }
+
+// Tool slug → display name
+const TOOL_NAMES: Record<string, string> = {
+  figma: 'Figma',
+  canva: 'Canva',
+  photoshop: 'Photoshop',
+  midjourney: 'Midjourney',
+  chatgpt: 'ChatGPT',
+  capcut: 'CapCut',
+  'yandex-metrika': 'Яндекс.Метрика',
+  'google-analytics': 'Google Analytics',
+  'yandex-direct': 'Яндекс.Директ',
+  semrush: 'SEMrush',
+  'screaming-frog': 'Screaming Frog',
+  tilda: 'Tilda',
+}
+
+// Keyword → tool slugs mapping
+const KEYWORD_TO_TOOLS: { keywords: string[]; tools: string[] }[] = [
+  { keywords: ['smm', 'контент', 'reels', 'видео', 'монтаж'], tools: ['capcut', 'canva'] },
+  {
+    keywords: ['дизайн', 'дизайнер', 'ui/ux', 'интерфейс', 'figma'],
+    tools: ['figma', 'canva', 'photoshop'],
+  },
+  {
+    keywords: ['seo', 'семантика', 'позиции', 'аудит сайта'],
+    tools: ['semrush', 'screaming-frog', 'yandex-metrika'],
+  },
+  {
+    keywords: ['аналитик', 'аналитика', 'метрика', 'трафик'],
+    tools: ['google-analytics', 'yandex-metrika'],
+  },
+  {
+    keywords: ['маркетолог', 'маркетинг', 'контекст', 'реклама', 'таргет'],
+    tools: ['yandex-direct', 'google-analytics'],
+  },
+  {
+    keywords: ['нейросет', 'ai', 'ии', 'искусственный интеллект', 'генерация'],
+    tools: ['chatgpt', 'midjourney'],
+  },
+  { keywords: ['лендинг', 'сайт', 'tilda', 'тильда', 'no-code'], tools: ['tilda'] },
+  { keywords: ['photoshop', 'фотошоп', 'ретушь'], tools: ['photoshop'] },
+  { keywords: ['midjourney'], tools: ['midjourney'] },
+  { keywords: ['chatgpt', 'openai', 'gpt'], tools: ['chatgpt'] },
+  { keywords: ['capcut', 'кап кут'], tools: ['capcut'] },
+]
+
+export function getRelatedToolsForArticle(
+  title: string,
+  tags?: string[]
+): { slug: string; name: string }[] {
+  const haystack = [title, ...(tags ?? [])].join(' ').toLowerCase()
+  const found = new Set<string>()
+
+  for (const { keywords, tools } of KEYWORD_TO_TOOLS) {
+    if (keywords.some((kw) => haystack.includes(kw.toLowerCase()))) {
+      tools.forEach((t) => found.add(t))
+    }
+  }
+
+  return Array.from(found)
+    .slice(0, 4)
+    .map((slug) => ({ slug, name: TOOL_NAMES[slug] ?? slug }))
+}
+
+/** Component: show related tool pages on an article page */
+export function RelatedToolsBlock({ tools }: { tools: { slug: string; name: string }[] }) {
+  if (tools.length === 0) return null
+
+  return (
+    <div className="bg-bg-card border border-border rounded-xl p-4">
+      <div className="s-lbl mb-3">Инструменты по теме</div>
+      <div className="flex flex-wrap gap-1.5">
+        {tools.map((t) => (
+          <Link
+            key={t.slug}
+            href={`/tools/${t.slug}`}
+            className="px-3 py-1.5 rounded-full text-xs border border-border bg-bg-card text-text-muted no-underline hover:border-accent hover:text-text transition-all"
+          >
+            {t.name}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
