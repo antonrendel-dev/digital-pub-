@@ -59,6 +59,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = payloadArticle.metaTitle ?? payloadArticle.title
     const description = payloadArticle.metaDescription ?? payloadArticle.description ?? ''
     const url = `https://d-pub.ru/articles/${slug}`
+    // MDX imageUrl takes priority over Payload media (MDX covers are topic-specific pixel art)
+    const mdxArticle = getArticleBySlug(slug)
+    const ogImage = mdxArticle?.imageUrl ?? payloadArticle.image?.url ?? null
     return {
       title,
       description,
@@ -71,12 +74,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         publishedTime: payloadArticle.publishedAt,
         modifiedTime: payloadArticle.updatedAt ?? payloadArticle.publishedAt,
         authors: ['Диджитал Паб'],
-        ...(payloadArticle.image?.url && {
+        ...(ogImage && {
           images: [
             {
-              url: payloadArticle.image.url,
-              width: payloadArticle.image.width ?? 1200,
-              height: payloadArticle.image.height ?? 630,
+              url: ogImage.startsWith('/') ? `https://d-pub.ru${ogImage}` : ogImage,
+              width: 1200,
+              height: 630,
               alt: title,
             },
           ],
