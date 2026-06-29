@@ -70,6 +70,24 @@ export default async function ArticleTagPage({ params }: { params: Promise<{ slu
 
   const allArticles = mergeAndSortArticles(mdxArticles, payloadArticles)
 
+  const RELATED_TAGS: Record<string, { slug: string; label: string }> = {
+    'analitika-dannykh': { slug: 'veb-analitika', label: 'Веб-аналитика' },
+    'veb-analitika': { slug: 'analitika-dannykh', label: 'Аналитика данных' },
+  }
+
+  const relatedTag = RELATED_TAGS[slug] ?? null
+
+  function renderSeoText(text: string): string {
+    const withLinks = text.replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" class="text-accent underline">$1</a>'
+    )
+    return withLinks
+      .split('\n\n')
+      .map((p) => `<p>${p}</p>`)
+      .join('')
+  }
+
   const breadcrumbLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -112,6 +130,25 @@ export default async function ArticleTagPage({ params }: { params: Promise<{ slu
         <p className="text-text-muted mb-8">{tag.pageDescription}</p>
 
         <ArticlesGrid articles={allArticles} activeTag={tag.name} />
+
+        {tag.seoText && (
+          <div
+            className="prose prose-sm max-w-none text-text-muted mt-10 pt-6 border-t border-border"
+            dangerouslySetInnerHTML={{ __html: renderSeoText(tag.seoText) }}
+          />
+        )}
+
+        {relatedTag && (
+          <div className="mt-6">
+            <span className="text-sm text-text-muted">Смотри также: </span>
+            <Link
+              href={`/articles/tag/${relatedTag.slug}`}
+              className="text-sm text-accent underline"
+            >
+              {relatedTag.label}
+            </Link>
+          </div>
+        )}
       </div>
     </PageShellWrapper>
   )
