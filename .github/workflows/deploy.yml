@@ -149,6 +149,7 @@ jobs:
       - name: Restart app
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            rm -rf ~/d-pub.ru/app/.next/cache/images/ &&
             rm -f ~/d-pub.ru/reload && touch ~/d-pub.ru/reload
           "
 
