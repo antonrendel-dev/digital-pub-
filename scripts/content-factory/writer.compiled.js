@@ -1,10 +1,42 @@
-// writer.ts
-import { execSync, spawn } from 'child_process'
-import fs from 'fs'
-import os from 'os'
-import path from 'path'
+'use strict'
+var __create = Object.create
+var __defProp = Object.defineProperty
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor
+var __getOwnPropNames = Object.getOwnPropertyNames
+var __getProtoOf = Object.getPrototypeOf
+var __hasOwnProp = Object.prototype.hasOwnProperty
+var __copyProps = (to, from, except, desc) => {
+  if ((from && typeof from === 'object') || typeof from === 'function') {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, {
+          get: () => from[key],
+          enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable,
+        })
+  }
+  return to
+}
+var __toESM = (mod, isNodeMode, target) => (
+  (target = mod != null ? __create(__getProtoOf(mod)) : {}),
+  __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule
+      ? __defProp(target, 'default', { value: mod, enumerable: true })
+      : target,
+    mod
+  )
+)
 
-// lib/telegram.ts
+// scripts/content-factory/writer.ts
+var import_child_process = require('child_process')
+var import_fs = __toESM(require('fs'))
+var import_os = __toESM(require('os'))
+var import_path = __toESM(require('path'))
+
+// scripts/content-factory/lib/telegram.ts
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN
 var CHAT_ID = process.env.SEO_LAB_CHAT_ID
 var THREAD_ID = process.env.SEO_LAB_TOPIC_ID ? Number(process.env.SEO_LAB_TOPIC_ID) : void 0
@@ -30,14 +62,15 @@ async function sendMessage(text, extra = {}) {
   return data.result.message_id
 }
 
-// writer.ts
-var DATA_DIR = path.join(import.meta.dirname, 'data')
-var PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
-var ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
-var IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
+// scripts/content-factory/writer.ts
+var import_meta = {}
+var DATA_DIR = import_path.default.join(import_meta.dirname, 'data')
+var PROJECT_ROOT = import_path.default.resolve(import_meta.dirname, '..', '..')
+var ARTICLES_DIR = import_path.default.join(PROJECT_ROOT, 'content', 'articles')
+var IMAGES_DIR = import_path.default.join(PROJECT_ROOT, 'public', 'images', 'posts')
 var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-var CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
-var CODEX_HOME = path.join(os.homedir(), '.codex')
+var CODEX_BIN = import_path.default.join(import_os.default.homedir(), '.npm-global', 'bin', 'codex')
+var CODEX_HOME = import_path.default.join(import_os.default.homedir(), '.codex')
 var TRANSLIT = {
   а: 'a',
   б: 'b',
@@ -84,7 +117,7 @@ function toSlug(s) {
     .slice(0, 80)
 }
 function getLatestTopicsFile() {
-  const files = fs
+  const files = import_fs.default
     .readdirSync(DATA_DIR)
     .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
     .sort()
@@ -93,17 +126,17 @@ function getLatestTopicsFile() {
     throw new Error(
       '\u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u0443\u0441\u0442\u0438 analyst.js'
     )
-  return path.join(DATA_DIR, files[0])
+  return import_path.default.join(DATA_DIR, files[0])
 }
 function markTopicPublished(topicsFile, topicId) {
-  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8'))
+  const raw = JSON.parse(import_fs.default.readFileSync(topicsFile, 'utf-8'))
   const topic = raw.topics.find((t) => t.id === topicId)
   if (topic) topic.published = true
-  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+  import_fs.default.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
 }
 function askClaude(prompt) {
   return new Promise((resolve, reject) => {
-    const child = spawn('claude', ['-p', prompt], {
+    const child = (0, import_child_process.spawn)('claude', ['-p', prompt], {
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
@@ -125,15 +158,15 @@ function askClaude(prompt) {
   })
 }
 function snapshotGeneratedImages() {
-  const generatedDir = path.join(CODEX_HOME, 'generated_images')
+  const generatedDir = import_path.default.join(CODEX_HOME, 'generated_images')
   const images = /* @__PURE__ */ new Set()
-  if (!fs.existsSync(generatedDir)) return images
-  for (const session of fs.readdirSync(generatedDir)) {
-    const sessionDir = path.join(generatedDir, session)
+  if (!import_fs.default.existsSync(generatedDir)) return images
+  for (const session of import_fs.default.readdirSync(generatedDir)) {
+    const sessionDir = import_path.default.join(generatedDir, session)
     try {
-      for (const file of fs.readdirSync(sessionDir)) {
+      for (const file of import_fs.default.readdirSync(sessionDir)) {
         if (file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.jpg')) {
-          images.add(path.join(sessionDir, file))
+          images.add(import_path.default.join(sessionDir, file))
         }
       }
     } catch {}
@@ -149,12 +182,12 @@ function findNewImage(before) {
 }
 function convertToWebP(srcPng, destWebp) {
   const script = `
-    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('${import_path.default.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
   `
-  execSync(`node --input-type=module`, {
+  ;(0, import_child_process.execSync)(`node --input-type=module`, {
     input: script,
     cwd: PROJECT_ROOT,
     timeout: 3e4,
@@ -162,21 +195,21 @@ function convertToWebP(srcPng, destWebp) {
   })
 }
 async function generateImageWithCodex(imagePrompt, slug) {
-  if (!fs.existsSync(CODEX_BIN)) {
+  if (!import_fs.default.existsSync(CODEX_BIN)) {
     console.log(
       '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438'
     )
     return null
   }
   const before = snapshotGeneratedImages()
-  const fullPrompt = `Generate a pixel-art style hero image for a blog article. Style: flat pixel art, vibrant colors, 16-bit game aesthetic, wide-format landscape. Scene: ${imagePrompt}. Use your image generation tool to create this image now.`
+  const fullPrompt = `Generate a hero image for a blog article using this exact style: Retro 16-bit pixel art illustration, cozy evening home interior, warm desk-lamp lighting, soft amber glow, crisp pixel edges, low-resolution game-art aesthetic, detailed but clean pixel clusters, calm domestic mood, muted warm color palette with dusk blue shadows, charming isometric or side-view composition, nostalgic indie game atmosphere, no photorealism, no watermark. Scene subject: ${imagePrompt}. Use your image generation tool to create this image now.`
   console.log(
     '[writer] \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E Codex \u0434\u043B\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438...'
   )
   await new Promise((resolve) => {
-    const child = spawn(
+    const child = (0, import_child_process.spawn)(
       CODEX_BIN,
-      ['exec', '--dangerously-bypass-approvals-and-sandbox', fullPrompt],
+      ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', fullPrompt],
       {
         env: { ...process.env, CODEX_HOME },
         stdio: 'pipe',
@@ -197,8 +230,8 @@ async function generateImageWithCodex(imagePrompt, slug) {
   console.log(
     `[writer] \u041D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: ${newImage}`
   )
-  fs.mkdirSync(IMAGES_DIR, { recursive: true })
-  const destWebp = path.join(IMAGES_DIR, `${slug}.webp`)
+  import_fs.default.mkdirSync(IMAGES_DIR, { recursive: true })
+  const destWebp = import_path.default.join(IMAGES_DIR, `${slug}.webp`)
   try {
     convertToWebP(newImage, destWebp)
     console.log(`[writer] WebP \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${destWebp}`)
@@ -208,8 +241,8 @@ async function generateImageWithCodex(imagePrompt, slug) {
       '[writer] \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0430\u0446\u0438\u044F \u0432 WebP \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C, \u043A\u043E\u043F\u0438\u0440\u0443\u044E PNG:',
       e.message
     )
-    const destPng = path.join(IMAGES_DIR, `${slug}.png`)
-    fs.copyFileSync(newImage, destPng)
+    const destPng = import_path.default.join(IMAGES_DIR, `${slug}.png`)
+    import_fs.default.copyFileSync(newImage, destPng)
     return `/images/posts/${slug}.png`
   }
 }
@@ -344,17 +377,26 @@ tags: ${tags}${imageLine}
 `
 }
 function gitCommitAndPush(slug, title, hasImage) {
-  const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
-  execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  const mdxPath = import_path.default.join('content', 'articles', `${slug}.mdx`)
+  ;(0, import_child_process.execSync)(`git add "${mdxPath}"`, {
+    cwd: PROJECT_ROOT,
+    stdio: 'inherit',
+  })
   if (hasImage) {
-    execSync(`git add "public/images/posts/${slug}.*" 2>/dev/null || true`, {
-      cwd: PROJECT_ROOT,
-      shell: '/bin/bash',
-    })
+    ;(0, import_child_process.execSync)(
+      `git add "public/images/posts/${slug}.*" 2>/dev/null || true`,
+      {
+        cwd: PROJECT_ROOT,
+        shell: '/bin/bash',
+      }
+    )
   }
   const message = `feat: add article "${title}"`
-  execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
-  execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  ;(0, import_child_process.execSync)(`git commit -m ${JSON.stringify(message)}`, {
+    cwd: PROJECT_ROOT,
+    stdio: 'inherit',
+  })
+  ;(0, import_child_process.execSync)('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
 async function main() {
   const topicNum = parseInt(process.argv[2])
@@ -365,7 +407,7 @@ async function main() {
     process.exit(1)
   }
   const topicsFile = getLatestTopicsFile()
-  const { topics } = JSON.parse(fs.readFileSync(topicsFile, 'utf8'))
+  const { topics } = JSON.parse(import_fs.default.readFileSync(topicsFile, 'utf8'))
   const topic = topics.find((t) => t.id === topicNum)
   if (!topic)
     throw new Error(
@@ -386,8 +428,8 @@ async function main() {
   console.log(
     `[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430, slug: ${result.slug}`
   )
-  const mdxPath = path.join(ARTICLES_DIR, `${result.slug}.mdx`)
-  if (fs.existsSync(mdxPath)) {
+  const mdxPath = import_path.default.join(ARTICLES_DIR, `${result.slug}.mdx`)
+  if (import_fs.default.existsSync(mdxPath)) {
     result.slug = `${result.slug}-${Date.now().toString(36)}`
     console.log(
       `[writer] Slug \u0441\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D: ${result.slug}`
@@ -411,8 +453,11 @@ async function main() {
   const publishedAt = /* @__PURE__ */ new Date().toISOString().split('T')[0]
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + result.markdown
-  fs.mkdirSync(ARTICLES_DIR, { recursive: true })
-  fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
+  import_fs.default.mkdirSync(ARTICLES_DIR, { recursive: true })
+  import_fs.default.writeFileSync(
+    import_path.default.join(ARTICLES_DIR, `${result.slug}.mdx`),
+    mdxContent
+  )
   console.log(
     `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
   )

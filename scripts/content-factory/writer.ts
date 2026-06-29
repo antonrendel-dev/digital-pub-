@@ -167,9 +167,13 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
 
   const before = snapshotGeneratedImages()
   const fullPrompt =
-    `Generate a pixel-art style hero image for a blog article. ` +
-    `Style: flat pixel art, vibrant colors, 16-bit game aesthetic, wide-format landscape. ` +
-    `Scene: ${imagePrompt}. ` +
+    `Generate a hero image for a blog article using this exact style: ` +
+    `Retro 16-bit pixel art illustration, cozy evening home interior, warm desk-lamp lighting, ` +
+    `soft amber glow, crisp pixel edges, low-resolution game-art aesthetic, detailed but clean pixel clusters, ` +
+    `calm domestic mood, muted warm color palette with dusk blue shadows, ` +
+    `charming isometric or side-view composition, nostalgic indie game atmosphere, ` +
+    `no photorealism, no watermark. ` +
+    `Scene subject: ${imagePrompt}. ` +
     `Use your image generation tool to create this image now.`
 
   console.log('[writer] Запускаю Codex для генерации картинки...')
@@ -177,7 +181,7 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
   await new Promise<void>((resolve) => {
     const child = spawn(
       CODEX_BIN,
-      ['exec', '--dangerously-bypass-approvals-and-sandbox', fullPrompt],
+      ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', fullPrompt],
       {
         env: { ...process.env, CODEX_HOME },
         stdio: 'pipe',
