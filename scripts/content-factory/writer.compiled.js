@@ -36,7 +36,8 @@ var PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
 var ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
 var IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
 var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-var WORDSTAT_TOKEN = process.env.YANDEX_WORDSTAT_TOKEN || ''
+var YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
+var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
 var CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 var CODEX_HOME = path.join(os.homedir(), '.codex')
 var TRANSLIT = {
@@ -85,35 +86,31 @@ function toSlug(s) {
     .slice(0, 80)
 }
 async function fetchWordstatKeywords(keyword) {
-  if (!WORDSTAT_TOKEN) {
+  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
     console.log(
-      '[writer] YANDEX_WORDSTAT_TOKEN \u043D\u0435 \u0437\u0430\u0434\u0430\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E Wordstat'
+      '[writer] YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E Wordstat'
     )
     return []
   }
-  const prev = process.env.NODE_TLS_REJECT_UNAUTHORIZED
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   try {
-    const res = await fetch('https://api.wordstat.yandex.net/v1/topRequests', {
+    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        Authorization: `Bearer ${WORDSTAT_TOKEN}`,
+        'Content-Type': 'application/json',
+        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
+        'X-Folder-Id': YANDEX_FOLDER_ID,
       },
-      body: JSON.stringify({ phrase: keyword }),
+      body: JSON.stringify({ phrase: keyword, num_phrases: 20 }),
     })
     if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
     const data = await res.json()
-    return data.topRequests ?? []
+    return (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
   } catch (e) {
     console.warn(
       '[writer] Wordstat \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D, fallback \u043D\u0430 Claude LSI:',
       e.message
     )
     return []
-  } finally {
-    if (prev === void 0) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
-    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = prev
   }
 }
 var OUTLINE_HINTS = {

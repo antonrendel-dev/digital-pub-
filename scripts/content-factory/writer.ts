@@ -14,7 +14,8 @@ const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
 const ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
 const IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-const WORDSTAT_TOKEN = process.env.YANDEX_WORDSTAT_TOKEN || ''
+const YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
+const YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
 
 const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 const CODEX_HOME = path.join(os.homedir(), '.codex')
@@ -95,31 +96,26 @@ interface WordstatEntry {
 }
 
 async function fetchWordstatKeywords(keyword: string): Promise<WordstatEntry[]> {
-  if (!WORDSTAT_TOKEN) {
-    console.log('[writer] YANDEX_WORDSTAT_TOKEN не задан, пропускаю Wordstat')
+  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
+    console.log('[writer] YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID не заданы, пропускаю Wordstat')
     return []
   }
-  // Яндекс использует api.wordstat.yandex.net, но сертификат выдан на wordstat.yandex.ru — баг их стороны
-  const prev = process.env.NODE_TLS_REJECT_UNAUTHORIZED
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   try {
-    const res = await fetch('https://api.wordstat.yandex.net/v1/topRequests', {
+    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        Authorization: `Bearer ${WORDSTAT_TOKEN}`,
+        'Content-Type': 'application/json',
+        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
+        'X-Folder-Id': YANDEX_FOLDER_ID,
       },
-      body: JSON.stringify({ phrase: keyword }),
+      body: JSON.stringify({ phrase: keyword, num_phrases: 20 }),
     })
     if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = (await res.json()) as { topRequests?: WordstatEntry[] }
-    return data.topRequests ?? []
+    const data = (await res.json()) as { results?: { phrase: string; count: string }[] }
+    return (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
   } catch (e) {
     console.warn('[writer] Wordstat недоступен, fallback на Claude LSI:', (e as Error).message)
     return []
-  } finally {
-    if (prev === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
-    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = prev
   }
 }
 
