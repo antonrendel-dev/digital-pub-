@@ -8,14 +8,13 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
+import { fetchWordstatKeywords } from './lib/yandex.js'
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
 const ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
 const IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-const YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
-const YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
 
 const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 const CODEX_HOME = path.join(os.homedir(), '.codex')
@@ -86,37 +85,6 @@ interface ArticleResult {
   tags: string[]
   imagePrompt: string
   wordstatKeywords: string[]
-}
-
-// ─── Wordstat API (шаг 1) ────────────────────────────────────────────────────
-
-interface WordstatEntry {
-  phrase: string
-  count: number
-}
-
-async function fetchWordstatKeywords(keyword: string): Promise<WordstatEntry[]> {
-  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
-    console.log('[writer] YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID не заданы, пропускаю Wordstat')
-    return []
-  }
-  try {
-    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
-        'X-Folder-Id': YANDEX_FOLDER_ID,
-      },
-      body: JSON.stringify({ phrase: keyword, num_phrases: 20 }),
-    })
-    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = (await res.json()) as { results?: { phrase: string; count: string }[] }
-    return (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
-  } catch (e) {
-    console.warn('[writer] Wordstat недоступен, fallback на Claude LSI:', (e as Error).message)
-    return []
-  }
 }
 
 // ─── H2-шаблоны по типу контента (programmatic-seo) ─────────────────────────

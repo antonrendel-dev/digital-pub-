@@ -30,14 +30,47 @@ async function sendMessage(text, extra = {}) {
   return data.result.message_id
 }
 
+// lib/yandex.ts
+var YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
+var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
+var YANDEX_WEBMASTER_TOKEN = process.env.YANDEX_WEBMASTER_TOKEN || ''
+var WEBMASTER_USER_ID = process.env.YANDEX_WEBMASTER_USER_ID || '1225208489'
+var WEBMASTER_HOST = process.env.YANDEX_WEBMASTER_HOST || 'https:d-pub.ru:443'
+async function fetchWordstatKeywords(keyword, numPhrases = 20) {
+  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
+    console.log(
+      '[yandex] Wordstat: YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E'
+    )
+    return []
+  }
+  try {
+    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
+        'X-Folder-Id': YANDEX_FOLDER_ID,
+      },
+      body: JSON.stringify({ phrase: keyword, num_phrases: numPhrases }),
+    })
+    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
+    const data = await res.json()
+    return (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
+  } catch (e) {
+    console.warn(
+      '[yandex] Wordstat \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:',
+      e.message
+    )
+    return []
+  }
+}
+
 // writer.ts
 var DATA_DIR = path.join(import.meta.dirname, 'data')
 var PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
 var ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
 var IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
 var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-var YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
-var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
 var CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 var CODEX_HOME = path.join(os.homedir(), '.codex')
 var TRANSLIT = {
@@ -84,34 +117,6 @@ function toSlug(s) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80)
-}
-async function fetchWordstatKeywords(keyword) {
-  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
-    console.log(
-      '[writer] YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E Wordstat'
-    )
-    return []
-  }
-  try {
-    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
-        'X-Folder-Id': YANDEX_FOLDER_ID,
-      },
-      body: JSON.stringify({ phrase: keyword, num_phrases: 20 }),
-    })
-    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = await res.json()
-    return (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
-  } catch (e) {
-    console.warn(
-      '[writer] Wordstat \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D, fallback \u043D\u0430 Claude LSI:',
-      e.message
-    )
-    return []
-  }
 }
 var OUTLINE_HINTS = {
   Гайд: '\u041F\u043E\u0448\u0430\u0433\u043E\u0432\u0430\u044F \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0437\u0430\u0447\u0435\u043C \u043D\u0443\u0436\u043D\u043E \u2192 \u043A\u0430\u043A \u0441\u0434\u0435\u043B\u0430\u0442\u044C (\u0448\u0430\u0433\u0438 1-3) \u2192 \u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0435 \u043E\u0448\u0438\u0431\u043A\u0438 \u2192 \u0438\u0442\u043E\u0433 + CTA',

@@ -9,6 +9,7 @@ import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
+import { fetchWebmasterOpportunities, fetchWordstatVolume } from './lib/yandex.js'
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const ARTICLES_DIR = path.join(import.meta.dirname, '../../content/articles')
@@ -20,6 +21,7 @@ interface Topic {
   audience: 'Соискатель' | 'HR' | 'Оба'
   type: 'Гайд' | 'Конспект' | 'Сравнение' | 'Кейс' | 'Чеклист'
   trafficEst: string
+  wordstatVolume?: number
 }
 
 function getPublishedArticleTitles(): string[] {
@@ -69,6 +71,13 @@ async function generateTopics(): Promise<Topic[]> {
   const publishedTitles = getPublishedArticleTitles()
   const plannedTopics = getAllPlannedTopics()
 
+  // Обратная связь из Яндекс.Вебмастера: запросы, где сайт уже показывается, но не в топе
+  console.log('[analyst] Тяну запросы-возможности из Webmaster...')
+  const opportunities = await fetchWebmasterOpportunities(20)
+  if (opportunities.length > 0) {
+    console.log(`[analyst] Webmaster: ${opportunities.length} целевых запросов с показами`)
+  }
+
   const publishedBlock =
     publishedTitles.length > 0
       ? `\nУЖЕ ОПУБЛИКОВАННЫЕ СТАТЬИ (строго не повторять, не пересекаться по теме):\n` +
@@ -81,11 +90,20 @@ async function generateTopics(): Promise<Topic[]> {
         plannedTopics.map((t) => `- ${t.title} [ключ: ${t.keyword}]`).join('\n')
       : ''
 
+  const opportunityBlock =
+    opportunities.length > 0
+      ? `\nРЕАЛЬНЫЕ ЗАПРОСЫ ЯНДЕКСА, ГДЕ САЙТ УЖЕ ПОКАЗЫВАЕТСЯ, НО НЕ В ТОПЕ (данные Вебмастера за неделю).\n` +
+        `Приоритизируй 5-7 тем, которые прямо закрывают эти запросы — так мы дожмём почти-ранжирующийся трафик:\n` +
+        opportunities
+          .map((o) => `- "${o.query}" — ${o.shows} показов, ${o.clicks} кликов`)
+          .join('\n')
+      : ''
+
   const raw =
     await askClaude(`Ты SEO-аналитик и контент-стратег для русскоязычного job board d-pub.ru — агрегатора вакансий для digital-специалистов (маркетологи, дизайнеры, SMM, аналитики, копирайтеры, таргетологи) из Telegram-каналов.
 
 Аудитория сайта: соискатели (ищут работу в digital) и HR/работодатели (нанимают digital-специалистов).
-${publishedBlock}${plannedBlock}
+${publishedBlock}${plannedBlock}${opportunityBlock}
 
 Составь список 25 НОВЫХ тем для статей на блог — уникальных, не пересекающихся с перечисленным выше. Для каждой темы укажи:
 - Заголовок статьи (конкретный, с ключевым словом)
@@ -116,7 +134,28 @@ ${publishedBlock}${plannedBlock}
 
   const jsonMatch = raw.match(/\[[\s\S]*\]/)
   if (!jsonMatch) throw new Error('Claude не вернул JSON')
-  return JSON.parse(jsonMatch[0]) as Topic[]
+  const topics = JSON.parse(jsonMatch[0]) as Topic[]
+
+  // Обогащаем реальной частотностью Wordstat и приоритизируем по спросу
+  console.log('[analyst] Снимаю частотность Wordstat по темам...')
+  await Promise.all(
+    topics.map(async (t) => {
+      t.wordstatVolume = await fetchWordstatVolume(t.keyword)
+    })
+  )
+
+  const anyVolume = topics.some((t) => (t.wordstatVolume ?? 0) > 0)
+  if (anyVolume) {
+    topics.sort((a, b) => (b.wordstatVolume ?? 0) - (a.wordstatVolume ?? 0))
+    topics.forEach((t, i) => (t.id = i + 1))
+    console.log(
+      `[analyst] Wordstat: топ "${topics[0].keyword}" — ${topics[0].wordstatVolume} запросов/мес`
+    )
+  } else {
+    console.log('[analyst] Wordstat: частотность недоступна, порядок тем без изменений')
+  }
+
+  return topics
 }
 
 function formatTopicsMessage(topics: Topic[], date: string): string {
@@ -130,11 +169,16 @@ function formatTopicsMessage(topics: Topic[], date: string): string {
   }
   const trafficEmoji: Record<string, string> = { низкий: '📉', средний: '📊', высокий: '🚀' }
 
-  const lines = topics.map(
-    (t) =>
+  const lines = topics.map((t) => {
+    const vol =
+      t.wordstatVolume && t.wordstatVolume > 0
+        ? ` · 📈 ${t.wordstatVolume.toLocaleString('ru-RU')}/мес`
+        : ''
+    return (
       `${t.id}. ${typeEmoji[t.type] ?? ''} <b>${t.title}</b>\n` +
-      `   🔑 <i>${t.keyword}</i> · ${audienceEmoji[t.audience] ?? ''} ${t.audience} · ${trafficEmoji[t.trafficEst] ?? ''} ${t.trafficEst}`
-  )
+      `   🔑 <i>${t.keyword}</i> · ${audienceEmoji[t.audience] ?? ''} ${t.audience} · ${trafficEmoji[t.trafficEst] ?? ''} ${t.trafficEst}${vol}`
+    )
+  })
 
   return (
     `📊 <b>Контент-план — ${date}</b>\n\n` +

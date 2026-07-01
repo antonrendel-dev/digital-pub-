@@ -29,6 +29,106 @@ async function sendMessage(text, extra = {}) {
   return data.result.message_id
 }
 
+// lib/yandex.ts
+var YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
+var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
+var YANDEX_WEBMASTER_TOKEN = process.env.YANDEX_WEBMASTER_TOKEN || ''
+var WEBMASTER_USER_ID = process.env.YANDEX_WEBMASTER_USER_ID || '1225208489'
+var WEBMASTER_HOST = process.env.YANDEX_WEBMASTER_HOST || 'https:d-pub.ru:443'
+async function fetchWordstatVolume(keyword) {
+  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) return 0
+  try {
+    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
+        'X-Folder-Id': YANDEX_FOLDER_ID,
+      },
+      body: JSON.stringify({ phrase: keyword, num_phrases: 1 }),
+    })
+    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
+    const data = await res.json()
+    if (data.totalCount) return Number(data.totalCount)
+    return data.results?.[0] ? Number(data.results[0].count) : 0
+  } catch (e) {
+    console.warn(
+      `[yandex] Wordstat volume \u0434\u043B\u044F "${keyword}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:`,
+      e.message
+    )
+    return 0
+  }
+}
+async function fetchWebmasterQueries(limit = 100) {
+  if (!YANDEX_WEBMASTER_TOKEN) {
+    console.log(
+      '[yandex] Webmaster: YANDEX_WEBMASTER_TOKEN \u043D\u0435 \u0437\u0430\u0434\u0430\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E'
+    )
+    return []
+  }
+  try {
+    const url = `https://api.webmaster.yandex.net/v4/user/${WEBMASTER_USER_ID}/hosts/${WEBMASTER_HOST}/search-queries/popular?order_by=TOTAL_SHOWS&query_indicator=TOTAL_SHOWS&query_indicator=TOTAL_CLICKS&limit=${limit}`
+    const res = await fetch(url, { headers: { Authorization: `OAuth ${YANDEX_WEBMASTER_TOKEN}` } })
+    if (!res.ok) throw new Error(`Webmaster HTTP ${res.status}`)
+    const data = await res.json()
+    return (data.queries ?? []).map((q) => ({
+      query: q.query_text,
+      shows: q.indicators.TOTAL_SHOWS ?? 0,
+      clicks: q.indicators.TOTAL_CLICKS ?? 0,
+    }))
+  } catch (e) {
+    console.warn(
+      '[yandex] Webmaster \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:',
+      e.message
+    )
+    return []
+  }
+}
+var RELEVANT_TERMS = [
+  '\u0432\u0430\u043A\u0430\u043D',
+  '\u0440\u0430\u0431\u043E\u0442',
+  '\u0443\u0434\u0430\u043B',
+  '\u0437\u0430\u0440\u043F\u043B\u0430\u0442',
+  '\u0440\u0435\u0437\u044E\u043C\u0435',
+  '\u043F\u043E\u0440\u0442\u0444\u043E\u043B\u0438\u043E',
+  '\u0444\u0440\u0438\u043B\u0430\u043D\u0441',
+  '\u043D\u0430\u0439\u043C',
+  '\u043D\u0430\u043D\u044F',
+  '\u0441\u043E\u0438\u0441\u043A\u0430\u0442',
+  '\u0432\u0430\u043A\u0430\u043D\u0441',
+  'digital',
+  '\u0434\u0438\u0434\u0436\u0438\u0442\u0430\u043B',
+  '\u043C\u0430\u0440\u043A\u0435\u0442\u043E\u043B\u043E\u0433',
+  '\u043C\u0430\u0440\u043A\u0435\u0442\u0438\u043D\u0433',
+  '\u0434\u0438\u0437\u0430\u0439\u043D',
+  'smm',
+  '\u0441\u043C\u043C',
+  '\u0442\u0430\u0440\u0433\u0435\u0442',
+  '\u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442',
+  '\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A',
+  '\u043A\u043E\u043D\u0442\u0435\u043D\u0442',
+  '\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442',
+  '\u043C\u0435\u043D\u0435\u0434\u0436\u0435\u0440',
+  '\u0434\u0438\u0440\u0435\u043A\u0442',
+]
+var DOMAIN_SPAM = /https?:|www\.|\S+\.(ru|su|com|net|org|io|me|ai|рф)\b/i
+function isRelevantQuery(q) {
+  if (DOMAIN_SPAM.test(q)) return false
+  const lower = q.toLowerCase()
+  return RELEVANT_TERMS.some((t) => lower.includes(t))
+}
+async function fetchWebmasterOpportunities(topN = 20) {
+  const all = await fetchWebmasterQueries(100)
+  return all
+    .filter((q) => q.shows > 0 && isRelevantQuery(q.query))
+    .sort((a, b) => {
+      const gapA = a.shows - a.clicks * 5
+      const gapB = b.shows - b.clicks * 5
+      return gapB - gapA
+    })
+    .slice(0, topN)
+}
+
 // analyst.ts
 var DATA_DIR = path.join(import.meta.dirname, 'data')
 var ARTICLES_DIR = path.join(import.meta.dirname, '../../content/articles')
@@ -79,6 +179,15 @@ function askClaude(prompt) {
 async function generateTopics() {
   const publishedTitles = getPublishedArticleTitles()
   const plannedTopics = getAllPlannedTopics()
+  console.log(
+    '[analyst] \u0422\u044F\u043D\u0443 \u0437\u0430\u043F\u0440\u043E\u0441\u044B-\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438 \u0438\u0437 Webmaster...'
+  )
+  const opportunities = await fetchWebmasterOpportunities(20)
+  if (opportunities.length > 0) {
+    console.log(
+      `[analyst] Webmaster: ${opportunities.length} \u0446\u0435\u043B\u0435\u0432\u044B\u0445 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u0441 \u043F\u043E\u043A\u0430\u0437\u0430\u043C\u0438`
+    )
+  }
   const publishedBlock =
     publishedTitles.length > 0
       ? `
@@ -91,11 +200,24 @@ async function generateTopics() {
 \u0423\u0416\u0415 \u0417\u0410\u041F\u041B\u0410\u041D\u0418\u0420\u041E\u0412\u0410\u041D\u041D\u042B\u0415 \u0422\u0415\u041C\u042B (\u043D\u0435 \u0434\u0443\u0431\u043B\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043D\u0438 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A, \u043D\u0438 \u043A\u043B\u044E\u0447):
 ` + plannedTopics.map((t) => `- ${t.title} [\u043A\u043B\u044E\u0447: ${t.keyword}]`).join('\n')
       : ''
+  const opportunityBlock =
+    opportunities.length > 0
+      ? `
+\u0420\u0415\u0410\u041B\u042C\u041D\u042B\u0415 \u0417\u0410\u041F\u0420\u041E\u0421\u042B \u042F\u041D\u0414\u0415\u041A\u0421\u0410, \u0413\u0414\u0415 \u0421\u0410\u0419\u0422 \u0423\u0416\u0415 \u041F\u041E\u041A\u0410\u0417\u042B\u0412\u0410\u0415\u0422\u0421\u042F, \u041D\u041E \u041D\u0415 \u0412 \u0422\u041E\u041F\u0415 (\u0434\u0430\u043D\u043D\u044B\u0435 \u0412\u0435\u0431\u043C\u0430\u0441\u0442\u0435\u0440\u0430 \u0437\u0430 \u043D\u0435\u0434\u0435\u043B\u044E).
+\u041F\u0440\u0438\u043E\u0440\u0438\u0442\u0438\u0437\u0438\u0440\u0443\u0439 5-7 \u0442\u0435\u043C, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u043F\u0440\u044F\u043C\u043E \u0437\u0430\u043A\u0440\u044B\u0432\u0430\u044E\u0442 \u044D\u0442\u0438 \u0437\u0430\u043F\u0440\u043E\u0441\u044B \u2014 \u0442\u0430\u043A \u043C\u044B \u0434\u043E\u0436\u043C\u0451\u043C \u043F\u043E\u0447\u0442\u0438-\u0440\u0430\u043D\u0436\u0438\u0440\u0443\u044E\u0449\u0438\u0439\u0441\u044F \u0442\u0440\u0430\u0444\u0438\u043A:
+` +
+        opportunities
+          .map(
+            (o) =>
+              `- "${o.query}" \u2014 ${o.shows} \u043F\u043E\u043A\u0430\u0437\u043E\u0432, ${o.clicks} \u043A\u043B\u0438\u043A\u043E\u0432`
+          )
+          .join('\n')
+      : ''
   const raw =
     await askClaude(`\u0422\u044B SEO-\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043D\u0442-\u0441\u0442\u0440\u0430\u0442\u0435\u0433 \u0434\u043B\u044F \u0440\u0443\u0441\u0441\u043A\u043E\u044F\u0437\u044B\u0447\u043D\u043E\u0433\u043E job board d-pub.ru \u2014 \u0430\u0433\u0440\u0435\u0433\u0430\u0442\u043E\u0440\u0430 \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439 \u0434\u043B\u044F digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432 (\u043C\u0430\u0440\u043A\u0435\u0442\u043E\u043B\u043E\u0433\u0438, \u0434\u0438\u0437\u0430\u0439\u043D\u0435\u0440\u044B, SMM, \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0438, \u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442\u0435\u0440\u044B, \u0442\u0430\u0440\u0433\u0435\u0442\u043E\u043B\u043E\u0433\u0438) \u0438\u0437 Telegram-\u043A\u0430\u043D\u0430\u043B\u043E\u0432.
 
 \u0410\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u044F \u0441\u0430\u0439\u0442\u0430: \u0441\u043E\u0438\u0441\u043A\u0430\u0442\u0435\u043B\u0438 (\u0438\u0449\u0443\u0442 \u0440\u0430\u0431\u043E\u0442\u0443 \u0432 digital) \u0438 HR/\u0440\u0430\u0431\u043E\u0442\u043E\u0434\u0430\u0442\u0435\u043B\u0438 (\u043D\u0430\u043D\u0438\u043C\u0430\u044E\u0442 digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432).
-${publishedBlock}${plannedBlock}
+${publishedBlock}${plannedBlock}${opportunityBlock}
 
 \u0421\u043E\u0441\u0442\u0430\u0432\u044C \u0441\u043F\u0438\u0441\u043E\u043A 25 \u041D\u041E\u0412\u042B\u0425 \u0442\u0435\u043C \u0434\u043B\u044F \u0441\u0442\u0430\u0442\u0435\u0439 \u043D\u0430 \u0431\u043B\u043E\u0433 \u2014 \u0443\u043D\u0438\u043A\u0430\u043B\u044C\u043D\u044B\u0445, \u043D\u0435 \u043F\u0435\u0440\u0435\u0441\u0435\u043A\u0430\u044E\u0449\u0438\u0445\u0441\u044F \u0441 \u043F\u0435\u0440\u0435\u0447\u0438\u0441\u043B\u0435\u043D\u043D\u044B\u043C \u0432\u044B\u0448\u0435. \u0414\u043B\u044F \u043A\u0430\u0436\u0434\u043E\u0439 \u0442\u0435\u043C\u044B \u0443\u043A\u0430\u0436\u0438:
 - \u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A \u0441\u0442\u0430\u0442\u044C\u0438 (\u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u0439, \u0441 \u043A\u043B\u044E\u0447\u0435\u0432\u044B\u043C \u0441\u043B\u043E\u0432\u043E\u043C)
@@ -125,7 +247,28 @@ ${publishedBlock}${plannedBlock}
 ]`)
   const jsonMatch = raw.match(/\[[\s\S]*\]/)
   if (!jsonMatch) throw new Error('Claude \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON')
-  return JSON.parse(jsonMatch[0])
+  const topics = JSON.parse(jsonMatch[0])
+  console.log(
+    '[analyst] \u0421\u043D\u0438\u043C\u0430\u044E \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C Wordstat \u043F\u043E \u0442\u0435\u043C\u0430\u043C...'
+  )
+  await Promise.all(
+    topics.map(async (t) => {
+      t.wordstatVolume = await fetchWordstatVolume(t.keyword)
+    })
+  )
+  const anyVolume = topics.some((t) => (t.wordstatVolume ?? 0) > 0)
+  if (anyVolume) {
+    topics.sort((a, b) => (b.wordstatVolume ?? 0) - (a.wordstatVolume ?? 0))
+    topics.forEach((t, i) => (t.id = i + 1))
+    console.log(
+      `[analyst] Wordstat: \u0442\u043E\u043F "${topics[0].keyword}" \u2014 ${topics[0].wordstatVolume} \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432/\u043C\u0435\u0441`
+    )
+  } else {
+    console.log(
+      '[analyst] Wordstat: \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430, \u043F\u043E\u0440\u044F\u0434\u043E\u043A \u0442\u0435\u043C \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439'
+    )
+  }
+  return topics
 }
 function formatTopicsMessage(topics, date) {
   const audienceEmoji = { Соискатель: '\u{1F464}', HR: '\u{1F4BC}', Оба: '\u{1F465}' }
@@ -137,10 +280,14 @@ function formatTopicsMessage(topics, date) {
     Чеклист: '\u2705',
   }
   const trafficEmoji = { низкий: '\u{1F4C9}', средний: '\u{1F4CA}', высокий: '\u{1F680}' }
-  const lines = topics.map(
-    (t) => `${t.id}. ${typeEmoji[t.type] ?? ''} <b>${t.title}</b>
-   \u{1F511} <i>${t.keyword}</i> \xB7 ${audienceEmoji[t.audience] ?? ''} ${t.audience} \xB7 ${trafficEmoji[t.trafficEst] ?? ''} ${t.trafficEst}`
-  )
+  const lines = topics.map((t) => {
+    const vol =
+      t.wordstatVolume && t.wordstatVolume > 0
+        ? ` \xB7 \u{1F4C8} ${t.wordstatVolume.toLocaleString('ru-RU')}/\u043C\u0435\u0441`
+        : ''
+    return `${t.id}. ${typeEmoji[t.type] ?? ''} <b>${t.title}</b>
+   \u{1F511} <i>${t.keyword}</i> \xB7 ${audienceEmoji[t.audience] ?? ''} ${t.audience} \xB7 ${trafficEmoji[t.trafficEst] ?? ''} ${t.trafficEst}${vol}`
+  })
   return (
     `\u{1F4CA} <b>\u041A\u043E\u043D\u0442\u0435\u043D\u0442-\u043F\u043B\u0430\u043D \u2014 ${date}</b>
 
