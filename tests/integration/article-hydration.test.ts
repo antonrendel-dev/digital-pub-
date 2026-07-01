@@ -25,7 +25,7 @@ import fs from 'fs'
 import path from 'path'
 
 const REPO_ROOT = path.join(__dirname, '..', '..')
-const ARTICLE_PAGE = path.join(REPO_ROOT, 'app', 'articles', '[slug]', 'page.tsx')
+const ARTICLE_PAGE = path.join(REPO_ROOT, 'app', '(main)', 'articles', '[slug]', 'page.tsx')
 const PACKAGE_JSON = path.join(REPO_ROOT, 'package.json')
 const ARTICLES_DIR = path.join(REPO_ROOT, 'content', 'articles')
 

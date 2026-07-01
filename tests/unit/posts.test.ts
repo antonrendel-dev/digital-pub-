@@ -44,7 +44,10 @@ describe('getPublishedPosts', () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
     const result = await getPublishedPosts()
     expect(result).toEqual([])
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[posts] DB unavailable'))
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[posts] DB unavailable'),
+      expect.anything()
+    )
     warnSpy.mockRestore()
   })
 })

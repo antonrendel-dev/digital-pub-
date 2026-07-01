@@ -262,37 +262,54 @@ export default async function ArticlePage({ params }: Props) {
   const relatedCategories = getRelatedCategoriesForTitleAndTags(article.title, article.tags)
   const relatedTools = getRelatedToolsForArticle(article.title, article.tags)
 
-  // Schema.org Article
+  // Schema.org Article — prefer schemaJsonLd from MDX frontmatter (has Wordstat keywords)
   const articleImageUrl = payloadImageUrl ?? article.imageUrl ?? null
-  const articleLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: article.title,
-    description: article.description,
-    datePublished: article.publishedAt,
-    dateModified: article.publishedAt,
-    author: {
-      '@type': 'Organization',
-      name: 'Диджитал Паб',
-      url: 'https://d-pub.ru',
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Диджитал Паб',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://d-pub.ru/logo.png',
-      },
-    },
-    mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': `https://d-pub.ru/articles/${slug}`,
-    },
-    keywords: article.tags.join(', '),
-    ...(articleImageUrl && {
-      image: { '@type': 'ImageObject', url: articleImageUrl },
-    }),
-  }
+  const articleLd: Record<string, unknown> = article.schemaJsonLd
+    ? ((() => {
+        try {
+          const parsed = JSON.parse(article.schemaJsonLd) as Record<string, unknown>
+          // Enrich with image if available and not already set
+          if (articleImageUrl && !parsed.image) {
+            parsed.image = { '@type': 'ImageObject', url: articleImageUrl }
+          }
+          return parsed
+        } catch {
+          return null
+        }
+      })() ?? {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: article.title,
+        description: article.description,
+        datePublished: article.publishedAt,
+        dateModified: article.publishedAt,
+        author: { '@type': 'Organization', name: 'Диджитал Паб', url: 'https://d-pub.ru' },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Диджитал Паб',
+          logo: { '@type': 'ImageObject', url: 'https://d-pub.ru/logo.png' },
+        },
+        mainEntityOfPage: { '@type': 'WebPage', '@id': `https://d-pub.ru/articles/${slug}` },
+        keywords: article.tags.join(', '),
+        ...(articleImageUrl && { image: { '@type': 'ImageObject', url: articleImageUrl } }),
+      })
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: article.title,
+        description: article.description,
+        datePublished: article.publishedAt,
+        dateModified: article.publishedAt,
+        author: { '@type': 'Organization', name: 'Диджитал Паб', url: 'https://d-pub.ru' },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Диджитал Паб',
+          logo: { '@type': 'ImageObject', url: 'https://d-pub.ru/logo.png' },
+        },
+        mainEntityOfPage: { '@type': 'WebPage', '@id': `https://d-pub.ru/articles/${slug}` },
+        keywords: article.tags.join(', '),
+        ...(articleImageUrl && { image: { '@type': 'ImageObject', url: articleImageUrl } }),
+      }
 
   // BreadcrumbList
   const breadcrumbLd = {

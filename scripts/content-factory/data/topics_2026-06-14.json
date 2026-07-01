@@ -68,7 +68,8 @@
       "trafficEst": "средний",
       "monthlyImpressions": 449,
       "priority": "high",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 1,
@@ -296,6 +297,193 @@
       "type": "Сравнение",
       "trafficEst": "низкий",
       "approved": true
+    },
+    {
+      "id": 32,
+      "title": "Как найти первую работу в digital: гайд для джуниоров и стажёров",
+      "keyword": "вакансии junior digital",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "11 P0-ключей без статьи. Таргет: /vacancies/junior. Ключи: вакансии junior, работа junior без опыта, джуниор вакансии digital, стажировка digital, вакансии без опыта smm/маркетинг/дизайн"
+    },
+    {
+      "id": 33,
+      "title": "Профессия таргетолог: обязанности, навыки и зарплата в 2026 году",
+      "keyword": "профессия таргетолог",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/target. Ключи: вакансии таргетолог, работа таргетолог, таргетолог вакансии удалённо, резюме таргетолога"
+    },
+    {
+      "id": 34,
+      "title": "Вакансии копирайтера и редактора: как найти работу и где искать в 2026 году",
+      "keyword": "вакансии копирайтер",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/copywriting. Ключи: вакансии копирайтер, работа копирайтер, копирайтер без опыта вакансии, SEO копирайтер вакансии, вакансии редактор"
+    },
+    {
+      "id": 35,
+      "title": "Профессия маркетолог: навыки, обязанности и зарплата в 2026 году",
+      "keyword": "профессия маркетолог",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/marketing. Ключи: вакансии маркетолог, работа маркетолог, маркетолог вакансии удалённо"
+    },
+    {
+      "id": 36,
+      "title": "Стажировка в digital: где искать и как получить первый оффер",
+      "keyword": "стажировка digital",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "priority": "high",
+      "approved": true,
+      "notes": "Входит в junior-кластер (11 P0-ключей). Таргет: /vacancies/junior. Ключи: стажировка digital, стажёр маркетинг вакансии, вакансии стажёр digital"
+    },
+    {
+      "id": 37,
+      "title": "Профессия копирайтер и контент-менеджер: обязанности, навыки и сколько платят",
+      "keyword": "профессия копирайтер контент менеджер",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "priority": "medium",
+      "approved": true,
+      "notes": "Закрывает /vacancies/copywriting и /vacancies/content. Ключи: профессия копирайтер, профессия контент менеджер, контент менеджер без опыта"
+    },
+    {
+      "id": 38,
+      "title": "Продакт и проджект менеджер в digital: профессия, навыки и вакансии 2026",
+      "keyword": "product manager вакансии",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "6 P0-ключей без статьи. Таргет: /vacancies/menedzher. Ключи: вакансии проджект менеджер, работа project manager, вакансии продакт менеджер, тимлид вакансии"
+    },
+    {
+      "id": 39,
+      "title": "Как нанять маркетолога: пошаговый гайд для HR и предпринимателей",
+      "keyword": "как нанять маркетолога",
+      "audience": "HR",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "priority": "medium",
+      "approved": true,
+      "notes": "B2B-аудитория. Таргет: /resumes/tag/marketing. Ключи: найти маркетолога, нанять маркетолога онлайн"
+    },
+    {
+      "id": 40,
+      "title": "Вакансии директолога и специалиста Яндекс.Директ: где искать и что нужно знать",
+      "keyword": "вакансии директолог",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "priority": "medium",
+      "approved": true,
+      "notes": "Ниша с низкой конкуренцией. Таргет: /vacancies/target. Ключи: вакансии директолог, вакансии яндекс директ специалист, вакансия таргетированная реклама"
+    },
+    {
+      "id": 41,
+      "title": "Вакансии разработчика в digital: frontend, backend и fullstack в 2026 году",
+      "keyword": "вакансии разработчик digital",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/razrabotka. Ключи: вакансии frontend разработчик, backend, fullstack, разработчик удалённо вакансии, junior разработчик"
+    },
+    {
+      "id": 42,
+      "title": "SMM без опыта: как войти в профессию и где искать первые вакансии",
+      "keyword": "smm менеджер без опыта",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "Таргет: /vacancies/smm + /vacancies/junior. Ключи: smm менеджер без опыта, вакансии без опыта smm, как войти в smm"
+    },
+    {
+      "id": 43,
+      "title": "Лучшие Telegram-каналы с вакансиями для digital-специалистов в 2026 году",
+      "keyword": "telegram каналы вакансии smm",
+      "audience": "Соискатель",
+      "type": "Подборка",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "Уникальный контент по теме агрегатора. Таргет: / и /vacancies/smm. Ключи: телеграм канал вакансии маркетинг, telegram вакансии smm, каналы вакансий телеграм smm, тг канал вакансии digital"
+    },
+    {
+      "id": 44,
+      "title": "Как начать работать фрилансером в digital с нуля: первые проекты и клиенты",
+      "keyword": "фриланс digital с нуля",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "priority": "medium",
+      "approved": true,
+      "notes": "Отличается от id=9 (фриланс vs штат). Таргет: /vacancies/udalyonka. Ключи: фриланс вакансии digital, фриланс digital как начать"
+    },
+    {
+      "id": 45,
+      "title": "Как найти работу маркетологу в 2026 году: пошаговое руководство",
+      "keyword": "как найти работу маркетологу",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "Аналог статьи kak-nayti-rabotu-smm-menedzheru-2026 для маркетологов. Таргет: /vacancies/marketing. Ключи: работа маркетолог, найти работу маркетолог"
+    },
+    {
+      "id": 46,
+      "title": "Как нанять SMM-специалиста, маркетолога или дизайнера через Telegram",
+      "keyword": "нанять smm специалиста telegram",
+      "audience": "HR",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "priority": "medium",
+      "approved": true,
+      "notes": "B2B + Telegram-синергия. Таргет: /resumes + /resumes/tag/smm. Ключи: нанять smm специалиста, нанять маркетолога онлайн, нанять дизайнера фриланс, нанять копирайтера"
+    },
+    {
+      "id": 47,
+      "title": "Агрегаторы вакансий для digital-специалистов: сравнение площадок 2026",
+      "keyword": "агрегатор вакансий digital",
+      "audience": "Соискатель",
+      "type": "Сравнение",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "Сравнение hh.ru, Telegram, d-pub.ru и других. Таргет: / и /vacancies. Ключи: агрегатор вакансий telegram, вакансии из телеграм каналов"
+    },
+    {
+      "id": 48,
+      "title": "Резюме дизайнера: шаблон, примеры и типичные ошибки в 2026 году",
+      "keyword": "резюме дизайнера",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "priority": "high",
+      "approved": true,
+      "notes": "Аналог rezyume-smm-spetsialista для дизайнеров. Таргет: /resumes/tag/dizajn + /vacancies/dizajn. Отличается от id=15 (портфолио для HR)"
     }
   ]
 }

@@ -16,6 +16,7 @@ const frontmatterSchema = z.object({
   publishedAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
   tags: z.array(z.string()).optional().default([]),
   imageUrl: z.string().optional(),
+  schemaJsonLd: z.string().optional(),
 })
 
 export interface Article {
@@ -28,6 +29,7 @@ export interface Article {
   tags: string[]
   content: string
   imageUrl?: string
+  schemaJsonLd?: string
 }
 
 export interface ArticleMeta {
@@ -104,6 +106,7 @@ export function getArticleBySlug(slug: string): Article | null {
     tags: parsed.data.tags,
     content,
     imageUrl: parsed.data.imageUrl,
+    schemaJsonLd: parsed.data.schemaJsonLd,
   }
 }
 

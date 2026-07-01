@@ -1,8 +1,6 @@
 /**
- * Content Factory — Writer (MDX Edition)
- * Берёт тему по номеру, пишет SEO-статью как MDX файл,
- * генерирует картинку через Codex CLI, делает git push.
- * Запуск: node writer.compiled.js <topicNum>
+ * Content Factory — Writer v2 (MDX Edition)
+ * Pipeline: Wordstat Research → SEO Analysis → Plan → Draft → Review → Image → Deploy
  */
 
 import { execSync, spawn } from 'child_process'
@@ -16,6 +14,7 @@ const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
 const ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
 const IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+const WORDSTAT_TOKEN = process.env.YANDEX_WORDSTAT_TOKEN || ''
 
 const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 const CODEX_HOME = path.join(os.homedir(), '.codex')
@@ -78,25 +77,66 @@ interface Topic {
   published?: boolean
 }
 
-function getLatestTopicsFile(): string {
-  const files = fs
-    .readdirSync(DATA_DIR)
-    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
-    .sort()
-    .reverse()
-  if (!files.length) throw new Error('Нет файлов с темами. Сначала запусти analyst.js')
-  return path.join(DATA_DIR, files[0])
+interface ArticleResult {
+  markdown: string
+  metaTitle: string
+  metaDesc: string
+  slug: string
+  tags: string[]
+  imagePrompt: string
+  wordstatKeywords: string[]
 }
 
-function markTopicPublished(topicsFile: string, topicId: number): void {
-  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8')) as {
-    date: string
-    topics: Topic[]
-  }
-  const topic = raw.topics.find((t) => t.id === topicId)
-  if (topic) topic.published = true
-  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+// ─── Wordstat API (шаг 1) ────────────────────────────────────────────────────
+
+interface WordstatEntry {
+  phrase: string
+  count: number
 }
+
+async function fetchWordstatKeywords(keyword: string): Promise<WordstatEntry[]> {
+  if (!WORDSTAT_TOKEN) {
+    console.log('[writer] YANDEX_WORDSTAT_TOKEN не задан, пропускаю Wordstat')
+    return []
+  }
+  // Яндекс использует api.wordstat.yandex.net, но сертификат выдан на wordstat.yandex.ru — баг их стороны
+  const prev = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+  try {
+    const res = await fetch('https://api.wordstat.yandex.net/v1/topRequests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        Authorization: `Bearer ${WORDSTAT_TOKEN}`,
+      },
+      body: JSON.stringify({ phrase: keyword }),
+    })
+    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
+    const data = (await res.json()) as { topRequests?: WordstatEntry[] }
+    return data.topRequests ?? []
+  } catch (e) {
+    console.warn('[writer] Wordstat недоступен, fallback на Claude LSI:', (e as Error).message)
+    return []
+  } finally {
+    if (prev === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+    else process.env.NODE_TLS_REJECT_UNAUTHORIZED = prev
+  }
+}
+
+// ─── H2-шаблоны по типу контента (programmatic-seo) ─────────────────────────
+
+const OUTLINE_HINTS: Record<string, string> = {
+  Гайд: 'Пошаговая структура: definition block → зачем нужно → как сделать (шаги 1-3) → типичные ошибки → итог + CTA',
+  Сравнение:
+    'Структура: definition block → критерии оценки → таблица сравнения вариантов → кому что подходит → вывод + CTA',
+  Чеклист:
+    'Структура: definition block → зачем этот чеклист → блок 1 → блок 2 → блок 3 → как применить → CTA',
+  Кейс: 'Структура: definition block → контекст задачи → решение → реализация → результаты с цифрами → выводы + CTA',
+  Конспект:
+    'Структура: definition block → источник и контекст → ключевые идеи (3-4) → практика → адаптация для рунета + CTA',
+}
+
+// ─── Claude helper ───────────────────────────────────────────────────────────
 
 function askClaude(prompt: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -116,7 +156,7 @@ function askClaude(prompt: string): Promise<string> {
   })
 }
 
-// ─── Codex image generation ─────────────────────────────────────────────────
+// ─── Codex image generation ──────────────────────────────────────────────────
 
 function snapshotGeneratedImages(): Set<string> {
   const generatedDir = path.join(CODEX_HOME, 'generated_images')
@@ -144,7 +184,6 @@ function findNewImage(before: Set<string>): string | null {
 }
 
 function convertToWebP(srcPng: string, destWebp: string): void {
-  // Use sharp from project node_modules via inline script
   const script = `
     import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
@@ -185,10 +224,9 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
       {
         env: { ...process.env, CODEX_HOME },
         stdio: 'pipe',
-        timeout: 240000, // 4 min — codex image gen took ~125s in testing
+        timeout: 240000,
       }
     )
-    // Resolve regardless of exit code — check for image file instead
     child.on('close', () => resolve())
     child.on('error', () => resolve())
   })
@@ -215,24 +253,37 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
   }
 }
 
-// ─── Article generation ──────────────────────────────────────────────────────
-
-interface ArticleResult {
-  markdown: string
-  metaTitle: string
-  metaDesc: string
-  slug: string
-  tags: string[]
-  imagePrompt: string
-}
+// ─── Article generation pipeline ─────────────────────────────────────────────
 
 async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
-  // ШАГ 1: SEO-рисерч
+  // ШАГ 1: Wordstat keyword research
+  console.log('[writer] Шаг 1: Wordstat keyword research...')
+  const wordstatRaw = await fetchWordstatKeywords(topic.keyword)
+  const wordstatTop = wordstatRaw.filter((k) => k.count > 0).slice(0, 15)
+  const wordstatKeywords = wordstatTop.map((k) => k.phrase)
+
+  const wordstatBlock =
+    wordstatTop.length > 0
+      ? `\nРЕАЛЬНЫЕ ДАННЫЕ ИЗ WORDSTAT (используй эти ключи органично в тексте):\n` +
+        wordstatTop
+          .map((k) => `  - "${k.phrase}" — ${k.count.toLocaleString()} запросов/мес`)
+          .join('\n')
+      : ''
+
+  if (wordstatTop.length > 0) {
+    console.log(
+      `[writer] Wordstat: ${wordstatTop.length} ключей, топ: "${wordstatTop[0].phrase}" (${wordstatTop[0].count}/мес)`
+    )
+  }
+
+  // ШАГ 1б: SEO-рисерч
+  console.log('[writer] Шаг 1б: SEO-рисерч...')
   const research = await askClaude(`Ты SEO-аналитик для русскоязычного рынка digital-вакансий.
 
 Проведи рисерч для статьи по теме: "${topic.title}"
 Ключевое слово: "${topic.keyword}"
 Аудитория: ${topic.audience}
+${wordstatBlock}
 
 Выдай JSON строго в таком формате (без лишнего текста):
 {
@@ -240,9 +291,9 @@ async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
   "lsi": ["слово1", "слово2", "слово3", "слово4", "слово5", "слово6", "слово7", "слово8"],
   "painPoints": ["боль читателя 1", "боль читателя 2", "боль читателя 3"],
   "competitorH2s": ["типичный H2 конкурента 1", "типичный H2 конкурента 2", "типичный H2 конкурента 3"],
-  "uniqueAngle": "чем наша статья будет отличаться и лучше",
+  "uniqueAngle": "чем наша статья будет отличаться и лучше конкурентов",
   "tags": ["тег1", "тег2"],
-  "imagePrompt": "English prompt for pixel-art hero image 900x450 for this article (describe scene, objects, no text)"
+  "imagePrompt": "English prompt for pixel-art hero image 900x450 (describe scene and objects, no text in image)"
 }`)
 
   const researchMatch = research.match(/\{[\s\S]*\}/)
@@ -258,30 +309,36 @@ async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
   }
 
   // ШАГ 2: Планирование
+  console.log('[writer] Шаг 2: Планирование структуры...')
+  const outlineHint = OUTLINE_HINTS[topic.type] ?? ''
+
   const outline = await askClaude(`Ты контент-стратег. Составь детальный план статьи.
 
 ТЕМА: ${topic.title}
 КЛЮЧ: ${topic.keyword}
 ТИП: ${topic.type}
+${outlineHint ? `ОБЯЗАТЕЛЬНЫЙ ШАБЛОН ДЛЯ ЭТОГО ТИПА: ${outlineHint}` : ''}
 ИНТЕНТ: ${seoData.intent}
-LSI-слова для включения: ${seoData.lsi.join(', ')}
+LSI-слова: ${seoData.lsi.join(', ')}
 Боли аудитории: ${seoData.painPoints.join('; ')}
 Уникальный угол: ${seoData.uniqueAngle}
 
 Требования к плану:
 - 5-7 блоков H2
+- ПЕРВЫЙ H2 — definition block: чёткое определение темы, что это такое (для AI-SEO и featured snippets)
 - Каждый H2 раскрывает конкретную боль или вопрос аудитории
+- ПРЕДПОСЛЕДНИЙ H2 — призыв смотреть вакансии на d-pub.ru
+- ПОСЛЕДНИЙ H2 — FAQ: 4-6 частых вопросов по теме (для featured snippets и AI-цитирования)
 - Не дублируй структуру конкурентов: ${seoData.competitorH2s.join('; ')}
-- Финальный блок — призыв смотреть вакансии на d-pub.ru
 
 Выдай JSON (без лишнего текста):
 {
   "h2s": [
     { "title": "Заголовок H2", "keyPoints": ["тезис 1", "тезис 2"] }
   ],
-  "metaTitle": "SEO заголовок до 60 символов с ключом",
-  "metaDesc": "SEO описание 130-155 символов, раскрывает пользу статьи",
-  "slug": "url-slug-latinicej"
+  "metaTitle": "SEO заголовок строго до 60 символов с ключевым словом",
+  "metaDesc": "SEO описание строго 130-155 символов, раскрывает пользу статьи",
+  "slug": "url-slug-latinicej-bez-russkikh-bukv"
 }`)
 
   const outlineMatch = outline.match(/\{[\s\S]*\}/)
@@ -293,7 +350,8 @@ LSI-слова для включения: ${seoData.lsi.join(', ')}
     slug: string
   }
 
-  // ШАГ 3: Написание статьи в Markdown
+  // ШАГ 3: Черновик
+  console.log('[writer] Шаг 3: Пишу черновик...')
   const planText = plan.h2s
     .map((h, i) => `${i + 1}. ${h.title}\n   Тезисы: ${h.keyPoints.join('; ')}`)
     .join('\n')
@@ -303,25 +361,26 @@ LSI-слова для включения: ${seoData.lsi.join(', ')}
 Напиши статью для d-pub.ru — job board для digital-специалистов.
 
 ТЕМА: ${topic.title}
-КЛЮЧЕВОЕ СЛОВО: ${topic.keyword} (использовать в первом абзаце и 2-3 раза по тексту)
-LSI-слова (вплети органично): ${seoData.lsi.join(', ')}
+КЛЮЧЕВОЕ СЛОВО: "${topic.keyword}" — используй в первом абзаце и 2-3 раза по тексту
+LSI-слова из поиска (вплети органично): ${seoData.lsi.join(', ')}
 АУДИТОРИЯ: ${topic.audience}
 
 ПЛАН (строго следуй этой структуре):
 ${planText}
 
-Требования:
-- Объём: 1200-1600 слов
-- Начинай сразу с сути — без вводных "в этой статье мы..."
-- Каждый H2 раскрывай практически: конкретные советы, цифры, примеры
-- Стиль: профессиональный, живой, без канцелярита
-- Упомяни d-pub.ru как источник вакансий 1-2 раза органично со ссылкой на [/vacancies](/vacancies)
-- Используй Markdown: ## для H2, ### для H3, **жирный**, *курсив*, таблицы, списки
+Требования к структуре (AI-SEO + featured snippets):
+- DEFINITION BLOCK: первый абзац статьи — 2-3 предложения, чётко отвечают на "что такое ${topic.keyword}". Этот блок должен быть самодостаточным — AI может процитировать его отдельно.
+- Каждый ключевой тезис — отдельный абзац 40-60 слов (оптимально для AI-цитирования)
+- Включай конкретные цифры и данные (hh.ru, SuperJob, Яндекс.Работа) хотя бы в 3 местах
+- FAQ секция в конце: формат "### Вопрос?" → ответ 2-3 предложения, самодостаточный
+- Упомяни d-pub.ru как источник вакансий 1-2 раза органично со ссылкой [/vacancies](/vacancies)
+
+Объём: 1200-1600 слов. Стиль: профессиональный, живой, без канцелярита.
+Markdown: ## для H2, ### для H3, **жирный**, таблицы, маркированные списки.
+НЕ начинай с "В этой статье мы рассмотрим" и подобных вводных фраз.
 
 Ответь строго в формате JSON (без лишнего текста):
-{
-  "markdown": "## Заголовок\\n\\nТекст статьи в Markdown..."
-}`)
+{"markdown": "## Заголовок\\n\\nТекст статьи..."}`)
 
   let markdown = ''
   const articleMatch = article.match(/\{[\s\S]*\}/)
@@ -337,16 +396,86 @@ ${planText}
       throw new Error('Writer не вернул правильный JSON и не нашлось Markdown')
     }
   }
+  markdown = markdown.trim()
+
+  // ШАГ 4: Ревью
+  console.log('[writer] Шаг 4: Ревью и улучшение...')
+  const titleLen = plan.metaTitle.length
+  const descLen = plan.metaDesc.length
+
+  const reviewed =
+    await askClaude(`Ты строгий редактор SEO-контента. Проверь статью и верни улучшенную версию.
+
+КЛЮЧЕВОЕ СЛОВО: "${topic.keyword}"
+META TITLE (${titleLen} симв${titleLen > 60 ? ', СЛИШКОМ ДЛИННЫЙ — укороти до 60' : ', ок'}): "${plan.metaTitle}"
+META DESC (${descLen} симв${descLen < 130 ? ', СЛИШКОМ КОРОТКИЙ — расширь до 130-155' : descLen > 155 ? ', СЛИШКОМ ДЛИННЫЙ — сократи до 155' : ', ок'}): "${plan.metaDesc}"
+
+СТАТЬЯ:
+${markdown}
+
+ЗАДАЧИ РЕВЬЮ:
+
+1. ПРОВЕРЬ И ИСПРАВЬ:
+   - Definition block в первом абзаце — есть ли чёткий ответ "что такое ${topic.keyword}"? Если нет — добавь
+   - FAQ секция в конце — есть ли 4-6 вопросов в формате ### Вопрос? + ответ? Если нет — добавь
+   - Плотность ключевого слова "${topic.keyword}": должна быть 1-2% (не более 4 вхождений на 1000 слов). Удали лишние.
+   - Слабые вводные фразы ("В данной статье...", "Сегодня мы рассмотрим...") — замени конкретикой
+
+2. УЛУЧШИ:
+   - Перепиши 1-2 самых слабых абзаца (где нет конкретики или цифр)
+   - Убедись что есть минимум 3 конкретные цифры/данные в тексте
+
+Верни ТОЛЬКО финальный Markdown текст статьи — без пояснений, без JSON, без комментариев.`)
+
+  const finalMarkdown = reviewed.trim().startsWith('##')
+    ? reviewed.trim()
+    : reviewed.indexOf('## ') !== -1
+      ? reviewed.slice(reviewed.indexOf('## ')).trim()
+      : markdown
 
   return {
-    markdown: markdown.trim(),
+    markdown: finalMarkdown,
     metaTitle: plan.metaTitle,
     metaDesc: plan.metaDesc,
     slug: toSlug(plan.slug || topic.title),
     tags: Array.isArray(seoData.tags) ? seoData.tags : [],
     imagePrompt: seoData.imagePrompt || '',
+    wordstatKeywords,
   }
 }
+
+// ─── Schema JSON-LD (schema-markup skill) ────────────────────────────────────
+
+function buildArticleSchema(
+  topic: Topic,
+  result: ArticleResult,
+  publishedAt: string,
+  articleUrl: string
+): string {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: result.metaTitle,
+    description: result.metaDesc,
+    datePublished: publishedAt,
+    dateModified: publishedAt,
+    author: {
+      '@type': 'Organization',
+      name: 'Диджитал Паб',
+      url: SITE_URL,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Диджитал Паб',
+      url: SITE_URL,
+    },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
+    keywords: [topic.keyword, ...result.tags, ...result.wordstatKeywords.slice(0, 5)].join(', '),
+  }
+  return JSON.stringify(schema)
+}
+
+// ─── MDX frontmatter builder ─────────────────────────────────────────────────
 
 function buildMdxFrontmatter(
   topic: Topic,
@@ -356,6 +485,9 @@ function buildMdxFrontmatter(
 ): string {
   const tags = result.tags.length ? JSON.stringify(result.tags) : '[]'
   const imageLine = imageUrl ? `\nimageUrl: "${imageUrl}"` : ''
+  const articleUrl = `${SITE_URL}/articles/${result.slug}`
+  const schemaLine = `\nschemaJsonLd: '${buildArticleSchema(topic, result, publishedAt, articleUrl)}'`
+
   return `---
 title: "${topic.title.replace(/"/g, '\\"')}"
 slug: "${result.slug}"
@@ -363,16 +495,37 @@ description: "${result.metaDesc.replace(/"/g, '\\"')}"
 metaTitle: "${result.metaTitle.replace(/"/g, '\\"')}"
 metaDescription: "${result.metaDesc.replace(/"/g, '\\"')}"
 publishedAt: "${publishedAt}"
-tags: ${tags}${imageLine}
+tags: ${tags}${imageLine}${schemaLine}
 ---
 `
+}
+
+// ─── Git ─────────────────────────────────────────────────────────────────────
+
+function getLatestTopicsFile(): string {
+  const files = fs
+    .readdirSync(DATA_DIR)
+    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
+    .sort()
+    .reverse()
+  if (!files.length) throw new Error('Нет файлов с темами. Сначала запусти analyst.js')
+  return path.join(DATA_DIR, files[0])
+}
+
+function markTopicPublished(topicsFile: string, topicId: number): void {
+  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8')) as {
+    date: string
+    topics: Topic[]
+  }
+  const topic = raw.topics.find((t) => t.id === topicId)
+  if (topic) topic.published = true
+  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
 }
 
 function gitCommitAndPush(slug: string, title: string, hasImage: boolean): void {
   const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
   execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   if (hasImage) {
-    // Stage any new image files
     execSync(`git add "public/images/posts/${slug}.*" 2>/dev/null || true`, {
       cwd: PROJECT_ROOT,
       shell: '/bin/bash',
@@ -382,6 +535,8 @@ function gitCommitAndPush(slug: string, title: string, hasImage: boolean): void 
   execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
   const topicNum = parseInt(process.argv[2])
@@ -398,12 +553,13 @@ async function main() {
   console.log(`[writer] Пишу статью: "${topic.title}"`)
   await sendMessage(
     `✍️ Генерирую статью #${topicNum}:\n<b>${topic.title}</b>\n\n` +
-      `🔍 SEO-рисерч → 📋 план → ✏️ текст → 🎨 картинка\n\nЭто займёт ~3 минуты...`
+      `🔍 Wordstat → SEO-рисерч → 📋 план → ✏️ черновик → 🔎 ревью → 🎨 картинка\n\n` +
+      `Это займёт ~5 минут...`
   )
 
-  // ШАГ 1-3: Генерируем статью
+  // Шаги 1-4: генерация статьи
   const result = await generateMdxArticle(topic)
-  console.log(`[writer] Статья написана, slug: ${result.slug}`)
+  console.log(`[writer] Статья готова, slug: ${result.slug}`)
 
   // Проверяем что slug не занят
   const mdxPath = path.join(ARTICLES_DIR, `${result.slug}.mdx`)
@@ -412,8 +568,8 @@ async function main() {
     console.log(`[writer] Slug скорректирован: ${result.slug}`)
   }
 
-  // ШАГ 4: Генерируем картинку через Codex
-  console.log('[writer] Генерирую картинку...')
+  // Шаг 5а: картинка через Codex
+  console.log('[writer] Шаг 5: Генерирую картинку...')
   const imageUrl = result.imagePrompt
     ? await generateImageWithCodex(result.imagePrompt, result.slug)
     : null
@@ -424,7 +580,7 @@ async function main() {
     console.log('[writer] Картинка не сгенерирована, публикуем без неё')
   }
 
-  // Пишем MDX файл
+  // Шаг 5б: записываем MDX и деплоим
   const publishedAt = new Date().toISOString().split('T')[0]
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + result.markdown
@@ -433,7 +589,6 @@ async function main() {
   fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
   console.log(`[writer] Файл создан: content/articles/${result.slug}.mdx`)
 
-  // Git commit и push
   try {
     gitCommitAndPush(result.slug, topic.title, imageUrl !== null)
     console.log('[writer] Git push выполнен ✓')
@@ -446,14 +601,18 @@ async function main() {
   markTopicPublished(topicsFile, topicNum)
 
   const articleUrl = `${SITE_URL}/articles/${result.slug}`
+  const wordstatInfo =
+    result.wordstatKeywords.length > 0
+      ? `\n🔑 Wordstat ключей использовано: ${result.wordstatKeywords.length}`
+      : '\n🔑 Wordstat: fallback на Claude LSI'
   const imageStatus = imageUrl
     ? `🎨 Картинка: ✅ автоматически`
-    : `🎨 Картинка: ❌ не сгенерирована (добавь вручную через Codex Pic)`
+    : `🎨 Картинка: ❌ не сгенерирована`
 
   await sendMessage(
     `✅ <b>Статья опубликована!</b>\n\n` +
       `📌 ${topic.title}\n` +
-      `🔑 ${topic.keyword}\n` +
+      `${wordstatInfo}\n` +
       `${imageStatus}\n\n` +
       `🔗 <a href="${articleUrl}">${articleUrl}</a>\n\n` +
       `⏳ Деплой займёт ~3 минуты`

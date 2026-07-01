@@ -13,7 +13,11 @@ const config: Config = {
   },
   modulePathIgnorePatterns: ['<rootDir>/node_modules_old/', '<rootDir>/_files/'],
   watchPathIgnorePatterns: ['<rootDir>/node_modules_old/', '<rootDir>/_files/'],
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/_files/'],
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/_files/',
+    '<rootDir>/.claude/worktrees/',
+  ],
   forceExit: true,
 }
 
