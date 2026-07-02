@@ -15,7 +15,7 @@ import {
 } from '@/components/RelatedArticles'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { getCategoryFaq } from '@/lib/category-faq'
-import { TAG_H1 } from '@/lib/tagH1'
+import { TAG_H1, TAG_TITLE } from '@/lib/tagH1'
 import {
   SPEC_SLUGS,
   FORMAT_SLUGS,
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = await getTagBySlug(category)
   if (!tag) return { title: 'Категория не найдена' }
 
-  const title = tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`
+  const title = TAG_TITLE[category] ?? tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`
   const description =
     tag.seoDescription ??
     `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`

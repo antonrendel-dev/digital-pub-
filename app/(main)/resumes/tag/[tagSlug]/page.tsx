@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
+import { RESUME_TAG_TITLE, RESUME_TAG_H1 } from '@/lib/tagH1'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
@@ -16,7 +17,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = await getTagBySlug(tagSlug)
   if (!tag) return { title: 'Тег не найден' }
 
-  const title = tag.seoTitle ?? `Резюме специалистов: ${tag.name} | Диджитал Паб`
+  const title =
+    RESUME_TAG_TITLE[tagSlug] ?? tag.seoTitle ?? `Резюме специалистов: ${tag.name} | Диджитал Паб`
   const description =
     tag.seoDescription ??
     `Резюме ${tag.name}-специалистов из Telegram-сообщества. База кандидатов в digital-сфере на Диджитал Паб.`
@@ -97,7 +99,9 @@ export default async function TagPage({ params }: Props) {
           <span className="text-text-light">{tag.name}</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-text tracking-tight mb-2">Резюме: {tag.name}</h1>
+        <h1 className="text-2xl font-bold text-text tracking-tight mb-2">
+          {RESUME_TAG_H1[tagSlug] ?? `Резюме: ${tag.name}`}
+        </h1>
         <p className="text-sm text-text-muted mb-6">
           {posts.length} резюме по тегу {tag.name}
         </p>

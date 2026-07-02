@@ -1,5 +1,20 @@
 const y = new Date().getFullYear()
 
+// Точечные переопределения <title> для /vacancies/[category]
+// (приоритетнее Payload seoTitle — SEO-заголовки версионируются в git)
+export const TAG_TITLE: Record<string, string> = {
+  seo: `Вакансии SEO-специалиста ${y} — свежие из Telegram, удалённо и офис`,
+}
+
+// Переопределения <title> и H1 для /resumes/tag/[tagSlug]
+export const RESUME_TAG_TITLE: Record<string, string> = {
+  smm: `Резюме SMM-специалистов ${y} — база кандидатов | Диджитал Паб`,
+}
+
+export const RESUME_TAG_H1: Record<string, string> = {
+  smm: `Резюме SMM-специалистов`,
+}
+
 export const TAG_H1: Record<string, string> = {
   smm: `Вакансии SMM-менеджера — удалённо и офис ${y}`,
   marketing: `Вакансии маркетолога — digital и интернет-маркетинг ${y}`,

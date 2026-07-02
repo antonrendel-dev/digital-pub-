@@ -78,7 +78,7 @@ export function getSpecFilterH1(specSlug: string, filterSlug: string): string {
     return `Вакансии ${gen} на гибриде — ${y}`
   }
   const level = LEVEL_LABELS[filterSlug] ?? filterSlug
-  return `Вакансии ${gen} ${level} — ${y}`
+  return `Вакансии ${level} ${gen} — ${y}`
 }
 
 export function getSpecFilterTitle(specSlug: string, filterSlug: string): string {
@@ -89,7 +89,7 @@ export function getSpecFilterTitle(specSlug: string, filterSlug: string): string
     return `Вакансии ${gen} ${label} — d-pub.ru ${y}`
   }
   const level = LEVEL_LABELS[filterSlug] ?? filterSlug
-  return `Вакансии ${gen} ${level} — d-pub.ru ${y}`
+  return `Вакансии ${level} ${gen} — d-pub.ru ${y}`
 }
 
 export function getSpecFilterDescription(specSlug: string, filterSlug: string): string {
