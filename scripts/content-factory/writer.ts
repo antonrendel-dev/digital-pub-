@@ -187,7 +187,7 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
       ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', fullPrompt],
       {
         env: { ...process.env, CODEX_HOME },
-        stdio: 'pipe',
+        stdio: 'ignore',
         timeout: 240000,
       }
     )

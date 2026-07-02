@@ -1,79 +1,18 @@
-// writer.ts
+'use strict'
 import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-
-// lib/telegram.ts
-var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN
-var CHAT_ID = process.env.SEO_LAB_CHAT_ID
-var THREAD_ID = process.env.SEO_LAB_TOPIC_ID ? Number(process.env.SEO_LAB_TOPIC_ID) : void 0
-if (!BOT_TOKEN) throw new Error('BOT_TOKEN not set')
-if (!CHAT_ID) throw new Error('SEO_LAB_CHAT_ID not set')
-var API = `https://api.telegram.org/bot${BOT_TOKEN}`
-async function sendMessage(text, extra = {}) {
-  const body = {
-    chat_id: CHAT_ID,
-    text,
-    parse_mode: 'HTML',
-    disable_web_page_preview: true,
-    ...extra,
-  }
-  if (THREAD_ID) body.message_thread_id = THREAD_ID
-  const res = await fetch(`${API}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const data = await res.json()
-  if (!data.ok) throw new Error(`Telegram error: ${data.description}`)
-  return data.result.message_id
-}
-
-// lib/yandex.ts
-var YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
-var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
-var YANDEX_WEBMASTER_TOKEN = process.env.YANDEX_WEBMASTER_TOKEN || ''
-var WEBMASTER_USER_ID = process.env.YANDEX_WEBMASTER_USER_ID || '1225208489'
-var WEBMASTER_HOST = process.env.YANDEX_WEBMASTER_HOST || 'https:d-pub.ru:443'
-async function fetchWordstatKeywords(keyword, numPhrases = 20) {
-  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
-    console.log(
-      '[yandex] Wordstat: YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E'
-    )
-    return []
-  }
-  try {
-    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
-        'X-Folder-Id': YANDEX_FOLDER_ID,
-      },
-      body: JSON.stringify({ phrase: keyword, num_phrases: numPhrases }),
-    })
-    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = await res.json()
-    return (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
-  } catch (e) {
-    console.warn(
-      '[yandex] Wordstat \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:',
-      e.message
-    )
-    return []
-  }
-}
-
-// writer.ts
-var DATA_DIR = path.join(import.meta.dirname, 'data')
-var PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
-var ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
-var IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
-var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-var CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
-var CODEX_HOME = path.join(os.homedir(), '.codex')
-var TRANSLIT = {
+import { sendMessage } from './lib/telegram.js'
+import { fetchWordstatKeywords } from './lib/yandex.js'
+const DATA_DIR = path.join(import.meta.dirname, 'data')
+const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
+const ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
+const IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
+const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
+const CODEX_HOME = path.join(os.homedir(), '.codex')
+const TRANSLIT = {
   а: 'a',
   б: 'b',
   в: 'v',
@@ -118,7 +57,7 @@ function toSlug(s) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 80)
 }
-var OUTLINE_HINTS = {
+const OUTLINE_HINTS = {
   Гайд: '\u041F\u043E\u0448\u0430\u0433\u043E\u0432\u0430\u044F \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0437\u0430\u0447\u0435\u043C \u043D\u0443\u0436\u043D\u043E \u2192 \u043A\u0430\u043A \u0441\u0434\u0435\u043B\u0430\u0442\u044C (\u0448\u0430\u0433\u0438 1-3) \u2192 \u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0435 \u043E\u0448\u0438\u0431\u043A\u0438 \u2192 \u0438\u0442\u043E\u0433 + CTA',
   Сравнение:
     '\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u043A\u0440\u0438\u0442\u0435\u0440\u0438\u0438 \u043E\u0446\u0435\u043D\u043A\u0438 \u2192 \u0442\u0430\u0431\u043B\u0438\u0446\u0430 \u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F \u0432\u0430\u0440\u0438\u0430\u043D\u0442\u043E\u0432 \u2192 \u043A\u043E\u043C\u0443 \u0447\u0442\u043E \u043F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u2192 \u0432\u044B\u0432\u043E\u0434 + CTA',
@@ -206,7 +145,7 @@ async function generateImageWithCodex(imagePrompt, slug) {
       ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', fullPrompt],
       {
         env: { ...process.env, CODEX_HOME },
-        stdio: 'pipe',
+        stdio: 'ignore',
         timeout: 24e4,
       }
     )
