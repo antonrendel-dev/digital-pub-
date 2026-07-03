@@ -172,7 +172,8 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
   const fullPrompt =
     `Generate a hero image for a blog article using this exact style: ` +
     `High-fidelity pixel art illustration in the style of modern indie games (Stardew Valley, Octopath Traveler), ` +
-    `cozy evening home interior, warm desk-lamp lighting, soft amber glow, ` +
+    `cozy evening home office interior, warm desk-lamp lighting, soft amber glow, ` +
+    `walls decorated with framed posters, shelves with books and plants, potted succulent on desk, ` +
     `fine pixel detail with small pixel grid, rich color depth, smooth gradients via dithering, ` +
     `calm domestic mood, muted warm color palette with dusk blue shadows, ` +
     `charming isometric or side-view composition, nostalgic indie game atmosphere, ` +

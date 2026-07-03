@@ -196,7 +196,7 @@ async function generateImageWithCodex(imagePrompt, slug) {
     return null
   }
   const before = snapshotGeneratedImages()
-  const fullPrompt = `Generate a hero image for a blog article using this exact style: High-fidelity pixel art illustration in the style of modern indie games (Stardew Valley, Octopath Traveler), cozy evening home interior, warm desk-lamp lighting, soft amber glow, fine pixel detail with small pixel grid, rich color depth, smooth gradients via dithering, calm domestic mood, muted warm color palette with dusk blue shadows, charming isometric or side-view composition, nostalgic indie game atmosphere, no photorealism, no watermark. Scene subject: ${imagePrompt}. Use your image generation tool to create this image now.`
+  const fullPrompt = `Generate a hero image for a blog article using this exact style: High-fidelity pixel art illustration in the style of modern indie games (Stardew Valley, Octopath Traveler), cozy evening home office interior, warm desk-lamp lighting, soft amber glow, walls decorated with framed posters, shelves with books and plants, potted succulent on desk, fine pixel detail with small pixel grid, rich color depth, smooth gradients via dithering, calm domestic mood, muted warm color palette with dusk blue shadows, charming isometric or side-view composition, nostalgic indie game atmosphere, no photorealism, no watermark. Scene subject: ${imagePrompt}. Use your image generation tool to create this image now.`
   console.log(
     '[writer] \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E Codex \u0434\u043B\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438...'
   )
