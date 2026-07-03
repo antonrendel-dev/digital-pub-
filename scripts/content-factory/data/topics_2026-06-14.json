@@ -116,7 +116,8 @@
       "audience": "Соискатель",
       "type": "Чеклист",
       "trafficEst": "средний",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 6,
@@ -125,7 +126,8 @@
       "audience": "HR",
       "type": "Гайд",
       "trafficEst": "средний",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 7,
