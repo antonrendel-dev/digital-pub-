@@ -30,7 +30,6 @@ function SubCard({ type, icon, title, subscribers, desc, btnColor, url }: SubCar
           <div className="flex-shrink-0">{icon}</div>
           <div>
             <div className="text-sm font-medium text-text">{title}</div>
-            <div className="text-xs text-text-light">{subscribers}</div>
           </div>
         </div>
         <div className="text-xs text-text-muted mb-2">{desc}</div>
