@@ -171,11 +171,12 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
   const before = snapshotGeneratedImages()
   const fullPrompt =
     `Generate a hero image for a blog article using this exact style: ` +
-    `High-fidelity pixel art illustration in the style of modern indie games (Stardew Valley, Octopath Traveler), ` +
-    `fine pixel detail with small pixel grid, rich color depth, smooth gradients via dithering, ` +
-    `warm desk-lamp or ambient lighting, soft amber glow, muted warm color palette with dusk blue shadows, ` +
-    `charming isometric or side-view composition, nostalgic indie game atmosphere, ` +
-    `no photorealism, no watermark, no text in image. ` +
+    `Cozy RPG pixel art illustration, painterly quality with fine pixel grain texture, ` +
+    `clean composition with 2-3 hero objects clearly separated, dark atmospheric background (deep blue or purple-black), ` +
+    `strong contrast: warm amber and golden light on foreground objects against dark background, ` +
+    `rich pixel texture on each object surface, smooth gradients via fine dithering, ` +
+    `close-up or medium-shot (NOT wide panoramic), isometric or 3/4 side-view, ` +
+    `no clutter, no visual noise, calm lofi RPG mood, no photorealism, no watermark, no text in image. ` +
     `SCENE: ${imagePrompt}. ` +
     `Use your image generation tool to create this image now.`
 
@@ -257,7 +258,7 @@ ${wordstatBlock}
   "competitorH2s": ["типичный H2 конкурента 1", "типичный H2 конкурента 2", "типичный H2 конкурента 3"],
   "uniqueAngle": "чем наша статья будет отличаться и лучше конкурентов",
   "tags": ["тег1", "тег2"],
-  "imagePrompt": "English scene description for pixel-art hero image 900x450. Choose ONE environment that fits the article topic — rotate through these options (home office is rare, use it max once per 10 articles): cozy coffee shop with round table and notebook, open-space coworking with rows of monitors, city library with tall bookshelves and reading lamps, rooftop terrace with laptop and skyline view, modern glass meeting room, outdoor park bench with phone and papers, bright co-working lounge, university campus hallway, home office (rare option). Include 2-3 objects specific to the article topic (e.g. resume papers, salary chart on screen, social media feed, job listing page). Isometric or side-view composition. No text, no people faces."
+  "imagePrompt": "English scene description for pixel-art hero image 900x450. Describe a CLOSE-UP or MEDIUM SHOT focused on a desk or table surface — NOT a wide panoramic view. Choose ONE setting (home office is rare, use max once per 10 articles): corner of a coffee shop table with notebook, one workstation in a coworking, reading nook in a library, rooftop table with phone, small meeting room corner, park bench close-up, home desk (rare). Show 2-3 specific objects relevant to the article topic (resume papers, salary chart on screen, social media icons, job listings). Isometric or 3/4 view. No text in image."
 }`)
 
   const researchMatch = research.match(/\{[\s\S]*\}/)

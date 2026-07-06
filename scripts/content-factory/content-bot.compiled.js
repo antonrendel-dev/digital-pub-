@@ -125,6 +125,7 @@ async function handleMessage(msg) {
 /content_approve_all \u2014 \u043E\u0434\u043E\u0431\u0440\u0438\u0442\u044C \u0432\u0441\u0435 \u0442\u0435\u043C\u044B \u0441\u0440\u0430\u0437\u0443
 /content_write 5 \u2014 \u043D\u0435\u043C\u0435\u0434\u043B\u0435\u043D\u043D\u043E \u043D\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u0441\u0442\u0430\u0442\u044C\u044E #5
 /content_next \u2014 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u043E\u0447\u0435\u0440\u0435\u0434\u044C \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0442\u0435\u043C
+/content_regen &lt;slug&gt; \u2014 \u043F\u0435\u0440\u0435\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443 \u0441\u0442\u0430\u0442\u044C\u0438
 /content_help \u2014 \u044D\u0442\u0430 \u0441\u043F\u0440\u0430\u0432\u043A\u0430
 
 <b>\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u043A\u0430:</b>
@@ -229,6 +230,43 @@ ${e.message}`
 ${e.message}`
       )
     })
+    return
+  }
+  if (command === '/content_regen') {
+    const slug = args[0]
+    if (!slug) {
+      await reply(
+        chatId,
+        threadId,
+        '\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: <code>/content_regen rezyume-targetologa-shablon-2026</code>\n\n\u0421\u043B\u0430\u0433 \u2014 \u0445\u0432\u043E\u0441\u0442 URL \u0441\u0442\u0430\u0442\u044C\u0438 \u043D\u0430 d-pub.ru'
+      )
+      return
+    }
+    await reply(
+      chatId,
+      threadId,
+      `\u{1F3A8} \u041F\u0435\u0440\u0435\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443 \u0434\u043B\u044F <code>${slug}</code>...
+
+\u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~3 \u043C\u0438\u043D\u0443\u0442\u044B.`
+    )
+    runScript('regen', [slug])
+      .then(async () => {
+        await reply(
+          chatId,
+          threadId,
+          `\u2705 \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0430!
+
+https://d-pub.ru/articles/${slug}`
+        )
+      })
+      .catch(async (e) => {
+        await reply(
+          chatId,
+          threadId,
+          `\u274C \u041E\u0448\u0438\u0431\u043A\u0430:
+${e.message}`
+        )
+      })
     return
   }
   if (command === '/content_next') {

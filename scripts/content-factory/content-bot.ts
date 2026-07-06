@@ -174,6 +174,7 @@ async function handleMessage(msg: {
         `/content_approve_all — одобрить все темы сразу\n` +
         `/content_write 5 — немедленно написать статью #5\n` +
         `/content_next — показать очередь одобренных тем\n` +
+        `/content_regen &lt;slug&gt; — перегенерировать картинку статьи\n` +
         `/content_help — эта справка\n\n` +
         `<b>Автоматика:</b>\n` +
         `Каждый пн/ср/пт в 09:00 МСК берётся следующая одобренная тема и публикуется.`
@@ -248,6 +249,31 @@ async function handleMessage(msg: {
     runScript('writer', [num]).catch(async (e) => {
       await reply(chatId, threadId, `❌ Ошибка writer для темы #${num}:\n${e.message}`)
     })
+    return
+  }
+
+  if (command === '/content_regen') {
+    const slug = args[0]
+    if (!slug) {
+      await reply(
+        chatId,
+        threadId,
+        'Использование: <code>/content_regen rezyume-targetologa-shablon-2026</code>\n\nСлаг — хвост URL статьи на d-pub.ru'
+      )
+      return
+    }
+    await reply(
+      chatId,
+      threadId,
+      `🎨 Перегенерирую картинку для <code>${slug}</code>...\n\nЭто займёт ~3 минуты.`
+    )
+    runScript('regen', [slug])
+      .then(async () => {
+        await reply(chatId, threadId, `✅ Картинка обновлена!\n\nhttps://d-pub.ru/articles/${slug}`)
+      })
+      .catch(async (e) => {
+        await reply(chatId, threadId, `❌ Ошибка:\n${e.message}`)
+      })
     return
   }
 
