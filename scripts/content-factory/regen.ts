@@ -14,30 +14,26 @@ const CONTENT_DIR = path.join(PROJECT_ROOT, 'content/articles')
 const IMAGES_DIR = path.join(PROJECT_ROOT, 'public/images/posts')
 const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 const CODEX_HOME = path.join(os.homedir(), '.codex')
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''
-
 const slug = process.argv[2]
 if (!slug) {
   console.error('Использование: node regen.compiled.js <slug>')
   process.exit(1)
 }
 
-async function askClaude(prompt: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+function askClaude(prompt: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn('claude', ['-p', prompt], {
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let out = ''
+    child.stdout.on('data', (d: Buffer) => (out += d.toString()))
+    child.on('close', (code) => {
+      if (code === 0) resolve(out.trim())
+      else reject(new Error(`claude завершился с кодом ${code}`))
+    })
+    child.on('error', reject)
   })
-  const data = (await res.json()) as { content: Array<{ text: string }> }
-  return data.content[0]?.text || ''
 }
 
 function snapshotGeneratedImages(): Set<string> {
