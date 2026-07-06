@@ -172,13 +172,11 @@ async function generateImageWithCodex(imagePrompt: string, slug: string): Promis
   const fullPrompt =
     `Generate a hero image for a blog article using this exact style: ` +
     `High-fidelity pixel art illustration in the style of modern indie games (Stardew Valley, Octopath Traveler), ` +
-    `cozy evening home office interior, warm desk-lamp lighting, soft amber glow, ` +
-    `walls decorated with framed posters, shelves with books and plants, potted succulent on desk, ` +
     `fine pixel detail with small pixel grid, rich color depth, smooth gradients via dithering, ` +
-    `calm domestic mood, muted warm color palette with dusk blue shadows, ` +
+    `warm desk-lamp or ambient lighting, soft amber glow, muted warm color palette with dusk blue shadows, ` +
     `charming isometric or side-view composition, nostalgic indie game atmosphere, ` +
-    `no photorealism, no watermark. ` +
-    `Scene subject: ${imagePrompt}. ` +
+    `no photorealism, no watermark, no text in image. ` +
+    `SCENE: ${imagePrompt}. ` +
     `Use your image generation tool to create this image now.`
 
   console.log('[writer] Запускаю Codex для генерации картинки...')
@@ -259,7 +257,7 @@ ${wordstatBlock}
   "competitorH2s": ["типичный H2 конкурента 1", "типичный H2 конкурента 2", "типичный H2 конкурента 3"],
   "uniqueAngle": "чем наша статья будет отличаться и лучше конкурентов",
   "tags": ["тег1", "тег2"],
-  "imagePrompt": "English prompt for pixel-art hero image 900x450 (describe scene and objects, no text in image)"
+  "imagePrompt": "English scene description for pixel-art hero image 900x450. Choose ONE environment that fits the article topic — rotate through these options (home office is rare, use it max once per 10 articles): cozy coffee shop with round table and notebook, open-space coworking with rows of monitors, city library with tall bookshelves and reading lamps, rooftop terrace with laptop and skyline view, modern glass meeting room, outdoor park bench with phone and papers, bright co-working lounge, university campus hallway, home office (rare option). Include 2-3 objects specific to the article topic (e.g. resume papers, salary chart on screen, social media feed, job listing page). Isometric or side-view composition. No text, no people faces."
 }`)
 
   const researchMatch = research.match(/\{[\s\S]*\}/)
