@@ -174,7 +174,7 @@ async function handleMessage(msg: {
         `/content_approve_all — одобрить все темы сразу\n` +
         `/content_write 5 — немедленно написать статью #5\n` +
         `/content_next — показать очередь одобренных тем\n` +
-        `/content_regen &lt;slug&gt; — перегенерировать картинку статьи\n` +
+        `/content_regen &lt;slug&gt; [сцена] — перегенерировать картинку статьи\n` +
         `/content_help — эта справка\n\n` +
         `<b>Автоматика:</b>\n` +
         `Каждый пн/ср/пт в 09:00 МСК берётся следующая одобренная тема и публикуется.`
@@ -258,16 +258,21 @@ async function handleMessage(msg: {
       await reply(
         chatId,
         threadId,
-        'Использование: <code>/content_regen rezyume-targetologa-shablon-2026</code>\n\nСлаг — хвост URL статьи на d-pub.ru'
+        'Использование:\n' +
+          '<code>/content_regen &lt;slug&gt;</code> — авто-сцена по теме\n' +
+          '<code>/content_regen &lt;slug&gt; кофейня, ноутбук, закат</code> — своя сцена\n\n' +
+          'Слаг — хвост URL статьи на d-pub.ru'
       )
       return
     }
+    const customScene = args.slice(1).join(' ').trim()
+    const hint = customScene ? `\nСцена: <i>${customScene}</i>` : ''
     await reply(
       chatId,
       threadId,
-      `🎨 Перегенерирую картинку для <code>${slug}</code>...\n\nЭто займёт ~3 минуты.`
+      `🎨 Перегенерирую картинку для <code>${slug}</code>...${hint}\n\nЭто займёт ~3 минуты.`
     )
-    runScript('regen', [slug])
+    runScript('regen', customScene ? [slug, customScene] : [slug])
       .then(async () => {
         await reply(chatId, threadId, `✅ Картинка обновлена!\n\nhttps://d-pub.ru/articles/${slug}`)
       })

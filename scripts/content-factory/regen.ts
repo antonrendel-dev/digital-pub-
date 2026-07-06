@@ -15,8 +15,10 @@ const IMAGES_DIR = path.join(PROJECT_ROOT, 'public/images/posts')
 const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 const CODEX_HOME = path.join(os.homedir(), '.codex')
 const slug = process.argv[2]
+const customPrompt = process.argv.slice(3).join(' ').trim() || null
+
 if (!slug) {
-  console.error('Использование: node regen.compiled.js <slug>')
+  console.error('Использование: node regen.compiled.js <slug> [пожелания к сцене]')
   process.exit(1)
 }
 
@@ -123,17 +125,25 @@ async function main() {
 
   console.log(`[regen] Статья: ${title}`)
 
-  // Генерируем новый imagePrompt через Claude
-  const imagePrompt = await askClaude(
-    `Generate an English scene description for a pixel-art hero image for this article.\n` +
-      `Title: ${title}\n` +
-      `Description: ${description}\n\n` +
-      `Describe a CLOSE-UP scene (NOT wide panoramic) with 2-3 specific objects relevant to the article topic. ` +
-      `Choose ONE setting (coffee shop corner, library nook, rooftop table, coworking desk, home desk). ` +
-      `No text in image. Reply with just the scene description, 2-3 sentences, English only.`
-  )
-
-  console.log(`[regen] imagePrompt: ${imagePrompt}`)
+  let imagePrompt: string
+  if (customPrompt) {
+    // Пользователь указал пожелания — переводим в English через Claude
+    imagePrompt = await askClaude(
+      `Translate and expand this scene description into English for a pixel-art image (2-3 sentences, close-up, no text in image):\n${customPrompt}`
+    )
+    console.log(`[regen] imagePrompt (custom): ${imagePrompt}`)
+  } else {
+    // Автогенерация сцены по теме статьи
+    imagePrompt = await askClaude(
+      `Generate an English scene description for a pixel-art hero image for this article.\n` +
+        `Title: ${title}\n` +
+        `Description: ${description}\n\n` +
+        `Describe a CLOSE-UP scene (NOT wide panoramic) with 2-3 specific objects relevant to the article topic. ` +
+        `Choose ONE setting (coffee shop corner, library nook, rooftop table, coworking desk, home desk). ` +
+        `No text in image. Reply with just the scene description, 2-3 sentences, English only.`
+    )
+    console.log(`[regen] imagePrompt (auto): ${imagePrompt}`)
+  }
 
   const newImagePath = await generateImage(imagePrompt.trim())
   if (!newImagePath) {

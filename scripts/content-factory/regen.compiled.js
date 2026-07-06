@@ -10,9 +10,10 @@ var IMAGES_DIR = path.join(PROJECT_ROOT, 'public/images/posts')
 var CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 var CODEX_HOME = path.join(os.homedir(), '.codex')
 var slug = process.argv[2]
+var customPrompt = process.argv.slice(3).join(' ').trim() || null
 if (!slug) {
   console.error(
-    '\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: node regen.compiled.js <slug>'
+    '\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: node regen.compiled.js <slug> [\u043F\u043E\u0436\u0435\u043B\u0430\u043D\u0438\u044F \u043A \u0441\u0446\u0435\u043D\u0435]'
   )
   process.exit(1)
 }
@@ -103,14 +104,23 @@ async function main() {
   const title = fm.title || slug
   const description = fm.description || ''
   console.log(`[regen] \u0421\u0442\u0430\u0442\u044C\u044F: ${title}`)
-  const imagePrompt = await askClaude(
-    `Generate an English scene description for a pixel-art hero image for this article.
+  let imagePrompt
+  if (customPrompt) {
+    imagePrompt = await askClaude(
+      `Translate and expand this scene description into English for a pixel-art image (2-3 sentences, close-up, no text in image):
+${customPrompt}`
+    )
+    console.log(`[regen] imagePrompt (custom): ${imagePrompt}`)
+  } else {
+    imagePrompt = await askClaude(
+      `Generate an English scene description for a pixel-art hero image for this article.
 Title: ${title}
 Description: ${description}
 
 Describe a CLOSE-UP scene (NOT wide panoramic) with 2-3 specific objects relevant to the article topic. Choose ONE setting (coffee shop corner, library nook, rooftop table, coworking desk, home desk). No text in image. Reply with just the scene description, 2-3 sentences, English only.`
-  )
-  console.log(`[regen] imagePrompt: ${imagePrompt}`)
+    )
+    console.log(`[regen] imagePrompt (auto): ${imagePrompt}`)
+  }
   const newImagePath = await generateImage(imagePrompt.trim())
   if (!newImagePath) {
     console.error(
