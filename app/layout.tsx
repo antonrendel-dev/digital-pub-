@@ -24,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://mc.yandex.ru" />
         <link rel="dns-prefetch" href="https://mc.yandex.ru" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
       <body>{children}</body>
     </html>

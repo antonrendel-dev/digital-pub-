@@ -37,6 +37,7 @@ jobs:
           DB_CONNECTION_STRING: ${{ secrets.DATABASE_URL }}
           PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
           NEXT_PUBLIC_YANDEX_METRIKA_ID: ${{ secrets.NEXT_PUBLIC_YANDEX_METRIKA_ID }}
+          NEXT_PUBLIC_GA_MEASUREMENT_ID: G-JM47D5L3GL
           NEXT_PUBLIC_SERVER_URL: https://d-pub.ru
 
       - name: Compile payload config for CLI
@@ -79,9 +80,10 @@ jobs:
             printf '%s' '${{ secrets.PAYLOAD_SECRET }}' > ~/d-pub.ru/etc/environment/PAYLOAD_SECRET
             printf '%s' 'https://d-pub.ru' > ~/d-pub.ru/etc/environment/NEXT_PUBLIC_SERVER_URL
             printf '%s' '${{ secrets.NEXT_PUBLIC_YANDEX_METRIKA_ID }}' > ~/d-pub.ru/etc/environment/NEXT_PUBLIC_YANDEX_METRIKA_ID
+            printf '%s' 'G-JM47D5L3GL' > ~/d-pub.ru/etc/environment/NEXT_PUBLIC_GA_MEASUREMENT_ID
             echo '22' > ~/d-pub.ru/.nvmrc
           "
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'printf "DB_CONNECTION_STRING=%s\nDATABASE_URL=%s\nPAYLOAD_SECRET=%s\nNEXT_PUBLIC_SERVER_URL=https://d-pub.ru\nNEXT_PUBLIC_YANDEX_METRIKA_ID=%s\n" \
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} 'printf "DB_CONNECTION_STRING=%s\nDATABASE_URL=%s\nPAYLOAD_SECRET=%s\nNEXT_PUBLIC_SERVER_URL=https://d-pub.ru\nNEXT_PUBLIC_YANDEX_METRIKA_ID=%s\nNEXT_PUBLIC_GA_MEASUREMENT_ID=G-JM47D5L3GL\n" \
             "${{ secrets.DATABASE_URL }}" \
             "${{ secrets.DATABASE_URL }}" \
             "${{ secrets.PAYLOAD_SECRET }}" \
