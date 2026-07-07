@@ -11,6 +11,12 @@ export const TAG_TITLE: Record<string, string> = {
   target: `Вакансии таргетолога — VK, Директ, Telegram Ads`,
   menedzher: `Вакансии менеджера в digital — {N}: проджект, аккаунт, продакт`,
   dizajn: `Вакансии дизайнера — {N} актуальных: UI/UX, веб, графика`,
+  // Tool-specific pages
+  figma: `Вакансии Figma — {N} актуальных, удалённо`,
+  canva: `Вакансии Canva — дизайнер и SMM`,
+  tilda: `Вакансии Tilda — {N} актуальных`,
+  'yandex-direct': `Вакансии директолога — {N}, Яндекс Директ`,
+  tablicy: `Вакансии Google Таблицы и Excel — {N}`,
 }
 
 // Точечные переопределения <description> для /vacancies/[category]
@@ -54,4 +60,10 @@ export const TAG_H1: Record<string, string> = {
   junior: `Вакансии junior-специалистов в digital ${y}`,
   middle: `Вакансии middle-специалистов в digital ${y}`,
   senior: `Вакансии senior-специалистов в digital — удалённо и офис ${y}`,
+  // Tool-specific pages
+  figma: `Вакансии Figma`,
+  canva: `Вакансии Canva`,
+  tilda: `Вакансии Tilda`,
+  'yandex-direct': `Вакансии Яндекс Директ`,
+  tablicy: `Вакансии Google Таблицы и Excel`,
 }
