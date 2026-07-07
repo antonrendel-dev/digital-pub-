@@ -32,6 +32,11 @@ const nextConfig = {
         destination: 'https://d-pub.ru/:path*',
         permanent: true,
       },
+      { source: '/vacancies/figma', destination: '/tools/figma', permanent: true },
+      { source: '/vacancies/canva', destination: '/tools/canva', permanent: true },
+      { source: '/vacancies/tilda', destination: '/tools/tilda', permanent: true },
+      { source: '/vacancies/yandex-direct', destination: '/tools/yandex-direct', permanent: true },
+      { source: '/vacancies/tablicy', destination: '/tools/tablicy', permanent: true },
     ]
   },
   async headers() {

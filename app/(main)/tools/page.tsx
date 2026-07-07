@@ -21,6 +21,7 @@ const TOOLS = [
   { slug: 'google-analytics', name: 'Google Analytics', query: 'google analytics' },
   { slug: 'yandex-direct', name: 'Яндекс.Директ', query: 'яндекс.директ' },
   { slug: 'photoshop', name: 'Photoshop', query: 'photoshop' },
+  { slug: 'tablicy', name: 'Google Таблицы', query: 'таблиц' },
 ]
 
 export const metadata: Metadata = {

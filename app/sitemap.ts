@@ -27,12 +27,6 @@ const KNOWN_TAG_SLUGS = [
   'junior',
   'middle',
   'senior',
-  // Tool-specific pages (ticket-51)
-  'figma',
-  'canva',
-  'tilda',
-  'yandex-direct',
-  'tablicy',
 ]
 
 type PayloadPost = {
@@ -45,11 +39,34 @@ type PayloadPost = {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
+  const TOOL_SLUGS = [
+    'capcut',
+    'figma',
+    'yandex-metrika',
+    'chatgpt',
+    'canva',
+    'screaming-frog',
+    'semrush',
+    'tilda',
+    'midjourney',
+    'google-analytics',
+    'yandex-direct',
+    'photoshop',
+    'tablicy',
+  ]
+
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: now, changeFrequency: 'daily', priority: 1.0 },
     { url: `${BASE_URL}/vacancies`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${BASE_URL}/resumes`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${BASE_URL}/articles`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${BASE_URL}/tools`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    ...TOOL_SLUGS.map((slug) => ({
+      url: `${BASE_URL}/tools/${slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    })),
     { url: `${BASE_URL}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${BASE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ]

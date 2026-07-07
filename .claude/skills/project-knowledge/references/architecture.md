@@ -30,6 +30,14 @@
 │   ├── resumes/
 │   │   ├── page.tsx
 │   │   └── tag/[tagSlug]/page.tsx    # SEO tag page для резюме
+│   ├── tools/                        # ⚠️ ОТДЕЛЬНЫЙ РАЗДЕЛ — ХАРДКОД, НЕ Payload теги!
+│   │   ├── page.tsx                  # Хаб инструментов /tools — список 13 инструментов
+│   │   └── [toolSlug]/page.tsx       # Страница инструмента (TOOLS объект, getPostsByTool)
+│   │   # Инструменты: capcut, figma, yandex-metrika, chatgpt, canva, screaming-frog,
+│   │   # semrush, tilda, midjourney, google-analytics, yandex-direct, photoshop, tablicy
+│   │   # ВАЖНО: /tools/ работает через text-search (getPostsByTool), НЕ через Payload теги.
+│   │   # НЕ дублировать инструменты в /vacancies/[category] — создаст дубли контента.
+│   │   # Редиректы: /vacancies/{figma,canva,tilda,yandex-direct,tablicy} → /tools/{slug}
 │   ├── articles/
 │   │   ├── page.tsx                  # Article listing
 │   │   └── [slug]/page.tsx           # MDX article rendering
