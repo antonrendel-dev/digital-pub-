@@ -8,7 +8,9 @@ export const TAG_TITLE: Record<string, string> = {
   udalyonka: `Удалённая работа в digital — {N} вакансий: SMM, дизайн, маркетинг`,
   smm: `Вакансии SMM-менеджера — {N} актуальных, удалёнка и офис`,
   marketing: `Вакансии маркетолога — digital и performance, {N} открытых`,
-  target: `Вакансии таргетолога — VK, Директ, Telegram Ads`,
+  target: `Вакансии таргетолога — {N} актуальных, VK, Директ, Telegram Ads`,
+  razrabotka: `Вакансии разработчика — {N} актуальных, frontend, backend, fullstack`,
+  analitika: `Вакансии аналитика данных — {N} актуальных, веб, бизнес, продукт`,
   menedzher: `Вакансии менеджера в digital — {N}: проджект, аккаунт, продакт`,
   dizajn: `Вакансии дизайнера — {N} актуальных: UI/UX, веб, графика`,
   // Tool-specific pages

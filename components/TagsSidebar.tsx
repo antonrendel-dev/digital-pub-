@@ -17,9 +17,14 @@ interface TagsSidebarProps {
   tags: TagData[]
   /** Currently active tag slug — will be visually highlighted */
   activeSlug?: string
+  heading?: string
 }
 
-export default function TagsSidebar({ tags, activeSlug }: TagsSidebarProps) {
+export default function TagsSidebar({
+  tags,
+  activeSlug,
+  heading = 'Категории и теги',
+}: TagsSidebarProps) {
   const grouped = tags
     .filter((t) => t.count > 0)
     .reduce<Record<string, TagData[]>>((acc, tag) => {
@@ -43,7 +48,7 @@ export default function TagsSidebar({ tags, activeSlug }: TagsSidebarProps) {
 
   return (
     <div className="bg-bg-card border border-border rounded-xl p-4">
-      <h3 className="s-lbl">Категории и теги</h3>
+      <h3 className="s-lbl">{heading}</h3>
 
       {sortedGroups.map((group) => (
         <div key={group.type} className="mb-3 last:mb-0">
