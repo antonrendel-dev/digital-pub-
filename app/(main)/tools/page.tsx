@@ -25,12 +25,12 @@ const TOOLS = [
 ]
 
 export const metadata: Metadata = {
-  title: 'Вакансии по инструментам — digital-специалисты | Диджитал Паб',
+  title: 'Вакансии по инструментам — digital-специалисты',
   description:
     'Вакансии для digital-специалистов по инструментам: Figma, CapCut, ChatGPT, Canva, Photoshop, Tilda и другие. Собраны из Telegram-каналов.',
   alternates: { canonical: `${BASE_URL}/tools` },
   openGraph: {
-    title: 'Вакансии по инструментам — digital-специалисты | Диджитал Паб',
+    title: 'Вакансии по инструментам — digital-специалисты',
     description:
       'Вакансии для digital-специалистов по инструментам: Figma, CapCut, ChatGPT, Canva и другие.',
     url: `${BASE_URL}/tools`,

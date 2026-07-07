@@ -78,9 +78,27 @@ export default async function ResumePage({ params }: Props) {
     ],
   }
 
+  const profilePageLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    '@id': `https://d-pub.ru/resumes/${category}/${slug}#profilepage`,
+    datePublished: post.createdAt,
+    dateModified: post.createdAt,
+    breadcrumb: { '@id': `https://d-pub.ru/resumes/${category}/${slug}#breadcrumb` },
+    mainEntity: {
+      '@type': 'Person',
+      name: post.title,
+      description: post.description
+        ? post.description.slice(0, 200).replace(/\n/g, ' ')
+        : undefined,
+      ...(post.salary ? { seeks: { '@type': 'JobPosting', baseSalary: post.salary } } : {}),
+    },
+  }
+
   return (
     <PageShell>
       <JsonLd data={breadcrumbLd} />
+      <JsonLd data={profilePageLd} />
       <PostDetail
         post={post}
         related={related}

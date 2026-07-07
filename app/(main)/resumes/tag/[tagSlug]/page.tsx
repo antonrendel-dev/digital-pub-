@@ -3,7 +3,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCountsByType } from '@/lib/tags'
 import TagsSidebar from '@/components/TagsSidebar'
-import { RESUME_TAG_TITLE, RESUME_TAG_H1 } from '@/lib/tagH1'
+import { RESUME_TAG_TITLE, RESUME_TAG_H1, RESUME_TAG_DESCRIPTION } from '@/lib/tagH1'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { getResumeTagFaq } from '@/lib/resume-tag-faq'
 import PageShell from '@/components/PageShell'
@@ -19,10 +19,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = await getTagBySlug(tagSlug)
   if (!tag) return { title: 'Тег не найден' }
 
-  const title =
-    RESUME_TAG_TITLE[tagSlug] ?? tag.seoTitle ?? `Резюме специалистов: ${tag.name} | Диджитал Паб`
+  const title = RESUME_TAG_TITLE[tagSlug] ?? tag.seoTitle ?? `Резюме специалистов: ${tag.name}`
   const description =
-    tag.seoDescription ??
+    RESUME_TAG_DESCRIPTION[tagSlug] ??
     `Резюме ${tag.name}-специалистов из Telegram-сообщества. База кандидатов в digital-сфере на Диджитал Паб.`
   const url = `https://d-pub.ru/resumes/tag/${tagSlug}`
 

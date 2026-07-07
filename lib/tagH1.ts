@@ -35,11 +35,24 @@ export const TAG_DESCRIPTION: Record<string, string> = {
 
 // Переопределения <title> и H1 для /resumes/tag/[tagSlug]
 export const RESUME_TAG_TITLE: Record<string, string> = {
-  smm: `Резюме SMM-специалистов ${y} — база кандидатов | Диджитал Паб`,
+  smm: `Резюме SMM-специалистов ${y} — база кандидатов`,
 }
 
 export const RESUME_TAG_H1: Record<string, string> = {
   smm: `Резюме SMM-специалистов`,
+}
+
+export const RESUME_TAG_DESCRIPTION: Record<string, string> = {
+  smm: `База резюме SMM-специалистов из Telegram: менеджеры, контент-мейкеры, таргетологи соцсетей. Актуальные кандидаты — Диджитал Паб.`,
+  marketing: `Резюме маркетологов из Telegram: digital, performance, CRM, email. Актуальные кандидаты без регистрации — Диджитал Паб.`,
+  dizajn: `Резюме дизайнеров: UI/UX, веб, графика, моушн. Актуальные кандидаты из Telegram — Диджитал Паб.`,
+  target: `Резюме таргетологов: VK, Яндекс Директ, Telegram Ads. База кандидатов из Telegram-сообщества — Диджитал Паб.`,
+  analitika: `Резюме аналитиков: веб, продуктовый, data. Актуальные кандидаты из digital-сообщества в Telegram — Диджитал Паб.`,
+  razrabotka: `Резюме разработчиков: frontend, backend, fullstack. База кандидатов из Telegram-каналов — Диджитал Паб.`,
+  copywriting: `Резюме копирайтеров и редакторов: тексты, SEO-контент, сторителлинг. Кандидаты из Telegram — Диджитал Паб.`,
+  content: `Резюме контент-менеджеров и контент-мейкеров из Telegram. Актуальная база digital-кандидатов — Диджитал Паб.`,
+  hr: `Резюме HR-специалистов: рекрутеры, HRD, HR BP. База кандидатов из Telegram-сообщества — Диджитал Паб.`,
+  menedzher: `Резюме менеджеров в digital: проджект, продакт, аккаунт. Кандидаты из Telegram — Диджитал Паб.`,
 }
 
 export const TAG_H1: Record<string, string> = {

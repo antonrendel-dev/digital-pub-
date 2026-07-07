@@ -366,7 +366,45 @@ export function buildVacancyH1(post: PostForH1, categoryName?: string | null): s
 
 export function buildResumeTitle(post: PostForMeta): string {
   const titleNorm = normalizeTitle(post.title)
-  return truncate(`Резюме: ${titleNorm}`, 53)
+
+  // Use specialization tag for richer title
+  const specTag = post.tags?.find((t) =>
+    [
+      'smm',
+      'seo',
+      'dizajn',
+      'marketing',
+      'target',
+      'razrabotka',
+      'analitika',
+      'copywriting',
+      'content',
+      'menedzher',
+      'hr',
+      'kreativ',
+      'finansy',
+      'wordpress',
+    ].includes(t.slug ?? '')
+  )
+  const formatTag = post.tags?.find((t) => ['udalyonka', 'ofis', 'gibrid'].includes(t.slug ?? ''))
+
+  if (specTag) {
+    const base = `Резюме ${titleNorm} — ${specTag.name}`
+    const withFormat = formatTag ? `${base}, ${FORMAT_TAGS[formatTag.slug ?? '']}` : base
+    const withSalary = post.salary
+      ? `${withFormat}, от ${extractMinSalary(post.salary)}`
+      : withFormat
+    return truncate(withSalary, 60)
+  }
+
+  return truncate(`Резюме: ${titleNorm}`, 60)
+}
+
+function extractMinSalary(salary: string): string {
+  const m = salary.replace(/\s/g, '').match(/\d{4,7}/)
+  if (!m) return salary.slice(0, 20)
+  const n = parseInt(m[0])
+  return n >= 1000 ? `${Math.round(n / 1000)}К ₽` : `${n} ₽`
 }
 
 export function buildResumeDescription(post: PostForMeta): string {
