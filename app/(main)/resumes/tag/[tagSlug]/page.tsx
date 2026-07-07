@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
 import { RESUME_TAG_TITLE, RESUME_TAG_H1 } from '@/lib/tagH1'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
+import { getResumeTagFaq } from '@/lib/resume-tag-faq'
 import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
 import JsonLd from '@/components/JsonLd'
@@ -50,6 +51,7 @@ export default async function TagPage({ params }: Props) {
   const posts = (await getPostsByTag(tagSlug)).filter((p) => p.type === 'resume')
   const allTags = await getTagsWithCounts()
   const relatedTags = allTags.filter((t) => t.slug !== tagSlug && t.count > 0).slice(0, 8)
+  const faqItems = getResumeTagFaq(tagSlug)
 
   // BreadcrumbList Schema.org
   const breadcrumbLd = {
@@ -60,6 +62,20 @@ export default async function TagPage({ params }: Props) {
       { '@type': 'ListItem', position: 2, name: 'Резюме', item: 'https://d-pub.ru/resumes' },
       { '@type': 'ListItem', position: 3, name: tag.name },
     ],
+  }
+
+  // FAQPage Schema
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
   }
 
   // ItemList of resumes in this tag
@@ -80,6 +96,7 @@ export default async function TagPage({ params }: Props) {
     <PageShell>
       <JsonLd data={breadcrumbLd} />
       <JsonLd data={itemListLd} />
+      <JsonLd data={faqLd} />
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">
           <Link
@@ -167,6 +184,28 @@ export default async function TagPage({ params }: Props) {
             />
           </div>
         )}
+
+        {/* FAQ block */}
+        <section className="mt-12 pt-8 border-t border-border">
+          <h2 className="text-xl font-bold text-text mb-6">
+            Часто задаваемые вопросы о резюме {tag.name}
+          </h2>
+          <div className="space-y-4">
+            {faqItems.map((item, i) => (
+              <details key={i} className="group border border-border rounded-lg overflow-hidden">
+                <summary className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer text-sm font-medium text-text hover:bg-bg-card transition-colors list-none">
+                  <span>{item.question}</span>
+                  <span className="text-text-muted shrink-0 group-open:rotate-180 transition-transform">
+                    ▾
+                  </span>
+                </summary>
+                <div className="px-4 pb-4 pt-2 text-sm text-text-muted leading-relaxed border-t border-border">
+                  {item.answer}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
       </div>
     </PageShell>
   )
