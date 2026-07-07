@@ -53,7 +53,15 @@ export default function ListingPage({
               {/* Tags rubricator — mobile/tablet only (desktop: right sidebar) */}
               {tags && tags.length > 0 && (
                 <div className="lg:hidden mb-4">
-                  <TagsSidebar tags={tags} />
+                  {type === 'resume' ? (
+                    <TagsSidebar
+                      tags={tags}
+                      heading="Резюме по категориям"
+                      hrefFn={(s) => `/resumes/tag/${s}`}
+                    />
+                  ) : (
+                    <TagsSidebar tags={tags} />
+                  )}
                 </div>
               )}
               <Feed
@@ -129,7 +137,15 @@ export default function ListingPage({
               )}
             </div>
             <aside className="hidden lg:block">
-              <RightSidebar tags={tags} />
+              {type === 'resume' ? (
+                <TagsSidebar
+                  tags={tags ?? []}
+                  heading="Резюме по категориям"
+                  hrefFn={(s) => `/resumes/tag/${s}`}
+                />
+              ) : (
+                <RightSidebar tags={tags} />
+              )}
             </aside>
           </div>
         </div>

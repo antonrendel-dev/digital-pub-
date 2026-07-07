@@ -1,5 +1,5 @@
 import { getPostsByTypePaginated } from '@/lib/posts'
-import { getTagsWithCounts, getStats } from '@/lib/tags'
+import { getTagsWithCountsByType, getStats } from '@/lib/tags'
 import ListingPage from '@/components/ListingPage'
 import JsonLd from '@/components/JsonLd'
 import type { Metadata } from 'next'
@@ -53,7 +53,7 @@ export default async function ResumesPage({ searchParams }: Props) {
   const page = Math.min(Math.max(1, parseInt(pageParam || '1', 10) || 1), 500)
   const [{ posts, total, totalPages }, tags, stats] = await Promise.all([
     getPostsByTypePaginated('resume', page, 20),
-    getTagsWithCounts(),
+    getTagsWithCountsByType('resume'),
     getStats(),
   ])
 
