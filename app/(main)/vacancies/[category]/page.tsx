@@ -15,7 +15,7 @@ import {
 } from '@/components/RelatedArticles'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { getCategoryFaq } from '@/lib/category-faq'
-import { TAG_H1, TAG_TITLE } from '@/lib/tagH1'
+import { TAG_H1, TAG_TITLE, TAG_DESCRIPTION } from '@/lib/tagH1'
 import {
   SPEC_SLUGS,
   FORMAT_SLUGS,
@@ -35,14 +35,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = await getTagBySlug(category)
   if (!tag) return { title: 'Категория не найдена' }
 
-  const title = TAG_TITLE[category] ?? tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`
-  const description =
-    tag.seoDescription ??
-    `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`
-  const url = `https://d-pub.ru/vacancies/${category}`
-
   const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
   const hasVacancies = posts.length > 0
+  const n = posts.length.toString()
+
+  const rawTitle = TAG_TITLE[category] ?? tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`
+  const title = rawTitle.replace('{N}', n)
+
+  const rawDescription =
+    TAG_DESCRIPTION[category] ??
+    tag.seoDescription ??
+    `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`
+  const description = rawDescription.replace('{N}', n)
+
+  const url = `https://d-pub.ru/vacancies/${category}`
 
   return {
     title,

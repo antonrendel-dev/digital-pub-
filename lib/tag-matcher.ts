@@ -14,6 +14,7 @@
  *   - SPECIALIZATION tags matched against title only (prevents body mentions
  *     like "аналитика кампаний" from tagging a vacancy as analitika)
  *   - FORMAT and LEVEL tags matched against full text
+ *   - TOOL tags matched against full text (title + description)
  */
 
 /** Slugs that represent the job specialization — matched against title only. */
@@ -31,6 +32,18 @@ export const SPEC_TAG_SLUGS = new Set([
   'copywriting',
   'content',
 ])
+
+/**
+ * Tool-specific tag slugs — matched against full text (title + description).
+ * Uses regex patterns to avoid false positives.
+ */
+export const TOOL_TAG_SLUGS: Record<string, RegExp> = {
+  figma: /figma|фигм[аеы]/gi,
+  canva: /canva|канв[аеы]/gi,
+  tilda: /\btilda\b|\bтильд[аеы]\b/gi,
+  'yandex-direct': /яндекс[\s.]?директ|яндекс\.директ|директолог/gi,
+  tablicy: /google\s+таблиц|гугл\s+таблиц|google\s+sheets|excel|эксель/gi,
+}
 
 export const TAG_KEYWORDS: Record<string, string[]> = {
   smm: [
@@ -201,6 +214,7 @@ function hasKeyword(text: string, keyword: string): boolean {
  *
  * Specialization tags (smm, seo, dizajn, …) are matched against `title` only.
  * Format/level tags (udalyonka, junior, …) are matched against the full text.
+ * Tool tags (figma, canva, tilda, …) are matched against full text via regex.
  *
  * Pass body as second argument. If omitted, title is treated as full text
  * (legacy behaviour — safe for callers that already concatenate title+body).
@@ -216,6 +230,15 @@ export function matchTags(title: string, body?: string): string[] {
         matched.push(tagSlug)
         break
       }
+    }
+  }
+
+  // Tool tags: regex match against full text
+  for (const [tagSlug, pattern] of Object.entries(TOOL_TAG_SLUGS)) {
+    // Reset lastIndex for global regexes
+    pattern.lastIndex = 0
+    if (pattern.test(fullText)) {
+      matched.push(tagSlug)
     }
   }
 

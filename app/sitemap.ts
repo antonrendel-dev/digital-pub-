@@ -27,6 +27,12 @@ const KNOWN_TAG_SLUGS = [
   'junior',
   'middle',
   'senior',
+  // Tool-specific pages (ticket-51)
+  'figma',
+  'canva',
+  'tilda',
+  'yandex-direct',
+  'tablicy',
 ]
 
 type PayloadPost = {

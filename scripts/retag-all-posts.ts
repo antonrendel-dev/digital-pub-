@@ -14,7 +14,7 @@
 
 import 'dotenv/config'
 import { Pool } from 'pg'
-import { matchTags, TAG_KEYWORDS } from '../lib/tag-matcher'
+import { matchTags, TAG_KEYWORDS, TOOL_TAG_SLUGS } from '../lib/tag-matcher'
 
 const dbUrl = process.env.DB_CONNECTION_STRING ?? process.env.DATABASE_URL
 if (!dbUrl) {
@@ -29,10 +29,13 @@ async function main() {
   const client = await pool.connect()
 
   try {
+    // All known tag slugs: keyword-based + tool regex-based
+    const allKnownSlugs = [...Object.keys(TAG_KEYWORDS), ...Object.keys(TOOL_TAG_SLUGS)]
+
     // Load all known tags from DB
     const { rows: allTags } = await client.query<{ id: number; slug: string }>(
       `SELECT id, slug FROM tags WHERE slug = ANY($1)`,
-      [Object.keys(TAG_KEYWORDS)]
+      [allKnownSlugs]
     )
 
     if (allTags.length === 0) {
@@ -43,7 +46,7 @@ async function main() {
     const tagIdBySlug = Object.fromEntries(allTags.map((t) => [t.slug, t.id]))
     const knownTagIds = new Set(allTags.map((t) => t.id))
 
-    console.log(`Known matcher tags in DB: ${allTags.length}/${Object.keys(TAG_KEYWORDS).length}`)
+    console.log(`Known matcher tags in DB: ${allTags.length}/${allKnownSlugs.length}`)
     if (DRY_RUN) console.log('DRY-RUN mode — no DB writes')
 
     // Load all published posts
