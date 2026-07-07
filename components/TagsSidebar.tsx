@@ -18,12 +18,15 @@ interface TagsSidebarProps {
   /** Currently active tag slug — will be visually highlighted */
   activeSlug?: string
   heading?: string
+  /** Override link target. Defaults to /vacancies/[slug] */
+  hrefFn?: (slug: string) => string
 }
 
 export default function TagsSidebar({
   tags,
   activeSlug,
   heading = 'Категории и теги',
+  hrefFn,
 }: TagsSidebarProps) {
   const grouped = tags
     .filter((t) => t.count > 0)
@@ -61,7 +64,7 @@ export default function TagsSidebar({
               return (
                 <Link
                   key={tag.slug}
-                  href={`/vacancies/${tag.slug}`}
+                  href={hrefFn ? hrefFn(tag.slug) : `/vacancies/${tag.slug}`}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium no-underline transition ${
                     isActive ? 'ring-2 ring-accent opacity-100' : 'hover:opacity-80'
                   } ${group.colorClass}`}

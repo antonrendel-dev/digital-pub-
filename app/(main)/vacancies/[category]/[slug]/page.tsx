@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { getPostBySlug, getPostsByType } from '@/lib/posts'
@@ -223,6 +223,8 @@ export default async function VacancyPage({ params }: Props) {
 
   const post = await getPostBySlug(slug)
   if (!post) notFound()
+
+  if (post.type === 'resume') redirect(`/resumes/${category}/${slug}`)
 
   const postTagSlugsArr = (post.tags?.map((pt) => pt.slug).filter(Boolean) ?? []) as string[]
 

@@ -317,7 +317,11 @@ export default function PostDetail({
                   return (
                     <Link
                       key={r.id}
-                      href={r.slug ? `/vacancies/${rCatSlug}/${r.slug}` : `/post/${r.id}`}
+                      href={
+                        r.slug
+                          ? `/${r.type === 'resume' ? 'resumes' : 'vacancies'}/${rCatSlug}/${r.slug}`
+                          : `/post/${r.id}`
+                      }
                       className="block no-underline group"
                     >
                       <div className="text-sm font-medium text-text-muted group-hover:text-text transition-colors">

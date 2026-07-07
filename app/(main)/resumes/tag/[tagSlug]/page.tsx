@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { getTagBySlug, getPostsByTag, getTagsWithCounts } from '@/lib/tags'
+import { getTagBySlug, getPostsByTag, getTagsWithCountsByType } from '@/lib/tags'
+import TagsSidebar from '@/components/TagsSidebar'
 import { RESUME_TAG_TITLE, RESUME_TAG_H1 } from '@/lib/tagH1'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { getResumeTagFaq } from '@/lib/resume-tag-faq'
@@ -49,8 +50,7 @@ export default async function TagPage({ params }: Props) {
   if (!tag) notFound()
 
   const posts = (await getPostsByTag(tagSlug)).filter((p) => p.type === 'resume')
-  const allTags = await getTagsWithCounts()
-  const relatedTags = allTags.filter((t) => t.slug !== tagSlug && t.count > 0).slice(0, 8)
+  const resumeTags = await getTagsWithCountsByType('resume')
   const faqItems = getResumeTagFaq(tagSlug)
 
   // BreadcrumbList Schema.org
@@ -123,23 +123,15 @@ export default async function TagPage({ params }: Props) {
           {posts.length} резюме по тегу {tag.name}
         </p>
 
-        {/* Related tags — mobile/tablet only (desktop: right sidebar) */}
-        {relatedTags.length > 0 && (
-          <div className="lg:hidden mb-6 bg-bg-card border border-border rounded-xl p-4">
-            <div className="s-lbl mb-3">Связанные теги</div>
-            <div className="flex flex-wrap gap-1.5">
-              {relatedTags.map((t) => (
-                <Link
-                  key={t.slug}
-                  href={`/resumes/tag/${t.slug}`}
-                  className="px-2.5 py-1 rounded text-xs border border-border bg-bg-card text-text-muted no-underline hover:border-accent hover:text-text transition-all"
-                >
-                  {t.name} ({t.count})
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Resume tags — mobile/tablet only */}
+        <div className="lg:hidden mb-6">
+          <TagsSidebar
+            tags={resumeTags}
+            activeSlug={tagSlug}
+            heading="Резюме по категориям"
+            hrefFn={(s) => `/resumes/tag/${s}`}
+          />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
           <div>
@@ -157,22 +149,12 @@ export default async function TagPage({ params }: Props) {
           </div>
 
           <aside className="hidden lg:flex flex-col gap-4">
-            {relatedTags.length > 0 && (
-              <div className="bg-bg-card border border-border rounded-xl p-4">
-                <div className="s-lbl mb-3">Связанные теги</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {relatedTags.map((t) => (
-                    <Link
-                      key={t.slug}
-                      href={`/resumes/tag/${t.slug}`}
-                      className="px-2.5 py-1 rounded text-xs border border-border bg-bg-card text-text-muted no-underline hover:border-accent hover:text-text transition-all"
-                    >
-                      {t.name} ({t.count})
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
+            <TagsSidebar
+              tags={resumeTags}
+              activeSlug={tagSlug}
+              heading="Резюме по категориям"
+              hrefFn={(s) => `/resumes/tag/${s}`}
+            />
           </aside>
         </div>
 

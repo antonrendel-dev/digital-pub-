@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { cleanDescription, formatDate, getTagColorClass, getPrimaryCategorySlug, type FeedPost } from '@/lib/postUtils'
+import {
+  cleanDescription,
+  formatDate,
+  getTagColorClass,
+  getPrimaryCategorySlug,
+  type FeedPost,
+} from '@/lib/postUtils'
 
 interface JobCardProps {
   post: FeedPost
@@ -15,7 +21,8 @@ export default function JobCard({ post }: JobCardProps) {
   const [saved, setSaved] = useState(false)
 
   const categorySlug = getPrimaryCategorySlug(post)
-  const href = post.slug ? `/vacancies/${categorySlug}/${post.slug}` : `/post/${post.id}`
+  const baseUrl = post.type === 'resume' ? 'resumes' : 'vacancies'
+  const href = post.slug ? `/${baseUrl}/${categorySlug}/${post.slug}` : `/post/${post.id}`
 
   return (
     <a
@@ -33,14 +40,15 @@ export default function JobCard({ post }: JobCardProps) {
             </span>
           )}
         </h3>
-        <span className="text-xs text-text-light ml-3 flex-shrink-0 pt-0.5" suppressHydrationWarning>
+        <span
+          className="text-xs text-text-light ml-3 flex-shrink-0 pt-0.5"
+          suppressHydrationWarning
+        >
           {formatDate(post.createdAt)}
         </span>
       </div>
 
-      {post.company && (
-        <div className="text-sm text-text-light mb-1.5">{post.company}</div>
-      )}
+      {post.company && <div className="text-sm text-text-light mb-1.5">{post.company}</div>}
 
       {post.salary && (
         <div className="text-sm font-semibold text-amber-600 mb-2">{post.salary}</div>
@@ -77,7 +85,10 @@ export default function JobCard({ post }: JobCardProps) {
         </div>
         <button
           className="text-xs text-text-light hover:text-red-400 bg-transparent border-none cursor-pointer transition-colors"
-          onClick={(e) => { e.preventDefault(); setSaved(!saved) }}
+          onClick={(e) => {
+            e.preventDefault()
+            setSaved(!saved)
+          }}
         >
           {saved ? '\u2665 Сохранено' : '\u2661 Сохранить'}
         </button>

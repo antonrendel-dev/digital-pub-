@@ -74,6 +74,41 @@ export async function getTagsWithCounts(): Promise<TagWithCount[]> {
   }
 }
 
+export async function getTagsWithCountsByType(type: 'vacancy' | 'resume'): Promise<TagWithCount[]> {
+  try {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
+      where: { status: { equals: 'published' }, type: { equals: type } },
+      limit: 10000,
+      depth: 1,
+    })
+
+    const tagMap = new Map<number, TagWithCount>()
+    for (const post of result.docs as unknown as PayloadPost[]) {
+      for (const tag of post.tags ?? []) {
+        if (typeof tag === 'object' && tag !== null && tag.id) {
+          if (!tagMap.has(tag.id)) {
+            tagMap.set(tag.id, {
+              id: tag.id,
+              name: tag.name,
+              slug: tag.slug,
+              tagType: tag.tagType,
+              count: 0,
+            })
+          }
+          tagMap.get(tag.id)!.count++
+        }
+      }
+    }
+
+    return Array.from(tagMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+  } catch (err) {
+    console.error('[tags] DB error:', err)
+    return []
+  }
+}
+
 export async function getTagBySlug(slug: string): Promise<TagDetail | null> {
   const parsed = slugSchema.safeParse(slug)
   if (!parsed.success) return null

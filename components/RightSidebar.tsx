@@ -6,7 +6,7 @@ const RESUME_TAGS = [
   { slug: 'marketing', name: 'Маркетологи' },
   { slug: 'dizajn', name: 'Дизайнеры' },
   { slug: 'seo', name: 'SEO' },
-  { slug: 'targetolog', name: 'Таргетологи' },
+  { slug: 'target', name: 'Таргетологи' },
   { slug: 'copywriting', name: 'Копирайтеры' },
   { slug: 'analitika', name: 'Аналитики' },
   { slug: 'razrabotka', name: 'Разработчики' },
