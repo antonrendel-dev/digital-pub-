@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = await getTagBySlug(tagSlug)
   if (!tag) return { title: 'Тег не найден' }
 
-  const title = RESUME_TAG_TITLE[tagSlug] ?? tag.seoTitle ?? `Резюме специалистов: ${tag.name}`
+  const title = RESUME_TAG_TITLE[tagSlug] ?? `Резюме специалистов: ${tag.name}`
   const description =
     RESUME_TAG_DESCRIPTION[tagSlug] ??
     `Резюме ${tag.name}-специалистов из Telegram-сообщества. База кандидатов в digital-сфере на Диджитал Паб.`
