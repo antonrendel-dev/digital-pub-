@@ -4,7 +4,7 @@ import { getPostsByTool } from '@/lib/posts'
 import PageShell from '@/components/PageShell'
 import JsonLd from '@/components/JsonLd'
 
-export const revalidate = 300
+export const revalidate = 60
 
 const BASE_URL = 'https://d-pub.ru'
 

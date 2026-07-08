@@ -6,7 +6,7 @@ import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
 import JsonLd from '@/components/JsonLd'
 
-export const revalidate = 300
+export const revalidate = 60
 
 const BASE_URL = 'https://d-pub.ru'
 

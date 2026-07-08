@@ -4,6 +4,10 @@ import { withPayload } from '@payloadcms/next/withPayload'
 const nextConfig = {
   distDir: process.env.NEXT_BUILD_DIR || '.next',
   trailingSlash: false,
+  staleTimes: {
+    static: 30,
+    dynamic: 0,
+  },
   images: {
     remotePatterns: [
       {
