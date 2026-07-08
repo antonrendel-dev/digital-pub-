@@ -4,7 +4,9 @@ import { withPayload } from '@payloadcms/next/withPayload'
 const nextConfig = {
   distDir: process.env.NEXT_BUILD_DIR || '.next',
   trailingSlash: false,
+  compress: true,
   experimental: {
+    optimizePackageImports: ['sanitize-html', 'next-mdx-remote'],
     staleTimes: {
       static: 30,
       dynamic: 0,

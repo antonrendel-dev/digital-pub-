@@ -99,7 +99,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       postRoutes = (postsResult.docs as unknown as PayloadPost[])
         .filter((p) => p.slug)
-        .map((p) => {
+        .flatMap((p) => {
           const tags = Array.isArray(p.tags) ? p.tags : []
           const specTag = tags.find(
             (t): t is { slug: string; tagType: string } =>
@@ -120,11 +120,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             }
           }
 
+          // Skip uncategorised posts — they have no meaningful SEO page
+          if (categorySlug === 'other') return []
+
           const url =
             p.type === 'vacancy'
               ? `${BASE_URL}/vacancies/${categorySlug}/${p.slug}`
               : `${BASE_URL}/resumes/${categorySlug}/${p.slug}`
-          return { url, lastModified: updatedAt, changeFrequency: 'weekly' as const, priority: 0.5 }
+          return [
+            { url, lastModified: updatedAt, changeFrequency: 'weekly' as const, priority: 0.5 },
+          ]
         })
     } catch {
       console.warn('[sitemap] DB error fetching posts, skipping post routes')
