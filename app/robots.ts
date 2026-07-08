@@ -14,6 +14,11 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: ['/admin/', '/api/'],
       },
+      {
+        userAgent: 'YandexBot',
+        allow: '/',
+        disallow: ['/admin/', '/api/', '/*?page='],
+      },
     ],
     sitemap: 'https://d-pub.ru/sitemap.xml',
   }

@@ -3,6 +3,7 @@ import { Metadata } from 'next'
 import { z } from 'zod'
 import { getPostById, getPostsByType } from '@/lib/posts'
 import { getTagsWithCounts } from '@/lib/tags'
+import { getPrimaryCategorySlug } from '@/lib/postUtils'
 import PageShell from '@/components/PageShell'
 import PostDetail from '@/components/PostDetail'
 
@@ -27,17 +28,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const rawDesc = `${post.company ? post.company + ': ' : ''}${post.title}.${post.salary ? ' Зарплата: ' + post.salary + '.' : ''} Смотреть на Диджитал Паб.`
   const description = rawDesc.length > 155 ? rawDesc.slice(0, 152) + '...' : rawDesc
 
-  const url = `https://d-pub.ru/post/${id}`
+  const cat = getPrimaryCategorySlug(post)
+  const realPath = post.slug
+    ? post.type === 'vacancy'
+      ? `/vacancies/${cat}/${post.slug}`
+      : `/resumes/${cat}/${post.slug}`
+    : `/post/${id}`
+  const canonicalUrl = `https://d-pub.ru${realPath}`
 
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: { canonical: canonicalUrl },
     robots: { index: false, follow: true },
     openGraph: {
       title,
       description,
-      url,
+      url: canonicalUrl,
       type: 'website',
       images: post.imageUrl
         ? [{ url: post.imageUrl, alt: post.title }]

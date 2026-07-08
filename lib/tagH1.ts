@@ -5,7 +5,7 @@ const y = new Date().getFullYear()
 // {N} — placeholder, заменяется на posts.length в generateMetadata
 export const TAG_TITLE: Record<string, string> = {
   seo: `Вакансии SEO-специалиста — {N} актуальных, удалённо и офис`,
-  udalyonka: `Удалённая работа digital — {N} вакансий: SMM, дизайн, маркетинг`,
+  udalyonka: `Удалённая работа digital — {N} вакансий: SMM, дизайн`,
   smm: `Вакансии SMM-менеджера — {N} актуальных, удалёнка и офис`,
   marketing: `Вакансии маркетолога — digital и performance ${y}`,
   target: `Вакансии таргетолога — {N} актуальных: VK, Директ, Telegram`,

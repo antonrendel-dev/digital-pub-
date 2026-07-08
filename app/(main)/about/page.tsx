@@ -71,6 +71,7 @@ export default async function AboutPage() {
   const organizationLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': 'https://d-pub.ru/#organization',
     name: 'Диджитал Паб',
     url: BASE_URL,
     description:

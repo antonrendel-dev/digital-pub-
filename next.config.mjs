@@ -45,6 +45,14 @@ const nextConfig = {
       { source: '/vacancies/tilda', destination: '/tools/tilda', permanent: true },
       { source: '/vacancies/yandex-direct', destination: '/tools/yandex-direct', permanent: true },
       { source: '/vacancies/tablicy', destination: '/tools/tablicy', permanent: true },
+      { source: '/vacancies/capcut', destination: '/tools/capcut', permanent: true },
+      { source: '/vacancies/chatgpt', destination: '/tools/chatgpt', permanent: true },
+      { source: '/vacancies/yandex-metrika', destination: '/tools/yandex-metrika', permanent: true },
+      { source: '/vacancies/screaming-frog', destination: '/tools/screaming-frog', permanent: true },
+      { source: '/vacancies/semrush', destination: '/tools/semrush', permanent: true },
+      { source: '/vacancies/midjourney', destination: '/tools/midjourney', permanent: true },
+      { source: '/vacancies/google-analytics', destination: '/tools/google-analytics', permanent: true },
+      { source: '/vacancies/photoshop', destination: '/tools/photoshop', permanent: true },
     ]
   },
   async headers() {

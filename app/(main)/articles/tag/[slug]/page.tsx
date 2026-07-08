@@ -19,10 +19,17 @@ export async function generateMetadata({
   const { slug } = await params
   const tag = tagBySlug(slug)
   if (!tag) return {}
+
+  const mdxArticles = getArticles()
+  const hasArticles = mdxArticles.some(
+    (a) => a.tags?.includes(tag.slug) || a.tags?.includes(tag.name)
+  )
+
   return {
     title: tag.pageTitle,
     description: tag.pageDescription,
     alternates: { canonical: `https://d-pub.ru/articles/tag/${slug}` },
+    ...(!hasArticles && { robots: { index: false, follow: true } }),
     openGraph: {
       title: tag.pageTitle,
       description: tag.pageDescription,

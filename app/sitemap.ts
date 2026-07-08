@@ -22,6 +22,7 @@ const KNOWN_TAG_SLUGS = [
   'kreativ',
   'copywriting',
   'content',
+  'hr',
   'udalyonka',
   'ofis',
   'gibrid',
