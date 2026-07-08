@@ -23,6 +23,20 @@ export async function generateMetadata({
     title: tag.pageTitle,
     description: tag.pageDescription,
     alternates: { canonical: `https://d-pub.ru/articles/tag/${slug}` },
+    openGraph: {
+      title: tag.pageTitle,
+      description: tag.pageDescription,
+      url: `https://d-pub.ru/articles/tag/${slug}`,
+      type: 'website',
+      images: [
+        { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: tag.pageTitle,
+      description: tag.pageDescription,
+    },
   }
 }
 

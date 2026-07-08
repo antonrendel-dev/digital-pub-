@@ -123,7 +123,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           const url =
             p.type === 'vacancy'
               ? `${BASE_URL}/vacancies/${categorySlug}/${p.slug}`
-              : `${BASE_URL}/post/${p.slug}`
+              : `${BASE_URL}/resumes/${categorySlug}/${p.slug}`
           return { url, lastModified: updatedAt, changeFrequency: 'weekly' as const, priority: 0.5 }
         })
     } catch {

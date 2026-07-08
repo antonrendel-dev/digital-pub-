@@ -51,7 +51,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       alternates: { canonical: url },
       ...(!hasVacancies && { robots: { index: false, follow: true } }),
-      openGraph: { title, description, url, type: 'website' },
+      openGraph: {
+        title,
+        description,
+        url,
+        type: 'website',
+        images: [
+          { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+        ],
+      },
       twitter: { card: 'summary_large_image', title, description },
     }
   }
@@ -74,7 +82,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: desc,
       url,
       type: 'website',
-      images: post.imageUrl ? [{ url: post.imageUrl, alt: post.title }] : undefined,
+      images: post.imageUrl
+        ? [{ url: post.imageUrl, alt: post.title }]
+        : [{ url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -320,7 +330,12 @@ export default async function VacancyPage({ params }: Props) {
             },
           ]
         : []),
-      { '@type': 'ListItem', position: tag ? 4 : 3, name: post.title },
+      {
+        '@type': 'ListItem',
+        position: tag ? 4 : 3,
+        name: post.title,
+        item: `https://d-pub.ru/vacancies/${category}/${slug}`,
+      },
     ],
   }
 

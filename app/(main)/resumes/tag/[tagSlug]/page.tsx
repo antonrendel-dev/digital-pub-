@@ -25,10 +25,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `Резюме ${tag.name}-специалистов из Telegram-сообщества. База кандидатов в digital-сфере на Диджитал Паб.`
   const url = `https://d-pub.ru/resumes/tag/${tagSlug}`
 
+  const posts = (await getPostsByTag(tagSlug)).filter((p) => p.type === 'resume')
+  const hasResumes = posts.length > 0
+
   return {
     title,
     description,
     alternates: { canonical: url },
+    ...(!hasResumes && { robots: { index: false, follow: true } }),
     openGraph: {
       title,
       description,
@@ -94,7 +98,9 @@ export default async function TagPage({ params }: Props) {
     itemListElement: posts.slice(0, 20).map((post, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: `https://d-pub.ru/post/${post.id}`,
+      url: post.slug
+        ? `https://d-pub.ru/resumes/${tagSlug}/${post.slug}`
+        : `https://d-pub.ru/post/${post.id}`,
       name: post.title,
     })),
   }

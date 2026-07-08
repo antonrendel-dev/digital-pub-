@@ -38,7 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url,
       type: 'website',
-      images: post.imageUrl ? [{ url: post.imageUrl, alt: post.title }] : undefined,
+      images: post.imageUrl
+        ? [{ url: post.imageUrl, alt: post.title }]
+        : [{ url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' }],
     },
     twitter: {
       card: 'summary_large_image',
