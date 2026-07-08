@@ -39,12 +39,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hasVacancies = posts.length > 0
   const n = posts.length.toString()
 
-  const rawTitle = TAG_TITLE[category] ?? tag.seoTitle ?? `Вакансии ${tag.name}: удалённо и в офисе`
+  const seoTitleClean = tag.seoTitle?.replace(/\s*\|\s*Диджитал Паб\s*$/i, '').trim() ?? null
+  const rawTitle =
+    TAG_TITLE[category] ?? seoTitleClean ?? `Вакансии ${tag.name}: удалённо и в офисе`
   const title = rawTitle.replace('{N}', n)
 
+  const seoDescClean =
+    tag.seoDescription?.replace(/\s*[–—-]\s*Диджитал Паб\.?\s*$/i, '').trim() ?? null
   const rawDescription =
     TAG_DESCRIPTION[category] ??
-    tag.seoDescription ??
+    seoDescClean ??
     `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`
   const description = rawDescription.replace('{N}', n)
 

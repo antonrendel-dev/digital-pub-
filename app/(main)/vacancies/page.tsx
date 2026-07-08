@@ -37,14 +37,19 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const { page: pageParam } = await searchParams
   const page = Math.min(Math.max(1, parseInt(pageParam || '1', 10) || 1), 500)
   const canonical = page === 1 ? `${BASE_URL}/vacancies` : `${BASE_URL}/vacancies?page=${page}`
+  const title = page === 1 ? TITLE : `Вакансии digital — страница ${page}`
+  const description =
+    page === 1
+      ? DESCRIPTION
+      : `Страница ${page} каталога вакансий digital-специалистов. Маркетинг, SMM, дизайн, аналитика — агрегатор из Telegram-каналов.`
   return {
-    title: TITLE,
-    description: DESCRIPTION,
+    title,
+    description,
     alternates: { canonical },
+    ...(page > 1 && { robots: { index: false, follow: true } }),
     openGraph: {
-      title: TITLE,
-      description:
-        'Актуальные вакансии digital-специалистов в 2026: маркетинг, дизайн, SMM, аналитика. Удалённая работа и офис. Агрегатор из Telegram — бесплатно.',
+      title,
+      description,
       url: canonical,
       type: 'website',
       images: [
