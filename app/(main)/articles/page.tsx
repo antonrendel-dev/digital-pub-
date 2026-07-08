@@ -23,6 +23,12 @@ export const metadata: Metadata = {
       { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
     ],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Карьера в digital: статьи для маркетологов и дизайнеров',
+    description:
+      'Как составить резюме, пройти собеседование и вырасти в digital. Полезные материалы для специалистов.',
+  },
 }
 
 export default async function ArticlesPage() {

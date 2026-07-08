@@ -4,7 +4,24 @@ import PageShell from '@/components/PageShell'
 
 export const metadata: Metadata = {
   title: 'Условия использования — Диджитал Паб',
-  description: 'Условия использования сервиса Диджитал Паб.',
+  description:
+    'Условия использования сервиса Диджитал Паб — агрегатора вакансий и резюме digital-специалистов из Telegram. Правила пользования, контент, размещение объявлений.',
+  alternates: { canonical: 'https://d-pub.ru/terms' },
+  openGraph: {
+    title: 'Условия использования — Диджитал Паб',
+    description:
+      'Условия использования сервиса Диджитал Паб — агрегатора вакансий и резюме digital-специалистов из Telegram.',
+    url: 'https://d-pub.ru/terms',
+    type: 'website',
+    images: [
+      { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Условия использования — Диджитал Паб',
+    description: 'Условия использования сервиса Диджитал Паб.',
+  },
 }
 
 export default function TermsPage() {

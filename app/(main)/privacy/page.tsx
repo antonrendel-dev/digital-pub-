@@ -4,7 +4,24 @@ import PageShell from '@/components/PageShell'
 
 export const metadata: Metadata = {
   title: 'Политика конфиденциальности — Диджитал Паб',
-  description: 'Политика конфиденциальности сервиса Диджитал Паб.',
+  description:
+    'Политика конфиденциальности сервиса Диджитал Паб — агрегатора вакансий и резюме digital-специалистов. Данные пользователей не собираются и не передаются.',
+  alternates: { canonical: 'https://d-pub.ru/privacy' },
+  openGraph: {
+    title: 'Политика конфиденциальности — Диджитал Паб',
+    description:
+      'Политика конфиденциальности сервиса Диджитал Паб — агрегатора вакансий и резюме digital-специалистов.',
+    url: 'https://d-pub.ru/privacy',
+    type: 'website',
+    images: [
+      { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Политика конфиденциальности — Диджитал Паб',
+    description: 'Политика конфиденциальности сервиса Диджитал Паб.',
+  },
 }
 
 export default function PrivacyPage() {

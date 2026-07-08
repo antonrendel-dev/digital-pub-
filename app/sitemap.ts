@@ -61,6 +61,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/resumes`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${BASE_URL}/articles`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE_URL}/tools`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE_URL}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    {
+      url: `${BASE_URL}/from-telegram`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
     ...TOOL_SLUGS.map((slug) => ({
       url: `${BASE_URL}/tools/${slug}`,
       lastModified: now,

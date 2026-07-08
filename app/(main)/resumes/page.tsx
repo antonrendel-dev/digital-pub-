@@ -34,19 +34,29 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const { page: pageParam } = await searchParams
   const page = Math.min(Math.max(1, parseInt(pageParam || '1', 10) || 1), 500)
   const canonical = page === 1 ? `${BASE_URL}/resumes` : `${BASE_URL}/resumes?page=${page}`
+  const title = page === 1 ? TITLE : `Резюме digital-специалистов — страница ${page}`
+  const description =
+    page === 1
+      ? DESCRIPTION
+      : `Страница ${page} каталога резюме digital-специалистов. Маркетологи, SMM, дизайнеры, аналитики — агрегатор из Telegram-каналов.`
   return {
-    title: TITLE,
-    description: DESCRIPTION,
+    title,
+    description,
     alternates: { canonical },
+    ...(page > 1 && { robots: { index: false, follow: true } }),
     openGraph: {
-      title: TITLE,
-      description:
-        'Резюме digital-специалистов из Telegram: маркетологи, дизайнеры, SMM, аналитики. Актуальная база кандидатов без регистрации.',
+      title,
+      description,
       url: canonical,
       type: 'website',
       images: [
         { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
       ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   }
 }

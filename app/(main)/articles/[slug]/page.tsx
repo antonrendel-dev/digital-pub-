@@ -74,16 +74,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         publishedTime: payloadArticle.publishedAt,
         modifiedTime: payloadArticle.updatedAt ?? payloadArticle.publishedAt,
         authors: ['Диджитал Паб'],
-        ...(ogImage && {
-          images: [
-            {
-              url: ogImage.startsWith('/') ? `https://d-pub.ru${ogImage}` : ogImage,
-              width: 1200,
-              height: 630,
-              alt: title,
-            },
-          ],
-        }),
+        images: ogImage
+          ? [
+              {
+                url: ogImage.startsWith('/') ? `https://d-pub.ru${ogImage}` : ogImage,
+                width: 1200,
+                height: 630,
+                alt: title,
+              },
+            ]
+          : [
+              {
+                url: 'https://d-pub.ru/og-image.png',
+                width: 1200,
+                height: 630,
+                alt: 'Диджитал Паб',
+              },
+            ],
       },
       twitter: { card: 'summary_large_image', title, description },
     }
