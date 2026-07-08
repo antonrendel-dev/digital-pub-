@@ -305,12 +305,21 @@ export default function PostDetail({
           )}
 
           {/* Categories & Tags */}
-          {allTags && <TagsSidebar tags={allTags} activeSlug={effectiveCategorySlug} />}
+          {allTags && (
+            <TagsSidebar
+              tags={allTags}
+              activeSlug={effectiveCategorySlug}
+              heading={post.type === 'resume' ? 'Резюме по категориям' : 'Категории и теги'}
+              hrefFn={post.type === 'resume' ? (s) => `/resumes/tag/${s}` : undefined}
+            />
+          )}
 
           {/* Related */}
           {related.length > 0 && (
             <div className="bg-bg-card border border-border rounded-xl p-5 transition-colors duration-200">
-              <h3 className="text-sm font-semibold text-text mb-4">Похожие вакансии</h3>
+              <h3 className="text-sm font-semibold text-text mb-4">
+                {post.type === 'resume' ? 'Похожие резюме' : 'Похожие вакансии'}
+              </h3>
               <div className="space-y-4">
                 {related.map((r) => {
                   const rCatSlug = getPrimaryCategorySlug(r)

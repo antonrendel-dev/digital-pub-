@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPostBySlug, getPostsByType } from '@/lib/posts'
-import { getTagBySlug, getTagsWithCounts, getCategoryStats } from '@/lib/tags'
+import { getTagBySlug, getTagsWithCountsByType, getCategoryStats } from '@/lib/tags'
 import { getRoleDescription } from '@/lib/role-description'
 import { getInterviewQuestions } from '@/lib/interview-questions'
 import { buildResumeTitle, buildResumeDescription } from '@/lib/vacancy-meta'
@@ -51,7 +51,7 @@ export default async function ResumePage({ params }: Props) {
   const [tag, related, allTags, categoryStats] = await Promise.all([
     getTagBySlug(category),
     getPostsByType('resume').then((posts) => posts.filter((p) => p.id !== post.id).slice(0, 5)),
-    getTagsWithCounts(),
+    getTagsWithCountsByType('resume'),
     getCategoryStats(category),
   ])
 
