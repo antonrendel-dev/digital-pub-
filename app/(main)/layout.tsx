@@ -47,9 +47,6 @@ export async function generateMetadata(): Promise<Metadata> {
       description: DEFAULT_DESCRIPTION,
       images: ['/og-image.png'],
     },
-    alternates: {
-      canonical: SITE_URL,
-    },
     verification: {
       ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION
         ? { yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION }
@@ -87,14 +84,6 @@ const websiteJsonLd = {
   description: DEFAULT_DESCRIPTION,
   inLanguage: 'ru',
   publisher: { '@id': `${SITE_URL}/#organization` },
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: `${SITE_URL}/?q={search_term_string}`,
-    },
-    'query-input': 'required name=search_term_string',
-  },
 }
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {

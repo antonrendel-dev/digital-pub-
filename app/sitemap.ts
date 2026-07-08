@@ -7,7 +7,7 @@ import { getAllFilterCombinations } from '@/lib/spec-filter-meta'
 
 const BASE_URL = 'https://d-pub.ru'
 
-export const revalidate = 3600
+export const revalidate = 600
 
 const KNOWN_TAG_SLUGS = [
   'smm',
@@ -144,13 +144,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  // Tool slugs that redirect to /tools/* — must NOT appear in sitemap as /vacancies/* URLs
+  const TOOL_REDIRECT_SLUGS = new Set([
+    'figma',
+    'canva',
+    'tilda',
+    'yandex-direct',
+    'tablicy',
+    'capcut',
+    'chatgpt',
+    'yandex-metrika',
+    'screaming-frog',
+    'semrush',
+    'midjourney',
+    'google-analytics',
+    'photoshop',
+  ])
+
   // Category pages (vacancies + resumes) — slugs from DB with static fallback
   let tagSlugs: string[] = KNOWN_TAG_SLUGS
   if (payloadInstance) {
     try {
       const tagsResult = await payloadInstance.find({ collection: 'tags', limit: 500 })
       if (tagsResult.docs.length > 0) {
-        tagSlugs = (tagsResult.docs as unknown as Array<{ slug: string }>).map((t) => t.slug)
+        tagSlugs = (tagsResult.docs as unknown as Array<{ slug: string }>)
+          .map((t) => t.slug)
+          .filter((s) => !TOOL_REDIRECT_SLUGS.has(s))
       }
     } catch {
       console.warn('[sitemap] DB error fetching tags, using static list')

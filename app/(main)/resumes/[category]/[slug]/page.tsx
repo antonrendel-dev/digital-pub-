@@ -28,6 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: titleBase,
     description: desc,
     alternates: { canonical: url },
+    ...(category === 'other' && { robots: { index: false, follow: true } }),
     openGraph: {
       title: titleBase,
       description: desc,
@@ -63,6 +64,7 @@ export default async function ResumePage({ params }: Props) {
   const breadcrumbLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
+    '@id': `https://d-pub.ru/resumes/${category}/${slug}#breadcrumb`,
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
       { '@type': 'ListItem', position: 2, name: 'Резюме', item: 'https://d-pub.ru/resumes' },
@@ -98,7 +100,6 @@ export default async function ResumePage({ params }: Props) {
       description: post.description
         ? post.description.slice(0, 200).replace(/\n/g, ' ')
         : undefined,
-      ...(post.salary ? { seeks: { '@type': 'JobPosting', baseSalary: post.salary } } : {}),
     },
   }
 

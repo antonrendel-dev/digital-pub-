@@ -282,6 +282,10 @@ export default async function VacancyPage({ params }: Props) {
       : 'FULL_TIME'
   void levelSlugs
 
+  // Parse salary string to numeric minValue (required by Schema.org QuantitativeValue)
+  const salaryNumMatch = post.salary?.replace(/\s/g, '').match(/\d{4,7}/)
+  const salaryMinNum = salaryNumMatch ? parseInt(salaryNumMatch[0]) : null
+
   // Schema.org JobPosting
   const jobPostingLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -292,9 +296,14 @@ export default async function VacancyPage({ params }: Props) {
     validThrough,
     employmentType,
     ...(jobLocationType && { jobLocationType }),
-    ...(jobLocationType === 'TELECOMMUTE' && {
-      applicantLocationRequirements: { '@type': 'Country', name: 'RU' },
-    }),
+    ...(jobLocationType === 'TELECOMMUTE'
+      ? { applicantLocationRequirements: { '@type': 'Country', name: 'RU' } }
+      : {
+          jobLocation: {
+            '@type': 'Place',
+            address: { '@type': 'PostalAddress', addressCountry: 'RU' },
+          },
+        }),
     ...(post.company && {
       hiringOrganization: {
         '@type': 'Organization',
@@ -302,13 +311,13 @@ export default async function VacancyPage({ params }: Props) {
         sameAs: `https://d-pub.ru/vacancies/${category}`,
       },
     }),
-    ...(post.salary && {
+    ...(salaryMinNum && {
       baseSalary: {
         '@type': 'MonetaryAmount',
         currency: 'RUB',
         value: {
           '@type': 'QuantitativeValue',
-          value: post.salary,
+          minValue: salaryMinNum,
         },
       },
     }),
