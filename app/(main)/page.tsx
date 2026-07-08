@@ -16,6 +16,9 @@ export const metadata: Metadata = {
       'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. Удалённая работа, SMM, дизайн, маркетинг — бесплатно, обновляется каждый день.',
     url: 'https://d-pub.ru',
     type: 'website',
+    images: [
+      { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+    ],
   },
 }
 

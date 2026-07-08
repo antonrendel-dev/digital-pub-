@@ -35,6 +35,9 @@ export const metadata: Metadata = {
       'Вакансии для digital-специалистов по инструментам: Figma, CapCut, ChatGPT, Canva и другие.',
     url: `${BASE_URL}/tools`,
     type: 'website',
+    images: [
+      { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+    ],
   },
 }
 

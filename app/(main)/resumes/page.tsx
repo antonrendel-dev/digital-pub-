@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 export const revalidate = 300
 
 const BASE_URL = 'https://d-pub.ru'
-const TITLE = 'Разместить резюме бесплатно — дизайнеры, маркетологи, IT-специалисты'
+const TITLE = 'Резюме digital-специалистов — маркетинг, SMM, дизайн'
 
 const RESUMES_SEO_HTML = `<h2>База резюме digital-специалистов из Telegram</h2>
 <p>Диджитал Паб агрегирует резюме специалистов digital-рынка из профильных Telegram-каналов. Здесь HR-менеджеры и руководители находят кандидатов на позиции в маркетинге, дизайне, SMM, аналитике и разработке. База пополняется ежедневно — свежие резюме появляются несколько раз в сутки.</p>
@@ -41,9 +41,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     openGraph: {
       title: TITLE,
       description:
-        'Разместить резюме бесплатно: дизайнеры, маркетологи, SMM, аналитики из Telegram. Актуальная база кандидатов — без регистрации.',
+        'Резюме digital-специалистов из Telegram: маркетологи, дизайнеры, SMM, аналитики. Актуальная база кандидатов без регистрации.',
       url: canonical,
       type: 'website',
+      images: [
+        { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+      ],
     },
   }
 }

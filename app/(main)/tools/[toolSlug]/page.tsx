@@ -696,6 +696,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: tool.metaDescription,
       url: canonical,
       type: 'website',
+      images: [
+        { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+      ],
     },
   }
 }

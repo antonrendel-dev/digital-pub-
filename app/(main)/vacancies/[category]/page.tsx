@@ -60,6 +60,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url,
       type: 'website',
+      images: [
+        { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
@@ -91,7 +94,12 @@ export default async function CategoryPage({ params }: Props) {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
       { '@type': 'ListItem', position: 2, name: 'Вакансии', item: 'https://d-pub.ru/vacancies' },
-      { '@type': 'ListItem', position: 3, name: tag.name },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: tag.name,
+        item: `https://d-pub.ru/vacancies/${category}`,
+      },
     ],
   }
 

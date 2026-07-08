@@ -1,7 +1,6 @@
 import sanitizeHtml from 'sanitize-html'
 
 const ALLOWED_TAGS = [
-  'h1',
   'h2',
   'h3',
   'h4',
