@@ -164,14 +164,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ])
 
-  // Articles
-  const articles = getArticles()
-  const articleRoutes: MetadataRoute.Sitemap = articles.map((article) => ({
+  // Articles from MDX files
+  const mdxArticles = getArticles()
+  const mdxSlugs = new Set(mdxArticles.map((a) => a.slug))
+  const articleRoutes: MetadataRoute.Sitemap = mdxArticles.map((article) => ({
     url: `${BASE_URL}/articles/${article.slug}`,
     lastModified: new Date(article.publishedAt),
-    changeFrequency: 'monthly' as const,
+    changeFrequency: 'weekly' as const,
     priority: 0.6,
   }))
+
+  // Articles from Payload DB (published, not already covered by MDX)
+  let payloadArticleRoutes: MetadataRoute.Sitemap = []
+  if (payloadInstance) {
+    try {
+      const payloadArticlesResult = await payloadInstance.find({
+        collection: 'articles',
+        where: { status: { equals: 'published' }, slug: { not_equals: null } },
+        sort: '-publishedAt',
+        limit: 1000,
+        depth: 0,
+      })
+      payloadArticleRoutes = (
+        payloadArticlesResult.docs as unknown as Array<{ slug: string; updatedAt?: string | Date }>
+      )
+        .filter((a) => a.slug && !mdxSlugs.has(a.slug))
+        .map((a) => ({
+          url: `${BASE_URL}/articles/${a.slug}`,
+          lastModified: a.updatedAt ? new Date(a.updatedAt) : now,
+          changeFrequency: 'weekly' as const,
+          priority: 0.6,
+        }))
+    } catch {
+      console.warn('[sitemap] DB error fetching payload articles, skipping')
+    }
+  }
 
   // Programmatic SEO filter pages: spec+format and spec+level combinations (72 pages)
   const filterCombos = getAllFilterCombinations()
@@ -182,5 +209,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  return [...staticRoutes, ...tagRoutes, ...articleRoutes, ...postRoutes, ...filterUrls]
+  return [
+    ...staticRoutes,
+    ...tagRoutes,
+    ...articleRoutes,
+    ...payloadArticleRoutes,
+    ...postRoutes,
+    ...filterUrls,
+  ]
 }

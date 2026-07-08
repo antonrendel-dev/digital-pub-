@@ -6,7 +6,7 @@ import JsonLd from '@/components/JsonLd'
 const BASE_URL = 'https://d-pub.ru'
 const CANONICAL = `${BASE_URL}/from-telegram`
 
-const TITLE = 'Вакансии из Telegram-каналов — агрегатор digital-вакансий | Диджитал Паб'
+const TITLE = 'Вакансии digital-специалистов из Telegram — Диджитал Паб'
 const DESCRIPTION =
   'Агрегатор вакансий из Telegram-каналов для digital-специалистов. SMM, маркетинг, дизайн, аналитика — актуальные вакансии из профессиональных Telegram-чатов.'
 
@@ -19,7 +19,11 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     url: CANONICAL,
     type: 'website',
+    images: [
+      { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+    ],
   },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
 }
 
 const CATEGORIES = [

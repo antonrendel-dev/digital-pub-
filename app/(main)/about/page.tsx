@@ -13,6 +13,22 @@ export const metadata: Metadata = {
   description:
     'Диджитал Паб — агрегатор вакансий и резюме в digital-сфере. Собираем актуальные предложения из Telegram-каналов и структурируем по специализациям.',
   alternates: { canonical: 'https://d-pub.ru/about' },
+  openGraph: {
+    title: 'О сервисе — Диджитал Паб',
+    description:
+      'Диджитал Паб — агрегатор вакансий и резюме в digital-сфере. Собираем актуальные предложения из Telegram-каналов и структурируем по специализациям.',
+    url: 'https://d-pub.ru/about',
+    type: 'website',
+    images: [
+      { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'О сервисе — Диджитал Паб',
+    description:
+      'Диджитал Паб — агрегатор вакансий и резюме в digital-сфере. Собираем актуальные предложения из Telegram-каналов и структурируем по специализациям.',
+  },
 }
 
 const BASE_URL = 'https://d-pub.ru'
