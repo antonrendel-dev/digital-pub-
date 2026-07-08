@@ -19,6 +19,9 @@ export const metadata: Metadata = {
       'Как составить резюме, пройти собеседование и вырасти в digital. Полезные материалы для специалистов.',
     url: 'https://d-pub.ru/articles',
     type: 'website',
+    images: [
+      { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+    ],
   },
 }
 

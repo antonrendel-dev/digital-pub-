@@ -7,7 +7,7 @@ export const TAG_TITLE: Record<string, string> = {
   seo: `Вакансии SEO-специалиста — {N} актуальных, удалённо и офис`,
   udalyonka: `Удалённая работа в digital — {N} вакансий: SMM, дизайн, маркетинг`,
   smm: `Вакансии SMM-менеджера — {N} актуальных, удалёнка и офис`,
-  marketing: `Вакансии маркетолога — digital и performance, {N} открытых`,
+  marketing: `Вакансии маркетолога — digital и performance ${y}`,
   target: `Вакансии таргетолога — {N} актуальных, VK, Директ, Telegram Ads`,
   razrabotka: `Вакансии разработчика — {N} актуальных, frontend, backend, fullstack`,
   analitika: `Вакансии аналитика данных — {N} актуальных, веб, бизнес, продукт`,
@@ -36,6 +36,7 @@ export const TAG_DESCRIPTION: Record<string, string> = {
 // Переопределения <title> и H1 для /resumes/tag/[tagSlug]
 export const RESUME_TAG_TITLE: Record<string, string> = {
   smm: `Резюме SMM-специалистов ${y} — база кандидатов`,
+  marketing: `Резюме маркетологов ${y} — digital, performance, CRM`,
 }
 
 export const RESUME_TAG_H1: Record<string, string> = {
@@ -43,7 +44,7 @@ export const RESUME_TAG_H1: Record<string, string> = {
 }
 
 export const RESUME_TAG_DESCRIPTION: Record<string, string> = {
-  smm: `База резюме SMM-специалистов из Telegram: менеджеры, контент-мейкеры, таргетологи соцсетей. Удалённо и в офисе. Актуальные кандидаты без регистрации — Диджитал Паб.`,
+  smm: `Резюме SMM-специалистов из Telegram: менеджеры, контент-мейкеры, таргетологи соцсетей. Удалённо и офис. База кандидатов без регистрации — Диджитал Паб.`,
   marketing: `Резюме маркетологов из Telegram: digital, performance, CRM, email-маркетинг. Зарплаты от 60К. Актуальные кандидаты без регистрации — Диджитал Паб.`,
   dizajn: `Резюме дизайнеров из Telegram: UI/UX, веб, графика, моушн, Figma. Опыт от 1 года. Актуальные кандидаты без регистрации — Диджитал Паб.`,
   target: `Резюме таргетологов из Telegram: VK Реклама, Яндекс Директ, Telegram Ads. Опыт ведения кампаний. Актуальная база кандидатов — Диджитал Паб.`,

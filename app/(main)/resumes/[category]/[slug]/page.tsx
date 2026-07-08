@@ -74,7 +74,12 @@ export default async function ResumePage({ params }: Props) {
             },
           ]
         : []),
-      { '@type': 'ListItem', position: tag ? 4 : 3, name: post.title },
+      {
+        '@type': 'ListItem',
+        position: tag ? 4 : 3,
+        name: post.title,
+        item: `https://d-pub.ru/resumes/${category}/${slug}`,
+      },
     ],
   }
 

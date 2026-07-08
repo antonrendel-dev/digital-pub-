@@ -108,6 +108,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime: article.publishedAt,
       authors: ['Диджитал Паб'],
       tags: article.tags,
+      images: article.imageUrl
+        ? [
+            {
+              url: article.imageUrl.startsWith('/')
+                ? `https://d-pub.ru${article.imageUrl}`
+                : article.imageUrl,
+              width: 1200,
+              height: 630,
+              alt: title,
+            },
+          ]
+        : [{ url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -166,7 +178,12 @@ export default async function ArticlePage({ params }: Props) {
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
         { '@type': 'ListItem', position: 2, name: 'Статьи', item: 'https://d-pub.ru/articles' },
-        { '@type': 'ListItem', position: 3, name: payloadArticle.title },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: payloadArticle.title,
+          item: `https://d-pub.ru/articles/${slug}`,
+        },
       ],
     }
 
@@ -318,7 +335,12 @@ export default async function ArticlePage({ params }: Props) {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Главная', item: 'https://d-pub.ru' },
       { '@type': 'ListItem', position: 2, name: 'Статьи', item: 'https://d-pub.ru/articles' },
-      { '@type': 'ListItem', position: 3, name: article.title },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: article.title,
+        item: `https://d-pub.ru/articles/${slug}`,
+      },
     ],
   }
 

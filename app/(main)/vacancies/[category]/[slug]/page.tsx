@@ -109,7 +109,12 @@ export default async function VacancyPage({ params }: Props) {
           name: specName,
           item: `https://d-pub.ru/vacancies/${category}`,
         },
-        { '@type': 'ListItem', position: 4, name: h1 },
+        {
+          '@type': 'ListItem',
+          position: 4,
+          name: h1,
+          item: `https://d-pub.ru/vacancies/${category}/${slug}`,
+        },
       ],
     }
 
