@@ -20,6 +20,12 @@ export const metadata: Metadata = {
       { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
     ],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб',
+    description:
+      'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. Удалённая работа, SMM, дизайн, маркетинг — бесплатно, обновляется каждый день.',
+  },
 }
 
 export const revalidate = 300

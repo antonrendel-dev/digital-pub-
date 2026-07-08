@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { getArticles } from '@/lib/articles'
+import { ARTICLE_TAGS } from '@/lib/article-tags'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getAllFilterCombinations } from '@/lib/spec-filter-meta'
@@ -216,6 +217,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
+  const articleTagRoutes: MetadataRoute.Sitemap = ARTICLE_TAGS.map((tag) => ({
+    url: `${BASE_URL}/articles/tag/${tag.slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.5,
+  }))
+
   return [
     ...staticRoutes,
     ...tagRoutes,
@@ -223,5 +231,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...payloadArticleRoutes,
     ...postRoutes,
     ...filterUrls,
+    ...articleTagRoutes,
   ]
 }
