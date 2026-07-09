@@ -18,6 +18,28 @@ const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
 
 const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 const CODEX_HOME = path.join(os.homedir(), '.codex')
+const REFERENCE_IMAGE = path.join(import.meta.dirname, 'reference.webp')
+
+const PERSPECTIVES = [
+  'face-on front view, character faces the viewer directly',
+  '3/4 front-left angle, character turned slightly away to the left',
+  'side profile from the right, character looks forward',
+  'over-the-shoulder view from mid-height, character seen from waist up',
+  'close-up head-and-shoulders portrait, character fills the frame',
+]
+
+const SETTINGS = [
+  'corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background',
+  'rooftop terrace at dusk with city lights below, outdoor bistro table with a phone and drink',
+  'park bench under a tree, dappled sunlight, green surroundings with a path behind',
+  'home kitchen table with morning light through window, kettle and plants on the sill',
+  'library nook between tall bookshelves, soft reading lamp, a few books stacked nearby',
+  'small meeting room corner with a whiteboard covered in diagrams and sticky notes',
+  'coworking open space, rows of desks visible in background, industrial lamps above',
+  'train window seat, landscape moving outside, small fold-out tray table',
+  'balcony with railing, evening sky, city view or garden behind the character',
+  'university campus outdoor seating area, other students in the distance',
+]
 
 const TRANSLIT: Record<string, string> = {
   а: 'a',
@@ -162,30 +184,44 @@ function convertToWebP(srcPng: string, destWebp: string): void {
   })
 }
 
-async function generateImageWithCodex(imagePrompt: string, slug: string): Promise<string | null> {
+async function generateImageWithCodex(
+  imagePrompt: string,
+  slug: string,
+  topicId: number
+): Promise<string | null> {
   if (!fs.existsSync(CODEX_BIN)) {
     console.log('[writer] Codex CLI не найден, пропускаю генерацию картинки')
     return null
   }
 
   const before = snapshotGeneratedImages()
+  const perspIdx = topicId % PERSPECTIVES.length
+  const perspective = PERSPECTIVES[perspIdx]
   const fullPrompt =
-    `Generate a hero image for a blog article using this exact style: ` +
-    `Cozy RPG pixel art illustration, painterly quality with fine pixel grain texture, ` +
-    `clean composition with 2-3 hero objects clearly separated, dark atmospheric background (deep blue or purple-black), ` +
-    `strong contrast: warm amber and golden light on foreground objects against dark background, ` +
-    `rich pixel texture on each object surface, smooth gradients via fine dithering, ` +
-    `close-up or medium-shot (NOT wide panoramic), isometric or 3/4 side-view, ` +
-    `no clutter, no visual noise, calm lofi RPG mood, no photorealism, no watermark, no text in image. ` +
+    `Match the pixel art style of the attached reference image exactly: ` +
+    `ultra-fine dense pixel grain (NOT blocky large pixels), dark atmospheric background (deep blue-black), ` +
+    `warm amber and golden lighting on foreground, rich surface textures, smooth gradients via fine dithering, ` +
+    `high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. ` +
+    `MANDATORY: include exactly 1 human person (male or female based on topic) prominently in the foreground. ` +
+    `CHARACTER ANGLE: ${perspective}. ` +
+    `BACKGROUND: rich with many objects and environmental details filling the scene — NO text or letters anywhere. ` +
     `SCENE: ${imagePrompt}. ` +
-    `Use your image generation tool to create this image now.`
+    `Generate this pixel art image now.`
 
+  const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
   console.log('[writer] Запускаю Codex для генерации картинки...')
 
   await new Promise<void>((resolve) => {
     const child = spawn(
       CODEX_BIN,
-      ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', fullPrompt],
+      [
+        'exec',
+        '--dangerously-bypass-approvals-and-sandbox',
+        '--model',
+        'gpt-5.5',
+        fullPrompt,
+        ...refArg,
+      ],
       {
         env: { ...process.env, CODEX_HOME },
         stdio: 'ignore',
@@ -242,6 +278,8 @@ async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
   }
 
   // ШАГ 1б: SEO-рисерч
+  const settingIdx = (topic.id + 3) % SETTINGS.length
+  const forcedSetting = SETTINGS[settingIdx]
   console.log('[writer] Шаг 1б: SEO-рисерч...')
   const research = await askClaude(`Ты SEO-аналитик для русскоязычного рынка digital-вакансий.
 
@@ -258,7 +296,7 @@ ${wordstatBlock}
   "competitorH2s": ["типичный H2 конкурента 1", "типичный H2 конкурента 2", "типичный H2 конкурента 3"],
   "uniqueAngle": "чем наша статья будет отличаться и лучше конкурентов",
   "tags": ["тег1", "тег2"],
-  "imagePrompt": "English scene description for pixel-art hero image 900x450. Describe a CLOSE-UP or MEDIUM SHOT focused on a desk or table surface — NOT a wide panoramic view. Choose ONE setting (home office is rare, use max once per 10 articles): corner of a coffee shop table with notebook, one workstation in a coworking, reading nook in a library, rooftop table with phone, small meeting room corner, park bench close-up, home desk (rare). Show 2-3 specific objects relevant to the article topic (resume papers, salary chart on screen, social media icons, job listings). Isometric or 3/4 view. No text in image."
+  "imagePrompt": "English scene description for pixel-art hero image. REQUIRED: 1 human character (choose male or female based on article topic) is the main subject. MANDATORY SETTING — use exactly this location: ${forcedSetting}. Describe what the character is doing, their clothing (casual or professional), and 2-3 specific objects related to the article topic placed in this setting. 2-3 sentences max. Do NOT specify camera angle. No text visible anywhere in the image."
 }`)
 
   const researchMatch = research.match(/\{[\s\S]*\}/)
@@ -545,7 +583,7 @@ async function main() {
   // Шаг 5а: картинка через Codex
   console.log('[writer] Шаг 5: Генерирую картинку...')
   const imageUrl = result.imagePrompt
-    ? await generateImageWithCodex(result.imagePrompt, result.slug)
+    ? await generateImageWithCodex(result.imagePrompt, result.slug, topic.id)
     : null
 
   if (imageUrl) {
