@@ -720,7 +720,7 @@ export default async function ToolPage({ params }: Props) {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Главная', item: BASE_URL },
-      { '@type': 'ListItem', position: 2, name: 'Инструменты', item: `${BASE_URL}/tools` },
+      { '@type': 'ListItem', position: 2, name: 'Вакансии по навыкам', item: `${BASE_URL}/tools` },
       { '@type': 'ListItem', position: 3, name: tool.name, item: `${BASE_URL}/tools/${tool.slug}` },
     ],
   }
@@ -750,7 +750,7 @@ export default async function ToolPage({ params }: Props) {
           </Link>
           <span>&#8250;</span>
           <Link href="/tools" className="no-underline hover:text-text transition-colors">
-            Инструменты
+            Вакансии по навыкам
           </Link>
           <span>&#8250;</span>
           <span className="text-text">{tool.name}</span>

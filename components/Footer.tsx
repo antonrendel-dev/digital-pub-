@@ -113,7 +113,7 @@ export default async function Footer() {
                 href="/tools"
                 className="block text-sm text-text-light no-underline hover:text-text transition-colors"
               >
-                Инструменты
+                Вакансии по навыкам
               </Link>
               <Link
                 href="/about"
