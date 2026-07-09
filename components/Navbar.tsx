@@ -255,7 +255,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
               fontSize: '12px',
               color: 'var(--text-light)',
               letterSpacing: '0.2px',
-              lineHeight: '1.4',
+              lineHeight: '1.2',
             }}
           >
             Все вакансии из Telegram-каналов — с фильтрами, поиском и зарплатами.
