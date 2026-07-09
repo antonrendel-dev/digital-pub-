@@ -150,15 +150,15 @@ export default function LeftSidebar({ stats, channels }: LeftSidebarProps) {
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-muted">Новых сегодня</span>
-            <span className="font-semibold text-green-600">
-              {stats?.newToday?.toLocaleString('ru-RU') ?? '—'}
-            </span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-text-muted">Резюме</span>
             <span className="font-semibold text-text">
               {stats?.resumeCount?.toLocaleString('ru-RU') ?? '—'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-text-muted">Новых сегодня</span>
+            <span className="font-semibold text-green-600">
+              {stats?.newToday?.toLocaleString('ru-RU') ?? '—'}
             </span>
           </div>
         </div>

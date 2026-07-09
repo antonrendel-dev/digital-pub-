@@ -42,7 +42,7 @@ export default function RightSidebar({ tags, articles }: RightSidebarProps) {
         <div className="bg-bg-card border border-border rounded-xl p-4">
           <h3 className="s-lbl">Статьи</h3>
           <div className="space-y-3">
-            {articles.map((article) => (
+            {articles.slice(0, 5).map((article) => (
               <Link
                 key={article.slug}
                 href={`/articles/${article.slug}`}
