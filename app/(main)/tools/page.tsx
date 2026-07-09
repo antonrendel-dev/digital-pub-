@@ -25,14 +25,14 @@ const TOOLS = [
 ]
 
 export const metadata: Metadata = {
-  title: 'Вакансии по инструментам — digital-специалисты',
+  title: 'Вакансии по навыкам digital-специалистов — d-pub.ru',
   description:
-    'Вакансии для digital-специалистов по инструментам: Figma, CapCut, ChatGPT, Canva, Photoshop, Tilda и другие. Собраны из Telegram-каналов.',
+    'Вакансии в digital по навыкам и программам: Figma, Canva, ChatGPT, CapCut, Photoshop, Tilda. Актуальные вакансии для SMM, дизайнеров, маркетологов из Telegram.',
   alternates: { canonical: `${BASE_URL}/tools` },
   openGraph: {
-    title: 'Вакансии по инструментам — digital-специалисты',
+    title: 'Вакансии по навыкам digital-специалистов — d-pub.ru',
     description:
-      'Вакансии для digital-специалистов по инструментам: Figma, CapCut, ChatGPT, Canva и другие.',
+      'Вакансии в digital по навыкам и программам: Figma, Canva, ChatGPT, CapCut, Photoshop, Tilda. Из Telegram-каналов.',
     url: `${BASE_URL}/tools`,
     type: 'website',
     images: [
@@ -41,9 +41,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Вакансии по инструментам — digital-специалисты',
+    title: 'Вакансии по навыкам digital-специалистов — d-pub.ru',
     description:
-      'Вакансии для digital-специалистов по инструментам: Figma, CapCut, ChatGPT, Canva и другие.',
+      'Вакансии в digital по навыкам и программам: Figma, Canva, ChatGPT, CapCut, Photoshop, Tilda. Из Telegram-каналов.',
   },
 }
 
@@ -60,7 +60,7 @@ export default async function ToolsHubPage() {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Главная', item: BASE_URL },
-      { '@type': 'ListItem', position: 2, name: 'Инструменты', item: `${BASE_URL}/tools` },
+      { '@type': 'ListItem', position: 2, name: 'Навыки', item: `${BASE_URL}/tools` },
     ],
   }
 
@@ -74,12 +74,12 @@ export default async function ToolsHubPage() {
             Главная
           </Link>
           <span>&#8250;</span>
-          <span className="text-text">Инструменты</span>
+          <span className="text-text">Навыки</span>
         </nav>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">Вакансии по инструментам</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">Вакансии по навыкам</h1>
         <p className="text-text-muted mb-8">
-          Вакансии digital-специалистов, сгруппированные по инструментам и программам
+          Вакансии digital-специалистов, сгруппированные по навыкам и программам
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -110,6 +110,43 @@ export default async function ToolsHubPage() {
               </div>
             </Link>
           ))}
+        </div>
+
+        <div className="mt-12 prose prose-sm max-w-none text-text-muted">
+          <h2 className="text-lg font-semibold text-text mt-0">
+            Какие навыки чаще всего требуют в digital-вакансиях
+          </h2>
+          <p>
+            Рынок digital в 2026 году требует конкретных инструментов, а не размытого «опыта в
+            маркетинге». Работодатели прямо пишут в текстах вакансий: Figma, Canva, ChatGPT, CapCut,
+            Photoshop, Tilda, Яндекс.Метрика, Яндекс.Директ, Semrush, Screaming Frog, Midjourney,
+            Google Analytics, Google Таблицы. Именно эти программы и стали основой страницы.
+          </p>
+          <p>
+            Каждая карточка на этой странице — это навык или инструмент, который реально встречается
+            в текстах вакансий digital-специалистов. Дизайнеры ищут работу с Figma или Photoshop,
+            SMM-специалисты — с Canva и CapCut, маркетологи — с ChatGPT и Tilda, аналитики — с
+            Метрикой и Google Analytics. Такая группировка показывает, где вы применимы прямо
+            сейчас.
+          </p>
+          <h2 className="text-lg font-semibold text-text">Как найти вакансии под свои навыки</h2>
+          <p>
+            Механика простая: выбираете навык из сетки — страница показывает только те вакансии, где
+            этот инструмент упомянут. Никакой ручной фильтрации по тексту объявления. Вакансии
+            собираются из Telegram-каналов digital-тематики и обновляются регулярно.
+          </p>
+          <p>
+            Примеры: по Figma находят вакансии UX/UI-дизайнеров и product-дизайнеров. По Canva и
+            CapCut — позиции в SMM и контент-маркетинге. ChatGPT чаще всего фигурирует в требованиях
+            к маркетологам и копирайтерам. Photoshop — у графических дизайнеров и арт-директоров.
+            Tilda — у маркетологов и верстальщиков лендингов. Специализации охватывают SMM, дизайн,
+            SEO, аналитику, маркетинг и разработку.
+          </p>
+          <p>
+            Если ищете работу в digital и знаете конкретный инструмент — начните с него. Вакансии по
+            навыкам сужают выборку до тех предложений, где вы действительно попадаете в требования
+            работодателя.
+          </p>
         </div>
       </div>
     </PageShell>
