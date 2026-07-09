@@ -251,8 +251,9 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
       <div className="bg-[#f9fafb] dark:bg-[#0a1530] border-b border-border transition-colors duration-200">
         <div className="max-w-wrap mx-auto px-4 py-1 text-center">
           <span style={{ fontSize: '12px', color: 'var(--text-light)', letterSpacing: '0.2px' }}>
-            Все вакансии из Telegram-каналов — с фильтрами, поиском и зарплатами. Находи быстро,
-            откликайся легко.
+            Все вакансии из Telegram-каналов — с фильтрами, поиском и зарплатами.
+            <br />
+            Находи быстро, откликайся легко.
           </span>
         </div>
       </div>
