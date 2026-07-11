@@ -158,33 +158,42 @@ async function generateImageWithCodex(imagePrompt, slug, topicId) {
   const perspective = PERSPECTIVES[perspIdx]
   const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), dark atmospheric background (deep blue-black), warm amber and golden lighting on foreground, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY: include exactly 1 human person (male or female based on topic) prominently in the foreground. CHARACTER ANGLE: ${perspective}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. SCENE: ${imagePrompt}. Generate this pixel art image now.`
   const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
+  const runCodex = () =>
+    new Promise((resolve) => {
+      const child = spawn(
+        CODEX_BIN,
+        [
+          'exec',
+          '--dangerously-bypass-approvals-and-sandbox',
+          '--model',
+          'gpt-5.5',
+          fullPrompt,
+          ...refArg,
+        ],
+        {
+          env: { ...process.env, CODEX_HOME },
+          stdio: 'ignore',
+          timeout: 24e4,
+        }
+      )
+      child.on('close', () => resolve())
+      child.on('error', () => resolve())
+    })
   console.log(
     '[writer] \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E Codex \u0434\u043B\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438...'
   )
-  await new Promise((resolve) => {
-    const child = spawn(
-      CODEX_BIN,
-      [
-        'exec',
-        '--dangerously-bypass-approvals-and-sandbox',
-        '--model',
-        'gpt-5.5',
-        fullPrompt,
-        ...refArg,
-      ],
-      {
-        env: { ...process.env, CODEX_HOME },
-        stdio: 'ignore',
-        timeout: 24e4,
-      }
-    )
-    child.on('close', () => resolve())
-    child.on('error', () => resolve())
-  })
-  const newImage = findNewImage(before)
+  await runCodex()
+  let newImage = findNewImage(before)
   if (!newImage) {
     console.log(
-      '[writer] Codex \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B \u043D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435'
+      '[writer] Codex \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435, \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u0430\u044F \u043F\u043E\u043F\u044B\u0442\u043A\u0430...'
+    )
+    await runCodex()
+    newImage = findNewImage(before)
+  }
+  if (!newImage) {
+    console.log(
+      '[writer] Codex \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B \u043D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 (2 \u043F\u043E\u043F\u044B\u0442\u043A\u0438)'
     )
     return null
   }

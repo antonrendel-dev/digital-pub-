@@ -209,32 +209,41 @@ async function generateImageWithCodex(
     `Generate this pixel art image now.`
 
   const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
+
+  const runCodex = () =>
+    new Promise<void>((resolve) => {
+      const child = spawn(
+        CODEX_BIN,
+        [
+          'exec',
+          '--dangerously-bypass-approvals-and-sandbox',
+          '--model',
+          'gpt-5.5',
+          fullPrompt,
+          ...refArg,
+        ],
+        {
+          env: { ...process.env, CODEX_HOME },
+          stdio: 'ignore',
+          timeout: 240000,
+        }
+      )
+      child.on('close', () => resolve())
+      child.on('error', () => resolve())
+    })
+
   console.log('[writer] Запускаю Codex для генерации картинки...')
+  await runCodex()
+  let newImage = findNewImage(before)
 
-  await new Promise<void>((resolve) => {
-    const child = spawn(
-      CODEX_BIN,
-      [
-        'exec',
-        '--dangerously-bypass-approvals-and-sandbox',
-        '--model',
-        'gpt-5.5',
-        fullPrompt,
-        ...refArg,
-      ],
-      {
-        env: { ...process.env, CODEX_HOME },
-        stdio: 'ignore',
-        timeout: 240000,
-      }
-    )
-    child.on('close', () => resolve())
-    child.on('error', () => resolve())
-  })
-
-  const newImage = findNewImage(before)
   if (!newImage) {
-    console.log('[writer] Codex не создал новое изображение')
+    console.log('[writer] Codex не создал изображение, повторная попытка...')
+    await runCodex()
+    newImage = findNewImage(before)
+  }
+
+  if (!newImage) {
+    console.log('[writer] Codex не создал новое изображение (2 попытки)')
     return null
   }
 
