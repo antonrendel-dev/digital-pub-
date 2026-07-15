@@ -98,6 +98,7 @@ interface Topic {
   approved?: boolean
   published?: boolean
   competitive?: boolean
+  singleAgent?: boolean
 }
 
 interface ArticleResult {
@@ -417,7 +418,7 @@ Markdown: ## для H2, ### для H3, **жирный**, таблицы, мар�
 
   let markdown = ''
 
-  if (topic.competitive) {
+  if (!topic.singleAgent) {
     console.log('[writer] Режим: конкурентная генерация (3 агента)...')
 
     const directions = [
