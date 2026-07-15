@@ -77,7 +77,9 @@ export default async function Footer() {
             </div>
             <p className="text-sm text-text-muted mt-2">Место, где встречаются хорошие люди</p>
             <p className="text-xs text-text-light mt-1">
-              Вакансии и резюме из Telegram-каналов. Находи быстро, откликайся легко.
+              Все вакансии из Telegram-каналов — с фильтрами, поиском и зарплатами.
+              <br />
+              Находи быстро, откликайся легко.
             </p>
           </div>
 
