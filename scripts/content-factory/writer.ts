@@ -506,6 +506,43 @@ ${drafts[2]}
     markdown = markdown.trim()
   }
 
+  // ШАГ 3в: Nudge-ревизия
+  console.log('[writer] Шаг 3в: Nudge-ревизия...')
+  const nudgeBiasIds = new Set([44, 34, 166, 202, 210, 208, 108, 40, 32, 100, 96, 36, 206, 172, 78])
+  type NudgeBias = { id: number; title: string; description: string; usage: string }
+  const allBiases = (
+    JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'nudge-biases.json'), 'utf-8')) as {
+      biases: NudgeBias[]
+    }
+  ).biases
+  const nudgeCatalog = allBiases
+    .filter((b) => nudgeBiasIds.has(b.id))
+    .map((b) => `• ${b.title}: ${b.description.slice(0, 130)} → ${b.usage.slice(0, 130)}`)
+    .join('\n')
+
+  const nudged = await askClaude(`Ты копирайтер с экспертизой в поведенческой психологии.
+
+АУДИТОРИЯ: ${topic.audience}
+ТЕМА: ${topic.title}
+
+БИБЛИОТЕКА ТЕХНИК (15 приёмов поведенческой психологии):
+${nudgeCatalog}
+
+ЗАДАЧА:
+1. Прочитай статью и выбери 2-3 техники из библиотеки, наиболее органичных для этой темы и аудитории
+2. Точечно примени их — измени или дополни 2-3 конкретных места в тексте
+3. НЕ переписывай статью целиком, НЕ добавляй явно манипулятивных крючков
+4. Текст остаётся информационным — техники усиливают подачу, не давят на читателя
+5. Сохраняй объём 1200-1600 слов
+
+СТАТЬЯ:
+${markdown}
+
+Верни ТОЛЬКО финальный Markdown — без пояснений и комментариев.`)
+
+  const nudgedStart = nudged.indexOf('## ')
+  markdown = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim() || markdown
+
   // ШАГ 4: Ревью (только SEO — стиль уже выправлен)
   console.log('[writer] Шаг 4: Ревью и улучшение...')
   const titleLen = plan.metaTitle.length
