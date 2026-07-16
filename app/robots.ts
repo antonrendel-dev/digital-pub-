@@ -12,12 +12,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/api/'],
+        disallow: ['/admin/', '/api/', '/*?page=', '/zp-redirect'],
       },
       {
         userAgent: 'YandexBot',
         allow: '/',
-        disallow: ['/admin/', '/api/', '/*?page='],
+        disallow: ['/admin/', '/api/', '/*?page=', '/zp-redirect'],
       },
     ],
     sitemap: [
