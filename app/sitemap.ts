@@ -40,6 +40,8 @@ const KNOWN_TAG_SLUGS = [
   'junior',
   'middle',
   'senior',
+  'head-of-seo',
+  'videomontazher',
 ]
 
 // Tool slugs that redirect to /tools/* — must NOT appear in sitemap as /vacancies/* URLs
@@ -98,6 +100,10 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     'yandex-direct',
     'photoshop',
     'tablicy',
+    'bitrix24',
+    'excel',
+    'wordpress',
+    'notion',
   ]
 
   const staticRoutes: MetadataRoute.Sitemap = [
