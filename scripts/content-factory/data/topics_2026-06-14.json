@@ -138,7 +138,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/target. Ключи: вакансии таргетолог, работа таргетолог, таргетолог вакансии удалённо, резюме таргетолога"
+      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/target. Ключи: вакансии таргетолог, работа таргетолог, таргетолог вакансии удалённо, резюме таргетолога",
+      "published": true
     },
     {
       "id": 34,
@@ -149,7 +150,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/copywriting. Ключи: вакансии копирайтер, работа копирайтер, копирайтер без опыта вакансии, SEO копирайтер вакансии, вакансии редактор"
+      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/copywriting. Ключи: вакансии копирайтер, работа копирайтер, копирайтер без опыта вакансии, SEO копирайтер вакансии, вакансии редактор",
+      "published": true
     },
     {
       "id": 35,
@@ -160,7 +162,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/marketing. Ключи: вакансии маркетолог, работа маркетолог, маркетолог вакансии удалённо"
+      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/marketing. Ключи: вакансии маркетолог, работа маркетолог, маркетолог вакансии удалённо",
+      "published": true
     },
     {
       "id": 32,
@@ -171,7 +174,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "11 P0-ключей без статьи. Таргет: /vacancies/junior. Ключи: вакансии junior, работа junior без опыта, джуниор вакансии digital, стажировка digital, вакансии без опыта smm/маркетинг/дизайн"
+      "notes": "11 P0-ключей без статьи. Таргет: /vacancies/junior. Ключи: вакансии junior, работа junior без опыта, джуниор вакансии digital, стажировка digital, вакансии без опыта smm/маркетинг/дизайн",
+      "published": true
     },
     {
       "id": 38,
@@ -182,7 +186,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "6 P0-ключей без статьи. Таргет: /vacancies/menedzher. Ключи: вакансии проджект менеджер, работа project manager, вакансии продакт менеджер, тимлид вакансии"
+      "notes": "6 P0-ключей без статьи. Таргет: /vacancies/menedzher. Ключи: вакансии проджект менеджер, работа project manager, вакансии продакт менеджер, тимлид вакансии",
+      "published": true
     },
     {
       "id": 41,
@@ -193,7 +198,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/razrabotka. Ключи: вакансии frontend разработчик, backend, fullstack, разработчик удалённо вакансии, junior разработчик"
+      "notes": "7 P0-ключей без статьи. Таргет: /vacancies/razrabotka. Ключи: вакансии frontend разработчик, backend, fullstack, разработчик удалённо вакансии, junior разработчик",
+      "published": true
     },
     {
       "id": 42,
@@ -204,7 +210,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "Таргет: /vacancies/smm + /vacancies/junior. Ключи: smm менеджер без опыта, вакансии без опыта smm, как войти в smm"
+      "notes": "Таргет: /vacancies/smm + /vacancies/junior. Ключи: smm менеджер без опыта, вакансии без опыта smm, как войти в smm",
+      "published": true
     },
     {
       "id": 43,
@@ -215,7 +222,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "Уникальный контент по теме агрегатора. Таргет: / и /vacancies/smm. Ключи: телеграм канал вакансии маркетинг, telegram вакансии smm, каналы вакансий телеграм smm, тг канал вакансии digital"
+      "notes": "Уникальный контент по теме агрегатора. Таргет: / и /vacancies/smm. Ключи: телеграм канал вакансии маркетинг, telegram вакансии smm, каналы вакансий телеграм smm, тг канал вакансии digital",
+      "published": true
     },
     {
       "id": 45,
@@ -226,7 +234,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "Аналог статьи kak-nayti-rabotu-smm-menedzheru-2026 для маркетологов. Таргет: /vacancies/marketing. Ключи: работа маркетолог, найти работу маркетолог"
+      "notes": "Аналог статьи kak-nayti-rabotu-smm-menedzheru-2026 для маркетологов. Таргет: /vacancies/marketing. Ключи: работа маркетолог, найти работу маркетолог",
+      "published": true
     },
     {
       "id": 47,
@@ -237,7 +246,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "Сравнение hh.ru, Telegram, d-pub.ru и других. Таргет: / и /vacancies. Ключи: агрегатор вакансий telegram, вакансии из телеграм каналов"
+      "notes": "Сравнение hh.ru, Telegram, d-pub.ru и других. Таргет: / и /vacancies. Ключи: агрегатор вакансий telegram, вакансии из телеграм каналов",
+      "published": true
     },
     {
       "id": 48,
@@ -248,7 +258,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "Аналог rezyume-smm-spetsialista для дизайнеров. Таргет: /resumes/tag/dizajn + /vacancies/dizajn. Отличается от id=15 (портфолио для HR)"
+      "notes": "Аналог rezyume-smm-spetsialista для дизайнеров. Таргет: /resumes/tag/dizajn + /vacancies/dizajn. Отличается от id=15 (портфолио для HR)",
+      "published": true
     },
     {
       "id": 7,
@@ -257,7 +268,8 @@
       "audience": "Оба",
       "type": "Гайд",
       "trafficEst": "высокий",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 10,
@@ -266,7 +278,176 @@
       "audience": "Соискатель",
       "type": "Гайд",
       "trafficEst": "высокий",
-      "approved": true
+      "approved": true,
+      "published": true
+    },
+    {
+      "id": 101,
+      "title": "Зарплата аналитика данных в 2026 году: junior, middle, senior",
+      "keyword": "зарплата аналитика данных",
+      "audience": "Оба",
+      "type": "Конспект",
+      "trafficEst": "высокий",
+      "monthlyImpressions": 1442,
+      "priority": "critical",
+      "approved": true,
+      "notes": "Зарплатный кластер — самый быстрорастущий. Таргет: /vacancies/analitika. Ключи: зарплата аналитика данных, сколько зарабатывает аналитик, аналитик данных оклад"
+    },
+    {
+      "id": 102,
+      "title": "Сколько зарабатывает графический дизайнер в 2026 году",
+      "keyword": "сколько зарабатывает графический дизайнер",
+      "audience": "Оба",
+      "type": "Конспект",
+      "trafficEst": "высокий",
+      "monthlyImpressions": 1427,
+      "priority": "critical",
+      "approved": true,
+      "notes": "Антиканнибализация: НЕ дублировать zarplata-dizajnera-2026 — фокус на «сколько зарабатывает» + конкретно «графический». Таргет: /vacancies/dizajn"
+    },
+    {
+      "id": 103,
+      "title": "Резюме маркетолога: шаблон и примеры 2026",
+      "keyword": "резюме маркетолога",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "monthlyImpressions": 590,
+      "priority": "critical",
+      "approved": true,
+      "notes": "Резюме-кластер. Аналог rezyume-smm-spetsialista для маркетологов. Таргет: /resumes/tag/marketing + /vacancies/marketing. Ключи: резюме маркетолога, образец резюме маркетолога"
+    },
+    {
+      "id": 104,
+      "title": "Зарплата таргетолога в 2026 году: реальные данные по уровням",
+      "keyword": "зарплата таргетолога",
+      "audience": "Оба",
+      "type": "Конспект",
+      "trafficEst": "средний",
+      "monthlyImpressions": 179,
+      "priority": "critical",
+      "approved": true,
+      "notes": "Яндекс уже поз. 12 по смежным. Зарплатный кластер. Таргет: /vacancies/target. Ключи: зарплата таргетолога, сколько зарабатывает таргетолог, таргетолог оклад"
+    },
+    {
+      "id": 105,
+      "title": "Зарплата копирайтера и контент-менеджера в 2026 году",
+      "keyword": "зарплата копирайтера",
+      "audience": "Оба",
+      "type": "Конспект",
+      "trafficEst": "средний",
+      "monthlyImpressions": 535,
+      "priority": "critical",
+      "approved": true,
+      "notes": "Зарплатный кластер. Таргет: /vacancies/copywriting + /vacancies/content. Ключи: зарплата копирайтера, сколько зарабатывает контент менеджер"
+    },
+    {
+      "id": 106,
+      "title": "Зарплата продакт-менеджера и проджект-менеджера в digital",
+      "keyword": "зарплата продакт менеджера",
+      "audience": "Оба",
+      "type": "Конспект",
+      "trafficEst": "средний",
+      "monthlyImpressions": 305,
+      "priority": "critical",
+      "approved": true,
+      "notes": "Зарплатный кластер. Таргет: /vacancies/menedzher. Ключи: зарплата продакт менеджера, сколько зарабатывает project manager, зарплата проджект менеджера"
+    },
+    {
+      "id": 107,
+      "title": "Зарплата UX/UI дизайнера и веб-дизайнера в 2026 году",
+      "keyword": "зарплата ux ui дизайнера",
+      "audience": "Оба",
+      "type": "Конспект",
+      "trafficEst": "средний",
+      "monthlyImpressions": 537,
+      "priority": "critical",
+      "approved": true,
+      "notes": "Зарплатный кластер. Антиканнибализация: отдельная страница от zarplata-dizajnera-2026 — фокус на UX/UI vs веб. Таргет: /vacancies/dizajn"
+    },
+    {
+      "id": 108,
+      "title": "Портфолио SMM-специалиста: 10 примеров с разбором",
+      "keyword": "портфолио smm",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "monthlyImpressions": 135,
+      "priority": "high",
+      "approved": true,
+      "notes": "Кластер «резюме smm». Таргет: /resumes/tag/smm. Перелинковка с rezyume-smm-spetsialista. Ключи: портфолио smm специалиста, примеры портфолио smm"
+    },
+    {
+      "id": 109,
+      "title": "Junior SEO-специалист: как начать без опыта в 2026 году",
+      "keyword": "junior seo специалист",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "monthlyImpressions": 48,
+      "priority": "high",
+      "approved": true,
+      "notes": "Сателлит /vacancies/seo. GSC показывает 48 показов. Таргет: /vacancies/seo + /vacancies/junior. Ключи: junior seo специалист, вакансии seo без опыта, как стать seo специалистом"
+    },
+    {
+      "id": 110,
+      "title": "Зарплата SEO-специалиста в 2026 году: junior, middle, senior",
+      "keyword": "зарплата seo специалиста",
+      "audience": "Оба",
+      "type": "Конспект",
+      "trafficEst": "средний",
+      "monthlyImpressions": 34,
+      "priority": "high",
+      "approved": true,
+      "notes": "Зарплатный кластер. Сателлит /vacancies/seo. Перелинковка с junior-seo статьёй. Ключи: зарплата seo специалиста, сколько зарабатывает seo оптимизатор"
+    },
+    {
+      "id": 111,
+      "title": "Где искать работу кроме hh.ru: 15 проверенных площадок 2026",
+      "keyword": "где искать работу кроме hh",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "высокий",
+      "monthlyImpressions": 1898,
+      "priority": "critical",
+      "approved": true,
+      "notes": "PILLAR. Кластер ~2600/мес. Авито в title НЕ ставить — будет своя статья. Superjob упомянуть в H2. Таргет: /vacancies + /telegram-channels. Ключи: где искать работу кроме hh, альтернативы hh.ru"
+    },
+    {
+      "id": 112,
+      "title": "Резюме копирайтера: шаблон, образец и ошибки 2026",
+      "keyword": "резюме копирайтера",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "monthlyImpressions": 121,
+      "priority": "high",
+      "approved": true,
+      "notes": "Резюме-кластер. Таргет: /vacancies/copywriting. Перелинковка с вакансии-копирайтера. Ключи: резюме копирайтера, образец резюме копирайтера, шаблон"
+    },
+    {
+      "id": 113,
+      "title": "Резюме контент-менеджера: шаблон и примеры 2026",
+      "keyword": "резюме контент-менеджера",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "monthlyImpressions": 64,
+      "priority": "high",
+      "approved": true,
+      "notes": "Резюме-кластер. Таргет: /vacancies/content. Ключи: резюме контент менеджера, образец резюме контент менеджера"
+    },
+    {
+      "id": 114,
+      "title": "Где искать работу кроме Авито: сайты и сервисы поиска 2026",
+      "keyword": "где искать работу кроме авито",
+      "audience": "Соискатель",
+      "type": "Гайд",
+      "trafficEst": "средний",
+      "monthlyImpressions": 450,
+      "priority": "high",
+      "approved": true,
+      "notes": "Треугольник PILLAR: hh ↔ агрегаторы ↔ авито. Только Авито в title. Обратная ссылка на pillar (где искать кроме hh). Таргет: /vacancies"
     },
     {
       "id": 36,
