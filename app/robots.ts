@@ -20,6 +20,10 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/', '/*?page='],
       },
     ],
-    sitemap: 'https://d-pub.ru/sitemap.xml',
+    sitemap: [
+      'https://d-pub.ru/sitemap/0.xml',
+      'https://d-pub.ru/sitemap/1.xml',
+      'https://d-pub.ru/sitemap/2.xml',
+    ],
   }
 }

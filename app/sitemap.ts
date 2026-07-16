@@ -4,10 +4,21 @@ import { ARTICLE_TAGS } from '@/lib/article-tags'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getAllFilterCombinations } from '@/lib/spec-filter-meta'
+import { getVacancySitemapEntries, getResumeSitemapEntries } from '@/lib/sitemap/vacancies'
 
 const BASE_URL = 'https://d-pub.ru'
 
 export const revalidate = 600
+
+/**
+ * Sitemap split strategy:
+ *   id=0 → static pages + articles + category tag pages
+ *   id=1 → individual vacancy pages (with real lastModified from updatedAt)
+ *   id=2 → individual resume pages (with real lastModified from updatedAt)
+ */
+export function generateSitemaps() {
+  return [{ id: 0 }, { id: 1 }, { id: 2 }]
+}
 
 const KNOWN_TAG_SLUGS = [
   'smm',
@@ -31,15 +42,47 @@ const KNOWN_TAG_SLUGS = [
   'senior',
 ]
 
-type PayloadPost = {
-  slug: string | null
-  type: 'vacancy' | 'resume'
-  updatedAt: string | Date
-  tags: Array<{ slug: string; tagType: string } | number>
-}
+// Tool slugs that redirect to /tools/* — must NOT appear in sitemap as /vacancies/* URLs
+const TOOL_REDIRECT_SLUGS = new Set([
+  'figma',
+  'canva',
+  'tilda',
+  'yandex-direct',
+  'tablicy',
+  'capcut',
+  'chatgpt',
+  'yandex-metrika',
+  'screaming-frog',
+  'semrush',
+  'midjourney',
+  'google-analytics',
+  'photoshop',
+])
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
+
+  // Single Payload instance shared by all DB queries
+  let payloadInstance: Awaited<ReturnType<typeof getPayload>> | null = null
+  try {
+    payloadInstance = await getPayload({ config })
+  } catch {
+    console.warn(`[sitemap:${id}] DB unavailable`)
+  }
+
+  // id=1 → individual vacancy pages
+  if (id === 1) {
+    if (!payloadInstance) return []
+    return getVacancySitemapEntries(payloadInstance, now)
+  }
+
+  // id=2 → individual resume pages
+  if (id === 2) {
+    if (!payloadInstance) return []
+    return getResumeSitemapEntries(payloadInstance, now)
+  }
+
+  // id=0 → static pages + articles + category tag pages + filter combos
 
   const TOOL_SLUGS = [
     'capcut',
@@ -80,88 +123,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ]
 
-  // Single Payload instance shared by all DB queries below
-  let payloadInstance: Awaited<ReturnType<typeof getPayload>> | null = null
-  try {
-    payloadInstance = await getPayload({ config })
-  } catch {
-    console.warn('[sitemap] DB unavailable, using static routes only')
-  }
-
-  // Individual vacancy and resume pages from DB — fetched early to compute per-tag lastModified
-  let postRoutes: MetadataRoute.Sitemap = []
-  const maxPostDateByTag = new Map<string, Date>()
-
-  if (payloadInstance) {
-    try {
-      const postsResult = await payloadInstance.find({
-        collection: 'posts',
-        where: {
-          status: { equals: 'published' },
-          slug: { not_equals: null },
-          description: { not_equals: null },
-        },
-        sort: '-updatedAt',
-        limit: 10000,
-        depth: 1,
-      })
-
-      postRoutes = (postsResult.docs as unknown as PayloadPost[])
-        .filter((p) => p.slug)
-        .flatMap((p) => {
-          const tags = Array.isArray(p.tags) ? p.tags : []
-          const specTag = tags.find(
-            (t): t is { slug: string; tagType: string } =>
-              typeof t === 'object' &&
-              t !== null &&
-              (t as { tagType: string }).tagType === 'specialization'
-          )
-          const categorySlug = specTag?.slug ?? 'other'
-          const updatedAt = p.updatedAt ? new Date(p.updatedAt) : now
-
-          // Track max updatedAt per tag slug
-          for (const tag of tags) {
-            if (typeof tag === 'object' && tag !== null) {
-              const existing = maxPostDateByTag.get((tag as { slug: string }).slug)
-              if (!existing || updatedAt > existing) {
-                maxPostDateByTag.set((tag as { slug: string }).slug, updatedAt)
-              }
-            }
-          }
-
-          // Skip uncategorised posts — they have no meaningful SEO page
-          if (categorySlug === 'other') return []
-
-          const url =
-            p.type === 'vacancy'
-              ? `${BASE_URL}/vacancies/${categorySlug}/${p.slug}`
-              : `${BASE_URL}/resumes/${categorySlug}/${p.slug}`
-          return [
-            { url, lastModified: updatedAt, changeFrequency: 'weekly' as const, priority: 0.5 },
-          ]
-        })
-    } catch {
-      console.warn('[sitemap] DB error fetching posts, skipping post routes')
-    }
-  }
-
-  // Tool slugs that redirect to /tools/* — must NOT appear in sitemap as /vacancies/* URLs
-  const TOOL_REDIRECT_SLUGS = new Set([
-    'figma',
-    'canva',
-    'tilda',
-    'yandex-direct',
-    'tablicy',
-    'capcut',
-    'chatgpt',
-    'yandex-metrika',
-    'screaming-frog',
-    'semrush',
-    'midjourney',
-    'google-analytics',
-    'photoshop',
-  ])
-
   // Category pages (vacancies + resumes) — slugs from DB with static fallback
   let tagSlugs: string[] = KNOWN_TAG_SLUGS
   if (payloadInstance) {
@@ -173,20 +134,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           .filter((s) => !TOOL_REDIRECT_SLUGS.has(s))
       }
     } catch {
-      console.warn('[sitemap] DB error fetching tags, using static list')
+      console.warn('[sitemap:0] DB error fetching tags, using static list')
     }
   }
 
   const tagRoutes: MetadataRoute.Sitemap = tagSlugs.flatMap((slug) => [
     {
       url: `${BASE_URL}/vacancies/${slug}`,
-      lastModified: maxPostDateByTag.get(slug) ?? now,
+      lastModified: now,
       changeFrequency: 'daily' as const,
       priority: 0.8,
     },
     {
       url: `${BASE_URL}/resumes/tag/${slug}`,
-      lastModified: maxPostDateByTag.get(slug) ?? now,
+      lastModified: now,
       changeFrequency: 'daily' as const,
       priority: 0.7,
     },
@@ -224,7 +185,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: 0.6,
         }))
     } catch {
-      console.warn('[sitemap] DB error fetching payload articles, skipping')
+      console.warn('[sitemap:0] DB error fetching payload articles, skipping')
     }
   }
 
@@ -249,7 +210,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...tagRoutes,
     ...articleRoutes,
     ...payloadArticleRoutes,
-    ...postRoutes,
     ...filterUrls,
     ...articleTagRoutes,
   ]

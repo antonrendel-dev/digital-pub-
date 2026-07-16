@@ -30,6 +30,11 @@ const mdxComponents = {
 
 export const revalidate = 300
 
+export async function generateStaticParams() {
+  const articles = getArticles()
+  return articles.map((article) => ({ slug: article.slug }))
+}
+
 interface Props {
   params: Promise<{ slug: string }>
 }

@@ -2,6 +2,11 @@
  * Integration test: Sitemap generation
  * Verifies that sitemap includes expected URLs for all route types.
  *
+ * The sitemap now uses generateSitemaps() to produce 3 XML files:
+ *   id=0 → static pages + articles + category tag pages
+ *   id=1 → individual vacancy pages
+ *   id=2 → individual resume pages
+ *
  * Note: sitemap() is async (touches Payload + filesystem). All assertions
  * must await the result. If the test DB is unavailable, tag/post routes
  * are silently skipped by the implementation — static + article routes
@@ -12,7 +17,7 @@
 jest.mock('payload', () => ({ getPayload: jest.fn() }))
 jest.mock('@payload-config', () => ({}), { virtual: true })
 
-import sitemap from '@/app/sitemap'
+import sitemap, { generateSitemaps } from '@/app/sitemap'
 import { getArticles } from '@/lib/articles'
 import { getPayload } from 'payload'
 
@@ -25,40 +30,45 @@ beforeEach(() => {
 })
 
 describe('Sitemap', () => {
-  test('generates sitemap entries', async () => {
-    const entries = await sitemap()
+  test('generateSitemaps returns 3 entries', () => {
+    const sitemaps = generateSitemaps()
+    expect(sitemaps).toEqual([{ id: 0 }, { id: 1 }, { id: 2 }])
+  })
+
+  test('generates sitemap entries for id=0', async () => {
+    const entries = await sitemap({ id: 0 })
     expect(Array.isArray(entries)).toBe(true)
     expect(entries.length).toBeGreaterThan(0)
   })
 
   test('includes homepage', async () => {
-    const entries = await sitemap()
+    const entries = await sitemap({ id: 0 })
     const urls = entries.map((e) => e.url)
     expect(urls).toContain('https://d-pub.ru')
   })
 
   test('includes vacancies and resumes pages', async () => {
-    const entries = await sitemap()
+    const entries = await sitemap({ id: 0 })
     const urls = entries.map((e) => e.url)
     expect(urls).toContain('https://d-pub.ru/vacancies')
     expect(urls).toContain('https://d-pub.ru/resumes')
   })
 
   test('includes articles page', async () => {
-    const entries = await sitemap()
+    const entries = await sitemap({ id: 0 })
     const urls = entries.map((e) => e.url)
     expect(urls).toContain('https://d-pub.ru/articles')
   })
 
   test('includes privacy and terms', async () => {
-    const entries = await sitemap()
+    const entries = await sitemap({ id: 0 })
     const urls = entries.map((e) => e.url)
     expect(urls).toContain('https://d-pub.ru/privacy')
     expect(urls).toContain('https://d-pub.ru/terms')
   })
 
   test('article detail entries match real articles on disk', async () => {
-    const entries = await sitemap()
+    const entries = await sitemap({ id: 0 })
     const urls = entries.map((e) => e.url)
     const articles = getArticles()
     expect(articles.length).toBeGreaterThanOrEqual(10)
@@ -68,11 +78,18 @@ describe('Sitemap', () => {
   })
 
   test('all entries have required fields', async () => {
-    const entries = await sitemap()
+    const entries = await sitemap({ id: 0 })
     for (const entry of entries) {
       expect(entry.url).toBeTruthy()
       expect(entry.lastModified).toBeTruthy()
     }
+  })
+
+  test('id=1 and id=2 return empty arrays when DB unavailable', async () => {
+    const vacancies = await sitemap({ id: 1 })
+    const resumes = await sitemap({ id: 2 })
+    expect(vacancies).toEqual([])
+    expect(resumes).toEqual([])
   })
 
   /**
@@ -84,7 +101,7 @@ describe('Sitemap', () => {
    * tagRoutes is empty by design. We only assert URL shape when present.
    */
   test('tag routes follow the documented URL schema when DB is available', async () => {
-    const entries = await sitemap()
+    const entries = await sitemap({ id: 0 })
     const urls = entries.map((e) => e.url)
 
     const vacancyTagUrls = urls.filter((u) =>

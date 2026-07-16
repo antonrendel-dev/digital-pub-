@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { unstable_cache } from 'next/cache'
 
 const DEFAULT_SOCIAL_LINKS = [
   { platform: 'Telegram', url: 'https://t.me/+69rdOEDrfvgyMDMy' },
@@ -41,17 +42,30 @@ const SOCIAL_HOVER_CLASSES: Record<string, string> = {
   ВКонтакте: 'hover:text-brand-vk',
 }
 
+const getFooterData = unstable_cache(
+  async () => {
+    const payload = await getPayload({ config })
+    const footerGlobal = await payload.findGlobal({ slug: 'footer' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g = footerGlobal as any
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      socialLinks: g?.socialLinks?.length ? (g.socialLinks as any[]) : DEFAULT_SOCIAL_LINKS,
+      copyrightText: g?.copyrightText ?? 'Диджитал Паб',
+    }
+  },
+  ['footer-global'],
+  { revalidate: 300 }
+)
+
 export default async function Footer() {
   let socialLinks = DEFAULT_SOCIAL_LINKS
   let copyrightText = 'Диджитал Паб'
 
   try {
-    const payload = await getPayload({ config })
-    const footerGlobal = await payload.findGlobal({ slug: 'footer' })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const g = footerGlobal as any
-    if (g?.socialLinks?.length) socialLinks = g.socialLinks
-    if (g?.copyrightText) copyrightText = g.copyrightText
+    const data = await getFooterData()
+    socialLinks = data.socialLinks
+    copyrightText = data.copyrightText
   } catch {
     // Payload unavailable — use hardcoded defaults
   }

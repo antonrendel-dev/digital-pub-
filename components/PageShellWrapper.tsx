@@ -1,5 +1,6 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { unstable_cache } from 'next/cache'
 import PageShell from './PageShell'
 
 /**
@@ -8,15 +9,25 @@ import PageShell from './PageShell'
  * This allows the Navbar (client component with useState) to show dynamic slogan
  * without calling Payload directly from a client component.
  */
-export async function PageShellWrapper({ children }: { children: React.ReactNode }) {
-  let slogan = 'Место, где встречаются хорошие люди'
 
-  try {
+const getNavbarData = unstable_cache(
+  async () => {
     const payload = await getPayload({ config })
     const navbarGlobal = await payload.findGlobal({ slug: 'navbar' })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const g = navbarGlobal as any
-    if (g?.slogan) slogan = g.slogan
+    return { slogan: g?.slogan ?? 'Место, где встречаются хорошие люди' }
+  },
+  ['navbar-global'],
+  { revalidate: 300 }
+)
+
+export async function PageShellWrapper({ children }: { children: React.ReactNode }) {
+  let slogan = 'Место, где встречаются хорошие люди'
+
+  try {
+    const data = await getNavbarData()
+    slogan = data.slogan
   } catch {
     // Payload unavailable — use hardcoded default
   }
