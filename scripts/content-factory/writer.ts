@@ -201,8 +201,10 @@ async function generateImageWithCodex(
   const perspective = PERSPECTIVES[perspIdx]
   const fullPrompt =
     `Match the pixel art style of the attached reference image exactly: ` +
-    `ultra-fine dense pixel grain (NOT blocky large pixels), dark atmospheric background (deep blue-black), ` +
-    `warm amber and golden lighting on foreground, rich surface textures, smooth gradients via fine dithering, ` +
+    `ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), ` +
+    `rich amber, golden and soft cream tones throughout — warm inviting palette, ` +
+    `single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, ` +
+    `rich surface textures, smooth gradients via fine dithering, ` +
     `high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. ` +
     `MANDATORY: include exactly 1 human person (male or female based on topic) prominently in the foreground. ` +
     `CHARACTER ANGLE: ${perspective}. ` +

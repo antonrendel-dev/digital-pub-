@@ -3,7 +3,7 @@
  * Использование: node regen.compiled.js <slug>
  */
 
-import { spawn } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -14,12 +14,49 @@ const CONTENT_DIR = path.join(PROJECT_ROOT, 'content/articles')
 const IMAGES_DIR = path.join(PROJECT_ROOT, 'public/images/posts')
 const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
 const CODEX_HOME = path.join(os.homedir(), '.codex')
+const REFERENCE_IMAGE = path.join(SCRIPTS_DIR, 'reference.webp')
+
+const PERSPECTIVES = [
+  'face-on front view, character faces the viewer directly',
+  '3/4 front-left angle, character turned slightly away to the left',
+  'side profile from the right, character looks forward',
+  'over-the-shoulder view from mid-height, character seen from waist up',
+  'close-up head-and-shoulders portrait, character fills the frame',
+]
+
+const SETTINGS = [
+  'corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background',
+  'rooftop terrace at dusk with city lights below, outdoor bistro table with a phone and drink',
+  'park bench under a tree, dappled sunlight, green surroundings with a path behind',
+  'home kitchen table with morning light through window, kettle and plants on the sill',
+  'library nook between tall bookshelves, soft reading lamp, a few books stacked nearby',
+  'small meeting room corner with a whiteboard covered in diagrams and sticky notes',
+  'coworking open space, rows of desks visible in background, industrial lamps above',
+  'train window seat, landscape moving outside, small fold-out tray table',
+  'balcony with railing, evening sky, city view or garden behind the character',
+  'university campus outdoor seating area, other students in the distance',
+]
 const slug = process.argv[2]
 const customPrompt = process.argv.slice(3).join(' ').trim() || null
 
 if (!slug) {
   console.error('Использование: node regen.compiled.js <slug> [пожелания к сцене]')
   process.exit(1)
+}
+
+function convertToWebP(srcPng: string, destWebp: string): void {
+  const script = `
+    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+      .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
+      .then(() => process.exit(0))
+      .catch(e => { console.error(e.message); process.exit(1); })
+  `
+  execSync(`node --input-type=module`, {
+    input: script,
+    cwd: PROJECT_ROOT,
+    timeout: 30000,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  })
 }
 
 function askClaude(prompt: string): Promise<string> {
@@ -70,23 +107,35 @@ async function generateImage(imagePrompt: string): Promise<string | null> {
   }
 
   const before = snapshotGeneratedImages()
+  const perspIdx = Math.floor(Date.now() / 1000) % PERSPECTIVES.length
+  const perspective = PERSPECTIVES[perspIdx]
   const fullPrompt =
-    `Generate a hero image for a blog article using this exact style: ` +
-    `Cozy RPG pixel art illustration, painterly quality with fine pixel grain texture, ` +
-    `clean composition with 2-3 hero objects clearly separated, dark atmospheric background (deep blue or purple-black), ` +
-    `strong contrast: warm amber and golden light on foreground objects against dark background, ` +
-    `rich pixel texture on each object surface, smooth gradients via fine dithering, ` +
-    `close-up or medium-shot (NOT wide panoramic), isometric or 3/4 side-view, ` +
-    `no clutter, no visual noise, calm lofi RPG mood, no photorealism, no watermark, no text in image. ` +
+    `Match the pixel art style of the attached reference image exactly: ` +
+    `ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), ` +
+    `rich amber, golden and soft cream tones throughout — warm inviting palette, ` +
+    `single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, ` +
+    `rich surface textures, smooth gradients via fine dithering, ` +
+    `high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. ` +
+    `MANDATORY: include exactly 1 human person (male or female based on topic) prominently in the foreground. ` +
+    `CHARACTER ANGLE: ${perspective}. ` +
+    `BACKGROUND: rich with many objects and environmental details filling the scene — NO text or letters anywhere. ` +
     `SCENE: ${imagePrompt}. ` +
-    `Use your image generation tool to create this image now.`
+    `Generate this pixel art image now.`
 
+  const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
   console.log('[regen] Запускаю Codex...')
 
   await new Promise<void>((resolve) => {
     const child = spawn(
       CODEX_BIN,
-      ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', fullPrompt],
+      [
+        'exec',
+        '--dangerously-bypass-approvals-and-sandbox',
+        '--model',
+        'gpt-5.5',
+        fullPrompt,
+        ...refArg,
+      ],
       {
         env: { ...process.env, CODEX_HOME },
         stdio: 'ignore',
@@ -134,13 +183,16 @@ async function main() {
     console.log(`[regen] imagePrompt (custom): ${imagePrompt}`)
   } else {
     // Автогенерация сцены по теме статьи
+    const settingIdx = Math.floor(Date.now() / 1000) % SETTINGS.length
+    const forcedSetting = SETTINGS[settingIdx]
     imagePrompt = await askClaude(
       `Generate an English scene description for a pixel-art hero image for this article.\n` +
         `Title: ${title}\n` +
         `Description: ${description}\n\n` +
-        `Describe a CLOSE-UP scene (NOT wide panoramic) with 2-3 specific objects relevant to the article topic. ` +
-        `Choose ONE setting (coffee shop corner, library nook, rooftop table, coworking desk, home desk). ` +
-        `No text in image. Reply with just the scene description, 2-3 sentences, English only.`
+        `REQUIRED: include 1 human character (male or female based on the topic) as the main subject.\n` +
+        `MANDATORY SETTING — use exactly this location: ${forcedSetting}.\n` +
+        `Describe what the character is doing, their clothing, and 2-3 specific objects related to the topic placed in this setting.\n` +
+        `No text visible in image. Reply with just the scene description, 2-3 sentences, English only.`
     )
     console.log(`[regen] imagePrompt (auto): ${imagePrompt}`)
   }
@@ -151,10 +203,16 @@ async function main() {
     process.exit(1)
   }
 
-  // Копируем как webp в public/images/posts/
+  // Конвертируем в WebP 900x450
   const destFilename = `${slug}.webp`
   const destPath = path.join(IMAGES_DIR, destFilename)
-  fs.copyFileSync(newImagePath, destPath)
+  try {
+    convertToWebP(newImagePath, destPath)
+    console.log(`[regen] WebP сохранён: ${destPath}`)
+  } catch (e) {
+    console.warn('[regen] Конвертация не удалась, копирую как есть:', (e as Error).message)
+    fs.copyFileSync(newImagePath, destPath)
+  }
   console.log(`[regen] Картинка: ${destPath}`)
 
   // Обновляем imageUrl в MDX

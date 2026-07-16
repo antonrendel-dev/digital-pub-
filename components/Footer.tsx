@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
+import FooterResumeLink from './FooterResumeLink'
 
 const DEFAULT_SOCIAL_LINKS = [
   { platform: 'Telegram', url: 'https://t.me/+69rdOEDrfvgyMDMy' },
@@ -163,22 +164,12 @@ export default async function Footer() {
           <div>
             <div className="text-sm font-semibold text-text-muted mb-3">Работодателям</div>
             <div className="space-y-2">
-              <a
-                href="https://t.me/resume_vac_bot"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-sm text-text-light no-underline hover:text-text transition-colors"
-              >
+              <FooterResumeLink className="block text-sm text-text-light no-underline hover:text-text transition-colors">
                 Разместить вакансию
-              </a>
-              <a
-                href="https://t.me/resume_vac_bot"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-sm text-text-light no-underline hover:text-text transition-colors"
-              >
+              </FooterResumeLink>
+              <FooterResumeLink className="block text-sm text-text-light no-underline hover:text-text transition-colors">
                 Реклама
-              </a>
+              </FooterResumeLink>
             </div>
           </div>
         </div>

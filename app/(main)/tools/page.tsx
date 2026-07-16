@@ -22,6 +22,10 @@ const TOOLS = [
   { slug: 'yandex-direct', name: 'Яндекс.Директ', query: 'яндекс.директ' },
   { slug: 'photoshop', name: 'Photoshop', query: 'photoshop' },
   { slug: 'tablicy', name: 'Google Таблицы', query: 'таблиц' },
+  { slug: 'bitrix24', name: 'Битрикс24', query: 'битрикс' },
+  { slug: 'excel', name: 'Excel', query: 'excel' },
+  { slug: 'wordpress', name: 'WordPress', query: 'wordpress' },
+  { slug: 'notion', name: 'Notion', query: 'notion' },
 ]
 
 export const metadata: Metadata = {

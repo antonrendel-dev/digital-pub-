@@ -8,6 +8,7 @@ import {
 } from '@/lib/postUtils'
 import { buildVacancyH1 } from '@/lib/vacancy-meta'
 import { getVacancyContextBlock } from '@/lib/vacancy-context-block'
+import VacancyApplyButton from './VacancyApplyButton'
 import type { CategoryStats } from '@/lib/tags'
 import type { InterviewQuestion } from '@/lib/interview-questions'
 import TagsSidebar, { TagData } from './TagsSidebar'
@@ -165,27 +166,7 @@ export default function PostDetail({
 
             <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border">
               {tgLink ? (
-                <a
-                  href={tgLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-6 py-3 rounded-full no-underline transition-colors min-h-[44px]"
-                >
-                  Откликнуться в Telegram
-                  <svg
-                    className="w-4 h-4 ml-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
+                <VacancyApplyButton href={tgLink} />
               ) : (
                 <button className="inline-flex items-center justify-center bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-6 py-3 rounded-full border-none cursor-pointer transition-colors min-h-[44px]">
                   {post.type === 'vacancy' ? 'Откликнуться' : 'Написать'}

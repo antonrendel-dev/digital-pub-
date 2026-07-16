@@ -31,6 +31,8 @@ export const SPEC_TAG_SLUGS = new Set([
   'kreativ',
   'copywriting',
   'content',
+  'head-of-seo',
+  'videomontazher',
 ])
 
 /**
@@ -188,6 +190,24 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
     'контент-стратег',
     'контент стратег',
     'посты',
+  ],
+  'head-of-seo': [
+    'head of seo',
+    'head seo',
+    'руководитель seo',
+    'руководитель отдела seo',
+    'директор по seo',
+    'head of поискового',
+  ],
+  videomontazher: [
+    'видеомонтажёр',
+    'видеомонтажер',
+    'монтажёр',
+    'монтажер',
+    'video editor',
+    'видеоредактор',
+    'монтаж видео',
+    'видеомонтаж',
   ],
   udalyonka: ['удалённо', 'удаленно', 'удалёнка', 'удаленка', 'remote', 'дистанционно'],
   ofis: ['офис', 'office', 'в офисе'],

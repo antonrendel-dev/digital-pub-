@@ -26,10 +26,11 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-build/types/**/*.ts",
     ".next-test/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-build/types/**/*.ts"
+    "/tmp/dpub-build/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

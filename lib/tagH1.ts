@@ -7,7 +7,7 @@ export const TAG_TITLE: Record<string, string> = {
   seo: `Вакансии SEO-специалиста — {N} актуальных, удалённо и офис`,
   udalyonka: `Удалённая работа digital — {N} вакансий: SMM, дизайн`,
   smm: `Вакансии SMM-менеджера — {N} актуальных, удалёнка и офис`,
-  marketing: `Вакансии маркетолога — digital и performance ${y}`,
+  marketing: `Вакансии маркетолога — {N} актуальных: digital, performance ${y}`,
   target: `Вакансии таргетолога — {N} актуальных: VK, Директ, Telegram`,
   razrabotka: `Вакансии разработчика — {N} актуальных: frontend, backend`,
   analitika: `Вакансии аналитика данных — {N} актуальных, веб, продукт`,
@@ -23,6 +23,8 @@ export const TAG_TITLE: Record<string, string> = {
   junior: `Вакансии junior в digital — {N} для начинающих`,
   middle: `Вакансии middle в digital — {N} для опытных`,
   senior: `Вакансии senior в digital — {N} удалённо и офис`,
+  'head-of-seo': `Вакансии Head of SEO — {N} актуальных, руководитель SEO-отдела`,
+  videomontazher: `Вакансии видеомонтажёра — {N} актуальных, удалённо и офис`,
   // Tool-specific pages
   figma: `Вакансии Figma — {N} актуальных, удалённо`,
   canva: `Вакансии Canva — дизайнер и SMM`,
@@ -37,7 +39,7 @@ export const TAG_DESCRIPTION: Record<string, string> = {
   seo: `{N} свежих вакансий SEO-специалиста: junior, middle, senior. Зарплаты указаны, отклик напрямую работодателю в Telegram, без регистрации. Обновляем ежедневно.`,
   udalyonka: `{N} вакансий на удалёнке: SMM, SEO, дизайн, таргет, аналитика, менеджмент. С зарплатами, без опыта. Отклик в Telegram напрямую. Обновление каждый день.`,
   smm: `{N} свежих вакансий SMM-менеджера и SMM-копирайтера: с зарплатами, удалённо и в офисе, для новичков и senior. Из 15 Telegram-каналов, обновление ежедневно.`,
-  marketing: `Свежие вакансии маркетолога: digital, performance, контент, продуктовый. Зарплаты 50–280К, удалёнка и офис. Отклик напрямую в Telegram без регистрации.`,
+  marketing: `{N} свежих вакансий маркетолога: digital, performance, контент, продуктовый. Зарплаты 50–280К, удалёнка и офис. Откликайся напрямую в Telegram без регистрации.`,
   target: `{N} актуальных вакансий таргетолога: VK Реклама, Яндекс Директ, Telegram Ads. Удалённая работа и офис, зарплаты 40–240К. Свежие предложения каждый день.`,
   menedzher: `{N} вакансий менеджера в digital: проджект, продакт, аккаунт, контент-менеджер. С зарплатами, удалённо и офис. Свежие из Telegram-каналов, отклик напрямую.`,
   dizajn: `{N} вакансий дизайнера: UI/UX, веб, графический, моушн, Figma. Удалённо и в офисе, зарплаты 50–300К. Обновляем ежедневно из Telegram-каналов.`,
@@ -53,6 +55,8 @@ export const TAG_DESCRIPTION: Record<string, string> = {
   junior: `{N} вакансий junior в digital: первая работа в SMM, дизайне, маркетинге. Без опыта и с опытом до 1 года. Из Telegram-каналов.`,
   middle: `{N} вакансий middle в digital: 2–4 года опыта в SMM, дизайне, разработке. Удалённо и офис. Актуальные из Telegram-каналов.`,
   senior: `{N} вакансий senior в digital: 5+ лет опыта, лидерство и менторство. SEO, маркетинг, разработка. Из Telegram-каналов.`,
+  'head-of-seo': `{N} вакансий Head of SEO: руководитель отдела продвижения в digital. Из Telegram-каналов, обновляем ежедневно.`,
+  videomontazher: `{N} вакансий видеомонтажёра: Reels, YouTube, корпоративное видео. Удалённо и офис. Из Telegram-каналов, обновляем ежедневно.`,
 }
 
 // Переопределения <title> и H1 для /resumes/tag/[tagSlug]
@@ -134,6 +138,8 @@ export const TAG_H1: Record<string, string> = {
   junior: `Вакансии junior-специалистов в digital ${y}`,
   middle: `Вакансии middle-специалистов в digital ${y}`,
   senior: `Вакансии senior-специалистов в digital — удалённо и офис ${y}`,
+  'head-of-seo': `Вакансии Head of SEO — руководитель отдела продвижения ${y}`,
+  videomontazher: `Вакансии видеомонтажёра — Reels, YouTube, корпоративное видео ${y}`,
   // Tool-specific pages
   figma: `Вакансии Figma`,
   canva: `Вакансии Canva`,
