@@ -104,6 +104,11 @@ jobs:
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/content"
           rsync -avz content/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/content/
 
+      - name: Deploy scripts/content-factory/
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p ~/d-pub.ru/app/scripts/content-factory/lib ~/d-pub.ru/app/scripts/content-factory/data"
+          rsync -avz scripts/content-factory/*.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/scripts/content-factory/
+
       - name: Deploy payload-migrations/
         run: rsync -avz --ignore-missing-args payload-migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/payload-migrations/
 
