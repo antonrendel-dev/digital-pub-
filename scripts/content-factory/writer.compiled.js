@@ -216,6 +216,178 @@ async function generateImageWithCodex(imagePrompt, slug, topicId) {
     return `/images/posts/${slug}.png`
   }
 }
+async function generateQuickCharts(topic, slug) {
+  console.log(
+    '[writer] \u0428\u0430\u0433 5\u0431: \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E QuickChart \u0433\u0440\u0430\u0444\u0438\u043A\u0438...'
+  )
+  let specRaw
+  try {
+    specRaw =
+      await askClaude(`\u0422\u044B \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0434\u0430\u043D\u043D\u044B\u0445. \u0414\u043B\u044F \u0441\u0442\u0430\u0442\u044C\u0438 "${topic.title}" (\u043A\u043B\u044E\u0447: "${topic.keyword}", \u0442\u0438\u043F: ${topic.type || '\u0438\u043D\u0444\u043E'}) \u0441\u043E\u0437\u0434\u0430\u0439 1-2 \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0442\u0438\u0432\u043D\u044B\u0445 \u0433\u0440\u0430\u0444\u0438\u043A\u0430.
+
+\u0412\u044B\u0434\u0430\u0439 JSON \u0431\u0435\u0437 \u043B\u0438\u0448\u043D\u0435\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430:
+{
+  "charts": [
+    {
+      "alt": "\u041E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0433\u0440\u0430\u0444\u0438\u043A\u0430 \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C \u0434\u043B\u044F alt-\u0442\u0435\u0433\u0430",
+      "config": { ... Chart.js v3 \u043A\u043E\u043D\u0444\u0438\u0433 ... }
+    }
+  ]
+}
+
+\u0422\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u044F:
+- \u0414\u0430\u043D\u043D\u044B\u0435 \u0440\u0435\u0430\u043B\u0438\u0441\u0442\u0438\u0447\u043D\u044B\u0435 \u0434\u043B\u044F \u0440\u043E\u0441\u0441\u0438\u0439\u0441\u043A\u043E\u0433\u043E \u0440\u044B\u043D\u043A\u0430 2025-2026
+- \u0417\u0430\u0440\u043F\u043B\u0430\u0442\u043D\u044B\u0435 \u0441\u0442\u0430\u0442\u044C\u0438: bar chart junior/middle/senior \u0438\u043B\u0438 line chart \u0434\u0438\u043D\u0430\u043C\u0438\u043A\u0430 \u043F\u043E \u0433\u043E\u0434\u0430\u043C
+- \u0421\u0442\u0430\u0442\u044C\u0438 \u043E \u043D\u0430\u0432\u044B\u043A\u0430\u0445/\u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u044F\u0445: \u0433\u043E\u0440\u0438\u0437\u043E\u043D\u0442\u0430\u043B\u044C\u043D\u044B\u0439 bar \u0441 \u0442\u043E\u043F-6 \u043D\u0430\u0432\u044B\u043A\u0430\u043C\u0438
+- \u0413\u0430\u0439\u0434\u044B/\u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F: bar \u0438\u043B\u0438 line \u0441 \u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u043C\u0438 \u0434\u0430\u043D\u043D\u044B\u043C\u0438
+- backgroundColor \u0434\u0430\u0442\u0430\u0441\u0435\u0442\u043E\u0432: ["#6366f1","#8b5cf6","#a855f7","#c084fc","#e879f9","#f0abfc"]
+- options.plugins.title.display = true \u0441 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u043C \u0433\u0440\u0430\u0444\u0438\u043A\u0430
+- options.plugins.legend.display = true
+- \u0428\u0440\u0438\u0444\u0442: fontFamily "Arial" (\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u043A\u0438\u0440\u0438\u043B\u043B\u0438\u0446\u0443)
+- \u041D\u0435 \u0431\u043E\u043B\u0435\u0435 2 \u0434\u0430\u0442\u0430\u0441\u0435\u0442\u043E\u0432 \u043D\u0430 \u0433\u0440\u0430\u0444\u0438\u043A\u0435
+- \u0424\u043E\u0440\u043C\u0430\u0442 Chart.js v3`)
+  } catch (e) {
+    console.warn('[writer] QuickChart: \u043E\u0448\u0438\u0431\u043A\u0430 Claude:', e.message)
+    return []
+  }
+  const specMatch = specRaw.match(/\{[\s\S]*\}/)
+  if (!specMatch) {
+    console.log(
+      '[writer] QuickChart: Claude \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E'
+    )
+    return []
+  }
+  let spec
+  try {
+    spec = JSON.parse(specMatch[0])
+  } catch (e) {
+    console.warn(
+      '[writer] QuickChart: \u043E\u0448\u0438\u0431\u043A\u0430 \u043F\u0430\u0440\u0441\u0438\u043D\u0433\u0430 JSON:',
+      e.message
+    )
+    return []
+  }
+  const results = []
+  for (let i = 0; i < Math.min(spec.charts?.length ?? 0, 2); i++) {
+    const chart = spec.charts[i]
+    const filename = `${slug}-chart${i + 1}.png`
+    const localPath = path.join(IMAGES_DIR, filename)
+    const webPath = `/images/posts/${filename}`
+    try {
+      const response = await fetch('https://quickchart.io/chart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          c: chart.config,
+          width: 700,
+          height: 350,
+          backgroundColor: '#ffffff',
+          devicePixelRatio: 2,
+        }),
+      })
+      if (!response.ok) {
+        console.warn(`[writer] QuickChart HTTP ${response.status} \u0434\u043B\u044F chart${i + 1}`)
+        continue
+      }
+      const buffer = Buffer.from(await response.arrayBuffer())
+      fs.mkdirSync(IMAGES_DIR, { recursive: true })
+      fs.writeFileSync(localPath, buffer)
+      console.log(
+        `[writer] QuickChart \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`
+      )
+      results.push({ webPath, alt: chart.alt })
+    } catch (e) {
+      console.warn(
+        `[writer] QuickChart \u043E\u0448\u0438\u0431\u043A\u0430 chart${i + 1}:`,
+        e.message
+      )
+    }
+  }
+  return results
+}
+async function generateSketchWithCodex(topic, slug) {
+  if (!fs.existsSync(CODEX_BIN)) {
+    console.log(
+      '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447'
+    )
+    return null
+  }
+  const before = snapshotGeneratedImages()
+  const sketchPrompt = `Create a hand-drawn whiteboard sketch illustration. Black ink lines on pure white background only. Rough sketchy lines, no fill colors, just outlines and crosshatching for shadows. Topic: "${topic.title}". Visualize the core concept with stick figures, arrows, boxes and text labels in Russian. Style: looks like a photo of a whiteboard after a working meeting. Imperfect, human, quick. No color, no photorealism, no gradients, no pixel art. Just black ink on white. Include 2-3 key labels written in handwritten Russian style. Keep it simple and clear.`
+  const runCodex = () =>
+    new Promise((resolve) => {
+      const child = spawn(
+        CODEX_BIN,
+        ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', sketchPrompt],
+        {
+          env: { ...process.env, CODEX_HOME },
+          stdio: 'ignore',
+          timeout: 24e4,
+        }
+      )
+      child.on('close', () => resolve())
+      child.on('error', () => resolve())
+    })
+  console.log(
+    '[writer] \u0428\u0430\u0433 5\u0432: \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E Codex \u0434\u043B\u044F \u0441\u043A\u0435\u0442\u0447\u0430...'
+  )
+  await runCodex()
+  const newImage = findNewImage(before)
+  if (!newImage) {
+    console.log(
+      '[writer] Codex \u0441\u043A\u0435\u0442\u0447 \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D'
+    )
+    return null
+  }
+  fs.mkdirSync(IMAGES_DIR, { recursive: true })
+  const destWebp = path.join(IMAGES_DIR, `${slug}-sketch.webp`)
+  try {
+    convertToWebP(newImage, destWebp)
+    console.log(
+      `[writer] \u0421\u043A\u0435\u0442\u0447 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: /images/posts/${slug}-sketch.webp`
+    )
+    return `/images/posts/${slug}-sketch.webp`
+  } catch {
+    const destPng = path.join(IMAGES_DIR, `${slug}-sketch.png`)
+    fs.copyFileSync(newImage, destPng)
+    return `/images/posts/${slug}-sketch.png`
+  }
+}
+function injectImagesIntoMarkdown(markdown, charts, sketchPath) {
+  const allImages = [
+    ...charts,
+    ...(sketchPath
+      ? [
+          {
+            webPath: sketchPath,
+            alt: '\u0418\u043B\u043B\u044E\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u043A \u0442\u0435\u043C\u0435',
+          },
+        ]
+      : []),
+  ]
+  if (allImages.length === 0) return markdown
+  const lines = markdown.split('\n')
+  const h2Indices = []
+  lines.forEach((line, idx) => {
+    if (line.startsWith('## ')) h2Indices.push(idx)
+  })
+  if (h2Indices.length < 2) return markdown
+  const targets = allImages.map((_, i) => {
+    const ratio = (i + 1) / (allImages.length + 1)
+    const h2Idx = Math.max(1, Math.round(ratio * (h2Indices.length - 1)))
+    return h2Indices[h2Idx]
+  })
+  const insertions = allImages
+    .map((img, i) => ({ lineIdx: targets[i], img }))
+    .sort((a, b) => b.lineIdx - a.lineIdx)
+  for (const { lineIdx, img } of insertions) {
+    const tag = `
+<img src="${img.webPath}" alt="${img.alt}" style={{width: '100%', maxWidth: '700px', borderRadius: '8px', margin: '20px 0'}} />
+`
+    lines.splice(lineIdx, 0, tag)
+  }
+  return lines.join('\n')
+}
 async function generateMdxArticle(topic) {
   console.log('[writer] \u0428\u0430\u0433 1: Wordstat keyword research...')
   const wordstatRaw = await fetchWordstatKeywords(topic.keyword)
@@ -704,7 +876,7 @@ function gitCommitAndPush(slug, title, hasImage) {
   const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
   execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   if (hasImage) {
-    execSync(`git add "public/images/posts/${slug}.*" 2>/dev/null || true`, {
+    execSync(`git add public/images/posts/${slug}* 2>/dev/null || true`, {
       cwd: PROJECT_ROOT,
       shell: '/bin/bash',
     })
@@ -735,9 +907,10 @@ async function main() {
     `\u270D\uFE0F \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E #${topicNum}:
 <b>${topic.title}</b>
 
-\u{1F50D} Wordstat \u2192 SEO-\u0440\u0438\u0441\u0435\u0440\u0447 \u2192 \u{1F4CB} \u043F\u043B\u0430\u043D \u2192 \u270F\uFE0F \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A \u2192 \u{1F50E} \u0440\u0435\u0432\u044C\u044E \u2192 \u{1F3A8} \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430
+\u{1F50D} Wordstat \u2192 SEO-\u0440\u0438\u0441\u0435\u0440\u0447 \u2192 \u{1F4CB} \u043F\u043B\u0430\u043D \u2192 \u270F\uFE0F \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A \u2192 \u{1F50E} \u0440\u0435\u0432\u044C\u044E
+\u{1F3A8} hero \u2192 \u{1F4CA} \u0433\u0440\u0430\u0444\u0438\u043A\u0438 \u2192 \u270F\uFE0F \u0441\u043A\u0435\u0442\u0447 \u2192 \u{1F680} \u0434\u0435\u043F\u043B\u043E\u0439
 
-\u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~5 \u043C\u0438\u043D\u0443\u0442...`
+\u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~10 \u043C\u0438\u043D\u0443\u0442...`
   )
   const result = await generateMdxArticle(topic)
   console.log(
@@ -751,30 +924,40 @@ async function main() {
     )
   }
   console.log(
-    '[writer] \u0428\u0430\u0433 5: \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443...'
+    '[writer] \u0428\u0430\u0433 5: \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F...'
   )
-  const imageUrl = result.imagePrompt
-    ? await generateImageWithCodex(result.imagePrompt, result.slug, topic.id)
-    : null
+  const [imageUrl, charts] = await Promise.all([
+    result.imagePrompt
+      ? generateImageWithCodex(result.imagePrompt, result.slug, topic.id)
+      : Promise.resolve(null),
+    generateQuickCharts(topic, result.slug),
+  ])
   if (imageUrl) {
-    console.log(
-      `[writer] \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u0433\u043E\u0442\u043E\u0432\u0430: ${imageUrl}`
-    )
+    console.log(`[writer] Hero image \u0433\u043E\u0442\u043E\u0432: ${imageUrl}`)
   } else {
     console.log(
-      '[writer] \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u0430, \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0435\u043C \u0431\u0435\u0437 \u043D\u0435\u0451'
+      '[writer] Hero image \u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D'
     )
   }
+  console.log(
+    `[writer] QuickChart: ${charts.length} \u0433\u0440\u0430\u0444\u0438\u043A(\u0430) \u0433\u043E\u0442\u043E\u0432\u043E`
+  )
+  const sketchUrl = await generateSketchWithCodex(topic, result.slug)
+  console.log(
+    `[writer] \u0421\u043A\u0435\u0442\u0447: ${sketchUrl ?? '\u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D'}`
+  )
   const publishedAt = /* @__PURE__ */ new Date().toISOString().split('T')[0]
+  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrl)
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
-  const mdxContent = frontmatter + '\n' + result.markdown
+  const mdxContent = frontmatter + '\n' + enrichedMarkdown
   fs.mkdirSync(ARTICLES_DIR, { recursive: true })
   fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
   console.log(
     `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
   )
+  const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrl !== null
   try {
-    gitCommitAndPush(result.slug, topic.title, imageUrl !== null)
+    gitCommitAndPush(result.slug, topic.title, hasAnyImage)
     console.log('[writer] Git push \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713')
   } catch (e) {
     console.error('[writer] Git push \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:', e)
@@ -789,15 +972,22 @@ ${e.message}`)
       ? `
 \u{1F511} Wordstat \u043A\u043B\u044E\u0447\u0435\u0439 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u043E: ${result.wordstatKeywords.length}`
       : '\n\u{1F511} Wordstat: fallback \u043D\u0430 Claude LSI'
-  const imageStatus = imageUrl
-    ? `\u{1F3A8} \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430: \u2705 \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438`
-    : `\u{1F3A8} \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430: \u274C \u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u0430`
+  const imageStatus = imageUrl ? `\u{1F3A8} Hero: \u2705` : `\u{1F3A8} Hero: \u274C`
+  const chartStatus =
+    charts.length > 0
+      ? `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u2705 ${charts.length} \u0448\u0442.`
+      : `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u274C`
+  const sketchStatus = sketchUrl
+    ? `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447: \u2705`
+    : `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447: \u274C`
   await sendMessage(
     `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>
 
 \u{1F4CC} ${topic.title}
 ${wordstatInfo}
 ${imageStatus}
+${chartStatus}
+${sketchStatus}
 
 \u{1F517} <a href="${articleUrl}">${articleUrl}</a>
 

@@ -267,6 +267,198 @@ async function generateImageWithCodex(
   }
 }
 
+// ─── QuickChart data charts ───────────────────────────────────────────────────
+
+async function generateQuickCharts(
+  topic: Topic,
+  slug: string
+): Promise<Array<{ webPath: string; alt: string }>> {
+  console.log('[writer] Шаг 5б: Генерирую QuickChart графики...')
+
+  let specRaw: string
+  try {
+    specRaw =
+      await askClaude(`Ты аналитик данных. Для статьи "${topic.title}" (ключ: "${topic.keyword}", тип: ${topic.type || 'инфо'}) создай 1-2 информативных графика.
+
+Выдай JSON без лишнего текста:
+{
+  "charts": [
+    {
+      "alt": "Описание графика на русском для alt-тега",
+      "config": { ... Chart.js v3 конфиг ... }
+    }
+  ]
+}
+
+Требования:
+- Данные реалистичные для российского рынка 2025-2026
+- Зарплатные статьи: bar chart junior/middle/senior или line chart динамика по годам
+- Статьи о навыках/профессиях: горизонтальный bar с топ-6 навыками
+- Гайды/сравнения: bar или line с релевантными данными
+- backgroundColor датасетов: ["#6366f1","#8b5cf6","#a855f7","#c084fc","#e879f9","#f0abfc"]
+- options.plugins.title.display = true с заголовком графика
+- options.plugins.legend.display = true
+- Шрифт: fontFamily "Arial" (поддерживает кириллицу)
+- Не более 2 датасетов на графике
+- Формат Chart.js v3`)
+  } catch (e) {
+    console.warn('[writer] QuickChart: ошибка Claude:', (e as Error).message)
+    return []
+  }
+
+  const specMatch = specRaw.match(/\{[\s\S]*\}/)
+  if (!specMatch) {
+    console.log('[writer] QuickChart: Claude не вернул JSON, пропускаю')
+    return []
+  }
+
+  let spec: { charts: Array<{ alt: string; config: object }> }
+  try {
+    spec = JSON.parse(specMatch[0])
+  } catch (e) {
+    console.warn('[writer] QuickChart: ошибка парсинга JSON:', (e as Error).message)
+    return []
+  }
+
+  const results: Array<{ webPath: string; alt: string }> = []
+
+  for (let i = 0; i < Math.min(spec.charts?.length ?? 0, 2); i++) {
+    const chart = spec.charts[i]
+    const filename = `${slug}-chart${i + 1}.png`
+    const localPath = path.join(IMAGES_DIR, filename)
+    const webPath = `/images/posts/${filename}`
+
+    try {
+      const response = await fetch('https://quickchart.io/chart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          c: chart.config,
+          width: 700,
+          height: 350,
+          backgroundColor: '#ffffff',
+          devicePixelRatio: 2,
+        }),
+      })
+
+      if (!response.ok) {
+        console.warn(`[writer] QuickChart HTTP ${response.status} для chart${i + 1}`)
+        continue
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer())
+      fs.mkdirSync(IMAGES_DIR, { recursive: true })
+      fs.writeFileSync(localPath, buffer)
+      console.log(`[writer] QuickChart сохранён: ${webPath}`)
+      results.push({ webPath, alt: chart.alt })
+    } catch (e) {
+      console.warn(`[writer] QuickChart ошибка chart${i + 1}:`, (e as Error).message)
+    }
+  }
+
+  return results
+}
+
+// ─── Codex sketch illustration ────────────────────────────────────────────────
+
+async function generateSketchWithCodex(topic: Topic, slug: string): Promise<string | null> {
+  if (!fs.existsSync(CODEX_BIN)) {
+    console.log('[writer] Codex CLI не найден, пропускаю скетч')
+    return null
+  }
+
+  const before = snapshotGeneratedImages()
+
+  const sketchPrompt =
+    `Create a hand-drawn whiteboard sketch illustration. Black ink lines on pure white background only. ` +
+    `Rough sketchy lines, no fill colors, just outlines and crosshatching for shadows. ` +
+    `Topic: "${topic.title}". Visualize the core concept with stick figures, arrows, boxes and text labels in Russian. ` +
+    `Style: looks like a photo of a whiteboard after a working meeting. Imperfect, human, quick. ` +
+    `No color, no photorealism, no gradients, no pixel art. Just black ink on white. ` +
+    `Include 2-3 key labels written in handwritten Russian style. Keep it simple and clear.`
+
+  const runCodex = () =>
+    new Promise<void>((resolve) => {
+      const child = spawn(
+        CODEX_BIN,
+        ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', sketchPrompt],
+        {
+          env: { ...process.env, CODEX_HOME },
+          stdio: 'ignore',
+          timeout: 240000,
+        }
+      )
+      child.on('close', () => resolve())
+      child.on('error', () => resolve())
+    })
+
+  console.log('[writer] Шаг 5в: Запускаю Codex для скетча...')
+  await runCodex()
+  const newImage = findNewImage(before)
+
+  if (!newImage) {
+    console.log('[writer] Codex скетч не создан')
+    return null
+  }
+
+  fs.mkdirSync(IMAGES_DIR, { recursive: true })
+  const destWebp = path.join(IMAGES_DIR, `${slug}-sketch.webp`)
+
+  try {
+    convertToWebP(newImage, destWebp)
+    console.log(`[writer] Скетч сохранён: /images/posts/${slug}-sketch.webp`)
+    return `/images/posts/${slug}-sketch.webp`
+  } catch {
+    const destPng = path.join(IMAGES_DIR, `${slug}-sketch.png`)
+    fs.copyFileSync(newImage, destPng)
+    return `/images/posts/${slug}-sketch.png`
+  }
+}
+
+// ─── MDX image injection ──────────────────────────────────────────────────────
+
+function injectImagesIntoMarkdown(
+  markdown: string,
+  charts: Array<{ webPath: string; alt: string }>,
+  sketchPath: string | null
+): string {
+  const allImages: Array<{ webPath: string; alt: string }> = [
+    ...charts,
+    ...(sketchPath ? [{ webPath: sketchPath, alt: 'Иллюстрация к теме' }] : []),
+  ]
+
+  if (allImages.length === 0) return markdown
+
+  const lines = markdown.split('\n')
+  const h2Indices: number[] = []
+  lines.forEach((line, idx) => {
+    if (line.startsWith('## ')) h2Indices.push(idx)
+  })
+
+  if (h2Indices.length < 2) return markdown
+
+  // Place images before evenly-spaced H2 headings (skip first H2)
+  const targets = allImages.map((_, i) => {
+    const ratio = (i + 1) / (allImages.length + 1)
+    const h2Idx = Math.max(1, Math.round(ratio * (h2Indices.length - 1)))
+    return h2Indices[h2Idx]
+  })
+
+  // Insert from bottom to top so line indices stay valid
+  const insertions = allImages
+    .map((img, i) => ({ lineIdx: targets[i], img }))
+    .sort((a, b) => b.lineIdx - a.lineIdx)
+
+  for (const { lineIdx, img } of insertions) {
+    const tag =
+      `\n<img src="${img.webPath}" alt="${img.alt}" ` +
+      `style={{width: '100%', maxWidth: '700px', borderRadius: '8px', margin: '20px 0'}} />\n`
+    lines.splice(lineIdx, 0, tag)
+  }
+
+  return lines.join('\n')
+}
+
 // ─── Article generation pipeline ─────────────────────────────────────────────
 
 async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
@@ -776,7 +968,7 @@ function gitCommitAndPush(slug: string, title: string, hasImage: boolean): void 
   const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
   execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   if (hasImage) {
-    execSync(`git add "public/images/posts/${slug}.*" 2>/dev/null || true`, {
+    execSync(`git add public/images/posts/${slug}* 2>/dev/null || true`, {
       cwd: PROJECT_ROOT,
       shell: '/bin/bash',
     })
@@ -803,8 +995,9 @@ async function main() {
   console.log(`[writer] Пишу статью: "${topic.title}"`)
   await sendMessage(
     `✍️ Генерирую статью #${topicNum}:\n<b>${topic.title}</b>\n\n` +
-      `🔍 Wordstat → SEO-рисерч → 📋 план → ✏️ черновик → 🔎 ревью → 🎨 картинка\n\n` +
-      `Это займёт ~5 минут...`
+      `🔍 Wordstat → SEO-рисерч → 📋 план → ✏️ черновик → 🔎 ревью\n` +
+      `🎨 hero → 📊 графики → ✏️ скетч → 🚀 деплой\n\n` +
+      `Это займёт ~10 минут...`
   )
 
   // Шаги 1-4: генерация статьи
@@ -818,29 +1011,39 @@ async function main() {
     console.log(`[writer] Slug скорректирован: ${result.slug}`)
   }
 
-  // Шаг 5а: картинка через Codex
-  console.log('[writer] Шаг 5: Генерирую картинку...')
-  const imageUrl = result.imagePrompt
-    ? await generateImageWithCodex(result.imagePrompt, result.slug, topic.id)
-    : null
+  // Шаг 5а + 5б: hero image и QuickChart графики параллельно
+  console.log('[writer] Шаг 5: Генерирую изображения...')
+  const [imageUrl, charts] = await Promise.all([
+    result.imagePrompt
+      ? generateImageWithCodex(result.imagePrompt, result.slug, topic.id)
+      : Promise.resolve(null),
+    generateQuickCharts(topic, result.slug),
+  ])
 
   if (imageUrl) {
-    console.log(`[writer] Картинка готова: ${imageUrl}`)
+    console.log(`[writer] Hero image готов: ${imageUrl}`)
   } else {
-    console.log('[writer] Картинка не сгенерирована, публикуем без неё')
+    console.log('[writer] Hero image не сгенерирован')
   }
+  console.log(`[writer] QuickChart: ${charts.length} график(а) готово`)
 
-  // Шаг 5б: записываем MDX и деплоим
+  // Шаг 5в: Codex скетч (после hero, чтобы не конфликтовать в CODEX_HOME)
+  const sketchUrl = await generateSketchWithCodex(topic, result.slug)
+  console.log(`[writer] Скетч: ${sketchUrl ?? 'не сгенерирован'}`)
+
+  // Шаг 5г: записываем MDX и деплоим
   const publishedAt = new Date().toISOString().split('T')[0]
+  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrl)
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
-  const mdxContent = frontmatter + '\n' + result.markdown
+  const mdxContent = frontmatter + '\n' + enrichedMarkdown
 
   fs.mkdirSync(ARTICLES_DIR, { recursive: true })
   fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
   console.log(`[writer] Файл создан: content/articles/${result.slug}.mdx`)
 
+  const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrl !== null
   try {
-    gitCommitAndPush(result.slug, topic.title, imageUrl !== null)
+    gitCommitAndPush(result.slug, topic.title, hasAnyImage)
     console.log('[writer] Git push выполнен ✓')
   } catch (e) {
     console.error('[writer] Git push не удался:', e)
@@ -855,15 +1058,17 @@ async function main() {
     result.wordstatKeywords.length > 0
       ? `\n🔑 Wordstat ключей использовано: ${result.wordstatKeywords.length}`
       : '\n🔑 Wordstat: fallback на Claude LSI'
-  const imageStatus = imageUrl
-    ? `🎨 Картинка: ✅ автоматически`
-    : `🎨 Картинка: ❌ не сгенерирована`
+  const imageStatus = imageUrl ? `🎨 Hero: ✅` : `🎨 Hero: ❌`
+  const chartStatus = charts.length > 0 ? `📊 Графики: ✅ ${charts.length} шт.` : `📊 Графики: ❌`
+  const sketchStatus = sketchUrl ? `✏️ Скетч: ✅` : `✏️ Скетч: ❌`
 
   await sendMessage(
     `✅ <b>Статья опубликована!</b>\n\n` +
       `📌 ${topic.title}\n` +
       `${wordstatInfo}\n` +
-      `${imageStatus}\n\n` +
+      `${imageStatus}\n` +
+      `${chartStatus}\n` +
+      `${sketchStatus}\n\n` +
       `🔗 <a href="${articleUrl}">${articleUrl}</a>\n\n` +
       `⏳ Деплой займёт ~3 минуты`
   )
