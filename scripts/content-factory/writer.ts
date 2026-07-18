@@ -109,6 +109,7 @@ interface ArticleResult {
   tags: string[]
   imagePrompt: string
   wordstatKeywords: string[]
+  articleEssence: string
 }
 
 // ─── H2-шаблоны по типу контента (programmatic-seo) ─────────────────────────
@@ -271,14 +272,23 @@ async function generateImageWithCodex(
 
 async function generateQuickCharts(
   topic: Topic,
-  slug: string
+  slug: string,
+  h2Structure: string[]
 ): Promise<Array<{ webPath: string; alt: string }>> {
   console.log('[writer] Шаг 5б: Генерирую QuickChart графики...')
+
+  const h2List =
+    h2Structure.length > 0
+      ? h2Structure.map((h, i) => `${i + 1}. ${h}`).join('\n')
+      : '(структура недоступна)'
 
   let specRaw: string
   try {
     specRaw =
-      await askClaude(`Ты аналитик данных. Для статьи "${topic.title}" (ключ: "${topic.keyword}", тип: ${topic.type || 'инфо'}) создай 1-2 информативных графика.
+      await askClaude(`Ты аналитик данных. Для статьи "${topic.title}" (ключ: "${topic.keyword}", тип: ${topic.type || 'инфо'}) создай 1-2 графика.
+
+СТРУКТУРА СТАТЬИ (H2-разделы):
+${h2List}
 
 Выдай JSON без лишнего текста:
 {
@@ -291,15 +301,17 @@ async function generateQuickCharts(
 }
 
 Требования:
+- ГЛАВНОЕ: графики НЕ дублируют таблицы. Таблицы = числовые сравнения (зарплаты по уровням/регионам). Графики = то что в таблице не наглядно: динамика по годам, тренды, radar-распределение, рейтинг спроса
+- Привязывай каждый график к конкретному разделу из H2-списка выше — выбери тот, куда он лучше всего встроится
 - Данные реалистичные для российского рынка 2025-2026
-- Зарплатные статьи: bar chart junior/middle/senior или line chart динамика по годам
-- Статьи о навыках/профессиях: горизонтальный bar с топ-6 навыками
-- Гайды/сравнения: bar или line с релевантными данными
-- backgroundColor датасетов: ["#6366f1","#8b5cf6","#a855f7","#c084fc","#e879f9","#f0abfc"]
-- options.plugins.title.display = true с заголовком графика
+- Зарплатные статьи: line chart динамика по годам, или radar навыков (НЕ bar junior/middle/senior — это уже в таблице)
+- Статьи о навыках: горизонтальный bar с топ-6 навыками по спросу
+- Гайды/сравнения: bar или line с уникальными данными не покрытыми таблицами
+- backgroundColor: ["#6366f1","#8b5cf6","#a855f7","#c084fc","#e879f9","#f0abfc"]
+- options.plugins.title.display = true с заголовком
 - options.plugins.legend.display = true
-- Шрифт: fontFamily "Arial" (поддерживает кириллицу)
-- Не более 2 датасетов на графике
+- fontFamily "Arial" в options.font
+- Не более 2 датасетов
 - Формат Chart.js v3`)
   } catch (e) {
     console.warn('[writer] QuickChart: ошибка Claude:', (e as Error).message)
@@ -361,7 +373,11 @@ async function generateQuickCharts(
 
 // ─── Codex sketch illustration ────────────────────────────────────────────────
 
-async function generateSketchWithCodex(topic: Topic, slug: string): Promise<string | null> {
+async function generateSketchWithCodex(
+  topic: Topic,
+  slug: string,
+  articleEssence: string
+): Promise<string | null> {
   if (!fs.existsSync(CODEX_BIN)) {
     console.log('[writer] Codex CLI не найден, пропускаю скетч')
     return null
@@ -370,12 +386,16 @@ async function generateSketchWithCodex(topic: Topic, slug: string): Promise<stri
   const before = snapshotGeneratedImages()
 
   const sketchPrompt =
-    `Create a hand-drawn whiteboard sketch illustration. Black ink lines on pure white background only. ` +
-    `Rough sketchy lines, no fill colors, just outlines and crosshatching for shadows. ` +
-    `Topic: "${topic.title}". Visualize the core concept with stick figures, arrows, boxes and text labels in Russian. ` +
-    `Style: looks like a photo of a whiteboard after a working meeting. Imperfect, human, quick. ` +
-    `No color, no photorealism, no gradients, no pixel art. Just black ink on white. ` +
-    `Include 2-3 key labels written in handwritten Russian style. Keep it simple and clear.`
+    `Create a hand-drawn whiteboard sketch illustration with HUMOR. ` +
+    `Topic: "${topic.title}". ` +
+    `Key context and reader pains: ${articleEssence}. ` +
+    `Style: should feel like a popular internet meme adapted as a hand-drawn whiteboard doodle. ` +
+    `Think "distracted boyfriend meme", "two buttons meme", "expanding brain", "this is fine dog" — ` +
+    `but redrawn by hand and applied to this specific topic. ` +
+    `Show a funny, relatable situation that readers will instantly recognize from their own experience. ` +
+    `Stick figures, arrows, boxes, ironic or absurd labels in Russian. ` +
+    `Black ink on pure white only. Rough, imperfect, quick lines. No color, no gradients, no photorealism. ` +
+    `Include 2-4 handwritten Russian labels that are funny, ironic or painfully relatable. Keep it punchy.`
 
   const runCodex = () =>
     new Promise<void>((resolve) => {
@@ -659,7 +679,7 @@ BANNED (2.8b + 2.8c + переходы-роботы): запрещены без 
   — АСИММЕТРИЯ: 1-2 раза напиши абзац из одного предложения как ритмический удар. Это должен быть неожиданный факт или вывод, не вводная мысль.
   — ГОЛОС РЕДАКЦИИ: один раз добавь фразу от лица d-pub.ru: «Мы разбираем тысячи вакансий каждую неделю и замечаем: [конкретное наблюдение по теме статьи].» Вставь органично в блок о рынке или требованиях.
 
-ТАБЛИЦЫ (2.4): минимум 1 таблица на каждые 1500 слов. Для профессий обязательна зарплатная таблица (уровень × регион × медиана) и/или таблица навыков. Таблица должна быть самодостаточной — понятной без чтения текста вокруг.
+ТАБЛИЦЫ (2.4): в каждой статье обязательно 1-2 таблицы — независимо от наличия графиков. Для профессий: зарплатная таблица (уровень × регион × медиана) + таблица навыков. Таблицы = структурированные числовые данные для сравнения. Графики их НЕ заменяют. Таблица должна быть самодостаточной — понятной без чтения текста вокруг.
 
 БИГРАММЫ GSC (1.4i): из Wordstat-ключей выше используй топ-биграммы органично в тексте H2-блоков — в абзацах, подзаголовках H3, FAQ-вопросах. Биграмма в первом предложении H2 = максимальный сигнал для Яндекса.
 
@@ -883,6 +903,7 @@ ${markdown}
     tags: Array.isArray(seoData.tags) ? seoData.tags : [],
     imagePrompt: seoData.imagePrompt || '',
     wordstatKeywords,
+    articleEssence: `${seoData.painPoints.slice(0, 2).join('; ')}. ${seoData.uniqueAngle}`,
   }
 }
 
@@ -1013,11 +1034,16 @@ async function main() {
 
   // Шаг 5а + 5б: hero image и QuickChart графики параллельно
   console.log('[writer] Шаг 5: Генерирую изображения...')
+  const h2Structure = result.markdown
+    .split('\n')
+    .filter((line) => line.startsWith('## '))
+    .map((line) => line.replace(/^## /, '').trim())
+
   const [imageUrl, charts] = await Promise.all([
     result.imagePrompt
       ? generateImageWithCodex(result.imagePrompt, result.slug, topic.id)
       : Promise.resolve(null),
-    generateQuickCharts(topic, result.slug),
+    generateQuickCharts(topic, result.slug, h2Structure),
   ])
 
   if (imageUrl) {
@@ -1028,7 +1054,7 @@ async function main() {
   console.log(`[writer] QuickChart: ${charts.length} график(а) готово`)
 
   // Шаг 5в: Codex скетч (после hero, чтобы не конфликтовать в CODEX_HOME)
-  const sketchUrl = await generateSketchWithCodex(topic, result.slug)
+  const sketchUrl = await generateSketchWithCodex(topic, result.slug, result.articleEssence)
   console.log(`[writer] Скетч: ${sketchUrl ?? 'не сгенерирован'}`)
 
   // Шаг 5г: записываем MDX и деплоим
