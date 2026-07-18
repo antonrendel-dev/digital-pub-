@@ -373,35 +373,30 @@ ${h2List}
 
 // ─── Codex sketch illustration ────────────────────────────────────────────────
 
-async function generateSketchWithCodex(
+async function generateSketchesWithCodex(
   topic: Topic,
   slug: string,
-  articleEssence: string
-): Promise<string | null> {
+  articleEssence: string,
+  h2Structure: string[],
+  markdown: string
+): Promise<string[]> {
   if (!fs.existsSync(CODEX_BIN)) {
-    console.log('[writer] Codex CLI не найден, пропускаю скетч')
-    return null
+    console.log('[writer] Codex CLI не найден, пропускаю скетчи')
+    return []
   }
 
-  const before = snapshotGeneratedImages()
+  // 1-3 скетча в зависимости от длины статьи
+  const wordCount = markdown.split(/\s+/).length
+  const sketchCount = wordCount < 1300 ? 1 : wordCount < 1600 ? 2 : 3
 
-  const sketchPrompt =
-    `Create a hand-drawn whiteboard sketch illustration with HUMOR. ` +
-    `Topic: "${topic.title}". ` +
-    `Key context and reader pains: ${articleEssence}. ` +
-    `Style: should feel like a popular internet meme adapted as a hand-drawn whiteboard doodle. ` +
-    `Think "distracted boyfriend meme", "two buttons meme", "expanding brain", "this is fine dog" — ` +
-    `but redrawn by hand and applied to this specific topic. ` +
-    `Show a funny, relatable situation that readers will instantly recognize from their own experience. ` +
-    `Stick figures, arrows, boxes, ironic or absurd labels in Russian. ` +
-    `Black ink on pure white only. Rough, imperfect, quick lines. No color, no gradients, no photorealism. ` +
-    `Include 2-4 handwritten Russian labels that are funny, ironic or painfully relatable. Keep it punchy.`
+  // Разделы для скетчей — берём не-FAQ H2, пропускаем первый и последний
+  const contentH2s = h2Structure.slice(1, -1)
 
-  const runCodex = () =>
+  const runCodex = (prompt: string) =>
     new Promise<void>((resolve) => {
       const child = spawn(
         CODEX_BIN,
-        ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', sketchPrompt],
+        ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', prompt],
         {
           env: { ...process.env, CODEX_HOME },
           stdio: 'ignore',
@@ -412,27 +407,50 @@ async function generateSketchWithCodex(
       child.on('error', () => resolve())
     })
 
-  console.log('[writer] Шаг 5в: Запускаю Codex для скетча...')
-  await runCodex()
-  const newImage = findNewImage(before)
+  const results: string[] = []
 
-  if (!newImage) {
-    console.log('[writer] Codex скетч не создан')
-    return null
+  for (let i = 0; i < sketchCount; i++) {
+    // Выбираем раздел статьи для этого скетча
+    const sectionIdx = Math.floor((i / sketchCount) * contentH2s.length)
+    const section = contentH2s[sectionIdx] || topic.title
+
+    const sketchPrompt =
+      `Create a hand-drawn whiteboard sketch illustration. ` +
+      `Article: "${topic.title}". Section to illustrate: "${section}". ` +
+      `Context and reader pains: ${articleEssence}. ` +
+      `Choose ONE approach that fits better: ` +
+      `A) MEME — adapt a popular internet meme format (distracted boyfriend, two buttons, expanding brain, this is fine dog, drake meme, etc.) to this specific section topic. Show a funny, relatable situation readers will instantly recognize. ` +
+      `B) SCHEMATIC — visually explain the key idea of this section with arrows, boxes, diagrams, stick figures. Clear, educational, like a whiteboard explanation. ` +
+      `Black ink on pure white only. Rough, imperfect hand-drawn lines. No color, no gradients, no photorealism. ` +
+      `Include 2-4 handwritten Russian labels. Keep it punchy and clear.`
+
+    console.log(`[writer] Шаг 5в: Скетч ${i + 1}/${sketchCount} для раздела "${section}"...`)
+    const before = snapshotGeneratedImages()
+    await runCodex(sketchPrompt)
+    const newImage = findNewImage(before)
+
+    if (!newImage) {
+      console.log(`[writer] Codex скетч ${i + 1} не создан`)
+      continue
+    }
+
+    fs.mkdirSync(IMAGES_DIR, { recursive: true })
+    const suffix = i === 0 ? '-sketch' : `-sketch${i + 1}`
+    const destWebp = path.join(IMAGES_DIR, `${slug}${suffix}.webp`)
+
+    try {
+      convertToWebP(newImage, destWebp)
+      const webPath = `/images/posts/${slug}${suffix}.webp`
+      console.log(`[writer] Скетч сохранён: ${webPath}`)
+      results.push(webPath)
+    } catch {
+      const destPng = path.join(IMAGES_DIR, `${slug}${suffix}.png`)
+      fs.copyFileSync(newImage, destPng)
+      results.push(`/images/posts/${slug}${suffix}.png`)
+    }
   }
 
-  fs.mkdirSync(IMAGES_DIR, { recursive: true })
-  const destWebp = path.join(IMAGES_DIR, `${slug}-sketch.webp`)
-
-  try {
-    convertToWebP(newImage, destWebp)
-    console.log(`[writer] Скетч сохранён: /images/posts/${slug}-sketch.webp`)
-    return `/images/posts/${slug}-sketch.webp`
-  } catch {
-    const destPng = path.join(IMAGES_DIR, `${slug}-sketch.png`)
-    fs.copyFileSync(newImage, destPng)
-    return `/images/posts/${slug}-sketch.png`
-  }
+  return results
 }
 
 // ─── MDX image injection ──────────────────────────────────────────────────────
@@ -440,11 +458,11 @@ async function generateSketchWithCodex(
 function injectImagesIntoMarkdown(
   markdown: string,
   charts: Array<{ webPath: string; alt: string }>,
-  sketchPath: string | null
+  sketchPaths: string[]
 ): string {
   const allImages: Array<{ webPath: string; alt: string }> = [
     ...charts,
-    ...(sketchPath ? [{ webPath: sketchPath, alt: 'Иллюстрация к теме' }] : []),
+    ...sketchPaths.map((p) => ({ webPath: p, alt: 'Иллюстрация к теме статьи' })),
   ]
 
   if (allImages.length === 0) return markdown
@@ -1053,13 +1071,21 @@ async function main() {
   }
   console.log(`[writer] QuickChart: ${charts.length} график(а) готово`)
 
-  // Шаг 5в: Codex скетч (после hero, чтобы не конфликтовать в CODEX_HOME)
-  const sketchUrl = await generateSketchWithCodex(topic, result.slug, result.articleEssence)
-  console.log(`[writer] Скетч: ${sketchUrl ?? 'не сгенерирован'}`)
+  // Шаг 5в: Codex скетчи 1-3 шт (после hero, чтобы не конфликтовать в CODEX_HOME)
+  const sketchUrls = await generateSketchesWithCodex(
+    topic,
+    result.slug,
+    result.articleEssence,
+    h2Structure,
+    result.markdown
+  )
+  console.log(
+    `[writer] Скетчи: ${sketchUrls.length > 0 ? sketchUrls.join(', ') : 'не сгенерированы'}`
+  )
 
   // Шаг 5г: записываем MDX и деплоим
   const publishedAt = new Date().toISOString().split('T')[0]
-  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrl)
+  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
 
@@ -1067,7 +1093,7 @@ async function main() {
   fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
   console.log(`[writer] Файл создан: content/articles/${result.slug}.mdx`)
 
-  const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrl !== null
+  const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrls.length > 0
   try {
     gitCommitAndPush(result.slug, topic.title, hasAnyImage)
     console.log('[writer] Git push выполнен ✓')
@@ -1086,7 +1112,8 @@ async function main() {
       : '\n🔑 Wordstat: fallback на Claude LSI'
   const imageStatus = imageUrl ? `🎨 Hero: ✅` : `🎨 Hero: ❌`
   const chartStatus = charts.length > 0 ? `📊 Графики: ✅ ${charts.length} шт.` : `📊 Графики: ❌`
-  const sketchStatus = sketchUrl ? `✏️ Скетч: ✅` : `✏️ Скетч: ❌`
+  const sketchStatus =
+    sketchUrls.length > 0 ? `✏️ Скетчи: ✅ ${sketchUrls.length} шт.` : `✏️ Скетчи: ❌`
 
   await sendMessage(
     `✅ <b>Статья опубликована!</b>\n\n` +

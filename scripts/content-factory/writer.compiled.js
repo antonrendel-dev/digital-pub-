@@ -314,20 +314,21 @@ ${h2List}
   }
   return results
 }
-async function generateSketchWithCodex(topic, slug, articleEssence) {
+async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structure, markdown) {
   if (!fs.existsSync(CODEX_BIN)) {
     console.log(
-      '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447'
+      '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447\u0438'
     )
-    return null
+    return []
   }
-  const before = snapshotGeneratedImages()
-  const sketchPrompt = `Create a hand-drawn whiteboard sketch illustration with HUMOR. Topic: "${topic.title}". Key context and reader pains: ${articleEssence}. Style: should feel like a popular internet meme adapted as a hand-drawn whiteboard doodle. Think "distracted boyfriend meme", "two buttons meme", "expanding brain", "this is fine dog" \u2014 but redrawn by hand and applied to this specific topic. Show a funny, relatable situation that readers will instantly recognize from their own experience. Stick figures, arrows, boxes, ironic or absurd labels in Russian. Black ink on pure white only. Rough, imperfect, quick lines. No color, no gradients, no photorealism. Include 2-4 handwritten Russian labels that are funny, ironic or painfully relatable. Keep it punchy.`
-  const runCodex = () =>
+  const wordCount = markdown.split(/\s+/).length
+  const sketchCount = wordCount < 1300 ? 1 : wordCount < 1600 ? 2 : 3
+  const contentH2s = h2Structure.slice(1, -1)
+  const runCodex = (prompt) =>
     new Promise((resolve) => {
       const child = spawn(
         CODEX_BIN,
-        ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', sketchPrompt],
+        ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', prompt],
         {
           env: { ...process.env, CODEX_HOME },
           stdio: 'ignore',
@@ -337,42 +338,48 @@ async function generateSketchWithCodex(topic, slug, articleEssence) {
       child.on('close', () => resolve())
       child.on('error', () => resolve())
     })
-  console.log(
-    '[writer] \u0428\u0430\u0433 5\u0432: \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E Codex \u0434\u043B\u044F \u0441\u043A\u0435\u0442\u0447\u0430...'
-  )
-  await runCodex()
-  const newImage = findNewImage(before)
-  if (!newImage) {
+  const results = []
+  for (let i = 0; i < sketchCount; i++) {
+    const sectionIdx = Math.floor((i / sketchCount) * contentH2s.length)
+    const section = contentH2s[sectionIdx] || topic.title
+    const sketchPrompt = `Create a hand-drawn whiteboard sketch illustration. Article: "${topic.title}". Section to illustrate: "${section}". Context and reader pains: ${articleEssence}. Choose ONE approach that fits better: A) MEME \u2014 adapt a popular internet meme format (distracted boyfriend, two buttons, expanding brain, this is fine dog, drake meme, etc.) to this specific section topic. Show a funny, relatable situation readers will instantly recognize. B) SCHEMATIC \u2014 visually explain the key idea of this section with arrows, boxes, diagrams, stick figures. Clear, educational, like a whiteboard explanation. Black ink on pure white only. Rough, imperfect hand-drawn lines. No color, no gradients, no photorealism. Include 2-4 handwritten Russian labels. Keep it punchy and clear.`
     console.log(
-      '[writer] Codex \u0441\u043A\u0435\u0442\u0447 \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D'
+      `[writer] \u0428\u0430\u0433 5\u0432: \u0421\u043A\u0435\u0442\u0447 ${i + 1}/${sketchCount} \u0434\u043B\u044F \u0440\u0430\u0437\u0434\u0435\u043B\u0430 "${section}"...`
     )
-    return null
+    const before = snapshotGeneratedImages()
+    await runCodex(sketchPrompt)
+    const newImage = findNewImage(before)
+    if (!newImage) {
+      console.log(
+        `[writer] Codex \u0441\u043A\u0435\u0442\u0447 ${i + 1} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D`
+      )
+      continue
+    }
+    fs.mkdirSync(IMAGES_DIR, { recursive: true })
+    const suffix = i === 0 ? '-sketch' : `-sketch${i + 1}`
+    const destWebp = path.join(IMAGES_DIR, `${slug}${suffix}.webp`)
+    try {
+      convertToWebP(newImage, destWebp)
+      const webPath = `/images/posts/${slug}${suffix}.webp`
+      console.log(
+        `[writer] \u0421\u043A\u0435\u0442\u0447 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`
+      )
+      results.push(webPath)
+    } catch {
+      const destPng = path.join(IMAGES_DIR, `${slug}${suffix}.png`)
+      fs.copyFileSync(newImage, destPng)
+      results.push(`/images/posts/${slug}${suffix}.png`)
+    }
   }
-  fs.mkdirSync(IMAGES_DIR, { recursive: true })
-  const destWebp = path.join(IMAGES_DIR, `${slug}-sketch.webp`)
-  try {
-    convertToWebP(newImage, destWebp)
-    console.log(
-      `[writer] \u0421\u043A\u0435\u0442\u0447 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: /images/posts/${slug}-sketch.webp`
-    )
-    return `/images/posts/${slug}-sketch.webp`
-  } catch {
-    const destPng = path.join(IMAGES_DIR, `${slug}-sketch.png`)
-    fs.copyFileSync(newImage, destPng)
-    return `/images/posts/${slug}-sketch.png`
-  }
+  return results
 }
-function injectImagesIntoMarkdown(markdown, charts, sketchPath) {
+function injectImagesIntoMarkdown(markdown, charts, sketchPaths) {
   const allImages = [
     ...charts,
-    ...(sketchPath
-      ? [
-          {
-            webPath: sketchPath,
-            alt: '\u0418\u043B\u043B\u044E\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u043A \u0442\u0435\u043C\u0435',
-          },
-        ]
-      : []),
+    ...sketchPaths.map((p) => ({
+      webPath: p,
+      alt: '\u0418\u043B\u043B\u044E\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u043A \u0442\u0435\u043C\u0435 \u0441\u0442\u0430\u0442\u044C\u0438',
+    })),
   ]
   if (allImages.length === 0) return markdown
   const lines = markdown.split('\n')
@@ -956,12 +963,18 @@ async function main() {
   console.log(
     `[writer] QuickChart: ${charts.length} \u0433\u0440\u0430\u0444\u0438\u043A(\u0430) \u0433\u043E\u0442\u043E\u0432\u043E`
   )
-  const sketchUrl = await generateSketchWithCodex(topic, result.slug, result.articleEssence)
+  const sketchUrls = await generateSketchesWithCodex(
+    topic,
+    result.slug,
+    result.articleEssence,
+    h2Structure,
+    result.markdown
+  )
   console.log(
-    `[writer] \u0421\u043A\u0435\u0442\u0447: ${sketchUrl ?? '\u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D'}`
+    `[writer] \u0421\u043A\u0435\u0442\u0447\u0438: ${sketchUrls.length > 0 ? sketchUrls.join(', ') : '\u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u044B'}`
   )
   const publishedAt = /* @__PURE__ */ new Date().toISOString().split('T')[0]
-  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrl)
+  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
   fs.mkdirSync(ARTICLES_DIR, { recursive: true })
@@ -969,7 +982,7 @@ async function main() {
   console.log(
     `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
   )
-  const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrl !== null
+  const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrls.length > 0
   try {
     gitCommitAndPush(result.slug, topic.title, hasAnyImage)
     console.log('[writer] Git push \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713')
@@ -991,9 +1004,10 @@ ${e.message}`)
     charts.length > 0
       ? `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u2705 ${charts.length} \u0448\u0442.`
       : `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u274C`
-  const sketchStatus = sketchUrl
-    ? `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447: \u2705`
-    : `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447: \u274C`
+  const sketchStatus =
+    sketchUrls.length > 0
+      ? `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u2705 ${sketchUrls.length} \u0448\u0442.`
+      : `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u274C`
   await sendMessage(
     `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>
 
