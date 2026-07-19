@@ -187,6 +187,21 @@ function convertToWebP(srcPng: string, destWebp: string): void {
   })
 }
 
+function convertSketchToWebP(srcPng: string, destWebp: string): void {
+  const script = `
+    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+      .then(m => m.default('${srcPng}').resize({width: 900, withoutEnlargement: true}).webp({quality:85}).toFile('${destWebp}'))
+      .then(() => process.exit(0))
+      .catch(e => { console.error(e.message); process.exit(1); })
+  `
+  execSync(`node --input-type=module`, {
+    input: script,
+    cwd: PROJECT_ROOT,
+    timeout: 30000,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  })
+}
+
 async function generateImageWithCodex(
   imagePrompt: string,
   slug: string,
@@ -439,7 +454,7 @@ async function generateSketchesWithCodex(
     const destWebp = path.join(IMAGES_DIR, `${slug}${suffix}.webp`)
 
     try {
-      convertToWebP(newImage, destWebp)
+      convertSketchToWebP(newImage, destWebp)
       const webPath = `/images/posts/${slug}${suffix}.webp`
       console.log(`[writer] Скетч сохранён: ${webPath}`)
       results.push(webPath)

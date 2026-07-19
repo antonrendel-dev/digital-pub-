@@ -146,6 +146,20 @@ function convertToWebP(srcPng, destWebp) {
     stdio: ['pipe', 'inherit', 'inherit'],
   })
 }
+function convertSketchToWebP(srcPng, destWebp) {
+  const script = `
+    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+      .then(m => m.default('${srcPng}').resize({width: 900, withoutEnlargement: true}).webp({quality:85}).toFile('${destWebp}'))
+      .then(() => process.exit(0))
+      .catch(e => { console.error(e.message); process.exit(1); })
+  `
+  execSync(`node --input-type=module`, {
+    input: script,
+    cwd: PROJECT_ROOT,
+    timeout: 3e4,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  })
+}
 async function generateImageWithCodex(imagePrompt, slug, topicId) {
   if (!fs.existsSync(CODEX_BIN)) {
     console.log(
@@ -359,7 +373,7 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
     const suffix = i === 0 ? '-sketch' : `-sketch${i + 1}`
     const destWebp = path.join(IMAGES_DIR, `${slug}${suffix}.webp`)
     try {
-      convertToWebP(newImage, destWebp)
+      convertSketchToWebP(newImage, destWebp)
       const webPath = `/images/posts/${slug}${suffix}.webp`
       console.log(
         `[writer] \u0421\u043A\u0435\u0442\u0447 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`
