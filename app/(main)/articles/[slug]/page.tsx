@@ -248,9 +248,6 @@ export default async function ArticlePage({ params }: Props) {
                 dangerouslySetInnerHTML={{ __html: payloadArticle.content }}
               />
               <RelatedVacanciesBlock categories={relatedCategories} />
-              <div className="mt-8 pt-6 border-t border-border">
-                <RelatedCategoriesBlock categories={relatedCategories} />
-              </div>
             </article>
 
             <aside className="hidden lg:flex flex-col gap-4">
@@ -411,9 +408,6 @@ export default async function ArticlePage({ params }: Props) {
               />
             </div>
             <RelatedVacanciesBlock categories={relatedCategories} />
-            <div className="mt-8 pt-6 border-t border-border">
-              <RelatedCategoriesBlock categories={relatedCategories} />
-            </div>
           </article>
 
           {/* Sidebar — desktop only */}

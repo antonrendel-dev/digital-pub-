@@ -325,7 +325,7 @@ export function RelatedToolsBlock({ tools }: { tools: { slug: string; name: stri
 
   return (
     <div className="bg-bg-card border border-border rounded-xl p-4">
-      <div className="s-lbl mb-3">Инструменты по теме</div>
+      <div className="s-lbl mb-3">Вакансии по навыкам</div>
       <div className="flex flex-wrap gap-1.5">
         {tools.map((t) => (
           <Link
