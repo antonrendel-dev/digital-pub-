@@ -250,28 +250,30 @@ export default async function ArticlePage({ params }: Props) {
               <RelatedVacanciesBlock categories={relatedCategories} />
             </article>
 
-            <aside className="hidden lg:flex flex-col gap-4 sticky top-[101px] self-start">
-              <RelatedCategoriesBlock categories={relatedCategories} />
-              <RelatedToolsBlock tools={relatedTools} />
-              {related.length > 0 && (
-                <div className="bg-bg-card border border-border rounded-xl p-4">
-                  <div className="s-lbl mb-3">Другие статьи</div>
-                  {related.map((r) => (
-                    <Link
-                      key={r.slug}
-                      href={`/articles/${r.slug}`}
-                      className="block py-2.5 border-b border-border-light last:border-none last:pb-0 no-underline group"
-                    >
-                      <div className="text-[12.5px] text-text font-medium leading-snug mb-0.5 group-hover:text-accent transition-colors">
-                        {r.title}
-                      </div>
-                      <div className="text-[11px] text-text-light">
-                        {formatArticleDate(r.publishedAt)}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+            <aside className="hidden lg:block">
+              <div className="sticky top-[85px] flex flex-col gap-4">
+                <RelatedCategoriesBlock categories={relatedCategories} />
+                <RelatedToolsBlock tools={relatedTools} />
+                {related.length > 0 && (
+                  <div className="bg-bg-card border border-border rounded-xl p-4">
+                    <div className="s-lbl mb-3">Другие статьи</div>
+                    {related.map((r) => (
+                      <Link
+                        key={r.slug}
+                        href={`/articles/${r.slug}`}
+                        className="block py-2.5 border-b border-border-light last:border-none last:pb-0 no-underline group"
+                      >
+                        <div className="text-[12.5px] text-text font-medium leading-snug mb-0.5 group-hover:text-accent transition-colors">
+                          {r.title}
+                        </div>
+                        <div className="text-[11px] text-text-light">
+                          {formatArticleDate(r.publishedAt)}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </aside>
           </div>
         </div>
@@ -411,28 +413,30 @@ export default async function ArticlePage({ params }: Props) {
           </article>
 
           {/* Sidebar — desktop only */}
-          <aside className="hidden lg:flex flex-col gap-4 sticky top-[101px] self-start">
-            <RelatedCategoriesBlock categories={relatedCategories} />
-            <RelatedToolsBlock tools={relatedTools} />
-            {related.length > 0 && (
-              <div className="bg-bg-card border border-border rounded-xl p-4">
-                <div className="s-lbl mb-3">Другие статьи</div>
-                {related.map((r) => (
-                  <Link
-                    key={r.slug}
-                    href={`/articles/${r.slug}`}
-                    className="block py-2.5 border-b border-border-light last:border-none last:pb-0 no-underline group"
-                  >
-                    <div className="text-[12.5px] text-text font-medium leading-snug mb-0.5 group-hover:text-accent transition-colors">
-                      {r.title}
-                    </div>
-                    <div className="text-[11px] text-text-light">
-                      {formatArticleDate(r.publishedAt)}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+          <aside className="hidden lg:block">
+            <div className="sticky top-[85px] flex flex-col gap-4">
+              <RelatedCategoriesBlock categories={relatedCategories} />
+              <RelatedToolsBlock tools={relatedTools} />
+              {related.length > 0 && (
+                <div className="bg-bg-card border border-border rounded-xl p-4">
+                  <div className="s-lbl mb-3">Другие статьи</div>
+                  {related.map((r) => (
+                    <Link
+                      key={r.slug}
+                      href={`/articles/${r.slug}`}
+                      className="block py-2.5 border-b border-border-light last:border-none last:pb-0 no-underline group"
+                    >
+                      <div className="text-[12.5px] text-text font-medium leading-snug mb-0.5 group-hover:text-accent transition-colors">
+                        {r.title}
+                      </div>
+                      <div className="text-[11px] text-text-light">
+                        {formatArticleDate(r.publishedAt)}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </aside>
         </div>
 
