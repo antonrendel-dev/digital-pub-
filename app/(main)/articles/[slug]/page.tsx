@@ -250,7 +250,7 @@ export default async function ArticlePage({ params }: Props) {
               <RelatedVacanciesBlock categories={relatedCategories} />
             </article>
 
-            <aside className="hidden lg:flex flex-col gap-4">
+            <aside className="hidden lg:flex flex-col gap-4 sticky top-6 self-start">
               <RelatedCategoriesBlock categories={relatedCategories} />
               <RelatedToolsBlock tools={relatedTools} />
               {related.length > 0 && (
@@ -411,7 +411,7 @@ export default async function ArticlePage({ params }: Props) {
           </article>
 
           {/* Sidebar — desktop only */}
-          <aside className="hidden lg:flex flex-col gap-4">
+          <aside className="hidden lg:flex flex-col gap-4 sticky top-6 self-start">
             <RelatedCategoriesBlock categories={relatedCategories} />
             <RelatedToolsBlock tools={relatedTools} />
             {related.length > 0 && (
