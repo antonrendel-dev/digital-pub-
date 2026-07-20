@@ -222,7 +222,7 @@ export default async function ArticlePage({ params }: Props) {
             <span className="text-text-light truncate">{payloadArticle.title}</span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
             <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
               {coverImageUrl && (
                 <Image
@@ -379,7 +379,7 @@ export default async function ArticlePage({ params }: Props) {
           <span className="text-text-light truncate">{article.title}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
           {/* Main */}
           <article className="bg-bg-card border border-border rounded-xl p-7 transition-colors duration-200">
             {(payloadImageUrl ?? article.imageUrl) && (
