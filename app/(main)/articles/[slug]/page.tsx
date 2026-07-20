@@ -248,11 +248,11 @@ export default async function ArticlePage({ params }: Props) {
                 dangerouslySetInnerHTML={{ __html: payloadArticle.content }}
               />
               <RelatedVacanciesBlock categories={relatedCategories} />
-              <RelatedCategoriesBlock categories={relatedCategories} />
-              <RelatedToolsBlock tools={relatedTools} />
             </article>
 
             <aside className="hidden lg:flex flex-col gap-4">
+              <RelatedCategoriesBlock categories={relatedCategories} />
+              <RelatedToolsBlock tools={relatedTools} />
               {related.length > 0 && (
                 <div className="bg-bg-card border border-border rounded-xl p-4">
                   <div className="s-lbl mb-3">Другие статьи</div>
@@ -408,12 +408,12 @@ export default async function ArticlePage({ params }: Props) {
               />
             </div>
             <RelatedVacanciesBlock categories={relatedCategories} />
-            <RelatedCategoriesBlock categories={relatedCategories} />
-            <RelatedToolsBlock tools={relatedTools} />
           </article>
 
           {/* Sidebar — desktop only */}
           <aside className="hidden lg:flex flex-col gap-4">
+            <RelatedCategoriesBlock categories={relatedCategories} />
+            <RelatedToolsBlock tools={relatedTools} />
             {related.length > 0 && (
               <div className="bg-bg-card border border-border rounded-xl p-4">
                 <div className="s-lbl mb-3">Другие статьи</div>
@@ -436,8 +436,10 @@ export default async function ArticlePage({ params }: Props) {
           </aside>
         </div>
 
-        {/* Mobile: related articles below article (hidden on desktop where sidebar is shown) */}
+        {/* Mobile: internal links below article (hidden on desktop where sidebar is shown) */}
         <div className="lg:hidden mt-6 space-y-4">
+          <RelatedCategoriesBlock categories={relatedCategories} />
+          <RelatedToolsBlock tools={relatedTools} />
           <RelatedArticlesBlock articles={related} />
         </div>
       </div>
