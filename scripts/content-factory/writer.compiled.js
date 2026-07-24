@@ -907,11 +907,23 @@ ${markdown}
 16. PLURAL BRIDGE (9.9b): \u0435\u0441\u0442\u044C \u043B\u0438 \u0432 \u043F\u0435\u0440\u0432\u044B\u0445 60 \u0441\u043B\u043E\u0432\u0430\u0445 \u043C\u043E\u0441\u0442 \u0435\u0434./\u043C\u043D. \u0447\u0438\u0441\u043B\u0430 \u043F\u043E \u0448\u0430\u0431\u043B\u043E\u043D\u0443 \xABX \u2014 \u043E\u0434\u0438\u043D \u0438\u0437 \u0432\u0438\u0434\u043E\u0432 Y, \u043A\u043E\u0442\u043E\u0440\u044B\u0445...\xBB? \u0415\u0441\u043B\u0438 \u043D\u0435\u0442 \u2014 \u0434\u043E\u0431\u0430\u0432\u044C.
 
 \u041A\u0420\u0418\u0422\u0418\u0427\u041D\u041E: \u0412\u0435\u0440\u043D\u0438 \u041F\u041E\u041B\u041D\u0423\u042E \u0441\u0442\u0430\u0442\u044C\u044E (\u043D\u0435 \u043C\u0435\u043D\u0435\u0435 80% \u043E\u0442 \u0438\u0441\u0445\u043E\u0434\u043D\u043E\u0433\u043E \u043E\u0431\u044A\u0451\u043C\u0430 \u0441\u043B\u043E\u0432) \u2014 \u0442\u043E\u043B\u044C\u043A\u043E Markdown, \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439, \u0431\u0435\u0437 JSON, \u0431\u0435\u0437 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0435\u0432. \u041D\u0415 \u0441\u043E\u043A\u0440\u0430\u0449\u0430\u0439 \u0441\u0442\u0430\u0442\u044C\u044E \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E\u0447\u0435\u0447\u043D\u044B\u0435 \u043F\u0440\u0430\u0432\u043A\u0438 \u043F\u043E \u043F\u0443\u043D\u043A\u0442\u0430\u043C \u0432\u044B\u0448\u0435.`)
-  const reviewedCandidate = reviewed.trim().startsWith('##')
+  let reviewedCandidate = reviewed.trim().startsWith('##')
     ? reviewed.trim()
     : reviewed.indexOf('## ') !== -1
       ? reviewed.slice(reviewed.indexOf('## ')).trim()
       : markdown
+  const auditMarkers = [
+    '**Title tag:**',
+    '**Meta description:**',
+    '**\u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E',
+    '## \u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E',
+    'Title tag:',
+    'Meta description:',
+  ]
+  for (const marker of auditMarkers) {
+    const idx = reviewedCandidate.indexOf(marker)
+    if (idx !== -1) reviewedCandidate = reviewedCandidate.slice(0, idx).trim()
+  }
   const preReviewWords = markdown.split(/\s+/).length
   const reviewedWords = reviewedCandidate.split(/\s+/).length
   const finalMarkdown = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown

@@ -1002,11 +1002,24 @@ ${markdown}
 
 КРИТИЧНО: Верни ПОЛНУЮ статью (не менее 80% от исходного объёма слов) — только Markdown, без пояснений, без JSON, без комментариев. НЕ сокращай статью — только точечные правки по пунктам выше.`)
 
-  const reviewedCandidate = reviewed.trim().startsWith('##')
+  let reviewedCandidate = reviewed.trim().startsWith('##')
     ? reviewed.trim()
     : reviewed.indexOf('## ') !== -1
       ? reviewed.slice(reviewed.indexOf('## ')).trim()
       : markdown
+  // Strip any SEO audit report the model may have appended after the article
+  const auditMarkers = [
+    '**Title tag:**',
+    '**Meta description:**',
+    '**Что исправлено',
+    '## Что исправлено',
+    'Title tag:',
+    'Meta description:',
+  ]
+  for (const marker of auditMarkers) {
+    const idx = reviewedCandidate.indexOf(marker)
+    if (idx !== -1) reviewedCandidate = reviewedCandidate.slice(0, idx).trim()
+  }
   const preReviewWords = markdown.split(/\s+/).length
   const reviewedWords = reviewedCandidate.split(/\s+/).length
   const finalMarkdown = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
