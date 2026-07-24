@@ -1000,13 +1000,16 @@ ${markdown}
 15. DECISION SUPPORT (5.1h): есть ли перед FAQ блок «Кому не подходит» со списком 3-5 сценариев с цифрами? Если нет — добавь.
 16. PLURAL BRIDGE (9.9b): есть ли в первых 60 словах мост ед./мн. числа по шаблону «X — один из видов Y, которых...»? Если нет — добавь.
 
-Верни ТОЛЬКО финальный Markdown текст статьи — без пояснений, без JSON, без комментариев.`)
+КРИТИЧНО: Верни ПОЛНУЮ статью (не менее 80% от исходного объёма слов) — только Markdown, без пояснений, без JSON, без комментариев. НЕ сокращай статью — только точечные правки по пунктам выше.`)
 
-  const finalMarkdown = reviewed.trim().startsWith('##')
+  const reviewedCandidate = reviewed.trim().startsWith('##')
     ? reviewed.trim()
     : reviewed.indexOf('## ') !== -1
       ? reviewed.slice(reviewed.indexOf('## ')).trim()
       : markdown
+  const preReviewWords = markdown.split(/\s+/).length
+  const reviewedWords = reviewedCandidate.split(/\s+/).length
+  const finalMarkdown = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
 
   return {
     markdown: finalMarkdown,
