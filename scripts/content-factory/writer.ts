@@ -488,18 +488,24 @@ function injectImagesIntoMarkdown(
     if (line.startsWith('## ')) h2Indices.push(idx)
   })
 
-  if (h2Indices.length < 2) return markdown
+  let insertionPoints: number[]
 
-  // Place images before evenly-spaced H2 headings (skip first H2)
-  const targets = allImages.map((_, i) => {
-    const ratio = (i + 1) / (allImages.length + 1)
-    const h2Idx = Math.max(1, Math.round(ratio * (h2Indices.length - 1)))
-    return h2Indices[h2Idx]
-  })
+  if (h2Indices.length >= 2) {
+    // Normal case: evenly place before H2 headings (skip first)
+    insertionPoints = allImages.map((_, i) => {
+      const ratio = (i + 1) / (allImages.length + 1)
+      const h2Idx = Math.max(1, Math.round(ratio * (h2Indices.length - 1)))
+      return h2Indices[h2Idx]
+    })
+  } else {
+    // Fallback: spread images evenly by line count
+    const step = Math.floor(lines.length / (allImages.length + 1))
+    insertionPoints = allImages.map((_, i) => Math.max(1, step * (i + 1)))
+  }
 
   // Insert from bottom to top so line indices stay valid
   const insertions = allImages
-    .map((img, i) => ({ lineIdx: targets[i], img }))
+    .map((img, i) => ({ lineIdx: insertionPoints[i], img }))
     .sort((a, b) => b.lineIdx - a.lineIdx)
 
   for (const { lineIdx, img } of insertions) {
@@ -940,7 +946,7 @@ ${nudgeCatalog}
 2. Точечно примени их — измени или дополни 2-3 конкретных места в тексте
 3. НЕ переписывай статью целиком, НЕ добавляй явно манипулятивных крючков
 4. Текст остаётся информационным — техники усиливают подачу, не давят на читателя
-5. Сохраняй объём 1200-1600 слов
+5. Сохраняй объём 2000–2500 слов — НЕ сокращай статью, только точечные правки в 2-3 местах
 
 СТАТЬЯ:
 ${markdown}
@@ -948,7 +954,11 @@ ${markdown}
 Верни ТОЛЬКО финальный Markdown — без пояснений и комментариев.`)
 
   const nudgedStart = nudged.indexOf('## ')
-  markdown = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim() || markdown
+  const nudgedCandidate = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim()
+  // Guard: if nudge result is less than 60% of original word count, it was truncated — keep original
+  const originalWords = markdown.split(/\s+/).length
+  const nudgedWords = nudgedCandidate.split(/\s+/).length
+  markdown = nudgedWords >= originalWords * 0.6 ? nudgedCandidate || markdown : markdown
 
   // ШАГ 4: Ревью (только SEO — стиль уже выправлен)
   console.log('[writer] Шаг 4: Ревью и улучшение...')

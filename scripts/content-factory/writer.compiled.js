@@ -402,14 +402,19 @@ function injectImagesIntoMarkdown(markdown, charts, sketchPaths) {
   lines.forEach((line, idx) => {
     if (line.startsWith('## ')) h2Indices.push(idx)
   })
-  if (h2Indices.length < 2) return markdown
-  const targets = allImages.map((_, i) => {
-    const ratio = (i + 1) / (allImages.length + 1)
-    const h2Idx = Math.max(1, Math.round(ratio * (h2Indices.length - 1)))
-    return h2Indices[h2Idx]
-  })
+  let insertionPoints
+  if (h2Indices.length >= 2) {
+    insertionPoints = allImages.map((_, i) => {
+      const ratio = (i + 1) / (allImages.length + 1)
+      const h2Idx = Math.max(1, Math.round(ratio * (h2Indices.length - 1)))
+      return h2Indices[h2Idx]
+    })
+  } else {
+    const step = Math.floor(lines.length / (allImages.length + 1))
+    insertionPoints = allImages.map((_, i) => Math.max(1, step * (i + 1)))
+  }
   const insertions = allImages
-    .map((img, i) => ({ lineIdx: targets[i], img }))
+    .map((img, i) => ({ lineIdx: insertionPoints[i], img }))
     .sort((a, b) => b.lineIdx - a.lineIdx)
   for (const { lineIdx, img } of insertions) {
     const tag = `
@@ -849,14 +854,17 @@ ${nudgeCatalog}
 2. \u0422\u043E\u0447\u0435\u0447\u043D\u043E \u043F\u0440\u0438\u043C\u0435\u043D\u0438 \u0438\u0445 \u2014 \u0438\u0437\u043C\u0435\u043D\u0438 \u0438\u043B\u0438 \u0434\u043E\u043F\u043E\u043B\u043D\u0438 2-3 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u0445 \u043C\u0435\u0441\u0442\u0430 \u0432 \u0442\u0435\u043A\u0441\u0442\u0435
 3. \u041D\u0415 \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u0439 \u0441\u0442\u0430\u0442\u044C\u044E \u0446\u0435\u043B\u0438\u043A\u043E\u043C, \u041D\u0415 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439 \u044F\u0432\u043D\u043E \u043C\u0430\u043D\u0438\u043F\u0443\u043B\u044F\u0442\u0438\u0432\u043D\u044B\u0445 \u043A\u0440\u044E\u0447\u043A\u043E\u0432
 4. \u0422\u0435\u043A\u0441\u0442 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u043E\u043D\u043D\u044B\u043C \u2014 \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u0443\u0441\u0438\u043B\u0438\u0432\u0430\u044E\u0442 \u043F\u043E\u0434\u0430\u0447\u0443, \u043D\u0435 \u0434\u0430\u0432\u044F\u0442 \u043D\u0430 \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044F
-5. \u0421\u043E\u0445\u0440\u0430\u043D\u044F\u0439 \u043E\u0431\u044A\u0451\u043C 1200-1600 \u0441\u043B\u043E\u0432
+5. \u0421\u043E\u0445\u0440\u0430\u043D\u044F\u0439 \u043E\u0431\u044A\u0451\u043C 2000\u20132500 \u0441\u043B\u043E\u0432 \u2014 \u041D\u0415 \u0441\u043E\u043A\u0440\u0430\u0449\u0430\u0439 \u0441\u0442\u0430\u0442\u044C\u044E, \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E\u0447\u0435\u0447\u043D\u044B\u0435 \u043F\u0440\u0430\u0432\u043A\u0438 \u0432 2-3 \u043C\u0435\u0441\u0442\u0430\u0445
 
 \u0421\u0422\u0410\u0422\u042C\u042F:
 ${markdown}
 
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E \u0444\u0438\u043D\u0430\u043B\u044C\u043D\u044B\u0439 Markdown \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439 \u0438 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0435\u0432.`)
   const nudgedStart = nudged.indexOf('## ')
-  markdown = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim() || markdown
+  const nudgedCandidate = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim()
+  const originalWords = markdown.split(/\s+/).length
+  const nudgedWords = nudgedCandidate.split(/\s+/).length
+  markdown = nudgedWords >= originalWords * 0.6 ? nudgedCandidate || markdown : markdown
   console.log(
     '[writer] \u0428\u0430\u0433 4: \u0420\u0435\u0432\u044C\u044E \u0438 \u0443\u043B\u0443\u0447\u0448\u0435\u043D\u0438\u0435...'
   )
