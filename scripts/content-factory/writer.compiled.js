@@ -20,6 +20,10 @@ const PERSPECTIVES = [
   'over-the-shoulder view from mid-height, character seen from waist up',
   'close-up head-and-shoulders portrait, character fills the frame',
 ]
+const GENDERS = [
+  'young man, male, he/him \u2014 NOT a woman',
+  'young woman, female, she/her \u2014 NOT a man',
+]
 const SETTINGS = [
   'corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background',
   'rooftop terrace at dusk with city lights below, outdoor bistro table with a phone and drink',
@@ -170,8 +174,12 @@ async function generateImageWithCodex(imagePrompt, slug, topicId) {
   }
   const before = snapshotGeneratedImages()
   const perspIdx = topicId % PERSPECTIVES.length
+  const genderIdx = topicId % 2
+  const settingIdx = topicId % SETTINGS.length
   const perspective = PERSPECTIVES[perspIdx]
-  const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY: include exactly 1 human person (male or female based on topic) prominently in the foreground. CHARACTER ANGLE: ${perspective}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. SCENE: ${imagePrompt}. Generate this pixel art image now.`
+  const gender = GENDERS[genderIdx]
+  const setting = SETTINGS[settingIdx]
+  const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable \u2014 do NOT change the gender. MANDATORY: include exactly 1 human person prominently in the foreground. CHARACTER ANGLE: ${perspective}. SETTING: ${setting}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. SCENE CONTEXT (for props and mood only, gender and setting already set above): ${imagePrompt}. Generate this pixel art image now.`
   const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
   const runCodex = () =>
     new Promise((resolve) => {

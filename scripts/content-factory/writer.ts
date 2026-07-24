@@ -28,6 +28,11 @@ const PERSPECTIVES = [
   'close-up head-and-shoulders portrait, character fills the frame',
 ]
 
+const GENDERS = [
+  'young man, male, he/him — NOT a woman',
+  'young woman, female, she/her — NOT a man',
+]
+
 const SETTINGS = [
   'corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background',
   'rooftop terrace at dusk with city lights below, outdoor bistro table with a phone and drink',
@@ -214,7 +219,11 @@ async function generateImageWithCodex(
 
   const before = snapshotGeneratedImages()
   const perspIdx = topicId % PERSPECTIVES.length
+  const genderIdx = topicId % 2
+  const settingIdx = topicId % SETTINGS.length
   const perspective = PERSPECTIVES[perspIdx]
+  const gender = GENDERS[genderIdx]
+  const setting = SETTINGS[settingIdx]
   const fullPrompt =
     `Match the pixel art style of the attached reference image exactly: ` +
     `ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), ` +
@@ -222,10 +231,12 @@ async function generateImageWithCodex(
     `single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, ` +
     `rich surface textures, smooth gradients via fine dithering, ` +
     `high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. ` +
-    `MANDATORY: include exactly 1 human person (male or female based on topic) prominently in the foreground. ` +
+    `MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable — do NOT change the gender. ` +
+    `MANDATORY: include exactly 1 human person prominently in the foreground. ` +
     `CHARACTER ANGLE: ${perspective}. ` +
+    `SETTING: ${setting}. ` +
     `BACKGROUND: rich with many objects and environmental details filling the scene — NO text or letters anywhere. ` +
-    `SCENE: ${imagePrompt}. ` +
+    `SCENE CONTEXT (for props and mood only, gender and setting already set above): ${imagePrompt}. ` +
     `Generate this pixel art image now.`
 
   const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
