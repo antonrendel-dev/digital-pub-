@@ -989,6 +989,21 @@ function gitCommitAndPush(slug, title, hasImage) {
   execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
+function syncToProduction(slug, hasImage) {
+  const SSH_KEY = path.join(os.homedir(), '.ssh', 'github_actions_deploy')
+  const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`
+  const PROD = 'c48127@91.201.52.231:~/d-pub.ru/app'
+  execSync(
+    `rsync -az -e "ssh ${SSH_OPTS}" content/articles/${slug}.mdx ${PROD}/content/articles/`,
+    { cwd: PROJECT_ROOT, stdio: 'inherit', shell: '/bin/bash' }
+  )
+  if (hasImage) {
+    execSync(
+      `rsync -az -e "ssh ${SSH_OPTS}" public/images/posts/${slug}* ${PROD}/public/images/posts/ 2>/dev/null || true`,
+      { cwd: PROJECT_ROOT, stdio: 'inherit', shell: '/bin/bash' }
+    )
+  }
+}
 async function main() {
   const topicNum = parseInt(process.argv[2])
   if (isNaN(topicNum)) {
@@ -1079,6 +1094,19 @@ async function main() {
 ${e.message}`)
     process.exit(1)
   }
+  let syncedToProd = false
+  try {
+    syncToProduction(result.slug, hasAnyImage)
+    syncedToProd = true
+    console.log(
+      '[writer] Rsync \u043D\u0430 \u043F\u0440\u043E\u0434\u0430\u043A\u0448\u043D \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713'
+    )
+  } catch (e) {
+    console.error(
+      '[writer] Rsync \u043D\u0430 \u043F\u0440\u043E\u0434\u0430\u043A\u0448\u043D \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F (CI \u0437\u0430\u0434\u0435\u043F\u043B\u043E\u0438\u0442 \u043F\u043E\u0437\u0436\u0435):',
+      e
+    )
+  }
   markTopicPublished(topicsFile, topicNum)
   const articleUrl = `${SITE_URL}/articles/${result.slug}`
   const wordstatInfo =
@@ -1095,6 +1123,9 @@ ${e.message}`)
     sketchUrls.length > 0
       ? `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u2705 ${sketchUrls.length} \u0448\u0442.`
       : `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u274C`
+  const deployStatus = syncedToProd
+    ? `\u26A1 \u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435, \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0447\u0435\u0440\u0435\u0437 ~30 \u0441\u0435\u043A (ISR)`
+    : `\u23F3 \u0414\u0435\u043F\u043B\u043E\u0439 \u0447\u0435\u0440\u0435\u0437 CI \u0437\u0430\u0439\u043C\u0451\u0442 ~15 \u043C\u0438\u043D\u0443\u0442`
   await sendMessage(
     `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>
 
@@ -1106,7 +1137,7 @@ ${sketchStatus}
 
 \u{1F517} <a href="${articleUrl}">${articleUrl}</a>
 
-\u23F3 \u0414\u0435\u043F\u043B\u043E\u0439 \u0437\u0430\u0439\u043C\u0451\u0442 ~3 \u043C\u0438\u043D\u0443\u0442\u044B`
+` + deployStatus
   )
   console.log(`[writer] \u0413\u043E\u0442\u043E\u0432\u043E: ${articleUrl}`)
 }

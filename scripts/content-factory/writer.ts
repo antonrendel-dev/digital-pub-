@@ -1102,6 +1102,26 @@ function gitCommitAndPush(slug: string, title: string, hasImage: boolean): void 
   execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
 
+function syncToProduction(slug: string, hasImage: boolean): void {
+  const SSH_KEY = path.join(os.homedir(), '.ssh', 'github_actions_deploy')
+  const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`
+  const PROD = 'c48127@91.201.52.231:~/d-pub.ru/app'
+
+  // Sync MDX file
+  execSync(
+    `rsync -az -e "ssh ${SSH_OPTS}" content/articles/${slug}.mdx ${PROD}/content/articles/`,
+    { cwd: PROJECT_ROOT, stdio: 'inherit', shell: '/bin/bash' }
+  )
+
+  // Sync images if any
+  if (hasImage) {
+    execSync(
+      `rsync -az -e "ssh ${SSH_OPTS}" public/images/posts/${slug}* ${PROD}/public/images/posts/ 2>/dev/null || true`,
+      { cwd: PROJECT_ROOT, stdio: 'inherit', shell: '/bin/bash' }
+    )
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1188,6 +1208,16 @@ async function main() {
     process.exit(1)
   }
 
+  // Прямой rsync на продакшн — статья доступна через ISR без ожидания CI
+  let syncedToProd = false
+  try {
+    syncToProduction(result.slug, hasAnyImage)
+    syncedToProd = true
+    console.log('[writer] Rsync на продакшн выполнен ✓')
+  } catch (e) {
+    console.error('[writer] Rsync на продакшн не удался (CI задеплоит позже):', e)
+  }
+
   markTopicPublished(topicsFile, topicNum)
 
   const articleUrl = `${SITE_URL}/articles/${result.slug}`
@@ -1199,6 +1229,9 @@ async function main() {
   const chartStatus = charts.length > 0 ? `📊 Графики: ✅ ${charts.length} шт.` : `📊 Графики: ❌`
   const sketchStatus =
     sketchUrls.length > 0 ? `✏️ Скетчи: ✅ ${sketchUrls.length} шт.` : `✏️ Скетчи: ❌`
+  const deployStatus = syncedToProd
+    ? `⚡ Статья уже на сервере, доступна через ~30 сек (ISR)`
+    : `⏳ Деплой через CI займёт ~15 минут`
 
   await sendMessage(
     `✅ <b>Статья опубликована!</b>\n\n` +
@@ -1208,7 +1241,7 @@ async function main() {
       `${chartStatus}\n` +
       `${sketchStatus}\n\n` +
       `🔗 <a href="${articleUrl}">${articleUrl}</a>\n\n` +
-      `⏳ Деплой займёт ~3 минуты`
+      deployStatus
   )
 
   console.log(`[writer] Готово: ${articleUrl}`)
