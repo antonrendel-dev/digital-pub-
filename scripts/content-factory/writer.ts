@@ -236,6 +236,7 @@ async function generateImageWithCodex(
     `CHARACTER ANGLE: ${perspective}. ` +
     `SETTING: ${setting}. ` +
     `BACKGROUND: rich with many objects and environmental details filling the scene — NO text or letters anywhere. ` +
+    `LAPTOP/MONITOR RULE: if any laptop, computer or monitor appears in the scene, ALWAYS show it from the FRONT — the glowing screen side facing viewer. NEVER show the back of the lid. Any graphs, charts or UI elements must be VISIBLE on the front-facing display screen. ` +
     `SCENE CONTEXT (for props and mood only, gender and setting already set above): ${imagePrompt}. ` +
     `Generate this pixel art image now.`
 
