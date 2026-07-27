@@ -147,7 +147,7 @@ export default async function ArticleTagPage({ params }: { params: Promise<{ slu
           <span className="text-text-light">{tag.name}</span>
         </nav>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">{tag.pageTitle}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">{tag.h1 ?? tag.pageTitle}</h1>
         <p className="text-text-muted mb-8">{tag.pageDescription}</p>
 
         <ArticlesGrid articles={allArticles} activeTag={tag.name} />

@@ -2,6 +2,7 @@ export interface ArticleTag {
   slug: string
   name: string
   pageTitle: string
+  h1?: string
   pageDescription: string
   seoText?: string
 }
@@ -67,9 +68,11 @@ export const ARTICLE_TAGS: ArticleTag[] = [
   {
     slug: 'zarplaty',
     name: 'зарплаты',
-    pageTitle: 'Зарплаты в digital — обзор рынка 2026',
+    pageTitle: 'Зарплаты digital-специалистов 2026: реальные данные по рынку | Диджитал Паб',
+    h1: 'Зарплаты digital-специалистов 2026',
     pageDescription:
-      'Актуальные данные о зарплатах в digital-маркетинге, дизайне, SEO и аналитике. Обзор рынка труда.',
+      'Сколько зарабатывают SMM-специалист, маркетолог, SEO-специалист, дизайнер, аналитик в 2026 году. Реальные данные из вакансий.',
+    seoText: `Реальные данные о зарплатах digital-специалистов в России за 2026 год. Собираем данные из актуальных вакансий и делаем разбивку по уровням: junior, middle, senior.`,
   },
   {
     slug: 'targetolog',
