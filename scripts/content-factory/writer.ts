@@ -33,18 +33,74 @@ const GENDERS = [
   'young woman, female, she/her — NOT a man',
 ]
 
-const SETTINGS = [
+// 70% indoor — professional/cozy spaces; used for most topics
+const INDOOR_SETTINGS = [
   'corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background',
-  'rooftop terrace at dusk with city lights below, outdoor bistro table with a phone and drink',
-  'park bench under a tree, dappled sunlight, green surroundings with a path behind',
-  'home kitchen table with morning light through window, kettle and plants on the sill',
+  'home office desk with warm lamp, bookshelves and plants visible behind',
   'library nook between tall bookshelves, soft reading lamp, a few books stacked nearby',
-  'small meeting room corner with a whiteboard covered in diagrams and sticky notes',
+  'small meeting room corner with a whiteboard and sticky notes on the wall',
   'coworking open space, rows of desks visible in background, industrial lamps above',
-  'train window seat, landscape moving outside, small fold-out tray table',
-  'balcony with railing, evening sky, city view or garden behind the character',
-  'university campus outdoor seating area, other students in the distance',
+  'home kitchen table with morning light through window, kettle and plants on the sill',
+  'cozy apartment living room, large window with soft daylight, laptop and books on coffee table',
 ]
+
+// 30% outdoor — natural/urban settings; used for lifestyle/creative topics only
+const OUTDOOR_SETTINGS = [
+  'rooftop terrace at dusk with city lights below, outdoor bistro table with a drink',
+  'park bench under a tree, dappled sunlight, green surroundings with a path behind',
+  'balcony with railing, warm afternoon sky, city view behind the character',
+]
+
+// Returns gender index (0=male, 1=female) based on profession detected from topic
+function detectGender(keyword: string, title: string, topicId: number): number {
+  const text = (keyword + ' ' + title).toLowerCase()
+
+  // 100% male
+  if (/seo.?специалист|junior seo|middle seo|senior seo|seo.?оптимизатор|seo.?эксперт/.test(text))
+    return 0
+  if (
+    /программист|разработчик|developer|frontend|backend|fullstack|devops|ios-разработчик|android/.test(
+      text
+    )
+  )
+    return 0
+
+  // 70% male (mostly male professions)
+  if (
+    /аналитик|data.?scientist|системный администратор|сисадмин|project.?manager|продакт/.test(text)
+  ) {
+    return topicId % 10 < 7 ? 0 : 1
+  }
+
+  // 50/50
+  if (
+    /таргетолог|маркетолог|контент.?стратег|копирайтер|редактор|журналист|дизайнер|ux|ui/.test(text)
+  ) {
+    return topicId % 2
+  }
+
+  // 40% male (female-skewed professions)
+  if (/smm|контент.?менеджер/.test(text)) return topicId % 10 < 4 ? 0 : 1
+
+  // 20% male (strongly female professions)
+  if (/hr|рекрутер|психолог/.test(text)) return topicId % 10 < 2 ? 0 : 1
+
+  // Default: 50/50
+  return topicId % 2
+}
+
+// Returns setting string based on profession and topicId
+function detectSetting(keyword: string, title: string, topicId: number): string {
+  const text = (keyword + ' ' + title).toLowerCase()
+
+  // SEO, dev, analytics — always indoor/professional
+  const forcedIndoor = /seo|программист|разработчик|developer|аналитик|data/.test(text)
+
+  if (forcedIndoor || topicId % 10 < 7) {
+    return INDOOR_SETTINGS[topicId % INDOOR_SETTINGS.length]
+  }
+  return OUTDOOR_SETTINGS[topicId % OUTDOOR_SETTINGS.length]
+}
 
 const TRANSLIT: Record<string, string> = {
   а: 'a',
@@ -210,7 +266,7 @@ function convertSketchToWebP(srcPng: string, destWebp: string): void {
 async function generateImageWithCodex(
   imagePrompt: string,
   slug: string,
-  topicId: number
+  topic: { id: number; keyword: string; title: string }
 ): Promise<string | null> {
   if (!fs.existsSync(CODEX_BIN)) {
     console.log('[writer] Codex CLI не найден, пропускаю генерацию картинки')
@@ -218,12 +274,11 @@ async function generateImageWithCodex(
   }
 
   const before = snapshotGeneratedImages()
-  const perspIdx = topicId % PERSPECTIVES.length
-  const genderIdx = topicId % 2
-  const settingIdx = topicId % SETTINGS.length
+  const perspIdx = topic.id % PERSPECTIVES.length
+  const genderIdx = detectGender(topic.keyword, topic.title, topic.id)
   const perspective = PERSPECTIVES[perspIdx]
   const gender = GENDERS[genderIdx]
-  const setting = SETTINGS[settingIdx]
+  const setting = detectSetting(topic.keyword, topic.title, topic.id)
   const fullPrompt =
     `Match the pixel art style of the attached reference image exactly: ` +
     `ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), ` +
@@ -554,8 +609,7 @@ async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
   }
 
   // ШАГ 1б: SEO-рисерч
-  const settingIdx = (topic.id + 3) % SETTINGS.length
-  const forcedSetting = SETTINGS[settingIdx]
+  const forcedSetting = detectSetting(topic.keyword, topic.title, topic.id + 3)
   console.log('[writer] Шаг 1б: SEO-рисерч...')
   const research =
     await askClaude(`Ты опытный SEO-аналитик, работаешь с Яндексом и Google одновременно.
@@ -1211,7 +1265,7 @@ async function main() {
 
   const [imageUrl, charts] = await Promise.all([
     result.imagePrompt
-      ? generateImageWithCodex(result.imagePrompt, result.slug, topic.id)
+      ? generateImageWithCodex(result.imagePrompt, result.slug, topic)
       : Promise.resolve(null),
     generateQuickCharts(topic, result.slug, h2Structure),
   ])

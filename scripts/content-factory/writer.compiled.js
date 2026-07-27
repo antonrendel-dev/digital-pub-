@@ -24,18 +24,52 @@ const GENDERS = [
   'young man, male, he/him \u2014 NOT a woman',
   'young woman, female, she/her \u2014 NOT a man',
 ]
-const SETTINGS = [
+const INDOOR_SETTINGS = [
   'corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background',
-  'rooftop terrace at dusk with city lights below, outdoor bistro table with a phone and drink',
-  'park bench under a tree, dappled sunlight, green surroundings with a path behind',
-  'home kitchen table with morning light through window, kettle and plants on the sill',
+  'home office desk with warm lamp, bookshelves and plants visible behind',
   'library nook between tall bookshelves, soft reading lamp, a few books stacked nearby',
-  'small meeting room corner with a whiteboard covered in diagrams and sticky notes',
+  'small meeting room corner with a whiteboard and sticky notes on the wall',
   'coworking open space, rows of desks visible in background, industrial lamps above',
-  'train window seat, landscape moving outside, small fold-out tray table',
-  'balcony with railing, evening sky, city view or garden behind the character',
-  'university campus outdoor seating area, other students in the distance',
+  'home kitchen table with morning light through window, kettle and plants on the sill',
+  'cozy apartment living room, large window with soft daylight, laptop and books on coffee table',
 ]
+const OUTDOOR_SETTINGS = [
+  'rooftop terrace at dusk with city lights below, outdoor bistro table with a drink',
+  'park bench under a tree, dappled sunlight, green surroundings with a path behind',
+  'balcony with railing, warm afternoon sky, city view behind the character',
+]
+function detectGender(keyword, title, topicId) {
+  const text = (keyword + ' ' + title).toLowerCase()
+  if (/seo.?специалист|junior seo|middle seo|senior seo|seo.?оптимизатор|seo.?эксперт/.test(text))
+    return 0
+  if (
+    /программист|разработчик|developer|frontend|backend|fullstack|devops|ios-разработчик|android/.test(
+      text
+    )
+  )
+    return 0
+  if (
+    /аналитик|data.?scientist|системный администратор|сисадмин|project.?manager|продакт/.test(text)
+  ) {
+    return topicId % 10 < 7 ? 0 : 1
+  }
+  if (
+    /таргетолог|маркетолог|контент.?стратег|копирайтер|редактор|журналист|дизайнер|ux|ui/.test(text)
+  ) {
+    return topicId % 2
+  }
+  if (/smm|контент.?менеджер/.test(text)) return topicId % 10 < 4 ? 0 : 1
+  if (/hr|рекрутер|психолог/.test(text)) return topicId % 10 < 2 ? 0 : 1
+  return topicId % 2
+}
+function detectSetting(keyword, title, topicId) {
+  const text = (keyword + ' ' + title).toLowerCase()
+  const forcedIndoor = /seo|программист|разработчик|developer|аналитик|data/.test(text)
+  if (forcedIndoor || topicId % 10 < 7) {
+    return INDOOR_SETTINGS[topicId % INDOOR_SETTINGS.length]
+  }
+  return OUTDOOR_SETTINGS[topicId % OUTDOOR_SETTINGS.length]
+}
 const TRANSLIT = {
   а: 'a',
   б: 'b',
@@ -165,7 +199,7 @@ function convertSketchToWebP(srcPng, destWebp) {
     stdio: ['pipe', 'inherit', 'inherit'],
   })
 }
-async function generateImageWithCodex(imagePrompt, slug, topicId) {
+async function generateImageWithCodex(imagePrompt, slug, topic) {
   if (!fs.existsSync(CODEX_BIN)) {
     console.log(
       '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438'
@@ -173,12 +207,11 @@ async function generateImageWithCodex(imagePrompt, slug, topicId) {
     return null
   }
   const before = snapshotGeneratedImages()
-  const perspIdx = topicId % PERSPECTIVES.length
-  const genderIdx = topicId % 2
-  const settingIdx = topicId % SETTINGS.length
+  const perspIdx = topic.id % PERSPECTIVES.length
+  const genderIdx = detectGender(topic.keyword, topic.title, topic.id)
   const perspective = PERSPECTIVES[perspIdx]
   const gender = GENDERS[genderIdx]
-  const setting = SETTINGS[settingIdx]
+  const setting = detectSetting(topic.keyword, topic.title, topic.id)
   const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable \u2014 do NOT change the gender. MANDATORY: include exactly 1 human person prominently in the foreground. CHARACTER ANGLE: ${perspective}. SETTING: ${setting}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. NATURALNESS RULE: the scene must look like a real photograph \u2014 people and objects at natural angles. If a laptop appears, show it at a natural working angle (lid slightly open, screen facing the person, back of lid facing viewer) \u2014 NEVER rotate it to show the screen towards the camera. Do NOT put any graphics, charts or images on the outside/back of the laptop lid. SCENE CONTEXT (for props and mood only, gender and setting already set above): ${imagePrompt}. Generate this pixel art image now.`
   const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
   const runCodex = () =>
@@ -454,8 +487,7 @@ async function generateMdxArticle(topic) {
       `[writer] Wordstat: ${wordstatTop.length} \u043A\u043B\u044E\u0447\u0435\u0439, \u0442\u043E\u043F: "${wordstatTop[0].phrase}" (${wordstatTop[0].count}/\u043C\u0435\u0441)`
     )
   }
-  const settingIdx = (topic.id + 3) % SETTINGS.length
-  const forcedSetting = SETTINGS[settingIdx]
+  const forcedSetting = detectSetting(topic.keyword, topic.title, topic.id + 3)
   console.log('[writer] \u0428\u0430\u0433 1\u0431: SEO-\u0440\u0438\u0441\u0435\u0440\u0447...')
   const research =
     await askClaude(`\u0422\u044B \u043E\u043F\u044B\u0442\u043D\u044B\u0439 SEO-\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A, \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0448\u044C \u0441 \u042F\u043D\u0434\u0435\u043A\u0441\u043E\u043C \u0438 Google \u043E\u0434\u043D\u043E\u0432\u0440\u0435\u043C\u0435\u043D\u043D\u043E.
@@ -1091,7 +1123,7 @@ async function main() {
     .map((line) => line.replace(/^## /, '').trim())
   const [imageUrl, charts] = await Promise.all([
     result.imagePrompt
-      ? generateImageWithCodex(result.imagePrompt, result.slug, topic.id)
+      ? generateImageWithCodex(result.imagePrompt, result.slug, topic)
       : Promise.resolve(null),
     generateQuickCharts(topic, result.slug, h2Structure),
   ])
