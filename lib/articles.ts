@@ -21,6 +21,7 @@ const frontmatterSchema = z.object({
   tags: z.array(z.string()).optional().default([]),
   imageUrl: z.string().optional(),
   schemaJsonLd: z.string().optional(),
+  faqSchema: z.string().optional(),
 })
 
 export interface Article {
@@ -35,6 +36,7 @@ export interface Article {
   content: string
   imageUrl?: string
   schemaJsonLd?: string
+  faqSchema?: string
 }
 
 export interface ArticleMeta {
@@ -115,6 +117,7 @@ export function getArticleBySlug(slug: string): Article | null {
     content,
     imageUrl: parsed.data.imageUrl,
     schemaJsonLd: parsed.data.schemaJsonLd,
+    faqSchema: parsed.data.faqSchema,
   }
 }
 

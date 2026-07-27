@@ -355,10 +355,33 @@ export default async function ArticlePage({ params }: Props) {
     ],
   }
 
+  // FAQPage Schema — only if faqSchema is present in frontmatter
+  let faqLd: Record<string, unknown> | null = null
+  if (article.faqSchema) {
+    try {
+      const faqItems = JSON.parse(article.faqSchema) as Array<{ question: string; answer: string }>
+      faqLd = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.answer,
+          },
+        })),
+      }
+    } catch {
+      // Invalid JSON — skip FAQ schema
+    }
+  }
+
   return (
     <PageShellWrapper>
       <JsonLd data={articleLd} />
       <JsonLd data={breadcrumbLd} />
+      {faqLd && <JsonLd data={faqLd} />}
       <div className="max-w-wrap mx-auto px-4 pt-6 pb-12">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-sm text-text-muted mb-5">

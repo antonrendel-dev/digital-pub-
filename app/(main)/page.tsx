@@ -6,14 +6,14 @@ import { getStats, getTagsWithCounts } from '@/lib/tags'
 import { getArticles, formatArticleDate } from '@/lib/articles'
 
 export const metadata: Metadata = {
-  title: { absolute: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб' },
+  title: { absolute: 'Вакансии digital 2026 — маркетинг, дизайн, SMM, IT | Диджитал Паб' },
   description:
-    'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. Удалённая работа, SMM, дизайн, маркетинг — бесплатно, обновляется каждый день.',
+    '1 200+ вакансий digital-специалистов из Telegram: маркетолог, SMM, дизайнер, аналитик. Удалённая работа и офис — бесплатно, обновляется каждый день.',
   alternates: { canonical: 'https://d-pub.ru' },
   openGraph: {
-    title: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб',
+    title: 'Вакансии digital 2026 — маркетинг, дизайн, SMM, IT | Диджитал Паб',
     description:
-      'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. Удалённая работа, SMM, дизайн, маркетинг — бесплатно, обновляется каждый день.',
+      '1 200+ вакансий digital-специалистов из Telegram: маркетолог, SMM, дизайнер, аналитик. Удалённая работа и офис — бесплатно, обновляется каждый день.',
     url: 'https://d-pub.ru',
     type: 'website',
     images: [
@@ -22,9 +22,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Вакансии в маркетинге, дизайне и IT — Диджитал Паб',
+    title: 'Вакансии digital 2026 — маркетинг, дизайн, SMM, IT | Диджитал Паб',
     description:
-      'Агрегатор вакансий и резюме digital-специалистов из Telegram-каналов. Удалённая работа, SMM, дизайн, маркетинг — бесплатно, обновляется каждый день.',
+      '1 200+ вакансий digital-специалистов из Telegram: маркетолог, SMM, дизайнер, аналитик. Удалённая работа и офис — бесплатно, обновляется каждый день.',
   },
 }
 
