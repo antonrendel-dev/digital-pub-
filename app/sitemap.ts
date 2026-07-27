@@ -164,9 +164,11 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
   const mdxSlugs = new Set(mdxArticles.map((a) => a.slug))
   const articleRoutes: MetadataRoute.Sitemap = mdxArticles.map((article) => ({
     url: `${BASE_URL}/articles/${article.slug}`,
-    lastModified: new Date(article.publishedAt),
+    lastModified: article.dateModified
+      ? new Date(article.dateModified)
+      : new Date(article.publishedAt),
     changeFrequency: 'weekly' as const,
-    priority: 0.6,
+    priority: 0.75,
   }))
 
   // Articles from Payload DB (published, not already covered by MDX)
@@ -188,7 +190,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
           url: `${BASE_URL}/articles/${a.slug}`,
           lastModified: a.updatedAt ? new Date(a.updatedAt) : now,
           changeFrequency: 'weekly' as const,
-          priority: 0.6,
+          priority: 0.75,
         }))
     } catch {
       console.warn('[sitemap:0] DB error fetching payload articles, skipping')

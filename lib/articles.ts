@@ -14,6 +14,10 @@ const frontmatterSchema = z.object({
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
   publishedAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
+  dateModified: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), 'Invalid date')
+    .optional(),
   tags: z.array(z.string()).optional().default([]),
   imageUrl: z.string().optional(),
   schemaJsonLd: z.string().optional(),
@@ -26,6 +30,7 @@ export interface Article {
   metaTitle?: string
   metaDescription?: string
   publishedAt: string
+  dateModified?: string
   tags: string[]
   content: string
   imageUrl?: string
@@ -39,6 +44,7 @@ export interface ArticleMeta {
   metaTitle?: string
   metaDescription?: string
   publishedAt: string
+  dateModified?: string
   tags: string[]
   imageUrl?: string
 }
@@ -64,6 +70,7 @@ export function getArticles(): ArticleMeta[] {
         metaTitle: parsed.data.metaTitle,
         metaDescription: parsed.data.metaDescription,
         publishedAt: parsed.data.publishedAt,
+        dateModified: parsed.data.dateModified,
         tags: parsed.data.tags,
         imageUrl: parsed.data.imageUrl,
       })
@@ -103,6 +110,7 @@ export function getArticleBySlug(slug: string): Article | null {
     metaTitle: parsed.data.metaTitle,
     metaDescription: parsed.data.metaDescription,
     publishedAt: parsed.data.publishedAt,
+    dateModified: parsed.data.dateModified,
     tags: parsed.data.tags,
     content,
     imageUrl: parsed.data.imageUrl,
