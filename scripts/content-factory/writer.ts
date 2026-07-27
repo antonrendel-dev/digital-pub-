@@ -236,7 +236,7 @@ async function generateImageWithCodex(
     `CHARACTER ANGLE: ${perspective}. ` +
     `SETTING: ${setting}. ` +
     `BACKGROUND: rich with many objects and environmental details filling the scene — NO text or letters anywhere. ` +
-    `LAPTOP/MONITOR RULE: if any laptop, computer or monitor appears in the scene, ALWAYS show it from the FRONT — the glowing screen side facing viewer. NEVER show the back of the lid. Any graphs, charts or UI elements must be VISIBLE on the front-facing display screen. ` +
+    `NATURALNESS RULE: the scene must look like a real photograph — people and objects at natural angles. If a laptop appears, show it at a natural working angle (lid slightly open, screen facing the person, back of lid facing viewer) — NEVER rotate it to show the screen towards the camera. Do NOT put any graphics, charts or images on the outside/back of the laptop lid. ` +
     `SCENE CONTEXT (for props and mood only, gender and setting already set above): ${imagePrompt}. ` +
     `Generate this pixel art image now.`
 
@@ -577,7 +577,7 @@ ${wordstatBlock}
   "dataGaps": ["каких конкретных данных не хватает для фактурного текста 1", "2"],
   "successCriteria": ["featured snippet на запрос X", "минимум 3 источника с данными", "CTA на /vacancies/..."],
   "tags": ["тег1", "тег2"],
-  "imagePrompt": "English scene description for pixel-art hero image. REQUIRED: 1 human character (choose male or female based on article topic) is the main subject. MANDATORY SETTING — use exactly this location: ${forcedSetting}. Describe what the character is doing, their clothing (casual or professional), and 2-3 specific objects related to the article topic placed in this setting. 2-3 sentences max. Do NOT specify camera angle. No text visible anywhere in the image.",
+  "imagePrompt": "English scene description for pixel-art hero image. REQUIRED: 1 human character (choose male or female based on article topic) is the main subject. MANDATORY SETTING — use exactly this location: ${forcedSetting}. Describe what the character is doing, their clothing (casual or professional), and 2-3 specific objects related to the article topic placed naturally in this setting. Keep all props at natural real-life angles — no forced or impossible orientations. If a laptop is present, describe it as a natural closed or slightly-open prop to the side, NOT as a screen showing content towards the camera. 2-3 sentences max. Do NOT specify camera angle. No text visible anywhere in the image.",
   "bertAnchors": ["слово1", "слово2", "слово3"],
   "bm25Context": ["тематическое слово 1", "тематическое слово 2", "тематическое слово 3", "тематическое слово 4", "тематическое слово 5"],
   "antifakeMarkers": ["Миф: [формулировка мифа] — Факт: [опровержение с источником]", "Миф: ... — Факт: ..."],
