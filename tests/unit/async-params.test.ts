@@ -15,10 +15,13 @@ import { getTagBySlug } from '@/lib/tags'
 import { getPostBySlug, getPostById } from '@/lib/posts'
 import { getArticleBySlug } from '@/lib/articles'
 
-// next/navigation: notFound() throws a special error in tests
+// next/navigation: notFound() and redirect() throw special errors in tests
 jest.mock('next/navigation', () => ({
   notFound: jest.fn(() => {
     throw new Error('NEXT_NOT_FOUND')
+  }),
+  redirect: jest.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`)
   }),
 }))
 

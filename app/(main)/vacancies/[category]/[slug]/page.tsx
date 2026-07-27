@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { getPostBySlug, getPostsByType } from '@/lib/posts'
@@ -16,6 +16,7 @@ import {
   buildResumeTitle,
   buildResumeDescription,
 } from '@/lib/vacancy-meta'
+import { getPrimaryCategorySlug } from '@/lib/postUtils'
 import {
   isFilterSlug,
   getSpecFilterH1,
@@ -71,17 +72,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const titleBase = isResume ? buildResumeTitle(post) : buildVacancyTitle(post)
   const desc = isResume ? buildResumeDescription(post) : buildVacancyDescription(post)
 
-  const url = `https://d-pub.ru/vacancies/${category}/${slug}`
+  // Задача 4: canonical всегда указывает на первичную категорию поста,
+  // чтобы избежать дублей (/vacancies/udalyonka/smm_xxx vs /vacancies/smm/smm_xxx)
+  const primaryCategory = getPrimaryCategorySlug(post)
+  const canonicalUrl = `https://d-pub.ru/vacancies/${primaryCategory}/${slug}`
 
   return {
     title: titleBase,
     description: desc,
-    alternates: { canonical: url },
+    alternates: { canonical: canonicalUrl },
     ...(category === 'other' && { robots: { index: false, follow: true } }),
     openGraph: {
       title: titleBase,
       description: desc,
-      url,
+      url: canonicalUrl,
       type: 'website',
       images: post.imageUrl
         ? [{ url: post.imageUrl, alt: post.title }]
@@ -238,7 +242,8 @@ export default async function VacancyPage({ params }: Props) {
   }
 
   const post = await getPostBySlug(slug)
-  if (!post) notFound()
+  // Задача 3: вакансия удалена из БД — 301 на родительскую категорию (лучше для SEO чем 404)
+  if (!post) redirect(`/vacancies/${category}`)
 
   if (post.type === 'resume') redirect(`/resumes/${category}/${slug}`)
 

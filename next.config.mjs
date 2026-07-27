@@ -40,6 +40,11 @@ const nextConfig = {
         destination: 'https://d-pub.ru/:path*',
         permanent: true,
       },
+      // Задача 1: старый Payload URL /post/:slug → главная
+      { source: '/post/:slug', destination: '/', permanent: true },
+      // Задача 2: /vacancies/other — нет отдельного раздела, редиректим на /vacancies
+      { source: '/vacancies/other', destination: '/vacancies', permanent: true },
+      { source: '/vacancies/other/', destination: '/vacancies', permanent: true },
       { source: '/vacancies/figma', destination: '/tools/figma', permanent: true },
       { source: '/vacancies/canva', destination: '/tools/canva', permanent: true },
       { source: '/vacancies/tilda', destination: '/tools/tilda', permanent: true },
