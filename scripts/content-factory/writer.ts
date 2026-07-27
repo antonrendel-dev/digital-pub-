@@ -292,10 +292,13 @@ async function generateImageWithCodex(
     `SETTING: ${setting}. ` +
     `BACKGROUND: rich with many objects and environmental details filling the scene — NO text or letters anywhere. ` +
     `REALISM: candid photo feel — natural relaxed poses, objects placed as in real life. ` +
-    `SCREENS AND DISPLAYS: do NOT show any visible content on any screen, monitor, phone or laptop display. ` +
-    `All screens must be either turned away, off, or simply not the focus — blank, dark, or facing away from camera. ` +
-    `This prevents any chart-on-lid or rotated-screen artifacts. ` +
-    `SCENE CONTEXT (activity and mood only — gender, setting, and screen rule already fixed above): ${imagePrompt}. ` +
+    `LAPTOP RULE: the person works at a laptop. The laptop sits naturally on the desk. ` +
+    `The screen faces the person (not the camera) and glows softly with indistinct ambient light — ` +
+    `no readable text, no charts, no UI elements, just a warm or cool glow suggesting active use. ` +
+    `Think: professional stock photo where the screen is implied but never the focus. ` +
+    `FORBIDDEN: any specific content (charts, dashboards, text) on any screen surface, ` +
+    `including the outside back of the lid. ` +
+    `SCENE CONTEXT (activity and mood only — gender, setting, and laptop rule already fixed above): ${imagePrompt}. ` +
     `Generate this pixel art image now.`
 
   const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
