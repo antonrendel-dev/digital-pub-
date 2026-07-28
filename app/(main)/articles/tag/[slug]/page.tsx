@@ -105,7 +105,14 @@ export default async function ArticleTagPage({ params }: { params: Promise<{ slu
     )
     return withLinks
       .split('\n\n')
-      .map((p) => `<p>${p}</p>`)
+      .map((block) => {
+        const lines = block.split('\n')
+        if (lines.length > 1 && lines.every((l) => l.trimStart().startsWith('- '))) {
+          const items = lines.map((l) => `<li>${l.replace(/^\s*-\s/, '')}</li>`).join('')
+          return `<ul class="list-disc pl-5 space-y-1 my-2">${items}</ul>`
+        }
+        return `<p>${block}</p>`
+      })
       .join('')
   }
 
