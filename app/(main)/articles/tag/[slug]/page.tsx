@@ -107,11 +107,13 @@ export default async function ArticleTagPage({ params }: { params: Promise<{ slu
       .split('\n\n')
       .map((block) => {
         const lines = block.split('\n')
-        if (lines.length > 1 && lines.every((l) => l.trimStart().startsWith('- '))) {
-          const items = lines.map((l) => `<li>${l.replace(/^\s*-\s/, '')}</li>`).join('')
-          return `<ul class="list-disc pl-5 space-y-1 my-2">${items}</ul>`
-        }
-        return `<p>${block}</p>`
+        const firstListIdx = lines.findIndex((l) => l.trimStart().startsWith('- '))
+        if (firstListIdx === -1) return `<p>${block}</p>`
+        const listLines = lines.slice(firstListIdx)
+        const headerLines = lines.slice(0, firstListIdx)
+        const ul = `<ul class="list-disc pl-5 space-y-1 my-2">${listLines.map((l) => `<li>${l.replace(/^\s*-\s/, '')}</li>`).join('')}</ul>`
+        if (headerLines.length === 0) return ul
+        return `<p>${headerLines.join('\n')}</p>${ul}`
       })
       .join('')
   }
