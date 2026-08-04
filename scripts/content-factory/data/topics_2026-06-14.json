@@ -447,7 +447,8 @@
       "monthlyImpressions": 64,
       "priority": "high",
       "approved": true,
-      "notes": "Резюме-кластер. Таргет: /vacancies/content. Ключи: резюме контент менеджера, образец резюме контент менеджера"
+      "notes": "Резюме-кластер. Таргет: /vacancies/content. Ключи: резюме контент менеджера, образец резюме контент менеджера",
+      "published": true
     },
     {
       "id": 114,
@@ -459,7 +460,8 @@
       "monthlyImpressions": 450,
       "priority": "high",
       "approved": true,
-      "notes": "Треугольник PILLAR: hh ↔ агрегаторы ↔ авито. Только Авито в title. Обратная ссылка на pillar (где искать кроме hh). Таргет: /vacancies"
+      "notes": "Треугольник PILLAR: hh ↔ агрегаторы ↔ авито. Только Авито в title. Обратная ссылка на pillar (где искать кроме hh). Таргет: /vacancies",
+      "published": true
     },
     {
       "id": 36,
@@ -470,7 +472,8 @@
       "trafficEst": "средний",
       "priority": "high",
       "approved": true,
-      "notes": "Входит в junior-кластер (11 P0-ключей). Таргет: /vacancies/junior. Ключи: стажировка digital, стажёр маркетинг вакансии, вакансии стажёр digital"
+      "notes": "Входит в junior-кластер (11 P0-ключей). Таргет: /vacancies/junior. Ключи: стажировка digital, стажёр маркетинг вакансии, вакансии стажёр digital",
+      "published": true
     },
     {
       "id": 37,
@@ -481,7 +484,8 @@
       "trafficEst": "средний",
       "priority": "high",
       "approved": true,
-      "notes": "Закрывает /vacancies/copywriting и /vacancies/content. Ключи: профессия копирайтер, профессия контент менеджер, контент менеджер без опыта"
+      "notes": "Закрывает /vacancies/copywriting и /vacancies/content. Ключи: профессия копирайтер, профессия контент менеджер, контент менеджер без опыта",
+      "published": true
     },
     {
       "id": 40,
@@ -492,7 +496,8 @@
       "trafficEst": "средний",
       "priority": "high",
       "approved": true,
-      "notes": "Ниша с низкой конкуренцией. Таргет: /vacancies/target. Ключи: вакансии директолог, вакансии яндекс директ специалист, вакансия таргетированная реклама"
+      "notes": "Ниша с низкой конкуренцией. Таргет: /vacancies/target. Ключи: вакансии директолог, вакансии яндекс директ специалист, вакансия таргетированная реклама",
+      "published": true
     },
     {
       "id": 44,
@@ -503,7 +508,8 @@
       "trafficEst": "средний",
       "priority": "low",
       "approved": true,
-      "notes": "Отличается от id=9 (фриланс vs штат). Таргет: /vacancies/udalyonka. Ключи: фриланс вакансии digital, фриланс digital как начать"
+      "notes": "Отличается от id=9 (фриланс vs штат). Таргет: /vacancies/udalyonka. Ключи: фриланс вакансии digital, фриланс digital как начать",
+      "published": true
     },
     {
       "id": 46,
@@ -514,7 +520,8 @@
       "trafficEst": "средний",
       "priority": "low",
       "approved": true,
-      "notes": "B2B + Telegram-синергия. Таргет: /resumes + /resumes/tag/smm. Ключи: нанять smm специалиста, нанять маркетолога онлайн, нанять дизайнера фриланс, нанять копирайтера"
+      "notes": "B2B + Telegram-синергия. Таргет: /resumes + /resumes/tag/smm. Ключи: нанять smm специалиста, нанять маркетолога онлайн, нанять дизайнера фриланс, нанять копирайтера",
+      "published": true
     },
     {
       "id": 9,
@@ -524,7 +531,8 @@
       "type": "Сравнение",
       "trafficEst": "средний",
       "approved": true,
-      "priority": "low"
+      "priority": "low",
+      "published": true
     },
     {
       "id": 12,
@@ -612,37 +620,10 @@
       "approved": false
     },
     {
-      "id": 14,
-      "title": "Онбординг digital-специалиста: план на 30-60-90 дней для HR",
-      "keyword": "онбординг нового сотрудника",
-      "audience": "HR",
-      "type": "Чеклист",
-      "trafficEst": "низкий",
-      "approved": false
-    },
-    {
       "id": 17,
       "title": "Как зарубежные компании нанимают digital-команды: конспект лучших практик Basecamp, Buffer, GitLab",
       "keyword": "найм удалённой команды маркетинг",
       "audience": "HR",
-      "type": "Конспект",
-      "trafficEst": "низкий",
-      "approved": false
-    },
-    {
-      "id": 18,
-      "title": "Выгорание в digital-маркетинге: признаки и способы восстановления — конспект исследований HBR",
-      "keyword": "выгорание маркетолог",
-      "audience": "Соискатель",
-      "type": "Конспект",
-      "trafficEst": "низкий",
-      "approved": false
-    },
-    {
-      "id": 19,
-      "title": "Как Google и Meta оценивают аналитические навыки маркетологов на собеседованиях: конспект",
-      "keyword": "аналитика маркетолог собеседование",
-      "audience": "Оба",
       "type": "Конспект",
       "trafficEst": "низкий",
       "approved": false
@@ -662,15 +643,6 @@
       "keyword": "нанять джуниора маркетолога",
       "audience": "HR",
       "type": "Сравнение",
-      "trafficEst": "низкий",
-      "approved": false
-    },
-    {
-      "id": 24,
-      "title": "Сколько реально стоит нанять digital-специалиста: скрытые расходы которые не считают",
-      "keyword": "стоимость найма маркетолога",
-      "audience": "HR",
-      "type": "Кейс",
       "trafficEst": "низкий",
       "approved": false
     },
