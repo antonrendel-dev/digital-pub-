@@ -528,7 +528,31 @@ function injectImagesIntoMarkdown(markdown, charts, sketchPaths) {
 }
 async function generateMdxArticle(topic) {
   console.log('[writer] \u0428\u0430\u0433 1: Wordstat keyword research...')
-  const wordstatRaw = await fetchWordstatKeywords(topic.keyword)
+  let wordstatRaw = await fetchWordstatKeywords(topic.keyword)
+  if (wordstatRaw.length === 0) {
+    const STOP = /* @__PURE__ */ new Set([
+      '\u0438\u043B\u0438',
+      '\u0441',
+      '\u0432',
+      '\u043D\u0430',
+      '\u0434\u043B\u044F',
+      '\u043F\u043E',
+      '\u0438\u0437',
+      '\u0438',
+      '\u043A',
+      '\u0437\u0430',
+      '\u0431\u0435\u0437',
+    ])
+    const words = topic.keyword.split(' ').filter((w) => !STOP.has(w.toLowerCase()))
+    const candidates = [words.slice(0, 3).join(' '), words.slice(0, 2).join(' '), words[0]].filter(
+      (c, i, arr) => c && c !== topic.keyword && arr.indexOf(c) === i
+    )
+    for (const shortKey of candidates) {
+      console.log(`[writer] Wordstat fallback: \u043F\u0440\u043E\u0431\u0443\u044E "${shortKey}"`)
+      wordstatRaw = await fetchWordstatKeywords(shortKey)
+      if (wordstatRaw.length > 0) break
+    }
+  }
   const wordstatTop = wordstatRaw.filter((k) => k.count > 0).slice(0, 15)
   const wordstatKeywords = wordstatTop.map((k) => k.phrase)
   const wordstatBlock =

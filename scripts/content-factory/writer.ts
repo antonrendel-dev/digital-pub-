@@ -596,7 +596,20 @@ function injectImagesIntoMarkdown(
 async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
   // ШАГ 1: Wordstat keyword research
   console.log('[writer] Шаг 1: Wordstat keyword research...')
-  const wordstatRaw = await fetchWordstatKeywords(topic.keyword)
+  let wordstatRaw = await fetchWordstatKeywords(topic.keyword)
+  // Если длинный ключ не дал результатов — пробуем укороченные варианты
+  if (wordstatRaw.length === 0) {
+    const STOP = new Set(['или', 'с', 'в', 'на', 'для', 'по', 'из', 'и', 'к', 'за', 'без'])
+    const words = topic.keyword.split(' ').filter((w) => !STOP.has(w.toLowerCase()))
+    const candidates = [words.slice(0, 3).join(' '), words.slice(0, 2).join(' '), words[0]].filter(
+      (c, i, arr) => c && c !== topic.keyword && arr.indexOf(c) === i
+    )
+    for (const shortKey of candidates) {
+      console.log(`[writer] Wordstat fallback: пробую "${shortKey}"`)
+      wordstatRaw = await fetchWordstatKeywords(shortKey)
+      if (wordstatRaw.length > 0) break
+    }
+  }
   const wordstatTop = wordstatRaw.filter((k) => k.count > 0).slice(0, 15)
   const wordstatKeywords = wordstatTop.map((k) => k.phrase)
 
