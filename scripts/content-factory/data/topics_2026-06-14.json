@@ -542,7 +542,8 @@
       "type": "Гайд",
       "trafficEst": "средний",
       "approved": true,
-      "priority": "low"
+      "priority": "low",
+      "published": true
     },
     {
       "id": 13,
@@ -552,7 +553,8 @@
       "type": "Гайд",
       "trafficEst": "средний",
       "approved": true,
-      "priority": "low"
+      "priority": "low",
+      "published": true
     },
     {
       "id": 15,
@@ -561,7 +563,8 @@
       "audience": "HR",
       "type": "Чеклист",
       "trafficEst": "средний",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 16,
@@ -570,7 +573,8 @@
       "audience": "Соискатель",
       "type": "Гайд",
       "trafficEst": "средний",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 22,
@@ -579,7 +583,8 @@
       "audience": "Соискатель",
       "type": "Гайд",
       "trafficEst": "средний",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 23,
@@ -588,7 +593,8 @@
       "audience": "Соискатель",
       "type": "Гайд",
       "trafficEst": "средний",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 39,
@@ -599,16 +605,8 @@
       "trafficEst": "средний",
       "priority": "medium",
       "approved": true,
-      "notes": "B2B-аудитория. Таргет: /resumes/tag/marketing. Ключи: найти маркетолога, нанять маркетолога онлайн"
-    },
-    {
-      "id": 8,
-      "title": "Как нанять таргетолога: пошаговый чеклист для HR и предпринимателей",
-      "keyword": "как нанять таргетолога",
-      "audience": "HR",
-      "type": "Чеклист",
-      "trafficEst": "средний",
-      "approved": false
+      "notes": "B2B-аудитория. Таргет: /resumes/tag/marketing. Ключи: найти маркетолога, нанять маркетолога онлайн",
+      "published": true
     },
     {
       "id": 11,
@@ -617,16 +615,7 @@
       "audience": "HR",
       "type": "Сравнение",
       "trafficEst": "средний",
-      "approved": false
-    },
-    {
-      "id": 17,
-      "title": "Как зарубежные компании нанимают digital-команды: конспект лучших практик Basecamp, Buffer, GitLab",
-      "keyword": "найм удалённой команды маркетинг",
-      "audience": "HR",
-      "type": "Конспект",
-      "trafficEst": "низкий",
-      "approved": false
+      "approved": true
     },
     {
       "id": 20,
@@ -635,7 +624,7 @@
       "audience": "HR",
       "type": "Гайд",
       "trafficEst": "низкий",
-      "approved": false
+      "approved": true
     },
     {
       "id": 21,
@@ -644,7 +633,7 @@
       "audience": "HR",
       "type": "Сравнение",
       "trafficEst": "низкий",
-      "approved": false
+      "approved": true
     },
     {
       "id": 25,
@@ -653,7 +642,7 @@
       "audience": "Оба",
       "type": "Сравнение",
       "trafficEst": "низкий",
-      "approved": false
+      "approved": true
     },
     {
       "id": 115,
