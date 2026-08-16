@@ -1242,6 +1242,13 @@ function syncToProduction(slug: string, hasImage: boolean): void {
       { cwd: PROJECT_ROOT, stdio: 'inherit', shell: '/bin/bash' }
     )
   }
+
+  // Рестарт Next: без него оптимизатор /_next/image не видит файлы,
+  // доехавшие в public/ после старта процесса (манифест статики строится на боте)
+  execSync(`ssh ${SSH_OPTS} c48127@91.201.52.231 'touch ~/d-pub.ru/reload' || true`, {
+    stdio: 'inherit',
+    shell: '/bin/bash',
+  })
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
