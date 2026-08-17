@@ -188,10 +188,12 @@ var OUTLINE_HINTS = {
 }
 function askClaude(prompt) {
   return new Promise((resolve, reject) => {
-    const child = spawn('claude', ['-p', prompt], {
+    const child = spawn('claude', ['-p'], {
       env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
+    child.stdin.write(prompt)
+    child.stdin.end()
     let out = ''
     let err = ''
     child.stdout.on('data', (d) => (out += d.toString()))

@@ -190,10 +190,13 @@ const OUTLINE_HINTS: Record<string, string> = {
 
 function askClaude(prompt: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn('claude', ['-p', prompt], {
+    // Промпт через stdin: аргументом argv длинные промпты (3 черновика) бьются об ARG_MAX → spawn E2BIG
+    const child = spawn('claude', ['-p'], {
       env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
+    child.stdin.write(prompt)
+    child.stdin.end()
     let out = ''
     let err = ''
     child.stdout.on('data', (d: Buffer) => (out += d.toString()))
