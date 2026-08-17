@@ -27,6 +27,8 @@ import {
   getAllFilterCombinations,
 } from '@/lib/spec-filter-meta'
 import { getSpecFilterSeo } from '@/lib/spec-filter-seo'
+import { sanitizeSeoHtml } from '@/lib/sanitize'
+import { computeLandingStats, pluralRu } from '@/lib/landing-stats'
 
 export const revalidate = 300 // ISR: refresh every 5 minutes
 
@@ -111,6 +113,9 @@ export default async function VacancyPage({ params }: Props) {
     const specName = getSpecNominative(category)
     const breadcrumbLabel = getSpecFilterBreadcrumb(category, slug)
     const seoContent = getSpecFilterSeo(category, slug)
+    // Живая статистика по текущей выборке: пересчитывается на каждом ISR-рендере (revalidate 300)
+    const stats = computeLandingStats(posts, slug)
+    const fmtRub = (n: number) => n.toLocaleString('ru-RU')
 
     const breadcrumbLd = {
       '@context': 'https://schema.org',
@@ -196,12 +201,27 @@ export default async function VacancyPage({ params }: Props) {
                 <VacancyGrid posts={posts} />
               )}
 
+              {/* Живые цифры по выборке — считаются в рантайме, в SEO-текст не запекаются */}
+              {stats.total > 0 && (
+                <div className="mt-12 rounded-lg border border-border bg-bg-card px-4 py-3 text-sm text-text-muted leading-relaxed">
+                  Сейчас в разделе {stats.total}{' '}
+                  {pluralRu(stats.total, ['вакансия', 'вакансии', 'вакансий'])} — список обновляется
+                  ежедневно.
+                  {stats.salaryRange &&
+                    (stats.salaryRange.from === stats.salaryRange.to
+                      ? ` Типичная зарплата — около ${fmtRub(stats.salaryRange.from)} ₽.`
+                      : ` Чаще всего предлагают от ${fmtRub(stats.salaryRange.from)} до ${fmtRub(stats.salaryRange.to)} ₽.`)}
+                  {stats.remoteSharePercent !== null &&
+                    ` Удалёнка встречается в ${stats.remoteSharePercent}% предложений.`}
+                </div>
+              )}
+
               {/* SEO text */}
               {seoContent?.seoText && (
                 <article className="mt-12 pt-8 border-t border-border">
                   <div
                     className="prose prose-sm max-w-none text-text-muted [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold [&_strong]:text-text"
-                    dangerouslySetInnerHTML={{ __html: seoContent.seoText }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeSeoHtml(seoContent.seoText) }}
                   />
                 </article>
               )}
