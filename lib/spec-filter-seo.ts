@@ -26,8 +26,14 @@ export function getSpecFilterSeo(specSlug: string, filterSlug: string): SpecFilt
   let content: SpecFilterContent | null = null
   try {
     const raw = fs.readFileSync(path.join(LANDINGS_DIR, `${key}.json`), 'utf-8')
-    content = JSON.parse(raw) as SpecFilterContent
-  } catch {
+    const parsed = JSON.parse(raw) as SpecFilterContent
+    if (typeof parsed.seoText !== 'string' || !Array.isArray(parsed.faqItems)) {
+      throw new Error(`невалидная структура ${key}.json`)
+    }
+    content = parsed
+  } catch (e) {
+    // Все 72 файла обязаны существовать: молчаливая потеря = лендинг без SEO-текста и FAQ
+    console.error(`[spec-filter-seo] не удалось загрузить лендинг ${key}:`, e)
     content = null
   }
 

@@ -59,7 +59,10 @@ export function computeLandingStats(posts: StatsPost[], filterSlug: string): Lan
   }
 
   let remoteSharePercent: number | null = null
-  if (filterSlug !== 'udalyonka' && total > 0) {
+  // Долю удалёнки показываем только на грейдовых лендингах: на udalyonka она тавтологична,
+  // на ofis/gibrid — противоречит сути страницы
+  const workModeFilters = ['udalyonka', 'ofis', 'gibrid']
+  if (!workModeFilters.includes(filterSlug) && total > 0) {
     const remoteCount = posts.filter((p) => p.tags?.some((t) => t.slug === 'udalyonka')).length
     const share = Math.round((remoteCount / total) * 100)
     // «0% с удалёнкой» не показываем — деградируем изящно
