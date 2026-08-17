@@ -1,22 +1,23 @@
+// regen.ts
 import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-const SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
-const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '../..')
-const CONTENT_DIR = path.join(PROJECT_ROOT, 'content/articles')
-const IMAGES_DIR = path.join(PROJECT_ROOT, 'public/images/posts')
-const CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
-const CODEX_HOME = path.join(os.homedir(), '.codex')
-const REFERENCE_IMAGE = path.join(SCRIPTS_DIR, 'reference.webp')
-const PERSPECTIVES = [
+var SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
+var PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '../..')
+var CONTENT_DIR = path.join(PROJECT_ROOT, 'content/articles')
+var IMAGES_DIR = path.join(PROJECT_ROOT, 'public/images/posts')
+var CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
+var CODEX_HOME = path.join(os.homedir(), '.codex')
+var REFERENCE_IMAGE = path.join(SCRIPTS_DIR, 'reference.webp')
+var PERSPECTIVES = [
   'face-on front view, character faces the viewer directly',
   '3/4 front-left angle, character turned slightly away to the left',
   'side profile from the right, character looks forward',
   'over-the-shoulder view from mid-height, character seen from waist up',
   'close-up head-and-shoulders portrait, character fills the frame',
 ]
-const SETTINGS = [
+var SETTINGS = [
   'corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background',
   'rooftop terrace at dusk with city lights below, outdoor bistro table with a phone and drink',
   'park bench under a tree, dappled sunlight, green surroundings with a path behind',
@@ -28,8 +29,8 @@ const SETTINGS = [
   'balcony with railing, evening sky, city view or garden behind the character',
   'university campus outdoor seating area, other students in the distance',
 ]
-const slug = process.argv[2]
-const customPrompt = process.argv.slice(3).join(' ').trim() || null
+var slug = process.argv[2]
+var customPrompt = process.argv.slice(3).join(' ').trim() || null
 if (!slug) {
   console.error(
     '\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: node regen.compiled.js <slug> [\u043F\u043E\u0436\u0435\u043B\u0430\u043D\u0438\u044F \u043A \u0441\u0446\u0435\u043D\u0435]'

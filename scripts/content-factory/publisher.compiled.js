@@ -1,7 +1,7 @@
 // publisher.ts
 import path from 'path'
 
-// lib/telegram.ts
+// lib/telegram.js
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN
 var CHAT_ID = process.env.SEO_LAB_CHAT_ID
 var THREAD_ID = process.env.SEO_LAB_TOPIC_ID ? Number(process.env.SEO_LAB_TOPIC_ID) : void 0
