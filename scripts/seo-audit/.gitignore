@@ -1,0 +1,4 @@
+data/.lock
+data/snapshots/*.tmp
+data/exports/
+data/snapshots/
