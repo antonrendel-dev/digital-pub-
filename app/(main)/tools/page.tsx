@@ -20,6 +20,7 @@ const TOOLS = [
   { slug: 'midjourney', name: 'Midjourney', query: 'midjourney' },
   { slug: 'google-analytics', name: 'Google Analytics', query: 'google analytics' },
   { slug: 'yandex-direct', name: 'Яндекс.Директ', query: 'яндекс.директ' },
+  { slug: 'vk-ads', name: 'VK Реклама', query: 'vk ads' },
   { slug: 'photoshop', name: 'Photoshop', query: 'photoshop' },
   { slug: 'tablicy', name: 'Google Таблицы', query: 'таблиц' },
   { slug: 'bitrix24', name: 'Битрикс24', query: 'битрикс' },

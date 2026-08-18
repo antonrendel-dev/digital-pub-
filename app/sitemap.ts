@@ -98,6 +98,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     'midjourney',
     'google-analytics',
     'yandex-direct',
+    'vk-ads',
     'photoshop',
     'tablicy',
     'bitrix24',
