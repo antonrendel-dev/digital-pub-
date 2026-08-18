@@ -58,8 +58,7 @@ const nextConfig = {
       { source: '/vacancies/midjourney', destination: '/tools/midjourney', permanent: true },
       { source: '/vacancies/google-analytics', destination: '/tools/google-analytics', permanent: true },
       { source: '/vacancies/photoshop', destination: '/tools/photoshop', permanent: true },
-      // vk-ads: категории нет, временный редирект на ближайшую по интенту до появления своей страницы
-      { source: '/vacancies/vk-ads', destination: '/vacancies/target', permanent: false },
+      { source: '/vacancies/vk-ads', destination: '/tools/vk-ads', permanent: true },
     ]
   },
   async headers() {
