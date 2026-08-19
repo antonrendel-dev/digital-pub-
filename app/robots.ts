@@ -9,15 +9,17 @@ export default function robots(): MetadataRoute.Robots {
 
   return {
     rules: [
+      // ?page= намеренно не закрыт: страницы пагинации отдают noindex, follow,
+      // а Disallow помешал бы роботу его увидеть и пройти по ссылкам вглубь.
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/api/', '/*?page=', '/zp-redirect'],
+        disallow: ['/admin/', '/api/', '/zp-redirect'],
       },
       {
         userAgent: 'YandexBot',
         allow: '/',
-        disallow: ['/admin/', '/api/', '/*?page=', '/zp-redirect'],
+        disallow: ['/admin/', '/api/', '/zp-redirect'],
       },
     ],
     sitemap: [
