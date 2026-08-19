@@ -97,7 +97,9 @@ jobs:
         run: rsync -avz lib/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/lib/
 
       - name: Deploy public/
-        run: rsync -avz --exclude=uploads/ public/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/public/
+        # --delete убирает файлы, удалённые из репо. uploads/ пишет Payload,
+        # images/posts/ — почасовой auto-sync.sh с red server; их не трогаем.
+        run: rsync -avz --delete --exclude=uploads/ --exclude=images/posts/ public/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/public/
 
       - name: Deploy content/
         run: |
