@@ -28,20 +28,20 @@ Vacancies and resumes are scattered across Telegram channels and hard to search 
 
 ## Key Features (статус после MVP закрытия 2026-05-13)
 
-| Feature | Priority | In MVP |
-|---|---|---|
-| Unified feed на главной (vacancies + resumes) | Critical | ✅ Done |
-| Разделы: Вакансии, Резюме, Статьи | Critical | ✅ Done |
-| Tag-based filtering (format/level/specialization) | Critical | ✅ Done |
-| SEO-страницы тегов с уникальными h1/meta/seoText | Critical | ✅ Done |
-| Auto-sync из Telegram через t.me/s/ + Bot API для фото | Critical | ✅ Done |
-| Auto-tagging при sync по keyword map | Critical | ✅ Done |
-| Articles section — 10+ MDX-статей в репо | Important | ✅ Done |
-| Search по title/description/company (client-side) | Important | ✅ Done |
-| Sitemap.xml dynamic + Schema.org + OG-теги | Important | ✅ Done |
-| Responsive (320px+, burger menu < md) + dark theme | Critical | ✅ Done |
-| Platform statistics (real counts) | Nice-to-have | ✅ Done (кроме «Компании» — всегда 0, поле не парсится) |
-| User submission form + moderation + admin panel | Critical | ❌ **Перенесено в итерацию 2** — в MVP через бот `@resume_vac_bot` |
+| Feature                                                | Priority     | In MVP                                                             |
+| ------------------------------------------------------ | ------------ | ------------------------------------------------------------------ |
+| Unified feed на главной (vacancies + resumes)          | Critical     | ✅ Done                                                            |
+| Разделы: Вакансии, Резюме, Статьи                      | Critical     | ✅ Done                                                            |
+| Tag-based filtering (format/level/specialization)      | Critical     | ✅ Done                                                            |
+| SEO-страницы тегов с уникальными h1/meta/seoText       | Critical     | ✅ Done                                                            |
+| Auto-sync из Telegram через t.me/s/ + Bot API для фото | Critical     | ✅ Done                                                            |
+| Auto-tagging при sync по keyword map                   | Critical     | ✅ Done                                                            |
+| Articles section — 10+ MDX-статей в репо               | Important    | ✅ Done                                                            |
+| Search по title/description/company (client-side)      | Important    | ✅ Done                                                            |
+| Sitemap.xml dynamic + Schema.org + OG-теги             | Important    | ✅ Done                                                            |
+| Responsive (320px+, burger menu < md) + dark theme     | Critical     | ✅ Done                                                            |
+| Platform statistics (real counts)                      | Nice-to-have | ✅ Done (кроме «Компании» — всегда 0, поле не парсится)            |
+| User submission form + moderation + admin panel        | Critical     | ❌ **Перенесено в итерацию 2** — в MVP через бот `@resume_vac_bot` |
 
 ---
 
@@ -60,12 +60,14 @@ Vacancies and resumes are scattered across Telegram channels and hard to search 
 ## Scope Boundaries
 
 **In scope (MVP):**
+
 - Aggregating content from public Telegram channels (independent from `@vacancy_bot_ren`)
 - Articles в виде MDX-файлов в репо (через PR, не UI)
 - Анонимный browsing — без авторизации
 - Заявки на размещение — через бот `@resume_vac_bot`
 
 **Out of scope (MVP) — итерации 2+:**
+
 - Admin panel (modeation queue, content management)
 - User submission form в самом сайте (web)
 - User accounts / personal profiles
@@ -73,6 +75,5 @@ Vacancies and resumes are scattered across Telegram channels and hard to search 
 - Payment / premium listings
 - Mobile app
 - Multi-admin / team roles
-- Снятие `X-Robots-Tag: noindex` (сайт закрыт от индексации до явной команды)
 
 **Полностью out of scope:** интеграция данных или функциональности с Telegram-ботом `@vacancy_bot_ren` (отдельный проект, только источник постов через публичный t.me/s/).
