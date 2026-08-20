@@ -35,7 +35,7 @@
       "priority": "high",
       "approved": true,
       "notes": "Из аудита п.18. Сателлит для /vacancies/content — обязательная перелинковка. Коммерческий интент. Ключи: вакансии контент менеджер, контент менеджер удаленно.",
-      "published": false
+      "published": true
     },
     {
       "id": 302,
@@ -48,7 +48,7 @@
       "priority": "high",
       "approved": true,
       "notes": "Из аудита п.17. Резюме-кластер конвертит. Перелинковка: /vacancies/analitika, /resumes. Ключи: резюме аналитика данных, образец резюме аналитика.",
-      "published": false
+      "published": true
     },
     {
       "id": 303,
@@ -61,7 +61,7 @@
       "priority": "high",
       "approved": true,
       "notes": "Из аудита п.21. Вордстат: «продакт менеджер кто это» 697+150. Заголовок на русском — англ. «что такое product manager» всего 30/мес. Перелинковка: /vacancies/menedzher. Не дублировать prodakt-i-prodzhekt-menedzher-vakansii-2026 (там интент вакансий).",
-      "published": false
+      "published": true
     },
     {
       "id": 116,
@@ -72,7 +72,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "Зарплатный кластер. /vacancies/razrabotka набирает показы в GSC. Ключи: зарплата frontend разработчика, сколько зарабатывает frontend, зарплата верстальщика. Антиканнибализация с zarplata-analitika-dannykh."
+      "notes": "Зарплатный кластер. /vacancies/razrabotka набирает показы в GSC. Ключи: зарплата frontend разработчика, сколько зарабатывает frontend, зарплата верстальщика. Антиканнибализация с zarplata-analitika-dannykh.",
+      "published": true
     },
     {
       "id": 201,
@@ -86,7 +87,7 @@
       "trafficEst": "~455-911/мес",
       "notes": "Кластер до 8107; усиливает резюме-хаб",
       "approved": true,
-      "published": false
+      "published": true
     },
     {
       "id": 202,
@@ -100,7 +101,8 @@
       "trafficEst": "~769-1538/мес",
       "notes": "Новая профессия, в топе только курсы",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 7779
     },
     {
       "id": 203,
@@ -114,7 +116,8 @@
       "trafficEst": "~615-1230/мес",
       "notes": "Comparison-угол vs наш аналитик данных",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 6130
     },
     {
       "id": 204,
@@ -128,7 +131,8 @@
       "trafficEst": "~545-1091/мес",
       "notes": "Первая well-being тема на сайте",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 5388
     },
     {
       "id": 205,
@@ -142,7 +146,8 @@
       "trafficEst": "~516-1032/мес",
       "notes": "Транзакционный запрос — прямой матч с продуктом",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 4923
     },
     {
       "id": 206,
@@ -156,7 +161,8 @@
       "trafficEst": "~492-984/мес",
       "notes": "Свежая сущность без устоявшегося топа",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 5192
     },
     {
       "id": 207,
@@ -170,7 +176,8 @@
       "trafficEst": "~396-793/мес",
       "notes": "Обратный интент к статье про вопросы маркетологу",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 4154
     },
     {
       "id": 208,
@@ -184,7 +191,8 @@
       "trafficEst": "~309-619/мес",
       "notes": "Продолжение резюме-кластера",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 3068
     },
     {
       "id": 209,
@@ -198,7 +206,8 @@
       "trafficEst": "~295-591/мес",
       "notes": "Конкуренты — форумы без зарплатных данных",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 2948
     },
     {
       "id": 210,
@@ -212,7 +221,8 @@
       "trafficEst": "~190-380/мес",
       "notes": "Непокрытая профессия",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 1886
     },
     {
       "id": 211,
@@ -226,7 +236,8 @@
       "trafficEst": "~159-319/мес",
       "notes": "Кластер обучение 5935; в топе курсы",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 1577
     },
     {
       "id": 304,
@@ -239,7 +250,8 @@
       "priority": "high",
       "approved": true,
       "notes": "Из аудита п.14. ВЕЧНОЗЕЛЁНАЯ — без года в заголовке. НЕ публиковать до 30.08: ключ «зарплата маркетолога 2026» на поз. 14, bandit-заморозка до замера 29.08. Развести интент с zarplata-marketologa-2026 если есть. Перелинковка: /vacancies/marketing.",
-      "published": false
+      "published": false,
+      "wordstatVolume": 2045
     },
     {
       "id": 212,
@@ -253,7 +265,8 @@
       "trafficEst": "~160-320/мес",
       "notes": "Роль не покрыта job-платформами",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 1562
     },
     {
       "id": 213,
@@ -267,7 +280,8 @@
       "trafficEst": "~145-291/мес",
       "notes": "Антифейк-угол про мифы о зарплатах = AIO-resistance",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 1504
     },
     {
       "id": 214,
@@ -281,7 +295,8 @@
       "trafficEst": "~130-261/мес",
       "notes": "Топ занят словарями терминов",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 1331
     },
     {
       "id": 215,
@@ -295,7 +310,8 @@
       "trafficEst": "~119-239/мес",
       "notes": "Клон работающей «Нейросети для маркетолога»",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 1178
     },
     {
       "id": 216,
@@ -309,7 +325,8 @@
       "trafficEst": "~103-206/мес",
       "notes": "В топе переводы, русской статьи с вилками нет",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 1070
     },
     {
       "id": 217,
@@ -323,7 +340,8 @@
       "trafficEst": "~93-187/мес",
       "notes": "Линкуется на таргет-кластер",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 675
     },
     {
       "id": 218,
@@ -337,7 +355,8 @@
       "trafficEst": "~77-155/мес",
       "notes": "Кластер 777+460+422 одной статьёй",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 796
     },
     {
       "id": 219,
@@ -351,7 +370,8 @@
       "trafficEst": "~75-150/мес",
       "notes": "Растущий интент",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 764
     },
     {
       "id": 220,
@@ -365,7 +385,8 @@
       "trafficEst": "~74-148/мес",
       "notes": "GSC уже цепляет хвост поз. 44",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 816
     },
     {
       "id": 221,
@@ -379,7 +400,8 @@
       "trafficEst": "~65-130/мес",
       "notes": "Пара к рилсмейкеру — мини-хаб контент-профессий",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 672
     },
     {
       "id": 222,
@@ -393,7 +415,8 @@
       "trafficEst": "~62-124/мес",
       "notes": "Клон работающего формата на аналитик-кластер",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 647
     },
     {
       "id": 223,
@@ -407,7 +430,8 @@
       "trafficEst": "~59-118/мес",
       "notes": "Закрывает дыру в таргет-линейке",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 551
     },
     {
       "id": 224,
@@ -421,7 +445,8 @@
       "trafficEst": "~51-103/мес",
       "notes": "Не каннибализировать «Вакансии директолога» — интент профессия",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 575
     },
     {
       "id": 225,
@@ -435,7 +460,8 @@
       "trafficEst": "~43-87/мес",
       "notes": "Продолжение серии собеседований",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 455
     },
     {
       "id": 305,
@@ -448,7 +474,8 @@
       "priority": "high",
       "approved": true,
       "notes": "Из аудита п.14. ВЕЧНОЗЕЛЁНАЯ — без года. НЕ публиковать до 14.09: эксперимент переписки (treatment zarplata-ux-ui-dizajnera до 13.09) + каннибализация с zarplata-dizajnera-2026-uiux-grafika-moshion. Развод интентов по ТЗ из Todoist (P2 задача). Перелинковка: /vacancies/dizajn.",
-      "published": false
+      "published": false,
+      "wordstatVolume": 7351
     },
     {
       "id": 226,
@@ -462,7 +489,8 @@
       "trafficEst": "~20-40/мес",
       "notes": "Отдельной страницы нет",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 230
     },
     {
       "id": 227,
@@ -476,7 +504,8 @@
       "trafficEst": "~16-33/мес",
       "notes": "Последний гэп маркетинг-линейки",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 183
     },
     {
       "id": 228,
@@ -490,7 +519,8 @@
       "trafficEst": "~15-31/мес",
       "notes": "Ни одной глубокой статьи в рунете",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 170
     },
     {
       "id": 229,
@@ -504,7 +534,8 @@
       "trafficEst": "~26-52/мес",
       "notes": "КАНДИДАТ №1: ~450 показов/28дн GSC поз. 22-30 при 0 кликов",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 235
     },
     {
       "id": 230,
@@ -518,7 +549,8 @@
       "trafficEst": "н/д",
       "notes": "Топвизор поз. 11-17; частотность добрать",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 440
     },
     {
       "id": 231,
@@ -532,7 +564,8 @@
       "trafficEst": "н/д",
       "notes": "Хаб для перелинковки зарплатных статей; частотность добрать",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 85
     },
     {
       "id": 232,
@@ -546,7 +579,8 @@
       "trafficEst": "н/д",
       "notes": "Показы в Вебмастере без кликов; частотность добрать",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 84
     },
     {
       "id": 233,
@@ -560,7 +594,8 @@
       "trafficEst": "н/д",
       "notes": "Показы без кликов; частотность добрать",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 2
     },
     {
       "id": 234,
@@ -574,7 +609,8 @@
       "trafficEst": "н/д",
       "notes": "Боль перегретого рынка джунов",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 1
     },
     {
       "id": 235,
@@ -588,7 +624,8 @@
       "trafficEst": "н/д",
       "notes": "Закулисье найма",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 50
     },
     {
       "id": 236,
@@ -602,7 +639,8 @@
       "trafficEst": "н/д",
       "notes": "Взгляд изнутри найма",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 9
     },
     {
       "id": 237,
@@ -616,7 +654,8 @@
       "trafficEst": "н/д",
       "notes": "Виральный чеклист",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 12
     },
     {
       "id": 238,
@@ -630,7 +669,8 @@
       "trafficEst": "н/д",
       "notes": "Имиджевая для d-pub как агрегатора из Telegram",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 3
     },
     {
       "id": 239,
@@ -644,7 +684,8 @@
       "trafficEst": "н/д",
       "notes": "Самый страшный вопрос собеседования",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 4
     },
     {
       "id": 241,
@@ -658,7 +699,8 @@
       "trafficEst": "н/д",
       "notes": "Драматичная развилка с цифрами",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 2
     },
     {
       "id": 242,
@@ -672,7 +714,8 @@
       "trafficEst": "н/д",
       "notes": "Табуированная тема",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 0
     },
     {
       "id": 243,
@@ -686,7 +729,8 @@
       "trafficEst": "н/д",
       "notes": "Готовые формулировки против стыдной боли",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 2
     },
     {
       "id": 244,
@@ -700,7 +744,8 @@
       "trafficEst": "н/д",
       "notes": "Кризисный интент — лояльность площадке",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 378
     },
     {
       "id": 245,
@@ -714,7 +759,8 @@
       "trafficEst": "н/д",
       "notes": "Реальность найма 2026, почти без конкуренции",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 0
     },
     {
       "id": 246,
@@ -728,7 +774,8 @@
       "trafficEst": "н/д",
       "notes": "Провальные кейсы вместо шаблонного гайда",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 0
     },
     {
       "id": 247,
@@ -742,7 +789,8 @@
       "trafficEst": "н/д",
       "notes": "Провокация против частой ошибки малого бизнеса",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 0
     },
     {
       "id": 248,
@@ -756,7 +804,8 @@
       "trafficEst": "н/д",
       "notes": "Зеркальный ответ красным флагам вакансий",
       "approved": true,
-      "published": false
+      "published": false,
+      "wordstatVolume": 0
     }
   ]
 }
