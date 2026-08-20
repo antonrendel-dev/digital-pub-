@@ -83,7 +83,7 @@ fs.writeFileSync(
     },
     null,
     2
-  )
+  ) + '\n'
 )
 
 console.log(
