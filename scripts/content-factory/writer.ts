@@ -818,16 +818,20 @@ ${task}
 
 // ─── Приёмка по ТЗ ───────────────────────────────────────────────────────────
 
-// Один круг правок: если писатель не закрыл нарушения со второй попытки, дело не в
-// формулировке промпта, и гонять модель дальше — жечь время до утренней публикации.
-const REPAIR_ROUNDS = 1
+// Круг правок — это вызов модели на 2-3 минуты. Потолок не про качество, а про то,
+// чтобы статья успела выйти утром: без него зациклившийся писатель съест всё окно.
+const REPAIR_ROUNDS = 6
 
 // Сообщение уходит в Телеграм вместо статьи — по нему должно быть понятно, что
 // именно править, без похода в логи.
 export class SpecRejected extends Error {
-  constructor(public readonly violations: SpecViolation[]) {
+  constructor(
+    public readonly violations: SpecViolation[],
+    public readonly rounds: number
+  ) {
     super(
-      `Статья не принята по ТЗ:\n${violations.map((v) => `• ${v.rule}: ${v.detail}`).join('\n')}`
+      `Статья не принята по ТЗ (переписывали ${rounds} раз):\n` +
+        violations.map((v) => `• ${v.rule}: ${v.detail}`).join('\n')
     )
     this.name = 'SpecRejected'
   }
@@ -840,7 +844,7 @@ async function acceptAgainstSpec(tz: TechSpec, markdown: string): Promise<string
   for (let round = 0; round <= REPAIR_ROUNDS; round++) {
     const violations = checkTechSpec(tz, current)
     if (violations.length === 0) {
-      console.log('[writer] Приёмка: принято ✓')
+      console.log(`[writer] Приёмка: принято ✓ (кругов правок: ${round})`)
       return current
     }
 
@@ -848,7 +852,7 @@ async function acceptAgainstSpec(tz: TechSpec, markdown: string): Promise<string
       `[writer] Приёмка: нарушений ${violations.length} — ` +
         violations.map((v) => `${v.rule} (${v.detail})`).join('; ')
     )
-    if (round === REPAIR_ROUNDS) throw new SpecRejected(violations)
+    if (round === REPAIR_ROUNDS) throw new SpecRejected(violations, round)
 
     console.log(`[writer] Приёмка: круг правок ${round + 1}/${REPAIR_ROUNDS}...`)
     current = await askClaude(

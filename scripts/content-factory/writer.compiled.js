@@ -1032,17 +1032,19 @@ ${task}
   )
   return tz
 }
-var REPAIR_ROUNDS = 1
+var REPAIR_ROUNDS = 6
 var SpecRejected = class extends Error {
-  constructor(violations) {
+  constructor(violations, rounds) {
     super(
-      `\u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442\u0430 \u043F\u043E \u0422\u0417:
-${violations.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join('\n')}`
+      `\u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442\u0430 \u043F\u043E \u0422\u0417 (\u043F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u043B\u0438 ${rounds} \u0440\u0430\u0437):
+` + violations.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join('\n')
     )
     this.violations = violations
+    this.rounds = rounds
     this.name = 'SpecRejected'
   }
   violations
+  rounds
 }
 async function acceptAgainstSpec(tz, markdown) {
   console.log(
@@ -1053,7 +1055,7 @@ async function acceptAgainstSpec(tz, markdown) {
     const violations = checkTechSpec(tz, current)
     if (violations.length === 0) {
       console.log(
-        '[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u2713'
+        `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round})`
       )
       return current
     }
@@ -1061,7 +1063,7 @@ async function acceptAgainstSpec(tz, markdown) {
       `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${violations.length} \u2014 ` +
         violations.map((v) => `${v.rule} (${v.detail})`).join('; ')
     )
-    if (round === REPAIR_ROUNDS) throw new SpecRejected(violations)
+    if (round === REPAIR_ROUNDS) throw new SpecRejected(violations, round)
     console.log(
       `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round + 1}/${REPAIR_ROUNDS}...`
     )
