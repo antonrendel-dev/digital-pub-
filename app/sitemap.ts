@@ -61,8 +61,15 @@ const TOOL_REDIRECT_SLUGS = new Set([
   'photoshop',
 ])
 
-export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap({
+  id,
+}: {
+  id: number | string
+}): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
+  // Next отдаёт id из URL строкой, хотя типизирует его как number. Строгое
+  // сравнение с числом всегда ложно — шарды 1 и 2 отдавали содержимое шарда 0.
+  const shard = Number(id)
 
   // Single Payload instance shared by all DB queries
   let payloadInstance: Awaited<ReturnType<typeof getPayload>> | null = null
@@ -73,13 +80,13 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
   }
 
   // id=1 → individual vacancy pages
-  if (id === 1) {
+  if (shard === 1) {
     if (!payloadInstance) return []
     return getVacancySitemapEntries(payloadInstance, now)
   }
 
   // id=2 → individual resume pages
-  if (id === 2) {
+  if (shard === 2) {
     if (!payloadInstance) return []
     return getResumeSitemapEntries(payloadInstance, now)
   }
