@@ -42,9 +42,12 @@ export async function fetchWordstatKeywords(
   }
 }
 
-// Суммарная частотность фразы (broad match) — для приоритизации тем по спросу
-export async function fetchWordstatVolume(keyword: string): Promise<number> {
-  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) return 0
+// Суммарная частотность фразы (broad match) — для приоритизации тем по спросу.
+// null — Вордстат не ответил, частотность неизвестна. 0 — ответил, спроса нет.
+// Раньше оба случая давали 0, и исчерпанная квота (100 запросов/час) выглядела
+// как мёртвый ключ: живые темы уезжали в отсев.
+export async function fetchWordstatVolume(keyword: string): Promise<number | null> {
+  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) return null
   try {
     const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
       method: 'POST',
@@ -55,13 +58,18 @@ export async function fetchWordstatVolume(keyword: string): Promise<number> {
       },
       body: JSON.stringify({ phrase: keyword, num_phrases: 1 }),
     })
+    if (res.status === 429) {
+      console.warn(`[yandex] Wordstat: квота исчерпана на "${keyword}"`)
+      return null
+    }
     if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = (await res.json()) as { totalCount?: string; results?: { count: string }[] }
-    if (data.totalCount) return Number(data.totalCount)
-    return data.results?.[0] ? Number(data.results[0].count) : 0
+    const data = (await res.json()) as { totalCount?: string }
+    // results[0].count — частотность вложенной фразы, а не запрошенной,
+    // подставлять её вместо totalCount нельзя.
+    return data.totalCount === undefined ? 0 : Number(data.totalCount)
   } catch (e) {
     console.warn(`[yandex] Wordstat volume для "${keyword}" недоступен:`, (e as Error).message)
-    return 0
+    return null
   }
 }
 

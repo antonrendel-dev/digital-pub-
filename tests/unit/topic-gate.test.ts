@@ -1,70 +1,101 @@
 import {
+  MAX_WORDSTAT_VOLUME,
   MIN_WORDSTAT_VOLUME,
   renumberByVolume,
   splitByVolume,
   wordstatIsAlive,
 } from '../../scripts/content-factory/lib/topic-gate'
 
-const topic = (id: number, keyword: string, wordstatVolume: number) => ({
+const topic = (id: number, keyword: string, wordstatVolume: number | null) => ({
   id,
   keyword,
   wordstatVolume,
 })
 
 describe('splitByVolume', () => {
-  it('делит темы по порогу: массовые в план, узкие на переформулировку', () => {
-    const { passed, below } = splitByVolume([
+  it('делит темы по коридору: среднечастотные в план, остальные на переформулировку', () => {
+    const { passed, offTarget } = splitByVolume([
       topic(1, 'зарплата маркетолога', 2064),
       topic(2, 'контроффер стоит ли принимать', 2),
-      topic(3, 'вакансии smm', 1881),
+      topic(3, 'вакансии smm джуниор', 881),
       topic(4, 'резюме таргетолога', 9),
     ])
 
-    expect(passed.map((t) => t.keyword)).toEqual(['зарплата маркетолога', 'вакансии smm'])
-    expect(below.map((t) => t.keyword)).toEqual([
+    expect(passed.map((t) => t.keyword)).toEqual(['вакансии smm джуниор'])
+    expect(offTarget.map((t) => t.keyword)).toEqual([
+      'зарплата маркетолога',
       'резюме таргетолога',
       'контроффер стоит ли принимать',
     ])
   })
 
-  it('тема ровно на пороге проходит', () => {
-    const { passed, below } = splitByVolume([
-      topic(1, 'на пороге', MIN_WORDSTAT_VOLUME),
-      topic(2, 'под порогом', MIN_WORDSTAT_VOLUME - 1),
+  it('обе границы коридора включительно', () => {
+    const { passed, offTarget } = splitByVolume([
+      topic(1, 'нижняя граница', MIN_WORDSTAT_VOLUME),
+      topic(2, 'верхняя граница', MAX_WORDSTAT_VOLUME),
+      topic(3, 'под коридором', MIN_WORDSTAT_VOLUME - 1),
+      topic(4, 'над коридором', MAX_WORDSTAT_VOLUME + 1),
     ])
 
-    expect(passed.map((t) => t.keyword)).toEqual(['на пороге'])
-    expect(below.map((t) => t.keyword)).toEqual(['под порогом'])
+    expect(passed.map((t) => t.keyword).sort()).toEqual(['верхняя граница', 'нижняя граница'])
+    expect(offTarget.map((t) => t.keyword).sort()).toEqual(['над коридором', 'под коридором'])
+  })
+
+  it('ВЧ-ключ уходит на переформулировку, а не в план', () => {
+    const { passed, offTarget } = splitByVolume([topic(1, 'вакансии маркетолог', 100_000)])
+
+    expect(passed).toHaveLength(0)
+    expect(offTarget.map((t) => t.keyword)).toEqual(['вакансии маркетолог'])
   })
 
   it('при мёртвом Wordstat (все нули) не отправляет никого на переформулировку', () => {
-    const { passed, below } = splitByVolume([topic(1, 'ключ а', 0), topic(2, 'ключ б', 0)])
+    const { passed, offTarget } = splitByVolume([topic(1, 'ключ а', 0), topic(2, 'ключ б', 0)])
 
     expect(passed).toHaveLength(2)
-    expect(below).toHaveLength(0)
+    expect(offTarget).toHaveLength(0)
   })
 
-  it('тема без замера частотности уходит на переформулировку, если у батча данные есть', () => {
-    const { passed, below } = splitByVolume([
-      { id: 1, keyword: 'с данными', wordstatVolume: 1000 },
-      { id: 2, keyword: 'без замера' },
+  it('неизмеренные темы отделены от отбракованных — их нельзя править вслепую', () => {
+    const { passed, offTarget, unmeasured } = splitByVolume([
+      topic(1, 'в коридоре', 500),
+      topic(2, 'квота исчерпана', null),
+      { id: 3, keyword: 'поле отсутствует' },
     ])
 
-    expect(passed.map((t) => t.keyword)).toEqual(['с данными'])
-    expect(below.map((t) => t.keyword)).toEqual(['без замера'])
+    expect(passed.map((t) => t.keyword)).toEqual(['в коридоре'])
+    expect(offTarget).toHaveLength(0)
+    expect(unmeasured.map((t) => t.keyword)).toEqual(['квота исчерпана', 'поле отсутствует'])
   })
 
   it('ни одна тема не теряется при делении', () => {
-    const input = [topic(1, 'а', 900), topic(2, 'б', 5), topic(3, 'в', 300), topic(4, 'г', 0)]
-    const { passed, below } = splitByVolume(input)
+    const input = [
+      topic(1, 'а', 900),
+      topic(2, 'б', 5),
+      topic(3, 'в', 300),
+      topic(4, 'г', 0),
+      topic(5, 'д', 50_000),
+      topic(6, 'е', null),
+    ]
+    const { passed, offTarget, unmeasured } = splitByVolume(input)
 
-    expect([...passed, ...below].map((t) => t.keyword).sort()).toEqual(['а', 'б', 'в', 'г'])
+    expect([...passed, ...offTarget, ...unmeasured].map((t) => t.keyword).sort()).toEqual([
+      'а',
+      'б',
+      'в',
+      'г',
+      'д',
+      'е',
+    ])
   })
 })
 
 describe('wordstatIsAlive', () => {
   it('false, когда все частотности нулевые', () => {
     expect(wordstatIsAlive([topic(1, 'а', 0), topic(2, 'б', 0)])).toBe(false)
+  })
+
+  it('false, когда Вордстат не ответил ни по одной теме', () => {
+    expect(wordstatIsAlive([topic(1, 'а', null), topic(2, 'б', null)])).toBe(false)
   })
 
   it('true, если хотя бы одна тема с ненулевым спросом', () => {

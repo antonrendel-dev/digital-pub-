@@ -33,7 +33,7 @@ async function fetchWordstatKeywords(keyword, numPhrases = 20) {
   }
 }
 async function fetchWordstatVolume(keyword) {
-  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) return 0
+  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) return null
   try {
     const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
       method: 'POST',
@@ -44,16 +44,21 @@ async function fetchWordstatVolume(keyword) {
       },
       body: JSON.stringify({ phrase: keyword, num_phrases: 1 }),
     })
+    if (res.status === 429) {
+      console.warn(
+        `[yandex] Wordstat: \u043A\u0432\u043E\u0442\u0430 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u0430 \u043D\u0430 "${keyword}"`
+      )
+      return null
+    }
     if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
     const data = await res.json()
-    if (data.totalCount) return Number(data.totalCount)
-    return data.results?.[0] ? Number(data.results[0].count) : 0
+    return data.totalCount === void 0 ? 0 : Number(data.totalCount)
   } catch (e) {
     console.warn(
       `[yandex] Wordstat volume \u0434\u043B\u044F "${keyword}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:`,
       e.message
     )
-    return 0
+    return null
   }
 }
 async function fetchWebmasterQueries(limit = 100) {

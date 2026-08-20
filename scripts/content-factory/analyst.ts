@@ -10,6 +10,7 @@ import fs from 'fs'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
 import {
+  MAX_WORDSTAT_VOLUME,
   MIN_WORDSTAT_VOLUME,
   renumberByVolume,
   splitByVolume,
@@ -29,8 +30,8 @@ interface Topic {
   audience: 'Соискатель' | 'HR' | 'Оба'
   type: 'Гайд' | 'Конспект' | 'Сравнение' | 'Кейс' | 'Чеклист'
   trafficEst: string
-  wordstatVolume?: number
-  belowThreshold?: boolean
+  wordstatVolume?: number | null
+  offTarget?: boolean
 }
 
 function getPublishedArticleTitles(): string[] {
@@ -81,9 +82,9 @@ function askClaude(prompt: string): Promise<string> {
 // между «дожать» и «не гонять Claude бесконечно по мёртвым темам».
 const REFORMULATION_ROUNDS = 2
 
-async function reformulateTopics(below: Topic[]): Promise<{ fixed: Topic[]; weak: Topic[] }> {
+async function reformulateTopics(offTarget: Topic[]): Promise<{ fixed: Topic[]; weak: Topic[] }> {
   const fixed: Topic[] = []
-  let pending = below
+  let pending = offTarget
 
   for (let round = 1; round <= REFORMULATION_ROUNDS && pending.length; round++) {
     console.log(`[analyst] Переформулировка, круг ${round}: ${pending.length} тем`)
@@ -91,13 +92,18 @@ async function reformulateTopics(below: Topic[]): Promise<{ fixed: Topic[]; weak
     const raw =
       await askClaude(`Ты SEO-аналитик русскоязычного job board d-pub.ru (вакансии и резюме digital-специалистов).
 
-Ниже темы, ключи которых собирают меньше ${MIN_WORDSTAT_VOLUME} запросов/мес по Яндекс.Вордстату — писать под них статью бессмысленно. Переформулируй КАЖДУЮ так, чтобы ключ стал массовым (${MIN_WORDSTAT_VOLUME}+ запросов/мес), сохранив исходную пользу для читателя.
+Ниже темы, ключи которых НЕ попадают в рабочий коридор ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME} запросов/мес по Яндекс.Вордстату. Переформулируй КАЖДУЮ так, чтобы ключ попал в коридор, сохранив исходную пользу для читателя.
+
+Коридор с двух сторон:
+- Ниже ${MIN_WORDSTAT_VOLUME}/мес — спроса нет, статья пишется в никуда. Нужна формулировка ШИРЕ.
+- Выше ${MAX_WORDSTAT_VOLUME}/мес — это ВЧ-запрос, там hh.ru и superjob, мы не ранжируемся. Нужна формулировка УЖЕ.
 
 Как переформулировать:
-- Бери широкую формулировку вместо узкой: «контроффер стоит ли принимать» (2/мес) → «переговоры о зарплате» ; «пробел в резюме как объяснить» (2/мес) → «как составить резюме»
+- Слишком узкий ключ расширяем: «контроффер стоит ли принимать» (2/мес) → «переговоры о зарплате» ; «пробел в резюме как объяснить» (2/мес) → «как составить резюме»
+- Слишком широкий ключ сужаем уточнением — профессией, уровнем, форматом работы, инструментом: «вакансии маркетолог» (12000/мес) → «вакансии маркетолог маркетплейсов» ; «резюме дизайнера» (5000/мес) → «резюме джуниор дизайнера без опыта»
 - Работают шаблоны: «зарплата <профессия>», «вакансии <профессия>», «профессия <X>», «как стать <X>», «<X> обучение», «резюме <X>», «портфолио <X>», «собеседование <X>»
-- Заголовок статьи перепиши под новый ключ, тема статьи может стать шире исходной
-- Ключ — 2-3 слова, без «как», «стоит ли», «что делать если»
+- Заголовок статьи перепиши под новый ключ, тема статьи может стать шире или уже исходной
+- Ключ — 2-4 слова, без «как», «стоит ли», «что делать если»
 - Не предлагай ключ, который уже есть в списке ниже
 
 ТЕМЫ НА ПЕРЕФОРМУЛИРОВКУ:
@@ -124,7 +130,9 @@ ${pending.map((t) => `id ${t.id}: "${t.title}" [ключ: ${t.keyword} — ${t.w
 
     const split = splitByVolume(pending)
     fixed.push(...split.passed)
-    pending = split.below
+    // Неизмеренные (Вордстат не ответил) остаются в очереди следующего круга —
+    // переформулировать их вслепую нельзя, но и терять их не нужно.
+    pending = [...split.offTarget, ...split.unmeasured]
     console.log(
       `[analyst] Круг ${round}: дожато ${split.passed.length}, осталось ${pending.length}`
     )
@@ -181,7 +189,7 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
 Требования к темам:
 - Вечнозелёные (не привязаны к конкретной дате)
 - Практические, решают конкретную проблему
-- Ключ должен собирать минимум ${MIN_WORDSTAT_VOLUME} запросов/мес по Вордстату — темы ниже порога уйдут на переформулировку. Не предлагай узкие формулировки вроде «контроффер стоит ли принимать» или «пробел в резюме как объяснить» (1-2 запроса/мес), бери массовые: «зарплата <профессия>», «вакансии <профессия>», «<профессия> обучение»
+- Ключ должен собирать ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME} запросов/мес по Вордстату — темы вне этого коридора уйдут на переформулировку. Слишком узкие («контроффер стоит ли принимать», «пробел в резюме как объяснить» — 1-2 запроса/мес) не предлагай. Голые ВЧ-запросы («вакансии маркетолог», «резюме дизайнера» — тысячи в месяц) тоже не предлагай: там hh.ru и superjob, мы не ранжируемся. Бери среднечастотные — с уточнением по профессии, уровню, формату работы или инструменту
 - Минимум 36 из 40 тем — для соискателей, с ключами по шаблонам: «зарплата <профессия>», «профессия <X>», «вакансии <X>», «как стать <X>», «<X> с нуля», «резюме <X>», «портфолио <X>», «собеседование <X>», «тестовое задание <X>»
 - Максимум 2-3 темы для HR — и только если ключ реально ищут (не «как нанять X»)
 - Включи 3-4 темы в формате "конспект зарубежного материала" (пересказ зарубежных best practices)
@@ -217,17 +225,22 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
     return { topics, weak: [] }
   }
 
-  const { passed, below } = splitByVolume(topics)
+  const { passed, offTarget, unmeasured } = splitByVolume(topics)
   console.log(
-    `[analyst] Гейт ≥${MIN_WORDSTAT_VOLUME}/мес: прошло ${passed.length}, на переформулировку ${below.length}`
+    `[analyst] Гейт ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME}/мес: прошло ${passed.length}, ` +
+      `на переформулировку ${offTarget.length}, без замера ${unmeasured.length}`
   )
 
-  const { fixed, weak } = await reformulateTopics(below)
+  const { fixed, weak } = await reformulateTopics(offTarget)
   // Недожатые остаются в плане — решение одобрять их или нет за Тони,
   // но помечены, чтобы не путать с темами, прошедшими гейт.
-  weak.forEach((t) => (t.belowThreshold = true))
+  weak.forEach((t) => (t.offTarget = true))
+  unmeasured.forEach((t) => (t.offTarget = true))
 
-  return { topics: renumberByVolume([...passed, ...fixed, ...weak]), weak }
+  return {
+    topics: renumberByVolume([...passed, ...fixed, ...weak, ...unmeasured]),
+    weak: [...weak, ...unmeasured],
+  }
 }
 
 function formatTopicsMessage(topics: Topic[], weak: Topic[], date: string): string {
@@ -247,18 +260,21 @@ function formatTopicsMessage(topics: Topic[], weak: Topic[], date: string): stri
         ? ` · 📈 ${t.wordstatVolume.toLocaleString('ru-RU')}/мес`
         : ''
     return (
-      `${t.id}. ${t.belowThreshold ? '⚠️ ' : ''}${typeEmoji[t.type] ?? ''} <b>${t.title}</b>\n` +
+      `${t.id}. ${t.offTarget ? '⚠️ ' : ''}${typeEmoji[t.type] ?? ''} <b>${t.title}</b>\n` +
       `   🔑 <i>${t.keyword}</i> · ${audienceEmoji[t.audience] ?? ''} ${t.audience} · ${trafficEmoji[t.trafficEst] ?? ''} ${t.trafficEst}${vol}`
     )
   })
 
   const gateBlock = weak.length
     ? `\n\n━━━━━━━━━━━━━━━━\n` +
-      `⚠️ <b>Не дожаты до ${MIN_WORDSTAT_VOLUME}/мес после двух переформулировок: ${weak.length}</b>\n` +
-      `Одобрять на свой риск — спроса под них почти нет:\n` +
+      `⚠️ <b>Не попали в коридор ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME}/мес после двух переформулировок: ${weak.length}</b>\n` +
+      `Одобрять на свой риск:\n` +
       weak
         .slice(0, 10)
-        .map((t) => `   ${t.wordstatVolume}/мес — <i>${t.keyword}</i>`)
+        .map(
+          (t) =>
+            `   ${t.wordstatVolume == null ? 'без замера' : `${t.wordstatVolume}/мес`} — <i>${t.keyword}</i>`
+        )
         .join('\n')
     : ''
 
