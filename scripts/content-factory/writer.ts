@@ -16,6 +16,7 @@ import {
 } from './lib/lsi.js'
 import { sendMessage } from './lib/telegram.js'
 import {
+  OVERSPAM_RULE,
   SEMANTICS_RELATIVE_PATH,
   type SpecViolation,
   type TechSpec,
@@ -195,6 +196,7 @@ interface ArticleResult {
   imagePrompt: string
   wordstatKeywords: string[]
   articleEssence: string
+  specWarning?: string
 }
 
 // ─── H2-шаблоны по типу контента (programmatic-seo) ─────────────────────────
@@ -837,22 +839,41 @@ export class SpecRejected extends Error {
   }
 }
 
-async function acceptAgainstSpec(tz: TechSpec, markdown: string): Promise<string> {
+interface Accepted {
+  markdown: string
+  rounds: number
+  unresolved: SpecViolation[]
+}
+
+async function acceptAgainstSpec(tz: TechSpec, markdown: string): Promise<Accepted> {
   console.log('[writer] Шаг 4б: Приёмка по ТЗ...')
   let current = markdown
+  // Правка одного пункта иногда ломает другой, и последний круг оказывается хуже
+  // третьего. Публиковать надо лучшее из увиденного, а не то, чем цикл закончился.
+  let best = { markdown, violations: checkTechSpec(tz, markdown), round: 0 }
 
   for (let round = 0; round <= REPAIR_ROUNDS; round++) {
-    const violations = checkTechSpec(tz, current)
+    const violations = round === 0 ? best.violations : checkTechSpec(tz, current)
+    if (violations.length < best.violations.length) best = { markdown: current, violations, round }
     if (violations.length === 0) {
       console.log(`[writer] Приёмка: принято ✓ (кругов правок: ${round})`)
-      return current
+      return { markdown: current, rounds: round, unresolved: [] }
     }
 
     console.log(
       `[writer] Приёмка: нарушений ${violations.length} — ` +
         violations.map((v) => `${v.rule} (${v.detail})`).join('; ')
     )
-    if (round === REPAIR_ROUNDS) throw new SpecRejected(violations, round)
+    if (round === REPAIR_ROUNDS) {
+      if (best.violations.some((v) => v.rule === OVERSPAM_RULE)) {
+        throw new SpecRejected(best.violations, round)
+      }
+      console.log(
+        `[writer] Приёмка: публикую лучшую версию с круга ${best.round} — ` +
+          `невыполненных пунктов ${best.violations.length}`
+      )
+      return { markdown: best.markdown, rounds: round, unresolved: best.violations }
+    }
 
     console.log(`[writer] Приёмка: круг правок ${round + 1}/${REPAIR_ROUNDS}...`)
     current = await askClaude(
@@ -872,7 +893,7 @@ ${current}
     )
   }
 
-  return current
+  return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) }
 }
 
 // ─── Article generation pipeline ─────────────────────────────────────────────
@@ -1425,10 +1446,14 @@ ${markdown}
   const reviewedFinal = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
 
   // ШАГ 4б: приёмка по ТЗ
-  const finalMarkdown = await acceptAgainstSpec(tz, reviewedFinal)
+  const accepted = await acceptAgainstSpec(tz, reviewedFinal)
 
   return {
-    markdown: finalMarkdown,
+    markdown: accepted.markdown,
+    specWarning: accepted.unresolved.length
+      ? `Переписывали ${accepted.rounds} раз, невыполненными остались:\n` +
+        accepted.unresolved.map((v) => `• ${v.rule}: ${v.detail}`).join('\n')
+      : undefined,
     metaTitle: plan.metaTitle,
     metaDesc: plan.metaDesc,
     slug: toSlug(plan.slug || topic.title),
@@ -1669,8 +1694,12 @@ async function main() {
     ? `⚡ Статья уже на сервере, доступна через ~30 сек (ISR)`
     : `⏳ Деплой через CI займёт ~15 минут`
 
+  const specBlock = result.specWarning
+    ? `\n\n⚠️ <b>Принята с оговорками.</b>\n${result.specWarning}\nНужна ручная доработка.`
+    : ''
+
   const successText =
-    `✅ <b>Статья опубликована!</b>\n\n` +
+    `✅ <b>Статья опубликована!</b>${specBlock}\n\n` +
     `📌 ${topic.title}\n` +
     `${wordstatInfo}\n` +
     `${imageStatus}\n` +

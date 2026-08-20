@@ -312,6 +312,8 @@ function renderTechSpec(tz) {
   }
   return lines.join('\n')
 }
+var OVERSPAM_RULE =
+  '\u041F\u0435\u0440\u0435\u0441\u043F\u0430\u043C \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u043A\u043B\u044E\u0447\u0430'
 function checkTechSpec(tz, markdown) {
   const violations = []
   const lower = markdown.toLowerCase().replace(/ё/g, '\u0435')
@@ -323,7 +325,7 @@ function checkTechSpec(tz, markdown) {
   const mainUses = countOf(tz.mainKeyword)
   if (mainUses > tz.maxMainKeyUses) {
     violations.push({
-      rule: '\u041F\u0435\u0440\u0435\u0441\u043F\u0430\u043C \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u043A\u043B\u044E\u0447\u0430',
+      rule: OVERSPAM_RULE,
       detail: `"${tz.mainKeyword}" \u0432\u0441\u0442\u0440\u0435\u0447\u0430\u0435\u0442\u0441\u044F ${mainUses} \u0440\u0430\u0437 \u043F\u0440\u0438 \u043B\u0438\u043C\u0438\u0442\u0435 ${tz.maxMainKeyUses}`,
     })
   }
@@ -1051,19 +1053,29 @@ async function acceptAgainstSpec(tz, markdown) {
     '[writer] \u0428\u0430\u0433 4\u0431: \u041F\u0440\u0438\u0451\u043C\u043A\u0430 \u043F\u043E \u0422\u0417...'
   )
   let current = markdown
+  let best = { markdown, violations: checkTechSpec(tz, markdown), round: 0 }
   for (let round = 0; round <= REPAIR_ROUNDS; round++) {
-    const violations = checkTechSpec(tz, current)
+    const violations = round === 0 ? best.violations : checkTechSpec(tz, current)
+    if (violations.length < best.violations.length) best = { markdown: current, violations, round }
     if (violations.length === 0) {
       console.log(
         `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round})`
       )
-      return current
+      return { markdown: current, rounds: round, unresolved: [] }
     }
     console.log(
       `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${violations.length} \u2014 ` +
         violations.map((v) => `${v.rule} (${v.detail})`).join('; ')
     )
-    if (round === REPAIR_ROUNDS) throw new SpecRejected(violations, round)
+    if (round === REPAIR_ROUNDS) {
+      if (best.violations.some((v) => v.rule === OVERSPAM_RULE)) {
+        throw new SpecRejected(best.violations, round)
+      }
+      console.log(
+        `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u044E \u043B\u0443\u0447\u0448\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E \u0441 \u043A\u0440\u0443\u0433\u0430 ${best.round} \u2014 \u043D\u0435\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u0445 \u043F\u0443\u043D\u043A\u0442\u043E\u0432 ${best.violations.length}`
+      )
+      return { markdown: best.markdown, rounds: round, unresolved: best.violations }
+    }
     console.log(
       `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round + 1}/${REPAIR_ROUNDS}...`
     )
@@ -1083,7 +1095,7 @@ ${current}
       'writer'
     )
   }
-  return current
+  return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) }
 }
 async function generateMdxArticle(topic) {
   console.log('[writer] \u0428\u0430\u0433 1: Wordstat keyword research...')
@@ -1631,9 +1643,13 @@ ${markdown}
   const preReviewWords = markdown.split(/\s+/).length
   const reviewedWords = reviewedCandidate.split(/\s+/).length
   const reviewedFinal = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
-  const finalMarkdown = await acceptAgainstSpec(tz, reviewedFinal)
+  const accepted = await acceptAgainstSpec(tz, reviewedFinal)
   return {
-    markdown: finalMarkdown,
+    markdown: accepted.markdown,
+    specWarning: accepted.unresolved.length
+      ? `\u041F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u043B\u0438 ${accepted.rounds} \u0440\u0430\u0437, \u043D\u0435\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u043C\u0438 \u043E\u0441\u0442\u0430\u043B\u0438\u0441\u044C:
+` + accepted.unresolved.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join('\n')
+      : void 0,
     metaTitle: plan.metaTitle,
     metaDesc: plan.metaDesc,
     slug: toSlug(plan.slug || topic.title),
@@ -1858,8 +1874,15 @@ ${e.message}`)
   const deployStatus = syncedToProd
     ? `\u26A1 \u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435, \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0447\u0435\u0440\u0435\u0437 ~30 \u0441\u0435\u043A (ISR)`
     : `\u23F3 \u0414\u0435\u043F\u043B\u043E\u0439 \u0447\u0435\u0440\u0435\u0437 CI \u0437\u0430\u0439\u043C\u0451\u0442 ~15 \u043C\u0438\u043D\u0443\u0442`
+  const specBlock = result.specWarning
+    ? `
+
+\u26A0\uFE0F <b>\u041F\u0440\u0438\u043D\u044F\u0442\u0430 \u0441 \u043E\u0433\u043E\u0432\u043E\u0440\u043A\u0430\u043C\u0438.</b>
+${result.specWarning}
+\u041D\u0443\u0436\u043D\u0430 \u0440\u0443\u0447\u043D\u0430\u044F \u0434\u043E\u0440\u0430\u0431\u043E\u0442\u043A\u0430.`
+    : ''
   const successText =
-    `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>
+    `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>${specBlock}
 
 \u{1F4CC} ${topic.title}
 ${wordstatInfo}

@@ -279,6 +279,10 @@ export interface SpecViolation {
   detail: string
 }
 
+// Единственное нарушение, с которым статья не выходит: переспам — это риск фильтра,
+// а не косметика, и опубликованный текст с ним вредит сильнее, чем пропущенный день.
+export const OVERSPAM_RULE = 'Переспам главного ключа'
+
 /**
  * Механическая часть приёмки: то, что считается регуляркой, считается кодом, а не
  * запросом к модели. Агентам остаётся смысловая часть, где они действительно нужны.
@@ -296,7 +300,7 @@ export function checkTechSpec(tz: TechSpec, markdown: string): SpecViolation[] {
   const mainUses = countOf(tz.mainKeyword)
   if (mainUses > tz.maxMainKeyUses) {
     violations.push({
-      rule: 'Переспам главного ключа',
+      rule: OVERSPAM_RULE,
       detail: `"${tz.mainKeyword}" встречается ${mainUses} раз при лимите ${tz.maxMainKeyUses}`,
     })
   }
