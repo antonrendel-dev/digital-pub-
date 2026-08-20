@@ -9,7 +9,7 @@ import { getTagsWithCounts } from '@/lib/tags'
 import { getArticles, formatArticleDate } from '@/lib/articles'
 
 export const metadata: Metadata = {
-  title: 'О сервисе — Диджитал Паб',
+  title: 'О сервисе',
   description:
     'Диджитал Паб — агрегатор вакансий и резюме в digital-сфере. Собираем актуальные предложения из Telegram-каналов и структурируем по специализациям.',
   alternates: { canonical: 'https://d-pub.ru/about' },

@@ -7,7 +7,10 @@ import type { Metadata } from 'next'
 export const revalidate = 300
 
 const BASE_URL = 'https://d-pub.ru'
-const TITLE = 'Резюме digital-специалистов 2026 — маркетологи, SMM, дизайнеры | Диджитал Паб'
+// Бренд в <title> добавляет шаблон layout. В og:title его надо ставить явно:
+// siteName из layout не наследуется, если страница задаёт свой openGraph.
+const TITLE = 'Резюме digital-специалистов 2026 — база кандидатов'
+const SOCIAL_TITLE = `${TITLE} — Диджитал Паб`
 
 const RESUMES_SEO_HTML = `<h2>База резюме digital-специалистов из Telegram</h2>
 <p>Диджитал Паб агрегирует резюме специалистов digital-рынка из профильных Telegram-каналов. Здесь HR-менеджеры и руководители находят кандидатов на позиции в маркетинге, дизайне, SMM, аналитике и разработке. База пополняется ежедневно — свежие резюме появляются несколько раз в сутки.</p>
@@ -45,7 +48,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     alternates: { canonical },
     ...(page > 1 && { robots: { index: false, follow: true } }),
     openGraph: {
-      title,
+      title: page === 1 ? SOCIAL_TITLE : title,
       description,
       url: canonical,
       type: 'website',
@@ -55,7 +58,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: page === 1 ? SOCIAL_TITLE : title,
       description,
     },
   }

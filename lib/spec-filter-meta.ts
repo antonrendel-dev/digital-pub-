@@ -86,10 +86,10 @@ export function getSpecFilterTitle(specSlug: string, filterSlug: string): string
   const gen = SPEC_GENITIVE[specSlug] ?? specSlug
   if (FORMAT_SLUGS.includes(filterSlug as FormatSlug)) {
     const label = FORMAT_LABELS[filterSlug] ?? filterSlug
-    return `Вакансии ${gen} ${label} — d-pub.ru ${y}`
+    return `Вакансии ${gen} ${label} — ${y}`
   }
   const level = LEVEL_LABELS[filterSlug] ?? filterSlug
-  return `Вакансии ${level} ${gen} — d-pub.ru ${y}`
+  return `Вакансии ${level} ${gen} — ${y}`
 }
 
 export function getSpecFilterDescription(specSlug: string, filterSlug: string): string {

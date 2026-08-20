@@ -9,7 +9,7 @@ import ArticlesGrid from '@/components/ArticlesGrid'
 export const revalidate = 300
 
 export const metadata: Metadata = {
-  title: 'Карьера в digital: статьи для маркетологов и дизайнеров',
+  title: 'Карьера в digital: статьи, зарплаты, резюме',
   description:
     'Как составить резюме, пройти собеседование и вырасти в digital. Полезные материалы для SMM, маркетологов, дизайнеров и аналитиков.',
   alternates: { canonical: 'https://d-pub.ru/articles' },

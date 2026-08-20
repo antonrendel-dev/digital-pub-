@@ -3,7 +3,7 @@ import Link from 'next/link'
 import PageShell from '@/components/PageShell'
 
 export const metadata: Metadata = {
-  title: 'Политика конфиденциальности — Диджитал Паб',
+  title: 'Политика конфиденциальности',
   description:
     'Политика конфиденциальности сервиса Диджитал Паб — агрегатора вакансий и резюме digital-специалистов. Данные пользователей не собираются и не передаются.',
   alternates: { canonical: 'https://d-pub.ru/privacy' },

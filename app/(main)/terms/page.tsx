@@ -3,7 +3,7 @@ import Link from 'next/link'
 import PageShell from '@/components/PageShell'
 
 export const metadata: Metadata = {
-  title: 'Условия использования — Диджитал Паб',
+  title: 'Условия использования',
   description:
     'Условия использования сервиса Диджитал Паб — агрегатора вакансий и резюме digital-специалистов из Telegram. Правила пользования, контент, размещение объявлений.',
   alternates: { canonical: 'https://d-pub.ru/terms' },

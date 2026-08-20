@@ -14,6 +14,7 @@ import {
   RelatedSpecCategoriesBlock,
 } from '@/components/RelatedArticles'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
+import { stripBrandSuffix } from '@/lib/seoTitle'
 import { getCategoryFaq } from '@/lib/category-faq'
 import { TAG_H1, TAG_TITLE, TAG_DESCRIPTION } from '@/lib/tagH1'
 import {
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const hasVacancies = posts.length > 0
   const n = posts.length.toString()
 
-  const seoTitleClean = tag.seoTitle?.replace(/\s*\|\s*Диджитал Паб\s*$/i, '').trim() ?? null
+  const seoTitleClean = tag.seoTitle ? stripBrandSuffix(tag.seoTitle) : null
   const rawTitle =
     TAG_TITLE[category] ?? seoTitleClean ?? `Вакансии ${tag.name}: удалённо и в офисе`
   const title = rawTitle.replace('{N}', n)

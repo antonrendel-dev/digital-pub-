@@ -30,7 +30,7 @@ const TOOLS = [
 ]
 
 export const metadata: Metadata = {
-  title: 'Вакансии по навыкам digital-специалистов — d-pub.ru',
+  title: 'Вакансии по навыкам digital-специалистов',
   description:
     'Вакансии в digital по навыкам и программам: Figma, Canva, ChatGPT, CapCut, Photoshop, Tilda. Актуальные вакансии для SMM, дизайнеров, маркетологов из Telegram.',
   alternates: { canonical: `${BASE_URL}/tools` },
