@@ -4,12 +4,12 @@ var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
 var YANDEX_WEBMASTER_TOKEN = process.env.YANDEX_WEBMASTER_TOKEN || ''
 var WEBMASTER_USER_ID = process.env.YANDEX_WEBMASTER_USER_ID || '1225208489'
 var WEBMASTER_HOST = process.env.YANDEX_WEBMASTER_HOST || 'https:d-pub.ru:443'
-async function fetchWordstatKeywords(keyword, numPhrases = 20) {
+async function fetchWordstatPhrase(keyword, numPhrases = 20) {
   if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
     console.log(
       '[yandex] Wordstat: YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E'
     )
-    return []
+    return { total: null, nested: [] }
   }
   try {
     const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
@@ -21,45 +21,33 @@ async function fetchWordstatKeywords(keyword, numPhrases = 20) {
       },
       body: JSON.stringify({ phrase: keyword, num_phrases: numPhrases }),
     })
-    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = await res.json()
-    return (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
-  } catch (e) {
-    console.warn(
-      '[yandex] Wordstat \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:',
-      e.message
-    )
-    return []
-  }
-}
-async function fetchWordstatVolume(keyword) {
-  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) return null
-  try {
-    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
-        'X-Folder-Id': YANDEX_FOLDER_ID,
-      },
-      body: JSON.stringify({ phrase: keyword, num_phrases: 1 }),
-    })
     if (res.status === 429) {
       console.warn(
         `[yandex] Wordstat: \u043A\u0432\u043E\u0442\u0430 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u0430 \u043D\u0430 "${keyword}"`
       )
-      return null
+      return { total: null, nested: [] }
     }
     if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
     const data = await res.json()
-    return data.totalCount === void 0 ? 0 : Number(data.totalCount)
+    return {
+      // results[0].count — частотность вложенной фразы, а не запрошенной,
+      // подставлять её вместо totalCount нельзя.
+      total: data.totalCount === void 0 ? 0 : Number(data.totalCount),
+      nested: (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) })),
+    }
   } catch (e) {
     console.warn(
-      `[yandex] Wordstat volume \u0434\u043B\u044F "${keyword}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:`,
+      `[yandex] Wordstat \u0434\u043B\u044F "${keyword}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:`,
       e.message
     )
-    return null
+    return { total: null, nested: [] }
   }
+}
+async function fetchWordstatKeywords(keyword, numPhrases = 20) {
+  return (await fetchWordstatPhrase(keyword, numPhrases)).nested
+}
+async function fetchWordstatVolume(keyword) {
+  return (await fetchWordstatPhrase(keyword, 1)).total
 }
 async function fetchWebmasterQueries(limit = 100) {
   if (!YANDEX_WEBMASTER_TOKEN) {
@@ -134,5 +122,6 @@ export {
   fetchWebmasterOpportunities,
   fetchWebmasterQueries,
   fetchWordstatKeywords,
+  fetchWordstatPhrase,
   fetchWordstatVolume,
 }

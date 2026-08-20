@@ -192,10 +192,25 @@ const OUTLINE_HINTS: Record<string, string> = {
 
 // ─── Claude helper ───────────────────────────────────────────────────────────
 
-function askClaude(prompt: string): Promise<string> {
+// Инструменты, которые агент вправе звать внутри завода. Skill — ради этого всё
+// и затевалось: без него агент не читает свой профильный скилл и работает по
+// памяти, расходясь с актуальным стандартом. Список намеренно только на чтение —
+// править файлы репозитория посреди генерации статьи агенту незачем.
+const AGENT_TOOLS = 'Read,Skill,Glob,Grep'
+
+type AgentName = 'analyst' | 'seo' | 'writer'
+
+/**
+ * @param agent Профиль из ~/.claude/agents. Без него Клод отвечает как есть,
+ * без роли и без скиллов — так завод работал до 20.08.2026.
+ */
+function askClaude(prompt: string, agent?: AgentName): Promise<string> {
   return new Promise((resolve, reject) => {
+    // --allowedTools обязателен: с --agent, но без него скилл не загружается
+    // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
+    const args = agent ? ['-p', '--agent', agent, '--allowedTools', AGENT_TOOLS] : ['-p']
     // Промпт через stdin: аргументом argv длинные промпты (3 черновика) бьются об ARG_MAX → spawn E2BIG
-    const child = spawn('claude', ['-p'], {
+    const child = spawn('claude', args, {
       env: process.env,
       stdio: ['pipe', 'pipe', 'pipe'],
     })
@@ -379,8 +394,8 @@ async function generateQuickCharts(
 
   let specRaw: string
   try {
-    specRaw =
-      await askClaude(`Ты аналитик данных. Для статьи "${topic.title}" (ключ: "${topic.keyword}", тип: ${topic.type || 'инфо'}) создай 1-2 графика.
+    specRaw = await askClaude(
+      `Ты аналитик данных. Для статьи "${topic.title}" (ключ: "${topic.keyword}", тип: ${topic.type || 'инфо'}) создай 1-2 графика.
 
 СТРУКТУРА СТАТЬИ (H2-разделы):
 ${h2List}
@@ -407,7 +422,9 @@ ${h2List}
 - options.plugins.legend.display = true
 - fontFamily "Arial" в options.font
 - Не более 2 датасетов
-- Формат Chart.js v3`)
+- Формат Chart.js v3`,
+      'analyst'
+    )
   } catch (e) {
     console.warn('[writer] QuickChart: ошибка Claude:', (e as Error).message)
     return []
@@ -635,8 +652,8 @@ async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
   // ШАГ 1б: SEO-рисерч
   const forcedSetting = detectSetting(topic.keyword, topic.title, topic.id + 3)
   console.log('[writer] Шаг 1б: SEO-рисерч...')
-  const research =
-    await askClaude(`Ты опытный SEO-аналитик, работаешь с Яндексом и Google одновременно.
+  const research = await askClaude(
+    `Ты опытный SEO-аналитик, работаешь с Яндексом и Google одновременно.
 Знаешь Яндекс-патент RU2824338C2 о 4 BERT-полях документа (Title / H1+H2+H3 / первые 60 слов / meta description) и 696 факторов ранжирования.
 Знаешь Google MUM/MUVERA/FDE и принципы AI Overviews.
 
@@ -666,7 +683,9 @@ ${wordstatBlock}
 - bertAnchors: 3-5 ключевых слов из поискового запроса, которые ОБЯЗАНЫ буквально (не синонимами) присутствовать во ВСЕХ четырёх BERT-полях Яндекса (Title, H1+H2, первые 60 слов, meta description). Берутся из самого частотного кластера Wordstat.
 - bm25Context: 5-7 тематических слов, которые должны стоять в радиусе ±10 слов от каждого вхождения ключа в тексте (BM25TP-якорь Яндекса). Это слова из реальных запросов со смежными темами, не из головы.
 - antifakeMarkers: 2-3 распространённых мифа по теме статьи с конкретным опровержением и ссылкой на источник (hh.ru, SuperJob, Росстат). Это AIO-resistant контент, который AI-поисковик не может синтезировать без цитирования.
-- mandatoryBigrams: 3 топ-биграммы из поисковых запросов по теме (по Wordstat), которые должны органично войти в H2-заголовки или первые предложения H2-блоков.`)
+- mandatoryBigrams: 3 топ-биграммы из поисковых запросов по теме (по Wordstat), которые должны органично войти в H2-заголовки или первые предложения H2-блоков.`,
+    'seo'
+  )
 
   const researchMatch = research.match(/\{[\s\S]*\}/)
   if (!researchMatch) throw new Error('SEO-рисерч не вернул JSON')
@@ -690,7 +709,8 @@ ${wordstatBlock}
   console.log('[writer] Шаг 2: Планирование структуры...')
   const outlineHint = OUTLINE_HINTS[topic.type] ?? ''
 
-  const outline = await askClaude(`Ты контент-стратег. Составь детальный план статьи.
+  const outline = await askClaude(
+    `Ты контент-стратег. Составь детальный план статьи.
 
 ТЕМА: ${topic.title}
 КЛЮЧ: ${topic.keyword}
@@ -748,7 +768,9 @@ ${(seoData.antifakeMarkers || []).length ? `МИФЫ ДЛЯ ОПРОВЕРЖЕН
   "metaTitle": "SEO заголовок строго до 60 символов с ключевым словом",
   "metaDesc": "SEO описание строго 130-155 символов, раскрывает пользу статьи",
   "slug": "url-slug-latinicej-bez-russkikh-bukv"
-}`)
+}`,
+    'writer'
+  )
 
   const outlineMatch = outline.match(/\{[\s\S]*\}/)
   if (!outlineMatch) throw new Error('Планировщик не вернул JSON')
@@ -935,7 +957,8 @@ Markdown: ## для H2, ### для H3, **жирный**, таблицы, мар�
     const drafts = await Promise.all(
       directions.map((dir) =>
         askClaude(
-          `${baseWriterPrompt}${dynamicSeoInsert}\n\n${dir.desc}\n\nВерни ТОЛЬКО Markdown статьи — без JSON, без пояснений.`
+          `${baseWriterPrompt}${dynamicSeoInsert}\n\n${dir.desc}\n\nВерни ТОЛЬКО Markdown статьи — без JSON, без пояснений.`,
+          'writer'
         ).then((raw) => {
           const mdStart = raw.indexOf('## ')
           return mdStart !== -1 ? raw.slice(mdStart).trim() : raw.trim()
@@ -944,8 +967,8 @@ Markdown: ## для H2, ### для H3, **жирный**, таблицы, мар�
     )
 
     console.log('[writer] Шаг 3б: Редактор компилирует...')
-    const compiled =
-      await askClaude(`Ты главный редактор. Получаешь четыре черновика одной статьи, написанных с разных жанровых углов.
+    const compiled = await askClaude(
+      `Ты главный редактор. Получаешь четыре черновика одной статьи, написанных с разных жанровых углов.
 
 ТЕМА: ${topic.title}
 КЛЮЧЕВОЕ СЛОВО: "${topic.keyword}"
@@ -984,7 +1007,9 @@ ${drafts[3]}
 13. ENTITY COVERAGE (3.12): покрыты классы 1 (что включает профессия), 4 (конкретные числа), 9 (алгоритм входа) из 11? Если нет — добавь. Не добавляй поверхностные блоки ради охвата — лучше меньше тем, но глубже.
 14. Объём финального текста: 2000–2500 слов
 
-Верни ТОЛЬКО финальный Markdown — без пояснений и комментариев.`)
+Верни ТОЛЬКО финальный Markdown — без пояснений и комментариев.`,
+      'writer'
+    )
 
     const mdStart = compiled.indexOf('## ')
     markdown = (mdStart !== -1 ? compiled.slice(mdStart) : compiled).trim()
@@ -993,7 +1018,8 @@ ${drafts[3]}
       ? `\n\nДОПОЛНИТЕЛЬНЫЕ SEO-ТРЕБОВАНИЯ (от аналитика, приоритет высокий):\n${dynamicSeoBlock}`
       : ''
     const article = await askClaude(
-      `${baseWriterPrompt}${dynamicSeoInsertSingle}\n\nСТИЛЬ — пиши именно как главред Максим Ильяхов («Пиши, сокращай»): активный залог, без вводных слов и канцелярита (осуществлять → делать, является → есть), без оценочных слов без доказательств («лучший», «уникальный», «эффективный»), каждый абзац — одна конкретная мысль.\n\nОтветь строго в формате JSON (без лишнего текста):\n{"markdown": "## Заголовок\\n\\nТекст статьи..."}`
+      `${baseWriterPrompt}${dynamicSeoInsertSingle}\n\nСТИЛЬ — пиши именно как главред Максим Ильяхов («Пиши, сокращай»): активный залог, без вводных слов и канцелярита (осуществлять → делать, является → есть), без оценочных слов без доказательств («лучший», «уникальный», «эффективный»), каждый абзац — одна конкретная мысль.\n\nОтветь строго в формате JSON (без лишнего текста):\n{"markdown": "## Заголовок\\n\\nТекст статьи..."}`,
+      'writer'
     )
     const articleMatch = article.match(/\{[\s\S]*\}/)
     if (!articleMatch) throw new Error('Writer не вернул JSON')
@@ -1025,7 +1051,8 @@ ${drafts[3]}
     .map((b) => `• ${b.title}: ${b.description.slice(0, 130)} → ${b.usage.slice(0, 130)}`)
     .join('\n')
 
-  const nudged = await askClaude(`Ты копирайтер с экспертизой в поведенческой психологии.
+  const nudged = await askClaude(
+    `Ты копирайтер с экспертизой в поведенческой психологии.
 
 АУДИТОРИЯ: ${topic.audience}
 ТЕМА: ${topic.title}
@@ -1043,7 +1070,9 @@ ${nudgeCatalog}
 СТАТЬЯ:
 ${markdown}
 
-Верни ТОЛЬКО финальный Markdown — без пояснений и комментариев.`)
+Верни ТОЛЬКО финальный Markdown — без пояснений и комментариев.`,
+    'writer'
+  )
 
   const nudgedStart = nudged.indexOf('## ')
   const nudgedCandidate = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim()
@@ -1064,8 +1093,8 @@ ${markdown}
     ? `КРИТЕРИИ УСПЕХА: ${seoData.successCriteria.join('; ')}\n`
     : ''
 
-  const reviewed =
-    await askClaude(`Ты строгий SEO-редактор. Проверь статью по SEO-требованиям — стиль уже выправлен.
+  const reviewed = await askClaude(
+    `Ты строгий SEO-редактор. Проверь статью по SEO-требованиям — стиль уже выправлен.
 
 КЛЮЧЕВОЕ СЛОВО: "${topic.keyword}"
 META TITLE (${titleLen} симв${titleLen > 60 ? ', СЛИШКОМ ДЛИННЫЙ — укороти до 60' : ', ок'}): "${plan.metaTitle}"
@@ -1093,7 +1122,9 @@ ${markdown}
 16. PLURAL BRIDGE (9.9b): в тексте профессия упомянута и в единственном, и во множественном числе (в разных H2)? Если нет — добавь органично. СТРОГО ЗАПРЕЩЁН шаблон «X — один из видов Y, которых...» — это забаненный SEO-шаблон; если он есть в тексте, перепиши это предложение.
 
 КРИТИЧНО: Верни ПОЛНУЮ статью (не менее 80% от исходного объёма слов) — только Markdown, без пояснений, без JSON, без комментариев. НЕ сокращай статью — только точечные правки по пунктам выше.
-СТРОГО ЗАПРЕЩЕНО после статьи добавлять: сводку правок, таблицу изменений, чеклист выполненных задач, комментарии вида «Что изменено», «Сводка», «Задача / Статус / Правка» и любой другой служебный текст. Ответ заканчивается последней строкой статьи — и ничем больше.`)
+СТРОГО ЗАПРЕЩЕНО после статьи добавлять: сводку правок, таблицу изменений, чеклист выполненных задач, комментарии вида «Что изменено», «Сводка», «Задача / Статус / Правка» и любой другой служебный текст. Ответ заканчивается последней строкой статьи — и ничем больше.`,
+    'seo'
+  )
 
   let reviewedCandidate = reviewed.trim().startsWith('##')
     ? reviewed.trim()

@@ -15,13 +15,25 @@ export interface WordstatEntry {
   count: number
 }
 
-export async function fetchWordstatKeywords(
+export interface WordstatPhrase {
+  // Суммарная частотность запрошенной фразы (broad match).
+  // null — Вордстат не ответил (квота, сеть). 0 — ответил, спроса нет.
+  total: number | null
+  // Вложенные фразы с собственными частотами: «резюме таргетолога» →
+  // «резюме таргетолога образец», «резюме таргетолога без опыта» и так далее.
+  nested: WordstatEntry[]
+}
+
+// Один запрос отдаёт и частотность самой фразы, и до 20 вложенных с частотами.
+// Квота 100 запросов/час, поэтому брать оба ответа за один вызов — не оптимизация,
+// а условие, при котором сбор пула вообще укладывается в разумное время.
+export async function fetchWordstatPhrase(
   keyword: string,
   numPhrases = 20
-): Promise<WordstatEntry[]> {
+): Promise<WordstatPhrase> {
   if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
     console.log('[yandex] Wordstat: YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID не заданы, пропускаю')
-    return []
+    return { total: null, nested: [] }
   }
   try {
     const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
@@ -33,44 +45,36 @@ export async function fetchWordstatKeywords(
       },
       body: JSON.stringify({ phrase: keyword, num_phrases: numPhrases }),
     })
+    if (res.status === 429) {
+      console.warn(`[yandex] Wordstat: квота исчерпана на "${keyword}"`)
+      return { total: null, nested: [] }
+    }
     if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = (await res.json()) as { results?: { phrase: string; count: string }[] }
-    return (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
+    const data = (await res.json()) as {
+      totalCount?: string
+      results?: { phrase: string; count: string }[]
+    }
+    return {
+      // results[0].count — частотность вложенной фразы, а не запрошенной,
+      // подставлять её вместо totalCount нельзя.
+      total: data.totalCount === undefined ? 0 : Number(data.totalCount),
+      nested: (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) })),
+    }
   } catch (e) {
-    console.warn('[yandex] Wordstat недоступен:', (e as Error).message)
-    return []
+    console.warn(`[yandex] Wordstat для "${keyword}" недоступен:`, (e as Error).message)
+    return { total: null, nested: [] }
   }
 }
 
-// Суммарная частотность фразы (broad match) — для приоритизации тем по спросу.
-// null — Вордстат не ответил, частотность неизвестна. 0 — ответил, спроса нет.
-// Раньше оба случая давали 0, и исчерпанная квота (100 запросов/час) выглядела
-// как мёртвый ключ: живые темы уезжали в отсев.
+export async function fetchWordstatKeywords(
+  keyword: string,
+  numPhrases = 20
+): Promise<WordstatEntry[]> {
+  return (await fetchWordstatPhrase(keyword, numPhrases)).nested
+}
+
 export async function fetchWordstatVolume(keyword: string): Promise<number | null> {
-  if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) return null
-  try {
-    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
-        'X-Folder-Id': YANDEX_FOLDER_ID,
-      },
-      body: JSON.stringify({ phrase: keyword, num_phrases: 1 }),
-    })
-    if (res.status === 429) {
-      console.warn(`[yandex] Wordstat: квота исчерпана на "${keyword}"`)
-      return null
-    }
-    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = (await res.json()) as { totalCount?: string }
-    // results[0].count — частотность вложенной фразы, а не запрошенной,
-    // подставлять её вместо totalCount нельзя.
-    return data.totalCount === undefined ? 0 : Number(data.totalCount)
-  } catch (e) {
-    console.warn(`[yandex] Wordstat volume для "${keyword}" недоступен:`, (e as Error).message)
-    return null
-  }
+  return (await fetchWordstatPhrase(keyword, 1)).total
 }
 
 // ─── Webmaster v4 ─────────────────────────────────────────────────────────────
