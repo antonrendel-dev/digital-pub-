@@ -1,6 +1,6 @@
 /**
  * Content Factory — Analyst
- * Генерирует 40 тем для статей, постит в Telegram топик SEO Лаба.
+ * Генерирует батч тем на календарный месяц, постит в Telegram топик SEO Лаба.
  * Запуск: node analyst.compiled.js
  * Cron: 0 9 * * 1 (каждый понедельник в 9:00)
  */
@@ -21,7 +21,10 @@ import { fetchWebmasterOpportunities, fetchWordstatVolume } from './lib/yandex.j
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const ARTICLES_DIR = path.join(import.meta.dirname, '../../content/articles')
 
-const TOPICS_REQUESTED = 40
+// Батч = календарный месяц: публикуем по статье в день, длинный месяц берём с запасом.
+// Остаток переезжает в следующий батч, недобор закрывается досрочным прогоном аналитика.
+const TOPICS_REQUESTED = 30
+const TOPICS_FOR_JOBSEEKERS = Math.round(TOPICS_REQUESTED * 0.9)
 
 interface Topic {
   id: number
@@ -59,12 +62,25 @@ function getAllPlannedTopics(): Array<{ title: string; keyword: string }> {
     })
 }
 
-function askClaude(prompt: string): Promise<string> {
+// Только чтение: править репозиторий посреди сборки контент-плана аналитику незачем.
+const AGENT_TOOLS = 'Read,Skill,Glob,Grep'
+
+/**
+ * @param agent Профиль из ~/.claude/agents. Без него Клод отвечает как есть,
+ * без роли и без скиллов — так завод работал до 20.08.2026.
+ */
+function askClaude(prompt: string, agent?: 'analyst' | 'seo'): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn('claude', ['-p', prompt], {
+    // --allowedTools обязателен: с --agent, но без него скилл не загружается
+    // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
+    const args = agent ? ['-p', '--agent', agent, '--allowedTools', AGENT_TOOLS] : ['-p']
+    // Промпт через stdin: аргументом argv длинный контент-план бьётся об ARG_MAX → spawn E2BIG
+    const child = spawn('claude', args, {
       env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
+    child.stdin.write(prompt)
+    child.stdin.end()
     let out = ''
     let err = ''
     child.stdout.on('data', (d: Buffer) => (out += d.toString()))
@@ -89,8 +105,8 @@ async function reformulateTopics(offTarget: Topic[]): Promise<{ fixed: Topic[]; 
   for (let round = 1; round <= REFORMULATION_ROUNDS && pending.length; round++) {
     console.log(`[analyst] Переформулировка, круг ${round}: ${pending.length} тем`)
 
-    const raw =
-      await askClaude(`Ты SEO-аналитик русскоязычного job board d-pub.ru (вакансии и резюме digital-специалистов).
+    const raw = await askClaude(
+      `Ты SEO-аналитик русскоязычного job board d-pub.ru (вакансии и резюме digital-специалистов).
 
 Ниже темы, ключи которых НЕ попадают в рабочий коридор ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME} запросов/мес по Яндекс.Вордстату. Переформулируй КАЖДУЮ так, чтобы ключ попал в коридор, сохранив исходную пользу для читателя.
 
@@ -110,7 +126,9 @@ async function reformulateTopics(offTarget: Topic[]): Promise<{ fixed: Topic[]; 
 ${pending.map((t) => `id ${t.id}: "${t.title}" [ключ: ${t.keyword} — ${t.wordstatVolume}/мес]`).join('\n')}
 
 Ответ строго в формате JSON массива, без лишнего текста:
-[{"id": <исходный id>, "title": "новый заголовок", "keyword": "новый ключ"}]`)
+[{"id": <исходный id>, "title": "новый заголовок", "keyword": "новый ключ"}]`,
+      'analyst'
+    )
 
     const jsonMatch = raw.match(/\[[\s\S]*\]/)
     if (!jsonMatch) {
@@ -173,8 +191,8 @@ async function generateTopics(): Promise<{ topics: Topic[]; weak: Topic[] }> {
           .join('\n')
       : ''
 
-  const raw =
-    await askClaude(`Ты SEO-аналитик и контент-стратег для русскоязычного job board d-pub.ru — агрегатора вакансий для digital-специалистов (маркетологи, дизайнеры, SMM, аналитики, копирайтеры, таргетологи) из Telegram-каналов.
+  const raw = await askClaude(
+    `Ты SEO-аналитик и контент-стратег для русскоязычного job board d-pub.ru — агрегатора вакансий для digital-специалистов (маркетологи, дизайнеры, SMM, аналитики, копирайтеры, таргетологи) из Telegram-каналов.
 
 ГЛАВНАЯ аудитория — СОИСКАТЕЛИ (ищут работу в digital). Проверено данными: соискательские запросы («зарплата X», «профессия X», «вакансии X», «как стать X», «резюме/портфолио X») имеют частотность в сотни-тысячи в месяц, а HR-запросы («как нанять X», «где найти специалиста») — 0-23/мес. Поэтому HR-темы почти не генерируем.
 ${publishedBlock}${plannedBlock}${opportunityBlock}
@@ -190,7 +208,7 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
 - Вечнозелёные (не привязаны к конкретной дате)
 - Практические, решают конкретную проблему
 - Ключ должен собирать ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME} запросов/мес по Вордстату — темы вне этого коридора уйдут на переформулировку. Слишком узкие («контроффер стоит ли принимать», «пробел в резюме как объяснить» — 1-2 запроса/мес) не предлагай. Голые ВЧ-запросы («вакансии маркетолог», «резюме дизайнера» — тысячи в месяц) тоже не предлагай: там hh.ru и superjob, мы не ранжируемся. Бери среднечастотные — с уточнением по профессии, уровню, формату работы или инструменту
-- Минимум 36 из 40 тем — для соискателей, с ключами по шаблонам: «зарплата <профессия>», «профессия <X>», «вакансии <X>», «как стать <X>», «<X> с нуля», «резюме <X>», «портфолио <X>», «собеседование <X>», «тестовое задание <X>»
+- Минимум ${TOPICS_FOR_JOBSEEKERS} из ${TOPICS_REQUESTED} тем — для соискателей, с ключами по шаблонам: «зарплата <профессия>», «профессия <X>», «вакансии <X>», «как стать <X>», «<X> с нуля», «резюме <X>», «портфолио <X>», «собеседование <X>», «тестовое задание <X>»
 - Максимум 2-3 темы для HR — и только если ключ реально ищут (не «как нанять X»)
 - Включи 3-4 темы в формате "конспект зарубежного материала" (пересказ зарубежных best practices)
 - Не дублируй то что уже есть на hh.ru или superjob
@@ -206,7 +224,9 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
     "type": "Гайд|Конспект|Сравнение|Кейс|Чеклист",
     "trafficEst": "низкий|средний|высокий"
   }
-]`)
+]`,
+    'analyst'
+  )
 
   const jsonMatch = raw.match(/\[[\s\S]*\]/)
   if (!jsonMatch) throw new Error('Claude не вернул JSON')

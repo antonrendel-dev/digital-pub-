@@ -5,7 +5,7 @@
  * PM2: pm2 start content-bot.compiled.js --name content-factory-bot
  *
  * Команды (работают в любом топике):
- *   /content_plan          — запустить аналитика (генерация 25 тем)
+ *   /content_plan          — запустить аналитика (батч тем на календарный месяц)
  *   /content_approve 1 3 7 — одобрить темы (записываются в JSON, writer запустится по cron)
  *   /content_write <num>   — немедленно написать статью по теме №<num>
  *   /content_next          — показать следующую очередь одобренных тем
@@ -169,7 +169,7 @@ async function handleMessage(msg: {
       threadId,
       `🤖 <b>Content Factory Bot</b>\n\n` +
         `<b>Команды:</b>\n` +
-        `/content_plan — сгенерировать 25 тем (аналитик)\n` +
+        `/content_plan — сгенерировать батч тем на месяц (аналитик)\n` +
         `/content_approve 1 3 7 — одобрить выбранные темы\n` +
         `/content_approve_all — одобрить все темы сразу\n` +
         `/content_write 5 — немедленно написать статью #5\n` +
