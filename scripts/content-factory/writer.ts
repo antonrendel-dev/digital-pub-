@@ -7,6 +7,7 @@ import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import { buildWordstatBlock, selectLsiPhrases } from './lib/lsi.js'
 import { sendMessage } from './lib/telegram.js'
 import { fetchWordstatKeywords } from './lib/yandex.js'
 
@@ -156,6 +157,9 @@ interface Topic {
   audience: string
   type: string
   trafficEst: string
+  // Замер Вордстата по главному ключу. null — не замерен, от него зависит
+  // порог отсечки LSI-фраз.
+  wordstatVolume?: number | null
   approved?: boolean
   published?: boolean
   competitive?: boolean
@@ -613,20 +617,18 @@ async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
       if (wordstatRaw.length > 0) break
     }
   }
-  const wordstatTop = wordstatRaw.filter((k) => k.count > 0).slice(0, 15)
-  const wordstatKeywords = wordstatTop.map((k) => k.phrase)
+  const selection = selectLsiPhrases(
+    wordstatRaw.filter((k) => k.count > 0),
+    topic.keyword,
+    topic.wordstatVolume
+  )
+  const wordstatKeywords = [...selection.anchors, ...selection.tail].map((k) => k.phrase)
+  const wordstatBlock = buildWordstatBlock(selection, topic.keyword, topic.wordstatVolume)
 
-  const wordstatBlock =
-    wordstatTop.length > 0
-      ? `\nРЕАЛЬНЫЕ ДАННЫЕ ИЗ WORDSTAT (используй эти ключи органично в тексте):\n` +
-        wordstatTop
-          .map((k) => `  - "${k.phrase}" — ${k.count.toLocaleString()} запросов/мес`)
-          .join('\n')
-      : ''
-
-  if (wordstatTop.length > 0) {
+  if (wordstatKeywords.length > 0) {
     console.log(
-      `[writer] Wordstat: ${wordstatTop.length} ключей, топ: "${wordstatTop[0].phrase}" (${wordstatTop[0].count}/мес)`
+      `[writer] Wordstat: якорей ${selection.anchors.length}, уточняющих ${selection.tail.length}, ` +
+        `порог ${selection.floor}/мес`
     )
   }
 

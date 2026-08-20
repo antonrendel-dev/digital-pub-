@@ -4,6 +4,107 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 
+// lib/lsi.ts
+var MAX_MAIN_KEY_USES = 6
+var MAX_ANCHOR_PHRASES = 3
+var MIN_PHRASE_COUNT = 30
+var TARGET_PHRASES = 15
+var SERVICE_WORDS = /* @__PURE__ */ new Set([
+  '\u0438\u043B\u0438',
+  '\u0441',
+  '\u0432',
+  '\u043D\u0430',
+  '\u0434\u043B\u044F',
+  '\u043F\u043E',
+  '\u0438\u0437',
+  '\u0438',
+  '\u043A',
+  '\u0437\u0430',
+  '\u0431\u0435\u0437',
+  '\u0447\u0442\u043E',
+  '\u043A\u0430\u043A',
+  '\u044D\u0442\u043E',
+  '\u043E\u0442',
+  '\u0434\u043E',
+  '\u0443',
+  '\u043E',
+])
+var STEM_LENGTH = 5
+function stems(phrase) {
+  return phrase
+    .toLowerCase()
+    .replace(/ё/g, '\u0435')
+    .split(/[^a-zа-я0-9]+/)
+    .filter((w) => w.length > 0 && !SERVICE_WORDS.has(w))
+    .map((w) => w.slice(0, STEM_LENGTH))
+}
+function selectLsiPhrases(raw, mainKeyword, mainVolume) {
+  const floor = Math.max(MIN_PHRASE_COUNT, Math.round((mainVolume ?? 0) * 0.05))
+  const mainStems = new Set(stems(mainKeyword))
+  const anchors = []
+  const tail = []
+  const seenModifiers = /* @__PURE__ */ new Set()
+  for (const p of [...raw].sort((a, b) => b.count - a.count)) {
+    if (p.count < floor) continue
+    const modifiers = stems(p.phrase).filter((s) => !mainStems.has(s))
+    if (modifiers.length === 0) {
+      if (anchors.length < MAX_ANCHOR_PHRASES) anchors.push(p)
+      continue
+    }
+    const signature = [...modifiers].sort().join('|')
+    if (seenModifiers.has(signature)) continue
+    seenModifiers.add(signature)
+    tail.push({ ...p, modifiers })
+  }
+  return { anchors, tail: tail.slice(0, Math.max(0, TARGET_PHRASES - anchors.length)), floor }
+}
+function modifierWords(phrase, mainKeyword) {
+  const mainStems = new Set(stems(mainKeyword))
+  return phrase
+    .toLowerCase()
+    .replace(/ё/g, '\u0435')
+    .split(/\s+/)
+    .filter((w) => {
+      const s = w.replace(/[^a-zа-я0-9]/g, '').slice(0, STEM_LENGTH)
+      return s.length > 0 && !mainStems.has(s)
+    })
+    .join(' ')
+}
+function buildWordstatBlock(selection, mainKeyword, mainVolume) {
+  const { anchors, tail } = selection
+  if (!anchors.length && !tail.length) return ''
+  const volumeNote =
+    typeof mainVolume === 'number'
+      ? ` \u2014 ${mainVolume.toLocaleString()}/\u043C\u0435\u0441`
+      : ''
+  const lines = [
+    '',
+    '\u041A\u041B\u042E\u0427\u0418 \u0418\u0417 WORDSTAT (\u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435, \u043D\u0435 \u0432\u044B\u0434\u0443\u043C\u043A\u0430)',
+    '',
+    `\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${mainKeyword}"${volumeNote}`,
+    '',
+    `\u0411\u042E\u0414\u0416\u0415\u0422 \u0412\u0425\u041E\u0416\u0414\u0415\u041D\u0418\u0419. \u0422\u043E\u0447\u043D\u0430\u044F \u0444\u0440\u0430\u0437\u0430 "${mainKeyword}" \u0432\u0441\u0442\u0440\u0435\u0447\u0430\u0435\u0442\u0441\u044F \u0432 \u0441\u0442\u0430\u0442\u044C\u0435 \u043D\u0435 \u0431\u043E\u043B\u0435\u0435`,
+    `${MAX_MAIN_KEY_USES} \u0440\u0430\u0437, \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0440\u0430\u0437\u0443 \u0432 \u043A\u0430\u0436\u0434\u043E\u043C \u0438\u0437 \u043C\u0435\u0441\u0442: title, H1, \u043F\u0435\u0440\u0432\u044B\u0435 60 \u0441\u043B\u043E\u0432,`,
+    '\u043F\u0435\u0440\u0432\u044B\u0439 H2, \u043E\u0434\u0438\u043D \u043E\u0442\u0432\u0435\u0442 FAQ, meta description. \u0412\u0441\u0451 \u0441\u0432\u0435\u0440\u0445 \u044D\u0442\u043E\u0433\u043E \u2014 \u043F\u0435\u0440\u0435\u0441\u043F\u0430\u043C:',
+    '\u042F\u043D\u0434\u0435\u043A\u0441 \u0448\u0442\u0440\u0430\u0444\u0443\u0435\u0442 \u0437\u0430 keyword stuffing \u0438 \u0440\u0430\u0437\u043C\u044B\u0432\u0430\u0435\u0442 BERT-\u0432\u0435\u043A\u0442\u043E\u0440 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B.',
+    '\u0412 \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u043E\u043C \u0442\u0435\u043A\u0441\u0442\u0435 \u0437\u0430\u043C\u0435\u043D\u044F\u0439 \u043A\u043B\u044E\u0447 \u0441\u0438\u043D\u043E\u043D\u0438\u043C\u043E\u043C, \u043C\u0435\u0441\u0442\u043E\u0438\u043C\u0435\u043D\u0438\u0435\u043C \u0438\u043B\u0438 \u043D\u043E\u043C\u0438\u043D\u0430\u043B\u044C\u043D\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u043E\u0439.',
+  ]
+  if (tail.length) {
+    lines.push(
+      '',
+      '\u0423\u0422\u041E\u0427\u041D\u042F\u042E\u0429\u0418\u0415 \u0421\u041C\u042B\u0421\u041B\u042B. \u042D\u0442\u043E \u0442\u043E, \u0447\u0442\u043E \u043B\u044E\u0434\u0438 \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u044E\u0442 \u043A \u0433\u043B\u0430\u0432\u043D\u043E\u043C\u0443 \u043A\u043B\u044E\u0447\u0443 \u2014 \u0440\u0430\u0441\u043A\u0440\u043E\u0439',
+      '\u041A\u0410\u0416\u0414\u042B\u0419 \u043F\u043E \u0441\u043C\u044B\u0441\u043B\u0443 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u043C \u043F\u0430\u0441\u0441\u0430\u0436\u0435\u043C \u0438\u043B\u0438 \u043F\u043E\u0434\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u043C. \u041D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439 \u043F\u0440\u0438 \u044D\u0442\u043E\u043C',
+      '\u0433\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447 \u0446\u0435\u043B\u0438\u043A\u043E\u043C, \u0431\u0435\u0440\u0438 \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0441\u043B\u043E\u0432\u0430:'
+    )
+    for (const p of tail) {
+      lines.push(
+        `  - ${modifierWords(p.phrase, mainKeyword)} (\u0438\u0437 "${p.phrase}", ${p.count.toLocaleString()}/\u043C\u0435\u0441)`
+      )
+    }
+  }
+  return lines.join('\n') + '\n'
+}
+
 // lib/telegram.js
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN
 var CHAT_ID = process.env.SEO_LAB_CHAT_ID
@@ -555,23 +656,16 @@ async function generateMdxArticle(topic) {
       if (wordstatRaw.length > 0) break
     }
   }
-  const wordstatTop = wordstatRaw.filter((k) => k.count > 0).slice(0, 15)
-  const wordstatKeywords = wordstatTop.map((k) => k.phrase)
-  const wordstatBlock =
-    wordstatTop.length > 0
-      ? `
-\u0420\u0415\u0410\u041B\u042C\u041D\u042B\u0415 \u0414\u0410\u041D\u041D\u042B\u0415 \u0418\u0417 WORDSTAT (\u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \u044D\u0442\u0438 \u043A\u043B\u044E\u0447\u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0447\u043D\u043E \u0432 \u0442\u0435\u043A\u0441\u0442\u0435):
-` +
-        wordstatTop
-          .map(
-            (k) =>
-              `  - "${k.phrase}" \u2014 ${k.count.toLocaleString()} \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432/\u043C\u0435\u0441`
-          )
-          .join('\n')
-      : ''
-  if (wordstatTop.length > 0) {
+  const selection = selectLsiPhrases(
+    wordstatRaw.filter((k) => k.count > 0),
+    topic.keyword,
+    topic.wordstatVolume
+  )
+  const wordstatKeywords = [...selection.anchors, ...selection.tail].map((k) => k.phrase)
+  const wordstatBlock = buildWordstatBlock(selection, topic.keyword, topic.wordstatVolume)
+  if (wordstatKeywords.length > 0) {
     console.log(
-      `[writer] Wordstat: ${wordstatTop.length} \u043A\u043B\u044E\u0447\u0435\u0439, \u0442\u043E\u043F: "${wordstatTop[0].phrase}" (${wordstatTop[0].count}/\u043C\u0435\u0441)`
+      `[writer] Wordstat: \u044F\u043A\u043E\u0440\u0435\u0439 ${selection.anchors.length}, \u0443\u0442\u043E\u0447\u043D\u044F\u044E\u0449\u0438\u0445 ${selection.tail.length}, \u043F\u043E\u0440\u043E\u0433 ${selection.floor}/\u043C\u0435\u0441`
     )
   }
   const forcedSetting = detectSetting(topic.keyword, topic.title, topic.id + 3)
