@@ -7,9 +7,29 @@ import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { buildWordstatBlock, selectLsiPhrases } from './lib/lsi.js'
+import {
+  type LsiSelection,
+  MAX_MAIN_KEY_USES,
+  buildWordstatBlock,
+  modifierWords,
+  selectLsiPhrases,
+} from './lib/lsi.js'
 import { sendMessage } from './lib/telegram.js'
+import {
+  SEMANTICS_RELATIVE_PATH,
+  type SpecViolation,
+  type TechSpec,
+  buildSourceDataBlock,
+  buildTopvisorContext,
+  containsMainKeyword,
+  checkTechSpec,
+  loadTopvisorSemantics,
+  renderTechSpec,
+} from './lib/tz.js'
 import { fetchWordstatKeywords } from './lib/yandex.js'
+
+// Стандарт 2.7b: ответ FAQ короче попадает в сниппет обрывком и не берёт featured snippet.
+const FAQ_MIN_WORDS = 120
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
@@ -615,6 +635,242 @@ function injectImagesIntoMarkdown(
   return lines.join('\n')
 }
 
+// ─── ТЗ: аналитик составляет, SEO согласует ──────────────────────────────────
+
+const SEMANTICS_FILE = path.join(import.meta.dirname, SEMANTICS_RELATIVE_PATH)
+
+interface OutlinePlan {
+  h2s: { title: string; keyPoints: string[]; factualAnchors?: string[] }[]
+  metaTitle: string
+  metaDesc: string
+  slug: string
+}
+
+interface SeoResearch {
+  intent: string
+  successCriteria: string[]
+  antifakeMarkers?: string[]
+}
+
+// Поля, которые агенты заполняют сами; остальное ТЗ берёт из замеров и не отдаёт
+// на усмотрение модели — иначе лимит вхождений становится предметом переговоров.
+interface AgentSpecFields {
+  metaTitle: string
+  metaDesc: string
+  exactPhrases: { phrase: string; uses: number }[]
+  dilutedPhrases: string[]
+  interlinks: string[]
+  h2Requirements: string[]
+  wordCountMin: number
+  wordCountMax: number
+  factualAnchors: string[]
+}
+
+function parseJsonObject<T>(raw: string, who: string): T {
+  const m = raw.match(/\{[\s\S]*\}/)
+  if (!m) throw new Error(`${who} не вернул JSON`)
+  return JSON.parse(m[0]) as T
+}
+
+async function buildTechSpec(
+  topic: Topic,
+  plan: OutlinePlan,
+  seoData: SeoResearch,
+  selection: LsiSelection,
+  wordstatBlock: string
+): Promise<TechSpec> {
+  console.log('[writer] Шаг 2б: ТЗ от аналитика и SEO...')
+
+  const tv = buildTopvisorContext(topic.keyword, topic.title, loadTopvisorSemantics(SEMANTICS_FILE))
+  console.log(
+    `[writer] Топвизор: занятых ключей по теме ${tv.stopList.length}, ` +
+      `из них в дожиме 31-100 — ${tv.pushUp.length}`
+  )
+
+  const sourceData = buildSourceDataBlock(
+    topic.keyword,
+    topic.wordstatVolume ?? null,
+    selection,
+    tv
+  )
+  const h2List = plan.h2s.map((h, i) => `${i + 1}. ${h.title}`).join('\n')
+  const owners = [...new Set(tv.stopList.map((k) => k.relevantUrl))]
+
+  const task = `Тема: "${topic.title}"
+Главный ключ: "${topic.keyword}"
+Аудитория: ${topic.audience}
+Интент: ${seoData.intent}
+Черновой title: "${plan.metaTitle}"
+Черновой description: "${plan.metaDesc}"
+
+Структура статьи, уже утверждённая планировщиком:
+${h2List}
+
+${sourceData}
+${wordstatBlock}
+
+Верни JSON строго такого вида, без пояснений:
+{
+  "metaTitle": "до 60 символов, с главным ключом",
+  "metaDesc": "строго 130-155 символов, с главным ключом",
+  "exactPhrases": [{"phrase": "фраза дословно", "uses": 2}],
+  "dilutedPhrases": ["смысл, который раскрыть без дословного вхождения"],
+  "interlinks": ["https://d-pub.ru/..."],
+  "h2Requirements": ["смысл, который обязан быть раскрыт отдельным разделом"],
+  "wordCountMin": 1400,
+  "wordCountMax": 2200,
+  "factualAnchors": ["конкретная цифра или факт с источником, который обязан попасть в текст"]
+}
+
+Правила заполнения:
+- exactPhrases: только фразы, которые НЕ содержат главный ключ целиком. Вордстат
+  отдаёт в основном вложенные фразы вида «<главный ключ> + уточнение» — каждое их
+  дословное вхождение тратит бюджет главного ключа, а шесть обязательных мест его
+  уже выбирают. Такие фразы идут в dilutedPhrases, не сюда. Суммарно не больше 12
+  точных вхождений на статью.
+- dilutedPhrases: уточняющие смыслы (например «без опыта», «образец»), которые
+  раскрываются пассажем или подзаголовком без повторения главного ключа целиком.
+- interlinks: только адреса из списка занятых ключей выше. Ничего не выдумывай.
+- h2Requirements: смыслы, а не формулировки — заголовки пишет писатель.
+- wordCountMin/Max: от интента и конкуренции, коридор не шире 800 слов.
+- factualAnchors: то, что делает статью непересказуемой AI-поиском.`
+
+  const draftRaw = await askClaude(
+    `Составь техническое задание на SEO-статью для job board d-pub.ru.
+Ты отвечаешь за данные: частотность, коридор спроса, риск каннибализации с нашими
+же страницами. Опирайся на замеры ниже, не на общие соображения.
+
+${task}`,
+    'analyst'
+  )
+  const draft = parseJsonObject<AgentSpecFields>(draftRaw, 'Аналитик')
+
+  const agreedRaw = await askClaude(
+    `Прими или поправь техническое задание на SEO-статью для job board d-pub.ru.
+ТЗ составил аналитик по замерам частотности. Твоя зона — поисковая часть: title и
+description, вхождения ключей, риск переспама, перелинковка, полнота структуры.
+
+Меняй только то, что реально неверно, и верни ИТОГОВЫЙ JSON того же вида целиком —
+он уходит писателю как есть, третьей итерации не будет.
+
+ТЗ ОТ АНАЛИТИКА:
+${JSON.stringify(draft, null, 2)}
+
+${task}
+
+Отдельно проверь:
+- title до 60 символов и description 130-155 символов — это жёсткие лимиты выдачи;
+- ни один ключ из списка занятых не попал в exactPhrases: за ним уже стоит своя
+  страница, и две наши страницы начнут конкурировать за один запрос;
+- каждый адрес из interlinks встречается в списке занятых ключей выше;
+- суммарное число точных вхождений не превышает 12.`,
+    'seo'
+  )
+  const agreed = parseJsonObject<AgentSpecFields>(agreedRaw, 'SEO')
+
+  const stopPhrases = tv.stopList.map((k) => ({ phrase: k.keyword, ownerUrl: k.relevantUrl }))
+  // Перелинковку сверяем со списком владельцев: адрес, которого нет в семантике,
+  // агент выдумал, и статья уедет с битой ссылкой.
+  const interlinks = (agreed.interlinks ?? []).filter((u) => owners.includes(u))
+
+  const tz: TechSpec = {
+    topicId: topic.id,
+    title: topic.title,
+    mainKeyword: topic.keyword,
+    mainVolume: topic.wordstatVolume ?? null,
+    audience: topic.audience,
+    intent: seoData.intent,
+    metaTitle: agreed.metaTitle || plan.metaTitle,
+    metaDesc: agreed.metaDesc || plan.metaDesc,
+    maxMainKeyUses: MAX_MAIN_KEY_USES,
+    exactPhrases: (agreed.exactPhrases ?? []).filter(
+      (p) =>
+        !stopPhrases.some((s) => s.phrase === p.phrase) &&
+        !containsMainKeyword(p.phrase, topic.keyword)
+    ),
+    dilutedPhrases: [
+      ...(agreed.dilutedPhrases ?? []),
+      // Фраза с главным ключом внутри требует раскрытия смысла, а не дословности —
+      // иначе её вхождения складываются с бюджетом главного ключа и дают переспам.
+      ...(agreed.exactPhrases ?? [])
+        .filter((p) => containsMainKeyword(p.phrase, topic.keyword))
+        .map((p) => modifierWords(p.phrase, topic.keyword))
+        .filter(Boolean),
+    ],
+    stopPhrases,
+    interlinks,
+    h2Requirements: agreed.h2Requirements ?? [],
+    wordCountMin: agreed.wordCountMin || 1400,
+    wordCountMax: agreed.wordCountMax || 2200,
+    faqMinWords: FAQ_MIN_WORDS,
+    factualAnchors: agreed.factualAnchors ?? [],
+    antifakeMarkers: seoData.antifakeMarkers ?? [],
+    agreedBy: ['analyst', 'seo'],
+  }
+
+  console.log(
+    `[writer] ТЗ согласовано: точных фраз ${tz.exactPhrases.length}, ` +
+      `разбавленных ${tz.dilutedPhrases.length}, ссылок ${tz.interlinks.length}, ` +
+      `объём ${tz.wordCountMin}-${tz.wordCountMax}`
+  )
+  return tz
+}
+
+// ─── Приёмка по ТЗ ───────────────────────────────────────────────────────────
+
+// Один круг правок: если писатель не закрыл нарушения со второй попытки, дело не в
+// формулировке промпта, и гонять модель дальше — жечь время до утренней публикации.
+const REPAIR_ROUNDS = 1
+
+// Сообщение уходит в Телеграм вместо статьи — по нему должно быть понятно, что
+// именно править, без похода в логи.
+export class SpecRejected extends Error {
+  constructor(public readonly violations: SpecViolation[]) {
+    super(
+      `Статья не принята по ТЗ:\n${violations.map((v) => `• ${v.rule}: ${v.detail}`).join('\n')}`
+    )
+    this.name = 'SpecRejected'
+  }
+}
+
+async function acceptAgainstSpec(tz: TechSpec, markdown: string): Promise<string> {
+  console.log('[writer] Шаг 4б: Приёмка по ТЗ...')
+  let current = markdown
+
+  for (let round = 0; round <= REPAIR_ROUNDS; round++) {
+    const violations = checkTechSpec(tz, current)
+    if (violations.length === 0) {
+      console.log('[writer] Приёмка: принято ✓')
+      return current
+    }
+
+    console.log(
+      `[writer] Приёмка: нарушений ${violations.length} — ` +
+        violations.map((v) => `${v.rule} (${v.detail})`).join('; ')
+    )
+    if (round === REPAIR_ROUNDS) throw new SpecRejected(violations)
+
+    console.log(`[writer] Приёмка: круг правок ${round + 1}/${REPAIR_ROUNDS}...`)
+    current = await askClaude(
+      `Приёмка статьи выявила расхождения с ТЗ. Исправь ровно их, не трогая остальное:
+статья уже прошла стилевую и SEO-правку, переписывать её заново не нужно.
+
+РАСХОЖДЕНИЯ:
+${violations.map((v) => `- ${v.rule}: ${v.detail}`).join('\n')}
+
+${renderTechSpec(tz)}
+
+СТАТЬЯ:
+${current}
+
+Верни ТОЛЬКО исправленный Markdown статьи — без пояснений, без списка правок.`,
+      'writer'
+    )
+  }
+
+  return current
+}
+
 // ─── Article generation pipeline ─────────────────────────────────────────────
 
 async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
@@ -781,6 +1037,12 @@ ${(seoData.antifakeMarkers || []).length ? `МИФЫ ДЛЯ ОПРОВЕРЖЕН
     slug: string
   }
 
+  // ШАГ 2б: ТЗ от аналитика и SEO
+  const tz = await buildTechSpec(topic, plan, seoData, selection, wordstatBlock)
+  plan.metaTitle = tz.metaTitle
+  plan.metaDesc = tz.metaDesc
+  const tzText = renderTechSpec(tz)
+
   // ШАГ 3: Черновик
   console.log('[writer] Шаг 3: Пишу черновик...')
   const planText = plan.h2s
@@ -821,10 +1083,12 @@ ${(seoData.antifakeMarkers || []).length ? `МИФЫ ДЛЯ ОПРОВЕРЖЕН
 
 Напиши статью для Диджитал Паб (d-pub.ru) — job board для digital-специалистов.
 
-ТЕМА: ${topic.title}
-КЛЮЧЕВОЕ СЛОВО: "${topic.keyword}" — используй в первом абзаце и максимум 6 раз по тексту
+Ниже — согласованное ТЗ. По нему же статью будут принимать: каждый пункт с цифрой
+проверяется механически, и статья с невыполненным пунктом не публикуется.
+
+${tzText}
+
 LSI-слова из поиска (вплети органично): ${seoData.lsi.join(', ')}
-АУДИТОРИЯ: ${topic.audience}
 ${dataGapsBlock}${successBlock}
 
 ПЛАН (строго следуй этой структуре):
@@ -1154,7 +1418,10 @@ ${markdown}
   }
   const preReviewWords = markdown.split(/\s+/).length
   const reviewedWords = reviewedCandidate.split(/\s+/).length
-  const finalMarkdown = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
+  const reviewedFinal = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
+
+  // ШАГ 4б: приёмка по ТЗ
+  const finalMarkdown = await acceptAgainstSpec(tz, reviewedFinal)
 
   return {
     markdown: finalMarkdown,

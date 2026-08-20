@@ -1,8 +1,8 @@
 // writer.ts
 import { execSync, spawn } from 'child_process'
-import fs from 'fs'
+import fs2 from 'fs'
 import os from 'os'
-import path from 'path'
+import path2 from 'path'
 
 // lib/lsi.ts
 var MAX_MAIN_KEY_USES = 6
@@ -131,6 +131,258 @@ async function sendMessage(text, extra = {}) {
   return data.result.message_id
 }
 
+// lib/tz.ts
+import fs from 'fs'
+import path from 'path'
+var SEMANTICS_RELATIVE_PATH = path.join('data', 'topvisor-semantics.json')
+var INTENT_STEMS = new Set(
+  [
+    '\u0440\u0435\u0437\u044E\u043C\u0435',
+    '\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438',
+    '\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u044F',
+    '\u0437\u0430\u0440\u043F\u043B\u0430\u0442\u0430',
+    '\u0440\u0430\u0431\u043E\u0442\u0430',
+    '\u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u044F',
+    '\u043F\u043E\u0440\u0442\u0444\u043E\u043B\u0438\u043E',
+    '\u0441\u043E\u0431\u0435\u0441\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u0435',
+    '\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435',
+    '\u043A\u0443\u0440\u0441\u044B',
+    '\u0442\u0435\u0441\u0442\u043E\u0432\u043E\u0435',
+    '\u0437\u0430\u0434\u0430\u043D\u0438\u0435',
+    '\u043D\u0430\u0439\u0442\u0438',
+    '\u043D\u0430\u043D\u044F\u0442\u044C',
+    '\u0441\u0442\u0430\u0442\u044C',
+    '\u043E\u043F\u044B\u0442\u0430',
+    '\u043E\u0431\u0440\u0430\u0437\u0435\u0446',
+    '\u0448\u0430\u0431\u043B\u043E\u043D',
+    '\u043F\u0440\u0438\u043C\u0435\u0440',
+  ].map((w) => w.slice(0, 5))
+)
+function loadTopvisorSemantics(file) {
+  if (!fs.existsSync(file)) {
+    console.warn(
+      `[tz] \u0411\u0430\u043D\u043A \u0441\u0435\u043C\u0430\u043D\u0442\u0438\u043A\u0438 \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D: ${file}. STOP-\u043B\u0438\u0441\u0442 \u0431\u0443\u0434\u0435\u0442 \u043F\u0443\u0441\u0442\u044B\u043C.`
+    )
+    return { keywords: [], snapshotDate: '' }
+  }
+  const raw = JSON.parse(fs.readFileSync(file, 'utf-8'))
+  return { keywords: raw.keywords ?? [], snapshotDate: raw.snapshotDate ?? '' }
+}
+function containsMainKeyword(phrase, mainKeyword) {
+  const phraseStems = new Set(stems(phrase))
+  return stems(mainKeyword).every((s) => phraseStems.has(s))
+}
+function sharedSubjectStems(a, b) {
+  const bStems = new Set(stems(b))
+  return [...new Set(stems(a).filter((s) => bStems.has(s) && !INTENT_STEMS.has(s)))]
+}
+function buildTopvisorContext(topicKeyword, topicTitle, semantics) {
+  const subject = `${topicKeyword} ${topicTitle}`
+  const related = semantics.keywords.filter(
+    (k) => k.relevantUrl && sharedSubjectStems(k.keyword, subject).length > 0
+  )
+  const byPosition = [...related].sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+  return {
+    pushUp: byPosition.filter((k) => k.position !== null && k.position > 30 && k.position <= 100),
+    stopList: byPosition,
+    snapshotDate: semantics.snapshotDate,
+  }
+}
+function buildSourceDataBlock(mainKeyword, mainVolume, lsi, tv) {
+  const lines = [
+    '\u0418\u0421\u0425\u041E\u0414\u041D\u042B\u0415 \u0414\u0410\u041D\u041D\u042B\u0415 (\u0437\u0430\u043C\u0435\u0440\u044B, \u043D\u0435 \u043E\u0446\u0435\u043D\u043A\u0438)',
+    '',
+    `\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${mainKeyword}"${mainVolume === null ? '' : ` \u2014 ${mainVolume.toLocaleString()}/\u043C\u0435\u0441`}`,
+    `\u041F\u043E\u0440\u043E\u0433 \u043E\u0442\u0441\u0435\u0447\u0435\u043D\u0438\u044F \u0444\u0440\u0430\u0437: ${lsi.floor}/\u043C\u0435\u0441`,
+  ]
+  if (lsi.tail.length) {
+    lines.push(
+      '',
+      '\u0423\u0442\u043E\u0447\u043D\u044F\u044E\u0449\u0438\u0435 \u0441\u043C\u044B\u0441\u043B\u044B \u0438\u0437 \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442\u0430 (\u0447\u0442\u043E \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u044E\u0442 \u043A \u0433\u043B\u0430\u0432\u043D\u043E\u043C\u0443 \u043A\u043B\u044E\u0447\u0443):'
+    )
+    for (const p of lsi.tail) {
+      lines.push(
+        `  - ${modifierWords(p.phrase, mainKeyword)} \u2014 ${p.count.toLocaleString()}/\u043C\u0435\u0441`
+      )
+    }
+  }
+  if (tv.pushUp.length) {
+    lines.push(
+      '',
+      `\u041D\u0430\u0448\u0438 \u043F\u043E\u0437\u0438\u0446\u0438\u0438 31-100 \u043F\u043E \u0442\u0435\u043C\u0435 (\u0441\u043D\u0438\u043C\u043E\u043A \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440\u0430 ${tv.snapshotDate}) \u2014 \u044D\u0442\u0438 \u043A\u043B\u044E\u0447\u0438`,
+      '\u0434\u043E\u0436\u0438\u043C\u0430\u0435\u0442 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430-\u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446, \u043D\u043E\u0432\u0430\u044F \u0441\u0442\u0430\u0442\u044C\u044F \u043D\u0430 \u043D\u0438\u0445 \u043D\u0435 \u043F\u0440\u0435\u0442\u0435\u043D\u0434\u0443\u0435\u0442:'
+    )
+    for (const k of tv.pushUp) {
+      lines.push(
+        `  - "${k.keyword}" \u2014 \u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position}, \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${k.relevantUrl}`
+      )
+    }
+  }
+  if (tv.stopList.length) {
+    lines.push(
+      '',
+      '\u0417\u0410\u041D\u042F\u0422\u042B\u0415 \u041A\u041B\u042E\u0427\u0418. \u0417\u0430 \u043A\u0430\u0436\u0434\u044B\u043C \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0430 \u0441\u0432\u043E\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430. \u0421\u0442\u0430\u0432\u0438\u0442\u044C \u0438\u0445 \u0432 title,',
+      'H1 \u0438\u043B\u0438 H2 \u043D\u043E\u0432\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0438 \u043D\u0435\u043B\u044C\u0437\u044F \u2014 \u0434\u0432\u0435 \u043D\u0430\u0448\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0430\u0447\u043D\u0443\u0442 \u043A\u043E\u043D\u043A\u0443\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0437\u0430 \u043E\u0434\u0438\u043D',
+      '\u0437\u0430\u043F\u0440\u043E\u0441, \u0438 \u042F\u043D\u0434\u0435\u043A\u0441 \u0432\u044B\u0431\u0435\u0440\u0435\u0442 \u043E\u0434\u043D\u0443 \u0441\u0430\u043C. \u0412 \u0442\u0435\u043A\u0441\u0442\u0435 \u043D\u0430 \u0442\u0430\u043A\u043E\u0439 \u043A\u043B\u044E\u0447 \u0441\u0442\u0430\u0432\u0438\u0442\u0441\u044F \u0441\u0441\u044B\u043B\u043A\u0430:'
+    )
+    for (const k of tv.stopList) {
+      lines.push(
+        `  - "${k.keyword}" \u2192 ${k.relevantUrl}${k.position === null ? '' : ` (\u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position})`}`
+      )
+    }
+  }
+  return lines.join('\n')
+}
+function renderTechSpec(tz) {
+  const lines = [
+    '\u0422\u0415\u0425\u041D\u0418\u0427\u0415\u0421\u041A\u041E\u0415 \u0417\u0410\u0414\u0410\u041D\u0418\u0415 \u041D\u0410 \u0421\u0422\u0410\u0422\u042C\u042E',
+    `\u0421\u043E\u0433\u043B\u0430\u0441\u043E\u0432\u0430\u043D\u043E: ${tz.agreedBy.join(', ')}`,
+    '',
+    `\u0422\u0435\u043C\u0430: ${tz.title}`,
+    `\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${tz.mainKeyword}"${tz.mainVolume === null ? '' : ` (${tz.mainVolume.toLocaleString()}/\u043C\u0435\u0441)`}`,
+    `\u0410\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u044F: ${tz.audience}`,
+    `\u0418\u043D\u0442\u0435\u043D\u0442: ${tz.intent}`,
+    '',
+    'META',
+    `  title (${tz.metaTitle.length} \u0441\u0438\u043C\u0432): ${tz.metaTitle}`,
+    `  description (${tz.metaDesc.length} \u0441\u0438\u043C\u0432): ${tz.metaDesc}`,
+    '',
+    '\u0412\u0425\u041E\u0416\u0414\u0415\u041D\u0418\u042F',
+    `  \u0422\u043E\u0447\u043D\u0430\u044F \u0444\u0440\u0430\u0437\u0430 "${tz.mainKeyword}" \u2014 \u043D\u0435 \u0431\u043E\u043B\u0435\u0435 ${tz.maxMainKeyUses} \u0440\u0430\u0437 \u043D\u0430 \u0432\u0441\u044E \u0441\u0442\u0430\u0442\u044C\u044E.`,
+    '  \u041C\u0435\u0441\u0442\u0430 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0439: title, H1, \u043F\u0435\u0440\u0432\u044B\u0435 60 \u0441\u043B\u043E\u0432, \u043F\u0435\u0440\u0432\u044B\u0439 H2, \u043E\u0434\u0438\u043D \u043E\u0442\u0432\u0435\u0442',
+    '  FAQ, meta description. \u0412\u0441\u0451 \u0441\u0432\u0435\u0440\u0445 \u2014 \u043F\u0435\u0440\u0435\u0441\u043F\u0430\u043C.',
+  ]
+  if (tz.exactPhrases.length) {
+    lines.push(
+      '',
+      '  \u0422\u043E\u0447\u043D\u044B\u0435 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F (\u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E, \u0441 \u0443\u043A\u0430\u0437\u0430\u043D\u043D\u044B\u043C \u0447\u0438\u0441\u043B\u043E\u043C \u0440\u0430\u0437):'
+    )
+    for (const p of tz.exactPhrases)
+      lines.push(`    - "${p.phrase}" \u2014 ${p.uses} \u0440\u0430\u0437`)
+  }
+  if (tz.dilutedPhrases.length) {
+    lines.push(
+      '',
+      '  \u0420\u0430\u0437\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0435 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F (\u0441\u043C\u044B\u0441\u043B \u0440\u0430\u0441\u043A\u0440\u044B\u0442\u044C, \u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E\u0441\u0442\u044C \u043D\u0435 \u043D\u0443\u0436\u043D\u0430 \u2014 \u043C\u043E\u0436\u043D\u043E \u043C\u0435\u043D\u044F\u0442\u044C',
+      '  \u043F\u0430\u0434\u0435\u0436, \u043F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043B\u043E\u0432, \u0432\u0441\u0442\u0430\u0432\u043B\u044F\u0442\u044C \u0441\u043B\u043E\u0432\u0430 \u0432\u043D\u0443\u0442\u0440\u044C):'
+    )
+    for (const p of tz.dilutedPhrases) lines.push(`    - ${p}`)
+  }
+  if (tz.stopPhrases.length) {
+    lines.push(
+      '',
+      'STOP-\u041B\u0418\u0421\u0422. \u042D\u0442\u0438 \u043A\u043B\u044E\u0447\u0438 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u044B \u0437\u0430 \u0434\u0440\u0443\u0433\u0438\u043C\u0438 \u043D\u0430\u0448\u0438\u043C\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430\u043C\u0438. \u0412 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430\u0445',
+      '\u043D\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C; \u043F\u0440\u0438 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0438 \u0432 \u0442\u0435\u043A\u0441\u0442\u0435 \u2014 \u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430:'
+    )
+    for (const p of tz.stopPhrases) lines.push(`  - "${p.phrase}" \u2192 ${p.ownerUrl}`)
+  }
+  if (tz.interlinks.length) {
+    lines.push(
+      '',
+      '\u041E\u0411\u042F\u0417\u0410\u0422\u0415\u041B\u042C\u041D\u0410\u042F \u041F\u0415\u0420\u0415\u041B\u0418\u041D\u041A\u041E\u0412\u041A\u0410 (\u043C\u0438\u043D\u0438\u043C\u0443\u043C \u043F\u043E \u043E\u0434\u043D\u043E\u0439 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0430 \u043A\u0430\u0436\u0434\u044B\u0439 \u0430\u0434\u0440\u0435\u0441):'
+    )
+    for (const url of tz.interlinks) lines.push(`  - ${url}`)
+  }
+  if (tz.h2Requirements.length) {
+    lines.push(
+      '',
+      '\u0421\u0422\u0420\u0423\u041A\u0422\u0423\u0420\u0410 H2 (\u0441\u043C\u044B\u0441\u043B\u044B, \u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0430 \u0443\u0441\u043C\u043E\u0442\u0440\u0435\u043D\u0438\u0435 \u043F\u0438\u0441\u0430\u0442\u0435\u043B\u044F):'
+    )
+    for (const h of tz.h2Requirements) lines.push(`  - ${h}`)
+  }
+  lines.push(
+    '',
+    '\u041E\u0411\u042A\u0401\u041C',
+    `  \u0422\u0435\u043B\u043E \u0441\u0442\u0430\u0442\u044C\u0438: ${tz.wordCountMin}-${tz.wordCountMax} \u0441\u043B\u043E\u0432.`,
+    `  \u041A\u0430\u0436\u0434\u044B\u0439 \u043E\u0442\u0432\u0435\u0442 FAQ: \u043D\u0435 \u043C\u0435\u043D\u0435\u0435 ${tz.faqMinWords} \u0441\u043B\u043E\u0432.`
+  )
+  if (tz.factualAnchors.length) {
+    lines.push(
+      '',
+      '\u0424\u0410\u041A\u0422\u0423\u0420\u0410 (\u043E\u0431\u044F\u0437\u0430\u043D\u0430 \u043F\u043E\u043F\u0430\u0441\u0442\u044C \u0432 \u0442\u0435\u043A\u0441\u0442, \u0441 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u0438 \u0434\u0430\u0442\u043E\u0439):'
+    )
+    for (const f of tz.factualAnchors) lines.push(`  - ${f}`)
+  }
+  if (tz.antifakeMarkers.length) {
+    lines.push(
+      '',
+      '\u0410\u041D\u0422\u0418\u0424\u0415\u0419\u041A (\u043E\u043F\u0440\u043E\u0432\u0435\u0440\u0433\u043D\u0443\u0442\u044C \u0432 \u0442\u0435\u043B\u0435 \u0441\u0442\u0430\u0442\u044C\u0438):'
+    )
+    for (const m of tz.antifakeMarkers) lines.push(`  - ${m}`)
+  }
+  return lines.join('\n')
+}
+function checkTechSpec(tz, markdown) {
+  const violations = []
+  const lower = markdown.toLowerCase().replace(/ё/g, '\u0435')
+  const countOf = (phrase) => {
+    const needle = phrase.toLowerCase().replace(/ё/g, '\u0435')
+    if (!needle) return 0
+    return lower.split(needle).length - 1
+  }
+  const mainUses = countOf(tz.mainKeyword)
+  if (mainUses > tz.maxMainKeyUses) {
+    violations.push({
+      rule: '\u041F\u0435\u0440\u0435\u0441\u043F\u0430\u043C \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u043A\u043B\u044E\u0447\u0430',
+      detail: `"${tz.mainKeyword}" \u0432\u0441\u0442\u0440\u0435\u0447\u0430\u0435\u0442\u0441\u044F ${mainUses} \u0440\u0430\u0437 \u043F\u0440\u0438 \u043B\u0438\u043C\u0438\u0442\u0435 ${tz.maxMainKeyUses}`,
+    })
+  }
+  for (const p of tz.exactPhrases) {
+    const got = countOf(p.phrase)
+    if (got < p.uses) {
+      violations.push({
+        rule: '\u041D\u0435\u0434\u043E\u0431\u043E\u0440 \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F',
+        detail: `"${p.phrase}" \u2014 ${got} \u0438\u0437 ${p.uses}`,
+      })
+    }
+  }
+  const headings = markdown
+    .split('\n')
+    .filter((l) => /^#{1,3}\s/.test(l))
+    .join('\n')
+    .toLowerCase()
+    .replace(/ё/g, '\u0435')
+  for (const p of tz.stopPhrases) {
+    if (headings.includes(p.phrase.toLowerCase().replace(/ё/g, '\u0435'))) {
+      violations.push({
+        rule: '\u0417\u0430\u043D\u044F\u0442\u044B\u0439 \u043A\u043B\u044E\u0447 \u0432 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0435',
+        detail: `"${p.phrase}" \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 ${p.ownerUrl}`,
+      })
+    }
+  }
+  for (const url of tz.interlinks) {
+    if (!markdown.includes(url) && !markdown.includes(new URL(url).pathname)) {
+      violations.push({
+        rule: '\u041D\u0435\u0442 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0441\u044B\u043B\u043A\u0438',
+        detail: url,
+      })
+    }
+  }
+  const words = markdown
+    .replace(/[#*`>[\]()]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean).length
+  if (words < tz.wordCountMin) {
+    violations.push({
+      rule: '\u041D\u0435\u0434\u043E\u0431\u043E\u0440 \u043E\u0431\u044A\u0451\u043C\u0430',
+      detail: `${words} \u0441\u043B\u043E\u0432 \u043F\u0440\u0438 \u043C\u0438\u043D\u0438\u043C\u0443\u043C\u0435 ${tz.wordCountMin}`,
+    })
+  }
+  if (tz.metaTitle.length > 60) {
+    violations.push({
+      rule: '\u0414\u043B\u0438\u043D\u043D\u044B\u0439 title',
+      detail: `${tz.metaTitle.length} \u0441\u0438\u043C\u0432 \u043F\u0440\u0438 \u043B\u0438\u043C\u0438\u0442\u0435 60`,
+    })
+  }
+  if (tz.metaDesc.length < 130 || tz.metaDesc.length > 155) {
+    violations.push({
+      rule: 'Description \u0432\u043D\u0435 130-155',
+      detail: `${tz.metaDesc.length} \u0441\u0438\u043C\u0432`,
+    })
+  }
+  return violations
+}
+
 // lib/yandex.js
 var YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
 var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
@@ -181,14 +433,15 @@ async function fetchWordstatKeywords(keyword, numPhrases = 20) {
 }
 
 // writer.ts
-var DATA_DIR = path.join(import.meta.dirname, 'data')
-var PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
-var ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
-var IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
+var FAQ_MIN_WORDS = 120
+var DATA_DIR = path2.join(import.meta.dirname, 'data')
+var PROJECT_ROOT = path2.resolve(import.meta.dirname, '..', '..')
+var ARTICLES_DIR = path2.join(PROJECT_ROOT, 'content', 'articles')
+var IMAGES_DIR = path2.join(PROJECT_ROOT, 'public', 'images', 'posts')
 var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-var CODEX_BIN = path.join(os.homedir(), '.npm-global', 'bin', 'codex')
-var CODEX_HOME = path.join(os.homedir(), '.codex')
-var REFERENCE_IMAGE = path.join(import.meta.dirname, 'reference.webp')
+var CODEX_BIN = path2.join(os.homedir(), '.npm-global', 'bin', 'codex')
+var CODEX_HOME = path2.join(os.homedir(), '.codex')
+var REFERENCE_IMAGE = path2.join(import.meta.dirname, 'reference.webp')
 var PERSPECTIVES = [
   'face-on front view, character faces the viewer directly',
   '3/4 front-left angle, character turned slightly away to the left',
@@ -329,15 +582,15 @@ function askClaude(prompt, agent) {
   })
 }
 function snapshotGeneratedImages() {
-  const generatedDir = path.join(CODEX_HOME, 'generated_images')
+  const generatedDir = path2.join(CODEX_HOME, 'generated_images')
   const images = /* @__PURE__ */ new Set()
-  if (!fs.existsSync(generatedDir)) return images
-  for (const session of fs.readdirSync(generatedDir)) {
-    const sessionDir = path.join(generatedDir, session)
+  if (!fs2.existsSync(generatedDir)) return images
+  for (const session of fs2.readdirSync(generatedDir)) {
+    const sessionDir = path2.join(generatedDir, session)
     try {
-      for (const file of fs.readdirSync(sessionDir)) {
+      for (const file of fs2.readdirSync(sessionDir)) {
         if (file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.jpg')) {
-          images.add(path.join(sessionDir, file))
+          images.add(path2.join(sessionDir, file))
         }
       }
     } catch {}
@@ -353,7 +606,7 @@ function findNewImage(before) {
 }
 function convertToWebP(srcPng, destWebp) {
   const script = `
-    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('${path2.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -367,7 +620,7 @@ function convertToWebP(srcPng, destWebp) {
 }
 function convertSketchToWebP(srcPng, destWebp) {
   const script = `
-    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('${path2.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
       .then(m => m.default('${srcPng}').resize({width: 900, withoutEnlargement: true}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -380,7 +633,7 @@ function convertSketchToWebP(srcPng, destWebp) {
   })
 }
 async function generateImageWithCodex(imagePrompt, slug, topic) {
-  if (!fs.existsSync(CODEX_BIN)) {
+  if (!fs2.existsSync(CODEX_BIN)) {
     console.log(
       '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438'
     )
@@ -393,7 +646,7 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
   const gender = GENDERS[genderIdx]
   const setting = detectSetting(topic.keyword, topic.title, topic.id)
   const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable \u2014 do NOT change the gender. MANDATORY: include exactly 1 human person prominently in the foreground. CHARACTER ANGLE: ${perspective}. SETTING: ${setting}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. REALISM: candid photo feel \u2014 natural relaxed poses, objects placed as in real life. LAPTOP RULE: the person works at a laptop. The laptop sits naturally on the desk. The screen faces the person (not the camera) and glows softly with indistinct ambient light \u2014 no readable text, no charts, no UI elements, just a warm or cool glow suggesting active use. Think: professional stock photo where the screen is implied but never the focus. FORBIDDEN: any specific content (charts, dashboards, text) on any screen surface, including the outside back of the lid. SCENE CONTEXT (activity and mood only \u2014 gender, setting, and laptop rule already fixed above): ${imagePrompt}. Generate this pixel art image now.`
-  const refArg = fs.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
+  const refArg = fs2.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
   const runCodex = () =>
     new Promise((resolve) => {
       const child = spawn(
@@ -436,8 +689,8 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
   console.log(
     `[writer] \u041D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: ${newImage}`
   )
-  fs.mkdirSync(IMAGES_DIR, { recursive: true })
-  const destWebp = path.join(IMAGES_DIR, `${slug}.webp`)
+  fs2.mkdirSync(IMAGES_DIR, { recursive: true })
+  const destWebp = path2.join(IMAGES_DIR, `${slug}.webp`)
   try {
     convertToWebP(newImage, destWebp)
     console.log(`[writer] WebP \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${destWebp}`)
@@ -447,8 +700,8 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
       '[writer] \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0430\u0446\u0438\u044F \u0432 WebP \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C, \u043A\u043E\u043F\u0438\u0440\u0443\u044E PNG:',
       e.message
     )
-    const destPng = path.join(IMAGES_DIR, `${slug}.png`)
-    fs.copyFileSync(newImage, destPng)
+    const destPng = path2.join(IMAGES_DIR, `${slug}.png`)
+    fs2.copyFileSync(newImage, destPng)
     return `/images/posts/${slug}.png`
   }
 }
@@ -518,7 +771,7 @@ ${h2List}
   for (let i = 0; i < Math.min(spec.charts?.length ?? 0, 2); i++) {
     const chart = spec.charts[i]
     const filename = `${slug}-chart${i + 1}.png`
-    const localPath = path.join(IMAGES_DIR, filename)
+    const localPath = path2.join(IMAGES_DIR, filename)
     const webPath = `/images/posts/${filename}`
     try {
       const response = await fetch('https://quickchart.io/chart', {
@@ -537,8 +790,8 @@ ${h2List}
         continue
       }
       const buffer = Buffer.from(await response.arrayBuffer())
-      fs.mkdirSync(IMAGES_DIR, { recursive: true })
-      fs.writeFileSync(localPath, buffer)
+      fs2.mkdirSync(IMAGES_DIR, { recursive: true })
+      fs2.writeFileSync(localPath, buffer)
       console.log(
         `[writer] QuickChart \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`
       )
@@ -553,7 +806,7 @@ ${h2List}
   return results
 }
 async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structure, markdown) {
-  if (!fs.existsSync(CODEX_BIN)) {
+  if (!fs2.existsSync(CODEX_BIN)) {
     console.log(
       '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447\u0438'
     )
@@ -593,9 +846,9 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
       )
       continue
     }
-    fs.mkdirSync(IMAGES_DIR, { recursive: true })
+    fs2.mkdirSync(IMAGES_DIR, { recursive: true })
     const suffix = i === 0 ? '-sketch' : `-sketch${i + 1}`
-    const destWebp = path.join(IMAGES_DIR, `${slug}${suffix}.webp`)
+    const destWebp = path2.join(IMAGES_DIR, `${slug}${suffix}.webp`)
     try {
       convertSketchToWebP(newImage, destWebp)
       const webPath = `/images/posts/${slug}${suffix}.webp`
@@ -604,8 +857,8 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
       )
       results.push(webPath)
     } catch {
-      const destPng = path.join(IMAGES_DIR, `${slug}${suffix}.png`)
-      fs.copyFileSync(newImage, destPng)
+      const destPng = path2.join(IMAGES_DIR, `${slug}${suffix}.png`)
+      fs2.copyFileSync(newImage, destPng)
       results.push(`/images/posts/${slug}${suffix}.png`)
     }
   }
@@ -646,6 +899,189 @@ function injectImagesIntoMarkdown(markdown, charts, sketchPaths) {
     lines.splice(lineIdx, 0, tag)
   }
   return lines.join('\n')
+}
+var SEMANTICS_FILE = path2.join(import.meta.dirname, SEMANTICS_RELATIVE_PATH)
+function parseJsonObject(raw, who) {
+  const m = raw.match(/\{[\s\S]*\}/)
+  if (!m) throw new Error(`${who} \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON`)
+  return JSON.parse(m[0])
+}
+async function buildTechSpec(topic, plan, seoData, selection, wordstatBlock) {
+  console.log(
+    '[writer] \u0428\u0430\u0433 2\u0431: \u0422\u0417 \u043E\u0442 \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430 \u0438 SEO...'
+  )
+  const tv = buildTopvisorContext(topic.keyword, topic.title, loadTopvisorSemantics(SEMANTICS_FILE))
+  console.log(
+    `[writer] \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440: \u0437\u0430\u043D\u044F\u0442\u044B\u0445 \u043A\u043B\u044E\u0447\u0435\u0439 \u043F\u043E \u0442\u0435\u043C\u0435 ${tv.stopList.length}, \u0438\u0437 \u043D\u0438\u0445 \u0432 \u0434\u043E\u0436\u0438\u043C\u0435 31-100 \u2014 ${tv.pushUp.length}`
+  )
+  const sourceData = buildSourceDataBlock(
+    topic.keyword,
+    topic.wordstatVolume ?? null,
+    selection,
+    tv
+  )
+  const h2List = plan.h2s.map((h, i) => `${i + 1}. ${h.title}`).join('\n')
+  const owners = [...new Set(tv.stopList.map((k) => k.relevantUrl))]
+  const task = `\u0422\u0435\u043C\u0430: "${topic.title}"
+\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${topic.keyword}"
+\u0410\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u044F: ${topic.audience}
+\u0418\u043D\u0442\u0435\u043D\u0442: ${seoData.intent}
+\u0427\u0435\u0440\u043D\u043E\u0432\u043E\u0439 title: "${plan.metaTitle}"
+\u0427\u0435\u0440\u043D\u043E\u0432\u043E\u0439 description: "${plan.metaDesc}"
+
+\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430 \u0441\u0442\u0430\u0442\u044C\u0438, \u0443\u0436\u0435 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043D\u043D\u0430\u044F \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A\u043E\u043C:
+${h2List}
+
+${sourceData}
+${wordstatBlock}
+
+\u0412\u0435\u0440\u043D\u0438 JSON \u0441\u0442\u0440\u043E\u0433\u043E \u0442\u0430\u043A\u043E\u0433\u043E \u0432\u0438\u0434\u0430, \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439:
+{
+  "metaTitle": "\u0434\u043E 60 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432, \u0441 \u0433\u043B\u0430\u0432\u043D\u044B\u043C \u043A\u043B\u044E\u0447\u043E\u043C",
+  "metaDesc": "\u0441\u0442\u0440\u043E\u0433\u043E 130-155 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432, \u0441 \u0433\u043B\u0430\u0432\u043D\u044B\u043C \u043A\u043B\u044E\u0447\u043E\u043C",
+  "exactPhrases": [{"phrase": "\u0444\u0440\u0430\u0437\u0430 \u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E", "uses": 2}],
+  "dilutedPhrases": ["\u0441\u043C\u044B\u0441\u043B, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u0440\u0430\u0441\u043A\u0440\u044B\u0442\u044C \u0431\u0435\u0437 \u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E\u0433\u043E \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F"],
+  "interlinks": ["https://d-pub.ru/..."],
+  "h2Requirements": ["\u0441\u043C\u044B\u0441\u043B, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043E\u0431\u044F\u0437\u0430\u043D \u0431\u044B\u0442\u044C \u0440\u0430\u0441\u043A\u0440\u044B\u0442 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u043C \u0440\u0430\u0437\u0434\u0435\u043B\u043E\u043C"],
+  "wordCountMin": 1400,
+  "wordCountMax": 2200,
+  "factualAnchors": ["\u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u0430\u044F \u0446\u0438\u0444\u0440\u0430 \u0438\u043B\u0438 \u0444\u0430\u043A\u0442 \u0441 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043E\u0431\u044F\u0437\u0430\u043D \u043F\u043E\u043F\u0430\u0441\u0442\u044C \u0432 \u0442\u0435\u043A\u0441\u0442"]
+}
+
+\u041F\u0440\u0430\u0432\u0438\u043B\u0430 \u0437\u0430\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F:
+- exactPhrases: \u0442\u043E\u043B\u044C\u043A\u043E \u0444\u0440\u0430\u0437\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u041D\u0415 \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442 \u0433\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447 \u0446\u0435\u043B\u0438\u043A\u043E\u043C. \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442
+  \u043E\u0442\u0434\u0430\u0451\u0442 \u0432 \u043E\u0441\u043D\u043E\u0432\u043D\u043E\u043C \u0432\u043B\u043E\u0436\u0435\u043D\u043D\u044B\u0435 \u0444\u0440\u0430\u0437\u044B \u0432\u0438\u0434\u0430 \xAB<\u0433\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447> + \u0443\u0442\u043E\u0447\u043D\u0435\u043D\u0438\u0435\xBB \u2014 \u043A\u0430\u0436\u0434\u043E\u0435 \u0438\u0445
+  \u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E\u0435 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0435 \u0442\u0440\u0430\u0442\u0438\u0442 \u0431\u044E\u0434\u0436\u0435\u0442 \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u043A\u043B\u044E\u0447\u0430, \u0430 \u0448\u0435\u0441\u0442\u044C \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u043C\u0435\u0441\u0442 \u0435\u0433\u043E
+  \u0443\u0436\u0435 \u0432\u044B\u0431\u0438\u0440\u0430\u044E\u0442. \u0422\u0430\u043A\u0438\u0435 \u0444\u0440\u0430\u0437\u044B \u0438\u0434\u0443\u0442 \u0432 dilutedPhrases, \u043D\u0435 \u0441\u044E\u0434\u0430. \u0421\u0443\u043C\u043C\u0430\u0440\u043D\u043E \u043D\u0435 \u0431\u043E\u043B\u044C\u0448\u0435 12
+  \u0442\u043E\u0447\u043D\u044B\u0445 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0439 \u043D\u0430 \u0441\u0442\u0430\u0442\u044C\u044E.
+- dilutedPhrases: \u0443\u0442\u043E\u0447\u043D\u044F\u044E\u0449\u0438\u0435 \u0441\u043C\u044B\u0441\u043B\u044B (\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 \xAB\u0431\u0435\u0437 \u043E\u043F\u044B\u0442\u0430\xBB, \xAB\u043E\u0431\u0440\u0430\u0437\u0435\u0446\xBB), \u043A\u043E\u0442\u043E\u0440\u044B\u0435
+  \u0440\u0430\u0441\u043A\u0440\u044B\u0432\u0430\u044E\u0442\u0441\u044F \u043F\u0430\u0441\u0441\u0430\u0436\u0435\u043C \u0438\u043B\u0438 \u043F\u043E\u0434\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u043C \u0431\u0435\u0437 \u043F\u043E\u0432\u0442\u043E\u0440\u0435\u043D\u0438\u044F \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u043A\u043B\u044E\u0447\u0430 \u0446\u0435\u043B\u0438\u043A\u043E\u043C.
+- interlinks: \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u0440\u0435\u0441\u0430 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0437\u0430\u043D\u044F\u0442\u044B\u0445 \u043A\u043B\u044E\u0447\u0435\u0439 \u0432\u044B\u0448\u0435. \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0432\u044B\u0434\u0443\u043C\u044B\u0432\u0430\u0439.
+- h2Requirements: \u0441\u043C\u044B\u0441\u043B\u044B, \u0430 \u043D\u0435 \u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0438 \u2014 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 \u043F\u0438\u0448\u0435\u0442 \u043F\u0438\u0441\u0430\u0442\u0435\u043B\u044C.
+- wordCountMin/Max: \u043E\u0442 \u0438\u043D\u0442\u0435\u043D\u0442\u0430 \u0438 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0446\u0438\u0438, \u043A\u043E\u0440\u0438\u0434\u043E\u0440 \u043D\u0435 \u0448\u0438\u0440\u0435 800 \u0441\u043B\u043E\u0432.
+- factualAnchors: \u0442\u043E, \u0447\u0442\u043E \u0434\u0435\u043B\u0430\u0435\u0442 \u0441\u0442\u0430\u0442\u044C\u044E \u043D\u0435\u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437\u0443\u0435\u043C\u043E\u0439 AI-\u043F\u043E\u0438\u0441\u043A\u043E\u043C.`
+  const draftRaw = await askClaude(
+    `\u0421\u043E\u0441\u0442\u0430\u0432\u044C \u0442\u0435\u0445\u043D\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u0435 \u043D\u0430 SEO-\u0441\u0442\u0430\u0442\u044C\u044E \u0434\u043B\u044F job board d-pub.ru.
+\u0422\u044B \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0448\u044C \u0437\u0430 \u0434\u0430\u043D\u043D\u044B\u0435: \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C, \u043A\u043E\u0440\u0438\u0434\u043E\u0440 \u0441\u043F\u0440\u043E\u0441\u0430, \u0440\u0438\u0441\u043A \u043A\u0430\u043D\u043D\u0438\u0431\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u0438 \u0441 \u043D\u0430\u0448\u0438\u043C\u0438
+\u0436\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430\u043C\u0438. \u041E\u043F\u0438\u0440\u0430\u0439\u0441\u044F \u043D\u0430 \u0437\u0430\u043C\u0435\u0440\u044B \u043D\u0438\u0436\u0435, \u043D\u0435 \u043D\u0430 \u043E\u0431\u0449\u0438\u0435 \u0441\u043E\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F.
+
+${task}`,
+    'analyst'
+  )
+  const draft = parseJsonObject(draftRaw, '\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A')
+  const agreedRaw = await askClaude(
+    `\u041F\u0440\u0438\u043C\u0438 \u0438\u043B\u0438 \u043F\u043E\u043F\u0440\u0430\u0432\u044C \u0442\u0435\u0445\u043D\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u0435 \u043D\u0430 SEO-\u0441\u0442\u0430\u0442\u044C\u044E \u0434\u043B\u044F job board d-pub.ru.
+\u0422\u0417 \u0441\u043E\u0441\u0442\u0430\u0432\u0438\u043B \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u043F\u043E \u0437\u0430\u043C\u0435\u0440\u0430\u043C \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u0438. \u0422\u0432\u043E\u044F \u0437\u043E\u043D\u0430 \u2014 \u043F\u043E\u0438\u0441\u043A\u043E\u0432\u0430\u044F \u0447\u0430\u0441\u0442\u044C: title \u0438
+description, \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u043A\u043B\u044E\u0447\u0435\u0439, \u0440\u0438\u0441\u043A \u043F\u0435\u0440\u0435\u0441\u043F\u0430\u043C\u0430, \u043F\u0435\u0440\u0435\u043B\u0438\u043D\u043A\u043E\u0432\u043A\u0430, \u043F\u043E\u043B\u043D\u043E\u0442\u0430 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u044B.
+
+\u041C\u0435\u043D\u044F\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E, \u0447\u0442\u043E \u0440\u0435\u0430\u043B\u044C\u043D\u043E \u043D\u0435\u0432\u0435\u0440\u043D\u043E, \u0438 \u0432\u0435\u0440\u043D\u0438 \u0418\u0422\u041E\u0413\u041E\u0412\u042B\u0419 JSON \u0442\u043E\u0433\u043E \u0436\u0435 \u0432\u0438\u0434\u0430 \u0446\u0435\u043B\u0438\u043A\u043E\u043C \u2014
+\u043E\u043D \u0443\u0445\u043E\u0434\u0438\u0442 \u043F\u0438\u0441\u0430\u0442\u0435\u043B\u044E \u043A\u0430\u043A \u0435\u0441\u0442\u044C, \u0442\u0440\u0435\u0442\u044C\u0435\u0439 \u0438\u0442\u0435\u0440\u0430\u0446\u0438\u0438 \u043D\u0435 \u0431\u0443\u0434\u0435\u0442.
+
+\u0422\u0417 \u041E\u0422 \u0410\u041D\u0410\u041B\u0418\u0422\u0418\u041A\u0410:
+${JSON.stringify(draft, null, 2)}
+
+${task}
+
+\u041E\u0442\u0434\u0435\u043B\u044C\u043D\u043E \u043F\u0440\u043E\u0432\u0435\u0440\u044C:
+- title \u0434\u043E 60 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432 \u0438 description 130-155 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432 \u2014 \u044D\u0442\u043E \u0436\u0451\u0441\u0442\u043A\u0438\u0435 \u043B\u0438\u043C\u0438\u0442\u044B \u0432\u044B\u0434\u0430\u0447\u0438;
+- \u043D\u0438 \u043E\u0434\u0438\u043D \u043A\u043B\u044E\u0447 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0437\u0430\u043D\u044F\u0442\u044B\u0445 \u043D\u0435 \u043F\u043E\u043F\u0430\u043B \u0432 exactPhrases: \u0437\u0430 \u043D\u0438\u043C \u0443\u0436\u0435 \u0441\u0442\u043E\u0438\u0442 \u0441\u0432\u043E\u044F
+  \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430, \u0438 \u0434\u0432\u0435 \u043D\u0430\u0448\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0430\u0447\u043D\u0443\u0442 \u043A\u043E\u043D\u043A\u0443\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0437\u0430 \u043E\u0434\u0438\u043D \u0437\u0430\u043F\u0440\u043E\u0441;
+- \u043A\u0430\u0436\u0434\u044B\u0439 \u0430\u0434\u0440\u0435\u0441 \u0438\u0437 interlinks \u0432\u0441\u0442\u0440\u0435\u0447\u0430\u0435\u0442\u0441\u044F \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u0437\u0430\u043D\u044F\u0442\u044B\u0445 \u043A\u043B\u044E\u0447\u0435\u0439 \u0432\u044B\u0448\u0435;
+- \u0441\u0443\u043C\u043C\u0430\u0440\u043D\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u0442\u043E\u0447\u043D\u044B\u0445 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0439 \u043D\u0435 \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u0435\u0442 12.`,
+    'seo'
+  )
+  const agreed = parseJsonObject(agreedRaw, 'SEO')
+  const stopPhrases = tv.stopList.map((k) => ({ phrase: k.keyword, ownerUrl: k.relevantUrl }))
+  const interlinks = (agreed.interlinks ?? []).filter((u) => owners.includes(u))
+  const tz = {
+    topicId: topic.id,
+    title: topic.title,
+    mainKeyword: topic.keyword,
+    mainVolume: topic.wordstatVolume ?? null,
+    audience: topic.audience,
+    intent: seoData.intent,
+    metaTitle: agreed.metaTitle || plan.metaTitle,
+    metaDesc: agreed.metaDesc || plan.metaDesc,
+    maxMainKeyUses: MAX_MAIN_KEY_USES,
+    exactPhrases: (agreed.exactPhrases ?? []).filter(
+      (p) =>
+        !stopPhrases.some((s) => s.phrase === p.phrase) &&
+        !containsMainKeyword(p.phrase, topic.keyword)
+    ),
+    dilutedPhrases: [
+      ...(agreed.dilutedPhrases ?? []),
+      // Фраза с главным ключом внутри требует раскрытия смысла, а не дословности —
+      // иначе её вхождения складываются с бюджетом главного ключа и дают переспам.
+      ...(agreed.exactPhrases ?? [])
+        .filter((p) => containsMainKeyword(p.phrase, topic.keyword))
+        .map((p) => modifierWords(p.phrase, topic.keyword))
+        .filter(Boolean),
+    ],
+    stopPhrases,
+    interlinks,
+    h2Requirements: agreed.h2Requirements ?? [],
+    wordCountMin: agreed.wordCountMin || 1400,
+    wordCountMax: agreed.wordCountMax || 2200,
+    faqMinWords: FAQ_MIN_WORDS,
+    factualAnchors: agreed.factualAnchors ?? [],
+    antifakeMarkers: seoData.antifakeMarkers ?? [],
+    agreedBy: ['analyst', 'seo'],
+  }
+  console.log(
+    `[writer] \u0422\u0417 \u0441\u043E\u0433\u043B\u0430\u0441\u043E\u0432\u0430\u043D\u043E: \u0442\u043E\u0447\u043D\u044B\u0445 \u0444\u0440\u0430\u0437 ${tz.exactPhrases.length}, \u0440\u0430\u0437\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0445 ${tz.dilutedPhrases.length}, \u0441\u0441\u044B\u043B\u043E\u043A ${tz.interlinks.length}, \u043E\u0431\u044A\u0451\u043C ${tz.wordCountMin}-${tz.wordCountMax}`
+  )
+  return tz
+}
+var REPAIR_ROUNDS = 1
+var SpecRejected = class extends Error {
+  constructor(violations) {
+    super(
+      `\u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442\u0430 \u043F\u043E \u0422\u0417:
+${violations.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join('\n')}`
+    )
+    this.violations = violations
+    this.name = 'SpecRejected'
+  }
+  violations
+}
+async function acceptAgainstSpec(tz, markdown) {
+  console.log(
+    '[writer] \u0428\u0430\u0433 4\u0431: \u041F\u0440\u0438\u0451\u043C\u043A\u0430 \u043F\u043E \u0422\u0417...'
+  )
+  let current = markdown
+  for (let round = 0; round <= REPAIR_ROUNDS; round++) {
+    const violations = checkTechSpec(tz, current)
+    if (violations.length === 0) {
+      console.log(
+        '[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u2713'
+      )
+      return current
+    }
+    console.log(
+      `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${violations.length} \u2014 ` +
+        violations.map((v) => `${v.rule} (${v.detail})`).join('; ')
+    )
+    if (round === REPAIR_ROUNDS) throw new SpecRejected(violations)
+    console.log(
+      `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round + 1}/${REPAIR_ROUNDS}...`
+    )
+    current = await askClaude(
+      `\u041F\u0440\u0438\u0451\u043C\u043A\u0430 \u0441\u0442\u0430\u0442\u044C\u0438 \u0432\u044B\u044F\u0432\u0438\u043B\u0430 \u0440\u0430\u0441\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u0441 \u0422\u0417. \u0418\u0441\u043F\u0440\u0430\u0432\u044C \u0440\u043E\u0432\u043D\u043E \u0438\u0445, \u043D\u0435 \u0442\u0440\u043E\u0433\u0430\u044F \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u043E\u0435:
+\u0441\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043F\u0440\u043E\u0448\u043B\u0430 \u0441\u0442\u0438\u043B\u0435\u0432\u0443\u044E \u0438 SEO-\u043F\u0440\u0430\u0432\u043A\u0443, \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u0442\u044C \u0435\u0451 \u0437\u0430\u043D\u043E\u0432\u043E \u043D\u0435 \u043D\u0443\u0436\u043D\u043E.
+
+\u0420\u0410\u0421\u0425\u041E\u0416\u0414\u0415\u041D\u0418\u042F:
+${violations.map((v) => `- ${v.rule}: ${v.detail}`).join('\n')}
+
+${renderTechSpec(tz)}
+
+\u0421\u0422\u0410\u0422\u042C\u042F:
+${current}
+
+\u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0439 Markdown \u0441\u0442\u0430\u0442\u044C\u0438 \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439, \u0431\u0435\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A.`,
+      'writer'
+    )
+  }
+  return current
 }
 async function generateMdxArticle(topic) {
   console.log('[writer] \u0428\u0430\u0433 1: Wordstat keyword research...')
@@ -800,6 +1236,10 @@ ${(seoData.antifakeMarkers || []).length ? `\u041C\u0418\u0424\u042B \u0414\u041
       '\u041F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON'
     )
   const plan = JSON.parse(outlineMatch[0])
+  const tz = await buildTechSpec(topic, plan, seoData, selection, wordstatBlock)
+  plan.metaTitle = tz.metaTitle
+  plan.metaDesc = tz.metaDesc
+  const tzText = renderTechSpec(tz)
   console.log(
     '[writer] \u0428\u0430\u0433 3: \u041F\u0438\u0448\u0443 \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A...'
   )
@@ -844,10 +1284,12 @@ ${seoData.antifakeMarkers.map((m) => `  \u2014 ${m}`).join('\n')}
 
 \u041D\u0430\u043F\u0438\u0448\u0438 \u0441\u0442\u0430\u0442\u044C\u044E \u0434\u043B\u044F \u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431 (d-pub.ru) \u2014 job board \u0434\u043B\u044F digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432.
 
-\u0422\u0415\u041C\u0410: ${topic.title}
-\u041A\u041B\u042E\u0427\u0415\u0412\u041E\u0415 \u0421\u041B\u041E\u0412\u041E: "${topic.keyword}" \u2014 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \u0432 \u043F\u0435\u0440\u0432\u043E\u043C \u0430\u0431\u0437\u0430\u0446\u0435 \u0438 \u043C\u0430\u043A\u0441\u0438\u043C\u0443\u043C 6 \u0440\u0430\u0437 \u043F\u043E \u0442\u0435\u043A\u0441\u0442\u0443
+\u041D\u0438\u0436\u0435 \u2014 \u0441\u043E\u0433\u043B\u0430\u0441\u043E\u0432\u0430\u043D\u043D\u043E\u0435 \u0422\u0417. \u041F\u043E \u043D\u0435\u043C\u0443 \u0436\u0435 \u0441\u0442\u0430\u0442\u044C\u044E \u0431\u0443\u0434\u0443\u0442 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u0442\u044C: \u043A\u0430\u0436\u0434\u044B\u0439 \u043F\u0443\u043D\u043A\u0442 \u0441 \u0446\u0438\u0444\u0440\u043E\u0439
+\u043F\u0440\u043E\u0432\u0435\u0440\u044F\u0435\u0442\u0441\u044F \u043C\u0435\u0445\u0430\u043D\u0438\u0447\u0435\u0441\u043A\u0438, \u0438 \u0441\u0442\u0430\u0442\u044C\u044F \u0441 \u043D\u0435\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u043C \u043F\u0443\u043D\u043A\u0442\u043E\u043C \u043D\u0435 \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0435\u0442\u0441\u044F.
+
+${tzText}
+
 LSI-\u0441\u043B\u043E\u0432\u0430 \u0438\u0437 \u043F\u043E\u0438\u0441\u043A\u0430 (\u0432\u043F\u043B\u0435\u0442\u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0447\u043D\u043E): ${seoData.lsi.join(', ')}
-\u0410\u0423\u0414\u0418\u0422\u041E\u0420\u0418\u042F: ${topic.audience}
 ${dataGapsBlock}${successBlock}
 
 \u041F\u041B\u0410\u041D (\u0441\u0442\u0440\u043E\u0433\u043E \u0441\u043B\u0435\u0434\u0443\u0439 \u044D\u0442\u043E\u0439 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0435):
@@ -1081,7 +1523,7 @@ ${dynamicSeoBlock}`
     44, 34, 166, 202, 210, 208, 108, 40, 32, 100, 96, 36, 206, 172, 78,
   ])
   const allBiases = JSON.parse(
-    fs.readFileSync(path.join(DATA_DIR, 'nudge-biases.json'), 'utf-8')
+    fs2.readFileSync(path2.join(DATA_DIR, 'nudge-biases.json'), 'utf-8')
   ).biases
   const nudgeCatalog = allBiases
     .filter((b) => nudgeBiasIds.has(b.id))
@@ -1186,7 +1628,8 @@ ${markdown}
   }
   const preReviewWords = markdown.split(/\s+/).length
   const reviewedWords = reviewedCandidate.split(/\s+/).length
-  const finalMarkdown = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
+  const reviewedFinal = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
+  const finalMarkdown = await acceptAgainstSpec(tz, reviewedFinal)
   return {
     markdown: finalMarkdown,
     metaTitle: plan.metaTitle,
@@ -1242,7 +1685,7 @@ tags: ${tags}${imageLine}${schemaLine}
 `
 }
 function getLatestTopicsFile() {
-  const files = fs
+  const files = fs2
     .readdirSync(DATA_DIR)
     .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
     .sort()
@@ -1251,16 +1694,16 @@ function getLatestTopicsFile() {
     throw new Error(
       '\u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u0443\u0441\u0442\u0438 analyst.js'
     )
-  return path.join(DATA_DIR, files[0])
+  return path2.join(DATA_DIR, files[0])
 }
 function markTopicPublished(topicsFile, topicId) {
-  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8'))
+  const raw = JSON.parse(fs2.readFileSync(topicsFile, 'utf-8'))
   const topic = raw.topics.find((t) => t.id === topicId)
   if (topic) topic.published = true
-  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+  fs2.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
 }
 function gitCommitAndPush(slug, title, hasImage) {
-  const mdxPath = path.join('content', 'articles', `${slug}.mdx`)
+  const mdxPath = path2.join('content', 'articles', `${slug}.mdx`)
   execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   if (hasImage) {
     execSync(`git add public/images/posts/${slug}* 2>/dev/null || true`, {
@@ -1273,7 +1716,7 @@ function gitCommitAndPush(slug, title, hasImage) {
   execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
 function syncToProduction(slug, hasImage) {
-  const SSH_KEY = path.join(os.homedir(), '.ssh', 'github_actions_deploy')
+  const SSH_KEY = path2.join(os.homedir(), '.ssh', 'github_actions_deploy')
   const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`
   const PROD = 'c48127@91.201.52.231:~/d-pub.ru/app'
   execSync(
@@ -1300,7 +1743,7 @@ async function main() {
     process.exit(1)
   }
   const topicsFile = getLatestTopicsFile()
-  const { topics } = JSON.parse(fs.readFileSync(topicsFile, 'utf8'))
+  const { topics } = JSON.parse(fs2.readFileSync(topicsFile, 'utf8'))
   const topic = topics.find((t) => t.id === topicNum)
   if (!topic)
     throw new Error(
@@ -1322,8 +1765,8 @@ async function main() {
   console.log(
     `[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u0433\u043E\u0442\u043E\u0432\u0430, slug: ${result.slug}`
   )
-  const mdxPath = path.join(ARTICLES_DIR, `${result.slug}.mdx`)
-  if (fs.existsSync(mdxPath)) {
+  const mdxPath = path2.join(ARTICLES_DIR, `${result.slug}.mdx`)
+  if (fs2.existsSync(mdxPath)) {
     result.slug = `${result.slug}-${Date.now().toString(36)}`
     console.log(
       `[writer] Slug \u0441\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D: ${result.slug}`
@@ -1366,8 +1809,8 @@ async function main() {
   const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
-  fs.mkdirSync(ARTICLES_DIR, { recursive: true })
-  fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
+  fs2.mkdirSync(ARTICLES_DIR, { recursive: true })
+  fs2.writeFileSync(path2.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
   console.log(
     `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
   )
@@ -1450,3 +1893,4 @@ main().catch((e) => {
 ${e.message}`).catch(() => {})
   process.exit(1)
 })
+export { SpecRejected }
