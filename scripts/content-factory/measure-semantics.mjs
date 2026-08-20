@@ -31,7 +31,12 @@ const MAX_RETRIES = 6
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const semantics = JSON.parse(fs.readFileSync(SEMANTICS, 'utf-8'))
-const targets = semantics.keywords.filter((k) => ALL || k.position === null)
+// Ранжирующиеся идут первыми: только у них есть посадочная, и только они попадают
+// в STOP-лист и в цели дожима, то есть нужны ТЗ уже сегодня. Остальные — база под
+// будущие темы, они могут подождать хвоста прогона.
+const targets = semantics.keywords
+  .filter((k) => ALL || k.position === null)
+  .sort((a, b) => (a.position === null ? 1 : 0) - (b.position === null ? 1 : 0))
 
 // Уже снятое подхватываем — прогон можно продолжить после обрыва.
 const state = fs.existsSync(OUT)
