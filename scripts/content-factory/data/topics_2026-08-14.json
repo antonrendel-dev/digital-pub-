@@ -607,12 +607,14 @@
       "type": "Гайд",
       "trafficEst": "~26-52/мес",
       "notes": "КАНДИДАТ №1: ~450 показов/28дн GSC поз. 22-30 при 0 кликов",
-      "approved": true,
+      "approved": false,
       "published": false,
       "wordstatVolume": 26,
       "originalKeyword": "seo специалист вакансии",
       "originalTitle": "Вакансии SEO-специалиста: где искать работу, удалённо и без опыта",
-      "originalVolume": 235
+      "originalVolume": 235,
+      "droppedAt": "2026-08-21",
+      "dropReason": "Дублирует /articles/zarplata-seo-specialista (поз. 15.4) — treatment-группа эксперимента переписи, замер 13.09."
     },
     {
       "id": 230,
@@ -658,12 +660,14 @@
       "type": "Гайд",
       "trafficEst": "н/д",
       "notes": "Показы в Вебмастере без кликов; частотность добрать",
-      "approved": true,
+      "approved": false,
       "published": false,
       "wordstatVolume": 75,
       "originalKeyword": "head of smm",
       "originalTitle": "Head of SMM: кто это, зарплата и как дорасти",
-      "originalVolume": 84
+      "originalVolume": 84,
+      "droppedAt": "2026-08-21",
+      "dropReason": "Дублирует /articles/zarplata-smm-spetsialista-realnie-dannye-iz-vakansiy (поз. 21.1) — treatment-группа эксперимента переписи, замер 13.09."
     },
     {
       "id": 233,
@@ -767,12 +771,14 @@
       "type": "Чеклист",
       "trafficEst": "н/д",
       "notes": "Имиджевая для d-pub как агрегатора из Telegram",
-      "approved": true,
+      "approved": false,
       "published": false,
       "wordstatVolume": 281,
       "originalKeyword": "фейковые вакансии как распознать",
       "originalTitle": "Фейковые вакансии и скам в Telegram: как отличить работодателя от мошенника",
-      "originalVolume": 3
+      "originalVolume": 3,
+      "droppedAt": "2026-08-21",
+      "dropReason": "Дублирует /articles/telegram-kanaly-vakansii-smm (поз. 15.4) — control-группа эксперимента, трогать нельзя до 13.09."
     },
     {
       "id": 239,
