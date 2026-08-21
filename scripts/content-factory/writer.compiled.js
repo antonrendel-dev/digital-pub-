@@ -135,6 +135,7 @@ async function sendMessage(text, extra = {}) {
 import fs from 'fs'
 import path from 'path'
 var SEMANTICS_RELATIVE_PATH = path.join('data', 'topvisor-semantics.json')
+var VOLUMES_FILE = 'semantics-volumes.json'
 var INTENT_STEMS = new Set(
   [
     '\u0440\u0435\u0437\u044E\u043C\u0435',
@@ -166,7 +167,20 @@ function loadTopvisorSemantics(file) {
     return { keywords: [], snapshotDate: '' }
   }
   const raw = JSON.parse(fs.readFileSync(file, 'utf-8'))
-  return { keywords: raw.keywords ?? [], snapshotDate: raw.snapshotDate ?? '' }
+  const volumes = loadVolumes(path.join(path.dirname(file), VOLUMES_FILE))
+  return {
+    keywords: (raw.keywords ?? []).map((k) => ({ ...k, volume: volumes.get(k.keyword) ?? null })),
+    snapshotDate: raw.snapshotDate ?? '',
+  }
+}
+function loadVolumes(file) {
+  if (!fs.existsSync(file)) return /* @__PURE__ */ new Map()
+  const raw = JSON.parse(fs.readFileSync(file, 'utf-8'))
+  const out = /* @__PURE__ */ new Map()
+  for (const [keyword, data] of Object.entries(raw.seeds ?? {})) {
+    if (typeof data.volume === 'number') out.set(keyword, data.volume)
+  }
+  return out
 }
 function containsMainKeyword(phrase, mainKeyword) {
   const phraseStems = new Set(stems(phrase))
@@ -188,6 +202,8 @@ function buildTopvisorContext(topicKeyword, topicTitle, semantics) {
     snapshotDate: semantics.snapshotDate,
   }
 }
+var formatVolume = (volume) =>
+  typeof volume === 'number' ? ` \u2014 ${volume.toLocaleString()}/\u043C\u0435\u0441` : ''
 function buildSourceDataBlock(mainKeyword, mainVolume, lsi, tv) {
   const lines = [
     '\u0418\u0421\u0425\u041E\u0414\u041D\u042B\u0415 \u0414\u0410\u041D\u041D\u042B\u0415 (\u0437\u0430\u043C\u0435\u0440\u044B, \u043D\u0435 \u043E\u0446\u0435\u043D\u043A\u0438)',
@@ -214,7 +230,7 @@ function buildSourceDataBlock(mainKeyword, mainVolume, lsi, tv) {
     )
     for (const k of tv.pushUp) {
       lines.push(
-        `  - "${k.keyword}" \u2014 \u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position}, \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${k.relevantUrl}`
+        `  - "${k.keyword}"${formatVolume(k.volume)}, \u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position}, \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${k.relevantUrl}`
       )
     }
   }
@@ -227,7 +243,7 @@ function buildSourceDataBlock(mainKeyword, mainVolume, lsi, tv) {
     )
     for (const k of tv.stopList) {
       lines.push(
-        `  - "${k.keyword}" \u2192 ${k.relevantUrl}${k.position === null ? '' : ` (\u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position})`}`
+        `  - "${k.keyword}"${formatVolume(k.volume)} \u2192 ${k.relevantUrl}${k.position === null ? '' : ` (\u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position})`}`
       )
     }
   }

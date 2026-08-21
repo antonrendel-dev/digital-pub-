@@ -20,6 +20,7 @@ export interface TopvisorKeyword {
   keyword: string
   position: number | null
   relevantUrl: string
+  volume?: number | null
 }
 
 export interface OwnedKeyword extends TopvisorKeyword {
@@ -64,6 +65,11 @@ export interface TechSpec {
 // а import.meta.dirname здесь ломает ts-jest, который грузит исходник как CJS.
 export const SEMANTICS_RELATIVE_PATH = path.join('data', 'topvisor-semantics.json')
 
+// Замеры Вордстата лежат рядом с банком и приклеиваются к нему по ключу. Без цифры
+// занятый ключ и цель дожима выглядят равнозначными, и решение «сослаться или
+// проигнорировать» принимается вслепую.
+const VOLUMES_FILE = 'semantics-volumes.json'
+
 // Ключ вида «<интент> <профессия>» состоит из двух частей, и разводит темы только
 // вторая. Совпадение по интенту роднит «резюме дизайнера» с «резюме таргетолога» —
 // это разные темы. Совпадение по профессии роднит «резюме таргетолога» с
@@ -107,7 +113,23 @@ export function loadTopvisorSemantics(file: string): {
     keywords?: TopvisorKeyword[]
     snapshotDate?: string
   }
-  return { keywords: raw.keywords ?? [], snapshotDate: raw.snapshotDate ?? '' }
+  const volumes = loadVolumes(path.join(path.dirname(file), VOLUMES_FILE))
+  return {
+    keywords: (raw.keywords ?? []).map((k) => ({ ...k, volume: volumes.get(k.keyword) ?? null })),
+    snapshotDate: raw.snapshotDate ?? '',
+  }
+}
+
+function loadVolumes(file: string): Map<string, number> {
+  if (!fs.existsSync(file)) return new Map()
+  const raw = JSON.parse(fs.readFileSync(file, 'utf-8')) as {
+    seeds?: Record<string, { volume?: number }>
+  }
+  const out = new Map<string, number>()
+  for (const [keyword, data] of Object.entries(raw.seeds ?? {})) {
+    if (typeof data.volume === 'number') out.set(keyword, data.volume)
+  }
+  return out
 }
 
 /**
@@ -151,6 +173,9 @@ export function buildTopvisorContext(
   }
 }
 
+const formatVolume = (volume: number | null | undefined): string =>
+  typeof volume === 'number' ? ` — ${volume.toLocaleString()}/мес` : ''
+
 /** Блок данных для промпта аналитика и SEO: цифры, а не пересказ. */
 export function buildSourceDataBlock(
   mainKeyword: string,
@@ -179,7 +204,9 @@ export function buildSourceDataBlock(
       'дожимает страница-владелец, новая статья на них не претендует:'
     )
     for (const k of tv.pushUp) {
-      lines.push(`  - "${k.keyword}" — позиция ${k.position}, страница ${k.relevantUrl}`)
+      lines.push(
+        `  - "${k.keyword}"${formatVolume(k.volume)}, позиция ${k.position}, страница ${k.relevantUrl}`
+      )
     }
   }
 
@@ -192,7 +219,8 @@ export function buildSourceDataBlock(
     )
     for (const k of tv.stopList) {
       lines.push(
-        `  - "${k.keyword}" → ${k.relevantUrl}${k.position === null ? '' : ` (позиция ${k.position})`}`
+        `  - "${k.keyword}"${formatVolume(k.volume)} → ${k.relevantUrl}` +
+          `${k.position === null ? '' : ` (позиция ${k.position})`}`
       )
     }
   }

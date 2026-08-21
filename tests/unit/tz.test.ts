@@ -120,6 +120,35 @@ describe('buildSourceDataBlock', () => {
     expect(block).toContain('ЗАНЯТЫЕ КЛЮЧИ')
     expect(block).toContain('без опыта')
   })
+
+  it('ставит частотность рядом с занятым ключом и целью дожима', () => {
+    const lsi = selectLsiPhrases(
+      [{ phrase: 'резюме таргетолога', count: 480 }],
+      'резюме таргетолога',
+      480
+    )
+    const withVolumes = {
+      ...semantics,
+      keywords: semantics.keywords.map((k) => ({ ...k, volume: 640 })),
+    }
+    const ctx = buildTopvisorContext('резюме таргетолога', 'Как собрать резюме', withVolumes)
+    const block = buildSourceDataBlock('резюме таргетолога', 480, lsi, ctx)
+
+    expect(block).toContain('"резюме таргетолога" — 640/мес → https://d-pub.ru/articles/rez-t')
+    expect(block).toContain('"резюме таргетолога" — 640/мес, позиция 47')
+  })
+
+  it('молчит о частотности, когда замера нет', () => {
+    const lsi = selectLsiPhrases(
+      [{ phrase: 'резюме таргетолога', count: 480 }],
+      'резюме таргетолога',
+      480
+    )
+    const ctx = buildTopvisorContext('резюме таргетолога', 'Как собрать резюме', semantics)
+    const block = buildSourceDataBlock('резюме таргетолога', 480, lsi, ctx)
+
+    expect(block).not.toContain('/мес → ')
+  })
 })
 
 describe('renderTechSpec', () => {
