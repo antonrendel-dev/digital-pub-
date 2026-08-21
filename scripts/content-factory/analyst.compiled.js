@@ -1,7 +1,129 @@
 // analyst.ts
 import { spawn } from 'child_process'
-import fs from 'fs'
+import fs2 from 'fs'
 import path from 'path'
+
+// lib/pool.ts
+import fs from 'fs'
+
+// lib/topic-gate.ts
+var MIN_WORDSTAT_VOLUME = 300
+var MAX_WORDSTAT_VOLUME = 1600
+var byVolumeDesc = (a, b) => (b.wordstatVolume ?? 0) - (a.wordstatVolume ?? 0)
+var isMeasured = (t) => typeof t.wordstatVolume === 'number'
+function inCorridor(volume) {
+  return volume >= MIN_WORDSTAT_VOLUME && volume <= MAX_WORDSTAT_VOLUME
+}
+function wordstatIsAlive(topics) {
+  return topics.some((t) => isMeasured(t) && t.wordstatVolume > 0)
+}
+function splitByVolume(topics) {
+  const unmeasured = topics.filter((t) => !isMeasured(t))
+  const measured = topics.filter(isMeasured)
+  if (!wordstatIsAlive(measured)) return { passed: measured, offTarget: [], unmeasured }
+  return {
+    passed: measured.filter((t) => inCorridor(t.wordstatVolume)).sort(byVolumeDesc),
+    offTarget: measured.filter((t) => !inCorridor(t.wordstatVolume)).sort(byVolumeDesc),
+    unmeasured,
+  }
+}
+function renumberByVolume(topics) {
+  const sorted = [...topics].sort(byVolumeDesc)
+  sorted.forEach((t, i) => (t.id = i + 1))
+  return sorted
+}
+
+// lib/pool.ts
+var VACANCY_TOKENS = [
+  '\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438',
+  '\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u044F',
+  '\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u044E',
+  '\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439',
+]
+var WORK_TOKENS = [
+  '\u0440\u0430\u0431\u043E\u0442\u0430',
+  '\u0440\u0430\u0431\u043E\u0442\u0443',
+  '\u0440\u0430\u0431\u043E\u0442\u044B',
+  '\u0440\u0430\u0431\u043E\u0442\u0435',
+]
+var INFO_MARKERS = [
+  '\u043A\u0430\u043A ',
+  '\u0433\u0434\u0435 ',
+  '\u0447\u0442\u043E ',
+  '\u0447\u0435\u043C ',
+  '\u0437\u0430\u0447\u0435\u043C',
+  '\u043F\u043E\u0447\u0435\u043C\u0443',
+  '\u0441\u043A\u043E\u043B\u044C\u043A\u043E',
+  '\u043D\u0443\u0436\u043D\u043E \u043B\u0438',
+]
+var BRAND_TOKENS = [
+  '\u0430\u0432\u0438\u0442\u043E',
+  '\u044F\u043D\u0434\u0435\u043A\u0441',
+  'hh',
+  '\u0445\u0435\u0434\u0445\u0430\u043D\u0442\u0435\u0440',
+  'headhunter',
+  'superjob',
+  '\u0441\u0443\u043F\u0435\u0440\u0434\u0436\u043E\u0431',
+  '\u043A\u0432\u043E\u0440\u043A',
+]
+function isListingIntent(phrase) {
+  const lower = phrase.toLowerCase()
+  const words = lower.split(/\s+/).filter(Boolean)
+  if (!words.length) return false
+  if (words.some((w) => BRAND_TOKENS.includes(w))) return true
+  const hasVacancy = words.some((w) => VACANCY_TOKENS.includes(w))
+  const workAtEdge = WORK_TOKENS.includes(words[0]) || WORK_TOKENS.includes(words[words.length - 1])
+  if (!hasVacancy && !workAtEdge) return false
+  return !INFO_MARKERS.some((m) => lower.includes(m))
+}
+var normalize = (s) =>
+  s
+    .toLowerCase()
+    .replace(/ё/g, '\u0435')
+    .replace(/[^а-яa-z0-9]+/g, ' ')
+    .trim()
+function buildPhrasePool(seeds, exclude = [], limit = 150) {
+  const taken = new Set(exclude.map(normalize))
+  const pool = /* @__PURE__ */ new Map()
+  const offer = (phrase, volume, owned) => {
+    if (owned || !inCorridor(volume)) return
+    if (isListingIntent(phrase) || taken.has(normalize(phrase))) return
+    const known = pool.get(phrase)
+    if (known === void 0 || volume > known) pool.set(phrase, volume)
+  }
+  for (const [seed, data] of Object.entries(seeds)) {
+    offer(seed, data.volume, Boolean(data.relevantUrl))
+    for (const n of data.nested ?? []) offer(n.phrase, n.count, false)
+  }
+  return [...pool]
+    .map(([phrase, volume]) => ({ phrase, volume }))
+    .sort((a, b) => b.volume - a.volume)
+    .slice(0, limit)
+}
+function loadPhrasePool(file, exclude = [], limit = 150) {
+  if (!fs.existsSync(file)) {
+    console.warn(
+      `[pool] \u0417\u0430\u043C\u0435\u0440\u044B \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B: ${file}. \u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u043F\u043E\u0439\u0434\u0451\u0442 \u0431\u0435\u0437 \u043F\u0443\u043B\u0430.`
+    )
+    return []
+  }
+  const raw = JSON.parse(fs.readFileSync(file, 'utf-8'))
+  return buildPhrasePool(raw.seeds ?? {}, exclude, limit)
+}
+function renderPoolBlock(pool) {
+  if (!pool.length) return ''
+  return (
+    `
+\u041F\u0423\u041B \u0417\u0410\u041C\u0415\u0420\u0415\u041D\u041D\u042B\u0425 \u0424\u0420\u0410\u0417 (\u042F\u043D\u0434\u0435\u043A\u0441.\u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442, \u0432\u0441\u0435 \u0443\u0436\u0435 \u0432 \u043A\u043E\u0440\u0438\u0434\u043E\u0440\u0435 ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME}/\u043C\u0435\u0441).
+\u0411\u0435\u0440\u0438 \u043A\u043B\u044E\u0447\u0438 \u041E\u0422\u0421\u042E\u0414\u0410. \u0426\u0438\u0444\u0440\u0430 \u0440\u044F\u0434\u043E\u043C \u0441 \u0444\u0440\u0430\u0437\u043E\u0439 \u2014 \u044D\u0442\u043E \u0437\u0430\u043C\u0435\u0440, \u0430 \u043D\u0435 \u043E\u0446\u0435\u043D\u043A\u0430, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0432\u0437\u044F\u0442\u0430\u044F
+\u0438\u0437 \u043F\u0443\u043B\u0430 \u0442\u0435\u043C\u0430 \u0433\u0430\u0440\u0430\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u043E \u043F\u0440\u043E\u0445\u043E\u0434\u0438\u0442 \u0433\u0435\u0439\u0442 \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u0438. \u041F\u0440\u0438\u0434\u0443\u043C\u044B\u0432\u0430\u0442\u044C \u043A\u043B\u044E\u0447 \u0441\u0430\u043C \u043C\u043E\u0436\u043D\u043E
+\u0442\u043E\u043B\u044C\u043A\u043E \u0435\u0441\u043B\u0438 \u0432 \u043F\u0443\u043B\u0435 \u043D\u0435\u0442 \u043D\u0438\u0447\u0435\u0433\u043E \u043F\u043E \u043D\u0443\u0436\u043D\u043E\u0439 \u0442\u0435\u043C\u0435 \u2014 \u0438 \u0442\u043E\u0433\u0434\u0430 \u0442\u0430\u043A \u0438 \u043D\u0430\u043F\u0438\u0448\u0438 \u0432 \u043F\u043E\u043B\u0435 source.
+` +
+    pool
+      .map((p) => `- ${p.phrase} \u2014 ${p.volume.toLocaleString('ru-RU')}/\u043C\u0435\u0441`)
+      .join('\n')
+  )
+}
 
 // lib/telegram.js
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN
@@ -27,33 +149,6 @@ async function sendMessage(text, extra = {}) {
   const data = await res.json()
   if (!data.ok) throw new Error(`Telegram error: ${data.description}`)
   return data.result.message_id
-}
-
-// lib/topic-gate.ts
-var MIN_WORDSTAT_VOLUME = 300
-var MAX_WORDSTAT_VOLUME = 1e3
-var byVolumeDesc = (a, b) => (b.wordstatVolume ?? 0) - (a.wordstatVolume ?? 0)
-var isMeasured = (t) => typeof t.wordstatVolume === 'number'
-function inCorridor(volume) {
-  return volume >= MIN_WORDSTAT_VOLUME && volume <= MAX_WORDSTAT_VOLUME
-}
-function wordstatIsAlive(topics) {
-  return topics.some((t) => isMeasured(t) && t.wordstatVolume > 0)
-}
-function splitByVolume(topics) {
-  const unmeasured = topics.filter((t) => !isMeasured(t))
-  const measured = topics.filter(isMeasured)
-  if (!wordstatIsAlive(measured)) return { passed: measured, offTarget: [], unmeasured }
-  return {
-    passed: measured.filter((t) => inCorridor(t.wordstatVolume)).sort(byVolumeDesc),
-    offTarget: measured.filter((t) => !inCorridor(t.wordstatVolume)).sort(byVolumeDesc),
-    unmeasured,
-  }
-}
-function renumberByVolume(topics) {
-  const sorted = [...topics].sort(byVolumeDesc)
-  sorted.forEach((t, i) => (t.id = i + 1))
-  return sorted
 }
 
 // lib/yandex.js
@@ -177,26 +272,28 @@ async function fetchWebmasterOpportunities(topN = 20) {
 // analyst.ts
 var DATA_DIR = path.join(import.meta.dirname, 'data')
 var ARTICLES_DIR = path.join(import.meta.dirname, '../../content/articles')
+var VOLUMES_FILE = path.join(DATA_DIR, 'semantics-volumes.json')
+var POOL_SIZE = 150
 var TOPICS_REQUESTED = 30
 var TOPICS_FOR_JOBSEEKERS = Math.round(TOPICS_REQUESTED * 0.9)
 function getPublishedArticleTitles() {
-  if (!fs.existsSync(ARTICLES_DIR)) return []
-  return fs
+  if (!fs2.existsSync(ARTICLES_DIR)) return []
+  return fs2
     .readdirSync(ARTICLES_DIR)
     .filter((f) => f.endsWith('.mdx'))
     .flatMap((f) => {
-      const raw = fs.readFileSync(path.join(ARTICLES_DIR, f), 'utf-8')
+      const raw = fs2.readFileSync(path.join(ARTICLES_DIR, f), 'utf-8')
       const m = raw.match(/^title:\s*["']?(.+?)["']?\s*$/m)
       return m ? [m[1]] : []
     })
 }
 function getAllPlannedTopics() {
-  if (!fs.existsSync(DATA_DIR)) return []
-  return fs
+  if (!fs2.existsSync(DATA_DIR)) return []
+  return fs2
     .readdirSync(DATA_DIR)
     .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
     .flatMap((f) => {
-      const { topics } = JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), 'utf-8'))
+      const { topics } = JSON.parse(fs2.readFileSync(path.join(DATA_DIR, f), 'utf-8'))
       return topics.map((t) => ({ title: t.title, keyword: t.keyword }))
     })
 }
@@ -308,6 +405,19 @@ async function generateTopics() {
 \u0423\u0416\u0415 \u0417\u0410\u041F\u041B\u0410\u041D\u0418\u0420\u041E\u0412\u0410\u041D\u041D\u042B\u0415 \u0422\u0415\u041C\u042B (\u043D\u0435 \u0434\u0443\u0431\u043B\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u043D\u0438 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A, \u043D\u0438 \u043A\u043B\u044E\u0447):
 ` + plannedTopics.map((t) => `- ${t.title} [\u043A\u043B\u044E\u0447: ${t.keyword}]`).join('\n')
       : ''
+  const pool = loadPhrasePool(
+    VOLUMES_FILE,
+    [
+      ...plannedTopics.map((t) => t.keyword),
+      ...plannedTopics.map((t) => t.title),
+      ...publishedTitles,
+    ],
+    POOL_SIZE
+  )
+  console.log(
+    `[analyst] \u041F\u0443\u043B \u0437\u0430\u043C\u0435\u0440\u0435\u043D\u043D\u044B\u0445 \u0444\u0440\u0430\u0437: ${pool.length}`
+  )
+  const poolBlock = renderPoolBlock(pool)
   const opportunityBlock =
     opportunities.length > 0
       ? `
@@ -325,7 +435,7 @@ async function generateTopics() {
     `\u0422\u044B SEO-\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043D\u0442-\u0441\u0442\u0440\u0430\u0442\u0435\u0433 \u0434\u043B\u044F \u0440\u0443\u0441\u0441\u043A\u043E\u044F\u0437\u044B\u0447\u043D\u043E\u0433\u043E job board d-pub.ru \u2014 \u0430\u0433\u0440\u0435\u0433\u0430\u0442\u043E\u0440\u0430 \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439 \u0434\u043B\u044F digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432 (\u043C\u0430\u0440\u043A\u0435\u0442\u043E\u043B\u043E\u0433\u0438, \u0434\u0438\u0437\u0430\u0439\u043D\u0435\u0440\u044B, SMM, \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0438, \u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442\u0435\u0440\u044B, \u0442\u0430\u0440\u0433\u0435\u0442\u043E\u043B\u043E\u0433\u0438) \u0438\u0437 Telegram-\u043A\u0430\u043D\u0430\u043B\u043E\u0432.
 
 \u0413\u041B\u0410\u0412\u041D\u0410\u042F \u0430\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u044F \u2014 \u0421\u041E\u0418\u0421\u041A\u0410\u0422\u0415\u041B\u0418 (\u0438\u0449\u0443\u0442 \u0440\u0430\u0431\u043E\u0442\u0443 \u0432 digital). \u041F\u0440\u043E\u0432\u0435\u0440\u0435\u043D\u043E \u0434\u0430\u043D\u043D\u044B\u043C\u0438: \u0441\u043E\u0438\u0441\u043A\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B (\xAB\u0437\u0430\u0440\u043F\u043B\u0430\u0442\u0430 X\xBB, \xAB\u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u044F X\xBB, \xAB\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438 X\xBB, \xAB\u043A\u0430\u043A \u0441\u0442\u0430\u0442\u044C X\xBB, \xAB\u0440\u0435\u0437\u044E\u043C\u0435/\u043F\u043E\u0440\u0442\u0444\u043E\u043B\u0438\u043E X\xBB) \u0438\u043C\u0435\u044E\u0442 \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C \u0432 \u0441\u043E\u0442\u043D\u0438-\u0442\u044B\u0441\u044F\u0447\u0438 \u0432 \u043C\u0435\u0441\u044F\u0446, \u0430 HR-\u0437\u0430\u043F\u0440\u043E\u0441\u044B (\xAB\u043A\u0430\u043A \u043D\u0430\u043D\u044F\u0442\u044C X\xBB, \xAB\u0433\u0434\u0435 \u043D\u0430\u0439\u0442\u0438 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u0430\xBB) \u2014 0-23/\u043C\u0435\u0441. \u041F\u043E\u044D\u0442\u043E\u043C\u0443 HR-\u0442\u0435\u043C\u044B \u043F\u043E\u0447\u0442\u0438 \u043D\u0435 \u0433\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u0435\u043C.
-${publishedBlock}${plannedBlock}${opportunityBlock}
+${publishedBlock}${plannedBlock}${poolBlock}${opportunityBlock}
 
 \u0421\u043E\u0441\u0442\u0430\u0432\u044C \u0441\u043F\u0438\u0441\u043E\u043A ${TOPICS_REQUESTED} \u041D\u041E\u0412\u042B\u0425 \u0442\u0435\u043C \u0434\u043B\u044F \u0441\u0442\u0430\u0442\u0435\u0439 \u043D\u0430 \u0431\u043B\u043E\u0433 \u2014 \u0443\u043D\u0438\u043A\u0430\u043B\u044C\u043D\u044B\u0445, \u043D\u0435 \u043F\u0435\u0440\u0435\u0441\u0435\u043A\u0430\u044E\u0449\u0438\u0445\u0441\u044F \u0441 \u043F\u0435\u0440\u0435\u0447\u0438\u0441\u043B\u0435\u043D\u043D\u044B\u043C \u0432\u044B\u0448\u0435. \u0414\u043B\u044F \u043A\u0430\u0436\u0434\u043E\u0439 \u0442\u0435\u043C\u044B \u0443\u043A\u0430\u0436\u0438:
 - \u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A \u0441\u0442\u0430\u0442\u044C\u0438 (\u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u0439, \u0441 \u043A\u043B\u044E\u0447\u0435\u0432\u044B\u043C \u0441\u043B\u043E\u0432\u043E\u043C)
@@ -337,7 +447,8 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
 \u0422\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u044F \u043A \u0442\u0435\u043C\u0430\u043C:
 - \u0412\u0435\u0447\u043D\u043E\u0437\u0435\u043B\u0451\u043D\u044B\u0435 (\u043D\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D\u044B \u043A \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u043E\u0439 \u0434\u0430\u0442\u0435)
 - \u041F\u0440\u0430\u043A\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0435, \u0440\u0435\u0448\u0430\u044E\u0442 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u0443\u044E \u043F\u0440\u043E\u0431\u043B\u0435\u043C\u0443
-- \u041A\u043B\u044E\u0447 \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043E\u0431\u0438\u0440\u0430\u0442\u044C ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME} \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432/\u043C\u0435\u0441 \u043F\u043E \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442\u0443 \u2014 \u0442\u0435\u043C\u044B \u0432\u043D\u0435 \u044D\u0442\u043E\u0433\u043E \u043A\u043E\u0440\u0438\u0434\u043E\u0440\u0430 \u0443\u0439\u0434\u0443\u0442 \u043D\u0430 \u043F\u0435\u0440\u0435\u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0443. \u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0443\u0437\u043A\u0438\u0435 (\xAB\u043A\u043E\u043D\u0442\u0440\u043E\u0444\u0444\u0435\u0440 \u0441\u0442\u043E\u0438\u0442 \u043B\u0438 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u0442\u044C\xBB, \xAB\u043F\u0440\u043E\u0431\u0435\u043B \u0432 \u0440\u0435\u0437\u044E\u043C\u0435 \u043A\u0430\u043A \u043E\u0431\u044A\u044F\u0441\u043D\u0438\u0442\u044C\xBB \u2014 1-2 \u0437\u0430\u043F\u0440\u043E\u0441\u0430/\u043C\u0435\u0441) \u043D\u0435 \u043F\u0440\u0435\u0434\u043B\u0430\u0433\u0430\u0439. \u0413\u043E\u043B\u044B\u0435 \u0412\u0427-\u0437\u0430\u043F\u0440\u043E\u0441\u044B (\xAB\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438 \u043C\u0430\u0440\u043A\u0435\u0442\u043E\u043B\u043E\u0433\xBB, \xAB\u0440\u0435\u0437\u044E\u043C\u0435 \u0434\u0438\u0437\u0430\u0439\u043D\u0435\u0440\u0430\xBB \u2014 \u0442\u044B\u0441\u044F\u0447\u0438 \u0432 \u043C\u0435\u0441\u044F\u0446) \u0442\u043E\u0436\u0435 \u043D\u0435 \u043F\u0440\u0435\u0434\u043B\u0430\u0433\u0430\u0439: \u0442\u0430\u043C hh.ru \u0438 superjob, \u043C\u044B \u043D\u0435 \u0440\u0430\u043D\u0436\u0438\u0440\u0443\u0435\u043C\u0441\u044F. \u0411\u0435\u0440\u0438 \u0441\u0440\u0435\u0434\u043D\u0435\u0447\u0430\u0441\u0442\u043E\u0442\u043D\u044B\u0435 \u2014 \u0441 \u0443\u0442\u043E\u0447\u043D\u0435\u043D\u0438\u0435\u043C \u043F\u043E \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u0438, \u0443\u0440\u043E\u0432\u043D\u044E, \u0444\u043E\u0440\u043C\u0430\u0442\u0443 \u0440\u0430\u0431\u043E\u0442\u044B \u0438\u043B\u0438 \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442\u0443
+- \u041A\u043B\u044E\u0447 \u0431\u0435\u0440\u0438 \u0438\u0437 \u041F\u0423\u041B\u0410 \u0417\u0410\u041C\u0415\u0420\u0415\u041D\u041D\u042B\u0425 \u0424\u0420\u0410\u0417 \u0432\u044B\u0448\u0435 \u2014 \u043E\u043D \u0432\u0435\u0441\u044C \u0443\u0436\u0435 \u0432 \u043A\u043E\u0440\u0438\u0434\u043E\u0440\u0435 ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME}/\u043C\u0435\u0441, \u0438 \u0442\u0430\u043A\u0430\u044F \u0442\u0435\u043C\u0430 \u043F\u0440\u043E\u0445\u043E\u0434\u0438\u0442 \u0433\u0435\u0439\u0442 \u0433\u0430\u0440\u0430\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u043E. \u0412 \u043F\u043E\u043B\u0435 source \u043F\u0438\u0448\u0438 "\u043F\u0443\u043B". \u041F\u0440\u0438\u0434\u0443\u043C\u044B\u0432\u0430\u0442\u044C \u043A\u043B\u044E\u0447 \u0441\u0430\u043C \u043C\u043E\u0436\u043D\u043E, \u0442\u043E\u043B\u044C\u043A\u043E \u0435\u0441\u043B\u0438 \u0432 \u043F\u0443\u043B\u0435 \u043D\u0435\u0442 \u043D\u0438\u0447\u0435\u0433\u043E \u043F\u043E \u043D\u0443\u0436\u043D\u043E\u0439 \u0442\u0435\u043C\u0435: \u0442\u043E\u0433\u0434\u0430 source \u2014 "\u0441\u0432\u043E\u0439", \u0438 \u043A\u043B\u044E\u0447 \u0432\u0441\u0451 \u0440\u0430\u0432\u043D\u043E \u0434\u043E\u043B\u0436\u0435\u043D \u043F\u043E\u043F\u0430\u0441\u0442\u044C \u0432 \u043A\u043E\u0440\u0438\u0434\u043E\u0440, \u0438\u043D\u0430\u0447\u0435 \u0442\u0435\u043C\u0430 \u0443\u0439\u0434\u0451\u0442 \u043D\u0430 \u043F\u0435\u0440\u0435\u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0443. \u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0443\u0437\u043A\u0438\u0435 (\xAB\u043A\u043E\u043D\u0442\u0440\u043E\u0444\u0444\u0435\u0440 \u0441\u0442\u043E\u0438\u0442 \u043B\u0438 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u0442\u044C\xBB, \xAB\u043F\u0440\u043E\u0431\u0435\u043B \u0432 \u0440\u0435\u0437\u044E\u043C\u0435 \u043A\u0430\u043A \u043E\u0431\u044A\u044F\u0441\u043D\u0438\u0442\u044C\xBB \u2014 1-2 \u0437\u0430\u043F\u0440\u043E\u0441\u0430/\u043C\u0435\u0441) \u043D\u0435 \u043F\u0440\u0435\u0434\u043B\u0430\u0433\u0430\u0439. \u0413\u043E\u043B\u044B\u0435 \u0412\u0427-\u0437\u0430\u043F\u0440\u043E\u0441\u044B (\xAB\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438 \u043C\u0430\u0440\u043A\u0435\u0442\u043E\u043B\u043E\u0433\xBB, \xAB\u0440\u0435\u0437\u044E\u043C\u0435 \u0434\u0438\u0437\u0430\u0439\u043D\u0435\u0440\u0430\xBB \u2014 \u0442\u044B\u0441\u044F\u0447\u0438 \u0432 \u043C\u0435\u0441\u044F\u0446) \u0442\u043E\u0436\u0435 \u043D\u0435 \u043F\u0440\u0435\u0434\u043B\u0430\u0433\u0430\u0439: \u0442\u0430\u043C hh.ru \u0438 superjob, \u043C\u044B \u043D\u0435 \u0440\u0430\u043D\u0436\u0438\u0440\u0443\u0435\u043C\u0441\u044F
+- \u041A\u043B\u044E\u0447 \u043D\u0435 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u043C \u0437\u0430 \u0441\u043F\u0438\u0441\u043A\u043E\u043C \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439 (\xAB\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438 \u0442\u0430\u0440\u0433\u0435\u0442\u043E\u043B\u043E\u0433\xBB, \xAB\u0440\u0430\u0431\u043E\u0442\u0430 \u0434\u0438\u0437\u0430\u0439\u043D\u0435\u0440\u043E\u043C \u0443\u0434\u0430\u043B\u0451\u043D\u043D\u043E\xBB) \u2014 \u0442\u0430\u043A\u043E\u0439 \u0437\u0430\u043F\u0440\u043E\u0441 \u0437\u0430\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u043F\u043E\u0441\u0430\u0434\u043E\u0447\u043D\u0430\u044F \u0434\u0436\u043E\u0431-\u0431\u043E\u0440\u0434\u0430, \u0438 \u0441\u0442\u0430\u0442\u044C\u044F \u043E\u0442\u0431\u0438\u0440\u0430\u0435\u0442 \u0442\u0440\u0430\u0444\u0438\u043A \u0443 \u043D\u0430\u0448\u0435\u0439 \u0436\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B
 - \u041C\u0438\u043D\u0438\u043C\u0443\u043C ${TOPICS_FOR_JOBSEEKERS} \u0438\u0437 ${TOPICS_REQUESTED} \u0442\u0435\u043C \u2014 \u0434\u043B\u044F \u0441\u043E\u0438\u0441\u043A\u0430\u0442\u0435\u043B\u0435\u0439, \u0441 \u043A\u043B\u044E\u0447\u0430\u043C\u0438 \u043F\u043E \u0448\u0430\u0431\u043B\u043E\u043D\u0430\u043C: \xAB\u0437\u0430\u0440\u043F\u043B\u0430\u0442\u0430 <\u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u044F>\xBB, \xAB\u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u044F <X>\xBB, \xAB\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438 <X>\xBB, \xAB\u043A\u0430\u043A \u0441\u0442\u0430\u0442\u044C <X>\xBB, \xAB<X> \u0441 \u043D\u0443\u043B\u044F\xBB, \xAB\u0440\u0435\u0437\u044E\u043C\u0435 <X>\xBB, \xAB\u043F\u043E\u0440\u0442\u0444\u043E\u043B\u0438\u043E <X>\xBB, \xAB\u0441\u043E\u0431\u0435\u0441\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u0435 <X>\xBB, \xAB\u0442\u0435\u0441\u0442\u043E\u0432\u043E\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u0435 <X>\xBB
 - \u041C\u0430\u043A\u0441\u0438\u043C\u0443\u043C 2-3 \u0442\u0435\u043C\u044B \u0434\u043B\u044F HR \u2014 \u0438 \u0442\u043E\u043B\u044C\u043A\u043E \u0435\u0441\u043B\u0438 \u043A\u043B\u044E\u0447 \u0440\u0435\u0430\u043B\u044C\u043D\u043E \u0438\u0449\u0443\u0442 (\u043D\u0435 \xAB\u043A\u0430\u043A \u043D\u0430\u043D\u044F\u0442\u044C X\xBB)
 - \u0412\u043A\u043B\u044E\u0447\u0438 3-4 \u0442\u0435\u043C\u044B \u0432 \u0444\u043E\u0440\u043C\u0430\u0442\u0435 "\u043A\u043E\u043D\u0441\u043F\u0435\u043A\u0442 \u0437\u0430\u0440\u0443\u0431\u0435\u0436\u043D\u043E\u0433\u043E \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u0430" (\u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437 \u0437\u0430\u0440\u0443\u0431\u0435\u0436\u043D\u044B\u0445 best practices)
@@ -352,7 +463,8 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
     "keyword": "...",
     "audience": "\u0421\u043E\u0438\u0441\u043A\u0430\u0442\u0435\u043B\u044C|HR|\u041E\u0431\u0430",
     "type": "\u0413\u0430\u0439\u0434|\u041A\u043E\u043D\u0441\u043F\u0435\u043A\u0442|\u0421\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435|\u041A\u0435\u0439\u0441|\u0427\u0435\u043A\u043B\u0438\u0441\u0442",
-    "trafficEst": "\u043D\u0438\u0437\u043A\u0438\u0439|\u0441\u0440\u0435\u0434\u043D\u0438\u0439|\u0432\u044B\u0441\u043E\u043A\u0438\u0439"
+    "trafficEst": "\u043D\u0438\u0437\u043A\u0438\u0439|\u0441\u0440\u0435\u0434\u043D\u0438\u0439|\u0432\u044B\u0441\u043E\u043A\u0438\u0439",
+    "source": "\u043F\u0443\u043B|\u0441\u0432\u043E\u0439"
   }
 ]`,
     'analyst'
@@ -360,15 +472,19 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
   const jsonMatch = raw.match(/\[[\s\S]*\]/)
   if (!jsonMatch) throw new Error('Claude \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON')
   const topics = JSON.parse(jsonMatch[0])
+  const measured = new Map(pool.map((p) => [p.phrase.toLowerCase(), p.volume]))
+  const fromPool = topics.filter((t) => measured.has(t.keyword.toLowerCase()))
+  const toMeasure = topics.filter((t) => !measured.has(t.keyword.toLowerCase()))
+  fromPool.forEach((t) => (t.wordstatVolume = measured.get(t.keyword.toLowerCase())))
   console.log(
-    '[analyst] \u0421\u043D\u0438\u043C\u0430\u044E \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C Wordstat \u043F\u043E \u0442\u0435\u043C\u0430\u043C...'
+    `[analyst] \u0418\u0437 \u043F\u0443\u043B\u0430 ${fromPool.length} \u0442\u0435\u043C (\u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C \u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430), \u0441\u043D\u0438\u043C\u0430\u044E Wordstat \u043F\u043E ${toMeasure.length}...`
   )
   await Promise.all(
-    topics.map(async (t) => {
+    toMeasure.map(async (t) => {
       t.wordstatVolume = await fetchWordstatVolume(t.keyword)
     })
   )
-  if (!wordstatIsAlive(topics)) {
+  if (toMeasure.length && !wordstatIsAlive(toMeasure)) {
     console.log(
       '[analyst] Wordstat: \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430, \u0433\u0435\u0439\u0442 \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D'
     )
@@ -437,10 +553,10 @@ async function main() {
     '[analyst] \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0442\u0435\u043C\u044B...'
   )
   const { topics, weak } = await generateTopics()
-  fs.mkdirSync(DATA_DIR, { recursive: true })
+  fs2.mkdirSync(DATA_DIR, { recursive: true })
   const date = /* @__PURE__ */ new Date().toISOString().split('T')[0]
   const filePath = path.join(DATA_DIR, `topics_${date}.json`)
-  fs.writeFileSync(filePath, JSON.stringify({ date, topics }, null, 2))
+  fs2.writeFileSync(filePath, JSON.stringify({ date, topics }, null, 2))
   console.log(`[analyst] \u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: ${filePath}`)
   const dateRu = /* @__PURE__ */ new Date().toLocaleDateString('ru-RU', {
     day: 'numeric',

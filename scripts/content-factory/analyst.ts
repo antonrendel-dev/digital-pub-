@@ -8,6 +8,7 @@
 import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import { loadPhrasePool, renderPoolBlock } from './lib/pool.js'
 import { sendMessage } from './lib/telegram.js'
 import {
   MAX_WORDSTAT_VOLUME,
@@ -20,6 +21,11 @@ import { fetchWebmasterOpportunities, fetchWordstatVolume } from './lib/yandex.j
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const ARTICLES_DIR = path.join(import.meta.dirname, '../../content/articles')
+const VOLUMES_FILE = path.join(DATA_DIR, 'semantics-volumes.json')
+
+// Сколько фраз пула кладём в промпт. Больше — длиннее контекст и выше шанс, что
+// аналитик возьмёт хвост ради галочки; меньше — не хватает выбора на 30 тем.
+const POOL_SIZE = 150
 
 // Батч = календарный месяц: публикуем по статье в день, длинный месяц берём с запасом.
 // Остаток переезжает в следующий батч, недобор закрывается досрочным прогоном аналитика.
@@ -35,6 +41,9 @@ interface Topic {
   trafficEst: string
   wordstatVolume?: number | null
   offTarget?: boolean
+  // 'пул' — ключ взят из замеров, 'свой' — придуман аналитиком. Доля «своих»
+  // показывает, насколько пула хватает на батч.
+  source?: string
 }
 
 function getPublishedArticleTitles(): string[] {
@@ -182,6 +191,20 @@ async function generateTopics(): Promise<{ topics: Topic[]; weak: Topic[] }> {
         plannedTopics.map((t) => `- ${t.title} [ключ: ${t.keyword}]`).join('\n')
       : ''
 
+  // Пул строится после plannedTopics: занятые ключи из него надо вычесть, иначе
+  // аналитик получит на выбор фразу, уже отданную другой теме батча.
+  const pool = loadPhrasePool(
+    VOLUMES_FILE,
+    [
+      ...plannedTopics.map((t) => t.keyword),
+      ...plannedTopics.map((t) => t.title),
+      ...publishedTitles,
+    ],
+    POOL_SIZE
+  )
+  console.log(`[analyst] Пул замеренных фраз: ${pool.length}`)
+  const poolBlock = renderPoolBlock(pool)
+
   const opportunityBlock =
     opportunities.length > 0
       ? `\nРЕАЛЬНЫЕ ЗАПРОСЫ ЯНДЕКСА, ГДЕ САЙТ УЖЕ ПОКАЗЫВАЕТСЯ, НО НЕ В ТОПЕ (данные Вебмастера за неделю).\n` +
@@ -195,7 +218,7 @@ async function generateTopics(): Promise<{ topics: Topic[]; weak: Topic[] }> {
     `Ты SEO-аналитик и контент-стратег для русскоязычного job board d-pub.ru — агрегатора вакансий для digital-специалистов (маркетологи, дизайнеры, SMM, аналитики, копирайтеры, таргетологи) из Telegram-каналов.
 
 ГЛАВНАЯ аудитория — СОИСКАТЕЛИ (ищут работу в digital). Проверено данными: соискательские запросы («зарплата X», «профессия X», «вакансии X», «как стать X», «резюме/портфолио X») имеют частотность в сотни-тысячи в месяц, а HR-запросы («как нанять X», «где найти специалиста») — 0-23/мес. Поэтому HR-темы почти не генерируем.
-${publishedBlock}${plannedBlock}${opportunityBlock}
+${publishedBlock}${plannedBlock}${poolBlock}${opportunityBlock}
 
 Составь список ${TOPICS_REQUESTED} НОВЫХ тем для статей на блог — уникальных, не пересекающихся с перечисленным выше. Для каждой темы укажи:
 - Заголовок статьи (конкретный, с ключевым словом)
@@ -207,7 +230,8 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
 Требования к темам:
 - Вечнозелёные (не привязаны к конкретной дате)
 - Практические, решают конкретную проблему
-- Ключ должен собирать ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME} запросов/мес по Вордстату — темы вне этого коридора уйдут на переформулировку. Слишком узкие («контроффер стоит ли принимать», «пробел в резюме как объяснить» — 1-2 запроса/мес) не предлагай. Голые ВЧ-запросы («вакансии маркетолог», «резюме дизайнера» — тысячи в месяц) тоже не предлагай: там hh.ru и superjob, мы не ранжируемся. Бери среднечастотные — с уточнением по профессии, уровню, формату работы или инструменту
+- Ключ бери из ПУЛА ЗАМЕРЕННЫХ ФРАЗ выше — он весь уже в коридоре ${MIN_WORDSTAT_VOLUME}-${MAX_WORDSTAT_VOLUME}/мес, и такая тема проходит гейт гарантированно. В поле source пиши "пул". Придумывать ключ сам можно, только если в пуле нет ничего по нужной теме: тогда source — "свой", и ключ всё равно должен попасть в коридор, иначе тема уйдёт на переформулировку. Слишком узкие («контроффер стоит ли принимать», «пробел в резюме как объяснить» — 1-2 запроса/мес) не предлагай. Голые ВЧ-запросы («вакансии маркетолог», «резюме дизайнера» — тысячи в месяц) тоже не предлагай: там hh.ru и superjob, мы не ранжируемся
+- Ключ не должен быть запросом за списком вакансий («вакансии таргетолог», «работа дизайнером удалённо») — такой запрос закрывает посадочная джоб-борда, и статья отбирает трафик у нашей же страницы
 - Минимум ${TOPICS_FOR_JOBSEEKERS} из ${TOPICS_REQUESTED} тем — для соискателей, с ключами по шаблонам: «зарплата <профессия>», «профессия <X>», «вакансии <X>», «как стать <X>», «<X> с нуля», «резюме <X>», «портфолио <X>», «собеседование <X>», «тестовое задание <X>»
 - Максимум 2-3 темы для HR — и только если ключ реально ищут (не «как нанять X»)
 - Включи 3-4 темы в формате "конспект зарубежного материала" (пересказ зарубежных best practices)
@@ -222,7 +246,8 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
     "keyword": "...",
     "audience": "Соискатель|HR|Оба",
     "type": "Гайд|Конспект|Сравнение|Кейс|Чеклист",
-    "trafficEst": "низкий|средний|высокий"
+    "trafficEst": "низкий|средний|высокий",
+    "source": "пул|свой"
   }
 ]`,
     'analyst'
@@ -232,15 +257,25 @@ ${publishedBlock}${plannedBlock}${opportunityBlock}
   if (!jsonMatch) throw new Error('Claude не вернул JSON')
   const topics = JSON.parse(jsonMatch[0]) as Topic[]
 
-  // Обогащаем реальной частотностью Wordstat и приоритизируем по спросу
-  console.log('[analyst] Снимаю частотность Wordstat по темам...')
+  // Взятое из пула уже замерено — повторный запрос жёг бы квоту (100/час) ради
+  // цифры, которая у нас есть. Меряем только то, что аналитик придумал сам.
+  const measured = new Map(pool.map((p) => [p.phrase.toLowerCase(), p.volume]))
+  const fromPool = topics.filter((t) => measured.has(t.keyword.toLowerCase()))
+  const toMeasure = topics.filter((t) => !measured.has(t.keyword.toLowerCase()))
+  fromPool.forEach((t) => (t.wordstatVolume = measured.get(t.keyword.toLowerCase()) as number))
+
+  console.log(
+    `[analyst] Из пула ${fromPool.length} тем (частотность известна), снимаю Wordstat по ${toMeasure.length}...`
+  )
   await Promise.all(
-    topics.map(async (t) => {
+    toMeasure.map(async (t) => {
       t.wordstatVolume = await fetchWordstatVolume(t.keyword)
     })
   )
 
-  if (!wordstatIsAlive(topics)) {
+  // Живость проверяем только по замерам этого прогона: частотности из пула
+  // положительны всегда и замаскировали бы мёртвый Вордстат.
+  if (toMeasure.length && !wordstatIsAlive(toMeasure)) {
     console.log('[analyst] Wordstat: частотность недоступна, гейт пропущен')
     return { topics, weak: [] }
   }
