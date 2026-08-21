@@ -14,6 +14,7 @@ import {
   modifierWords,
   selectLsiPhrases,
 } from './lib/lsi.js'
+import { lookupPhrases, savePhrases } from './lib/lsi-cache.js'
 import { sendMessage } from './lib/telegram.js'
 import {
   OVERSPAM_RULE,
@@ -33,6 +34,15 @@ import { fetchWordstatKeywords } from './lib/yandex.js'
 const FAQ_MIN_WORDS = 120
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
+
+// Кэш писателя идёт первым: он пополняется живыми запросами и всегда свежее
+// банков, снятых разовыми прогонами.
+const LSI_CACHE_FILE = path.join(DATA_DIR, 'lsi-cache.json')
+const LSI_SOURCES = [
+  LSI_CACHE_FILE,
+  path.join(DATA_DIR, 'topic-pool.json'),
+  path.join(DATA_DIR, 'semantics-volumes.json'),
+]
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..')
 const ARTICLES_DIR = path.join(PROJECT_ROOT, 'content', 'articles')
 const IMAGES_DIR = path.join(PROJECT_ROOT, 'public', 'images', 'posts')
@@ -899,21 +909,32 @@ ${current}
 // ─── Article generation pipeline ─────────────────────────────────────────────
 
 async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
-  // ШАГ 1: Wordstat keyword research
+  // ШАГ 1: фразы Вордстата — сначала из замеров, живой запрос как резерв
   console.log('[writer] Шаг 1: Wordstat keyword research...')
-  let wordstatRaw = await fetchWordstatKeywords(topic.keyword)
-  // Если длинный ключ не дал результатов — пробуем укороченные варианты
-  if (wordstatRaw.length === 0) {
-    const STOP = new Set(['или', 'с', 'в', 'на', 'для', 'по', 'из', 'и', 'к', 'за', 'без'])
-    const words = topic.keyword.split(' ').filter((w) => !STOP.has(w.toLowerCase()))
-    const candidates = [words.slice(0, 3).join(' '), words.slice(0, 2).join(' '), words[0]].filter(
-      (c, i, arr) => c && c !== topic.keyword && arr.indexOf(c) === i
-    )
-    for (const shortKey of candidates) {
-      console.log(`[writer] Wordstat fallback: пробую "${shortKey}"`)
-      wordstatRaw = await fetchWordstatKeywords(shortKey)
-      if (wordstatRaw.length > 0) break
+  const cached = lookupPhrases(LSI_SOURCES, topic.keyword)
+  let wordstatRaw = cached?.nested ?? []
+
+  if (cached) {
+    console.log(`[writer] Фразы из замеров (${cached.source}): ${wordstatRaw.length}`)
+  } else {
+    wordstatRaw = await fetchWordstatKeywords(topic.keyword)
+    // Если длинный ключ не дал результатов — пробуем укороченные варианты
+    if (wordstatRaw.length === 0) {
+      const STOP = new Set(['или', 'с', 'в', 'на', 'для', 'по', 'из', 'и', 'к', 'за', 'без'])
+      const words = topic.keyword.split(' ').filter((w) => !STOP.has(w.toLowerCase()))
+      const candidates = [
+        words.slice(0, 3).join(' '),
+        words.slice(0, 2).join(' '),
+        words[0],
+      ].filter((c, i, arr) => c && c !== topic.keyword && arr.indexOf(c) === i)
+      for (const shortKey of candidates) {
+        console.log(`[writer] Wordstat fallback: пробую "${shortKey}"`)
+        wordstatRaw = await fetchWordstatKeywords(shortKey)
+        if (wordstatRaw.length > 0) break
+      }
     }
+    // Кэш пополняется под ключ темы, а не под укороченный: искать будут по нему.
+    savePhrases(LSI_CACHE_FILE, topic.keyword, wordstatRaw)
   }
   const selection = selectLsiPhrases(
     wordstatRaw.filter((k) => k.count > 0),
