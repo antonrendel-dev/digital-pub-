@@ -16,6 +16,12 @@ import {
 } from './lib/lsi.js'
 import { lookupPhrases, savePhrases } from './lib/lsi-cache.js'
 import { FACTORY_MODEL } from './lib/model.js'
+import {
+  collectSessionStats,
+  runawayWarning,
+  summarize,
+  transcriptDir,
+} from './lib/session-stats.js'
 import { sendMessage } from './lib/telegram.js'
 import {
   OVERSPAM_RULE,
@@ -1653,6 +1659,7 @@ function syncToProduction(slug: string, hasImage: boolean): void {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
+  const runStartedAt = Date.now()
   const topicNum = parseInt(process.argv[2])
   if (isNaN(topicNum)) {
     console.error('Использование: node writer.compiled.js <topicNum>')
@@ -1796,6 +1803,19 @@ async function main() {
   }
   if (!notified) {
     console.error('[writer] Отбойник не доставлен, но статья опубликована — выходим с кодом 0')
+  }
+
+  // Замер расхода — справочный, статья уже опубликована: любая помеха здесь
+  // не должна влиять на исход прогона.
+  // Каталог транскриптов зависит от cwd, который дочерний claude наследует у нас.
+  const stats = collectSessionStats(runStartedAt, transcriptDir(process.cwd()))
+  console.log(`[writer] Расход: ${summarize(stats)}`)
+  const runaway = runawayWarning(stats)
+  if (runaway) {
+    console.error(`[writer] ${runaway}`)
+    await sendMessage(`⚠️ <b>Залипание агентов в прогоне #${topicNum}</b>\n\n${runaway}`).catch(
+      () => {}
+    )
   }
 
   console.log(`[writer] Готово: ${articleUrl}`)
