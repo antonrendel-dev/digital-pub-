@@ -236,7 +236,7 @@ type AgentName = 'analyst' | 'seo' | 'writer'
  * @param agent Профиль из ~/.claude/agents. Без него Клод отвечает как есть,
  * без роли и без скиллов — так завод работал до 20.08.2026.
  */
-function askClaude(prompt: string, agent?: AgentName): Promise<string> {
+function runClaude(prompt: string, agent?: AgentName): Promise<string> {
   return new Promise((resolve, reject) => {
     // --allowedTools обязателен: с --agent, но без него скилл не загружается
     // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
@@ -254,10 +254,31 @@ function askClaude(prompt: string, agent?: AgentName): Promise<string> {
     child.stderr.on('data', (d: Buffer) => (err += d.toString()))
     child.on('close', (code) => {
       if (code === 0) resolve(out.trim())
-      else reject(new Error(err || `claude завершился с кодом ${code}`))
+      // Хвост stdout в тексте ошибки: CLI пишет причину отказа (упёрся в лимит,
+      // агент отказался) именно туда, оставляя stderr пустым. Прогон 21.08 из-за
+      // этого упал с одним лишь «код 1» и остался без диагноза.
+      else
+        reject(
+          new Error(err.trim() || out.trim().slice(-500) || `claude завершился с кодом ${code}`)
+        )
     })
     child.on('error', reject)
   })
+}
+
+// Одна повторная попытка: CLI изредка срывается молча, а на втором заходе тот же
+// промпт проходит. Публикация идёт раз в сутки, и потерять её из-за разовой
+// осечки дороже, чем подождать полминуты.
+const CLAUDE_RETRY_DELAY_MS = 30_000
+
+async function askClaude(prompt: string, agent?: AgentName): Promise<string> {
+  try {
+    return await runClaude(prompt, agent)
+  } catch (e) {
+    console.error(`[writer] claude сорвался: ${(e as Error).message} — повтор через 30 сек`)
+    await new Promise((r) => setTimeout(r, CLAUDE_RETRY_DELAY_MS))
+    return runClaude(prompt, agent)
+  }
 }
 
 // ─── Codex image generation ──────────────────────────────────────────────────
@@ -1361,8 +1382,13 @@ ${drafts[3]}
     .map((b) => `• ${b.title}: ${b.description.slice(0, 130)} → ${b.usage.slice(0, 130)}`)
     .join('\n')
 
-  const nudged = await askClaude(
-    `Ты копирайтер с экспертизой в поведенческой психологии.
+  // Nudge и ревью ниже только шлифуют уже написанный текст. Сорвались — идём
+  // дальше с тем, что есть: пустая строка ниже сама упрётся в guard по объёму и
+  // вернёт исходный markdown. Статья без шлифовки лучше пропущенного дня.
+  let nudged = ''
+  try {
+    nudged = await askClaude(
+      `Ты копирайтер с экспертизой в поведенческой психологии.
 
 АУДИТОРИЯ: ${topic.audience}
 ТЕМА: ${topic.title}
@@ -1381,8 +1407,11 @@ ${nudgeCatalog}
 ${markdown}
 
 Верни ТОЛЬКО финальный Markdown — без пояснений и комментариев.`,
-    'writer'
-  )
+      'writer'
+    )
+  } catch (e) {
+    console.error(`[writer] Nudge-ревизия сорвалась, иду дальше: ${(e as Error).message}`)
+  }
 
   const nudgedStart = nudged.indexOf('## ')
   const nudgedCandidate = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim()
@@ -1403,8 +1432,10 @@ ${markdown}
     ? `КРИТЕРИИ УСПЕХА: ${seoData.successCriteria.join('; ')}\n`
     : ''
 
-  const reviewed = await askClaude(
-    `Ты строгий SEO-редактор. Проверь статью по SEO-требованиям — стиль уже выправлен.
+  let reviewed = ''
+  try {
+    reviewed = await askClaude(
+      `Ты строгий SEO-редактор. Проверь статью по SEO-требованиям — стиль уже выправлен.
 
 КЛЮЧЕВОЕ СЛОВО: "${topic.keyword}"
 META TITLE (${titleLen} симв${titleLen > 60 ? ', СЛИШКОМ ДЛИННЫЙ — укороти до 60' : ', ок'}): "${plan.metaTitle}"
@@ -1433,8 +1464,13 @@ ${markdown}
 
 КРИТИЧНО: Верни ПОЛНУЮ статью (не менее 80% от исходного объёма слов) — только Markdown, без пояснений, без JSON, без комментариев. НЕ сокращай статью — только точечные правки по пунктам выше.
 СТРОГО ЗАПРЕЩЕНО после статьи добавлять: сводку правок, таблицу изменений, чеклист выполненных задач, комментарии вида «Что изменено», «Сводка», «Задача / Статус / Правка» и любой другой служебный текст. Ответ заканчивается последней строкой статьи — и ничем больше.`,
-    'seo'
-  )
+      'seo'
+    )
+  } catch (e) {
+    // Приёмка по ТЗ ниже всё равно проверит статью и выставит specWarning,
+    // так что пропуск ревью не уходит из виду молча.
+    console.error(`[writer] SEO-ревью сорвалось, иду с текущим текстом: ${(e as Error).message}`)
+  }
 
   let reviewedCandidate = reviewed.trim().startsWith('##')
     ? reviewed.trim()
@@ -1619,12 +1655,18 @@ async function main() {
   if (!topic) throw new Error(`Тема #${topicNum} не найдена в ${topicsFile}`)
 
   console.log(`[writer] Пишу статью: "${topic.title}"`)
-  await sendMessage(
-    `✍️ Генерирую статью #${topicNum}:\n<b>${topic.title}</b>\n\n` +
-      `🔍 Wordstat → SEO-рисерч → 📋 план → ✏️ черновик → 🔎 ревью\n` +
-      `🎨 hero → 📊 графики → ✏️ скетч → 🚀 деплой\n\n` +
-      `Это займёт ~10 минут...`
-  )
+  // Анонс — не повод отменять публикацию: недоступный Telegram ронял прогон
+  // до того, как писатель вообще брался за статью.
+  try {
+    await sendMessage(
+      `✍️ Генерирую статью #${topicNum}:\n<b>${topic.title}</b>\n\n` +
+        `🔍 Wordstat → SEO-рисерч → 📋 план → ✏️ черновик → 🔎 ревью\n` +
+        `🎨 hero → 📊 графики → ✏️ скетч → 🚀 деплой\n\n` +
+        `Это займёт ~10 минут...`
+    )
+  } catch (e) {
+    console.error(`[writer] Анонс в Telegram не ушёл, пишу статью: ${(e as Error).message}`)
+  }
 
   // Шаги 1-4: генерация статьи
   const result = await generateMdxArticle(topic)
