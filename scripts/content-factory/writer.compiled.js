@@ -165,6 +165,9 @@ function savePhrases(file, keyword, nested, now = /* @__PURE__ */ new Date()) {
   )
 }
 
+// lib/model.ts
+var FACTORY_MODEL = process.env.CONTENT_FACTORY_MODEL || 'claude-opus-5'
+
 // lib/telegram.js
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN
 var CHAT_ID = process.env.SEO_LAB_CHAT_ID
@@ -639,12 +642,11 @@ var OUTLINE_HINTS = {
     '\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u2192 \u043A\u043B\u044E\u0447\u0435\u0432\u044B\u0435 \u0438\u0434\u0435\u0438 (3-4) \u2192 \u043F\u0440\u0430\u043A\u0442\u0438\u043A\u0430 \u2192 \u0430\u0434\u0430\u043F\u0442\u0430\u0446\u0438\u044F \u0434\u043B\u044F \u0440\u0443\u043D\u0435\u0442\u0430 + CTA',
 }
 var AGENT_TOOLS = 'Read,Skill,Glob,Grep'
-var WRITER_MODEL = process.env.CONTENT_WRITER_MODEL || 'claude-sonnet-4-6'
 function runClaude(prompt, agent) {
   return new Promise((resolve, reject) => {
     const args = agent
-      ? ['-p', '--model', WRITER_MODEL, '--agent', agent, '--allowedTools', AGENT_TOOLS]
-      : ['-p', '--model', WRITER_MODEL]
+      ? ['-p', '--model', FACTORY_MODEL, '--agent', agent, '--allowedTools', AGENT_TOOLS]
+      : ['-p', '--model', FACTORY_MODEL]
     const child = spawn('claude', args, {
       env: process.env,
       stdio: ['pipe', 'pipe', 'pipe'],

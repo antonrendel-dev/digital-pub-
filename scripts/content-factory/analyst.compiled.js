@@ -3,6 +3,9 @@ import { spawn } from 'child_process'
 import fs2 from 'fs'
 import path from 'path'
 
+// lib/model.ts
+var FACTORY_MODEL = process.env.CONTENT_FACTORY_MODEL || 'claude-opus-5'
+
 // lib/pool.ts
 import fs from 'fs'
 
@@ -300,7 +303,9 @@ function getAllPlannedTopics() {
 var AGENT_TOOLS = 'Read,Skill,Glob,Grep'
 function askClaude(prompt, agent) {
   return new Promise((resolve, reject) => {
-    const args = agent ? ['-p', '--agent', agent, '--allowedTools', AGENT_TOOLS] : ['-p']
+    const args = agent
+      ? ['-p', '--model', FACTORY_MODEL, '--agent', agent, '--allowedTools', AGENT_TOOLS]
+      : ['-p', '--model', FACTORY_MODEL]
     const child = spawn('claude', args, {
       env: process.env,
       stdio: ['pipe', 'pipe', 'pipe'],

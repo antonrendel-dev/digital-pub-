@@ -15,6 +15,7 @@ import {
   selectLsiPhrases,
 } from './lib/lsi.js'
 import { lookupPhrases, savePhrases } from './lib/lsi-cache.js'
+import { FACTORY_MODEL } from './lib/model.js'
 import { sendMessage } from './lib/telegram.js'
 import {
   OVERSPAM_RULE,
@@ -232,12 +233,6 @@ const AGENT_TOOLS = 'Read,Skill,Glob,Grep'
 
 type AgentName = 'analyst' | 'seo' | 'writer'
 
-// Модель задаётся явно: без --model завод молча едет на том, что стоит в
-// глобальном settings.json, и правка конфига 13.08 перевела его с sonnet на
-// модель верхнего класса — расход вырос при неизменном объёме работы.
-// Переопределяется через CONTENT_WRITER_MODEL, чтобы сравнивать модели прогоном.
-const WRITER_MODEL = process.env.CONTENT_WRITER_MODEL || 'claude-sonnet-4-6'
-
 /**
  * @param agent Профиль из ~/.claude/agents. Без него Клод отвечает как есть,
  * без роли и без скиллов — так завод работал до 20.08.2026.
@@ -247,8 +242,8 @@ function runClaude(prompt: string, agent?: AgentName): Promise<string> {
     // --allowedTools обязателен: с --agent, но без него скилл не загружается
     // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
     const args = agent
-      ? ['-p', '--model', WRITER_MODEL, '--agent', agent, '--allowedTools', AGENT_TOOLS]
-      : ['-p', '--model', WRITER_MODEL]
+      ? ['-p', '--model', FACTORY_MODEL, '--agent', agent, '--allowedTools', AGENT_TOOLS]
+      : ['-p', '--model', FACTORY_MODEL]
     // Промпт через stdin: аргументом argv длинные промпты (3 черновика) бьются об ARG_MAX → spawn E2BIG
     const child = spawn('claude', args, {
       env: process.env,

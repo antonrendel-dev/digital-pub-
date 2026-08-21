@@ -3,6 +3,11 @@ import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+
+// lib/model.ts
+var FACTORY_MODEL = process.env.CONTENT_FACTORY_MODEL || 'claude-opus-5'
+
+// regen.ts
 var SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
 var PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '../..')
 var CONTENT_DIR = path.join(PROJECT_ROOT, 'content/articles')
@@ -53,7 +58,7 @@ function convertToWebP(srcPng, destWebp) {
 }
 function askClaude(prompt) {
   return new Promise((resolve, reject) => {
-    const child = spawn('claude', ['-p', prompt], {
+    const child = spawn('claude', ['-p', '--model', FACTORY_MODEL, prompt], {
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
