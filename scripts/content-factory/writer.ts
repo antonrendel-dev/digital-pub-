@@ -271,11 +271,17 @@ function runClaude(prompt: string, agent?: AgentName): Promise<string> {
 // осечки дороже, чем подождать полминуты.
 const CLAUDE_RETRY_DELAY_MS = 30_000
 
+// Исчерпанный лимит за полминуты не восстановится, и повтор только тянет время.
+const isQuotaExhausted = (message: string): boolean =>
+  /out of (extra )?usage|usage limit reached|rate limit/i.test(message)
+
 async function askClaude(prompt: string, agent?: AgentName): Promise<string> {
   try {
     return await runClaude(prompt, agent)
   } catch (e) {
-    console.error(`[writer] claude сорвался: ${(e as Error).message} — повтор через 30 сек`)
+    const message = (e as Error).message
+    if (isQuotaExhausted(message)) throw e
+    console.error(`[writer] claude сорвался: ${message} — повтор через 30 сек`)
     await new Promise((r) => setTimeout(r, CLAUDE_RETRY_DELAY_MS))
     return runClaude(prompt, agent)
   }
@@ -1251,8 +1257,6 @@ Markdown: ## для H2, ### для H3, **жирный**, таблицы, мар�
   let markdown = ''
 
   if (!topic.singleAgent) {
-    console.log('[writer] Режим: конкурентная генерация (3 агента)...')
-
     const directions = [
       {
         name: 'Прямой заход',
@@ -1285,6 +1289,9 @@ Markdown: ## для H2, ### для H3, **жирный**, таблицы, мар�
       ? `\n\nДОПОЛНИТЕЛЬНЫЕ SEO-ТРЕБОВАНИЯ (от аналитика, приоритет высокий):\n${dynamicSeoBlock}`
       : ''
 
+    console.log(
+      `[writer] Режим: конкурентная генерация (${directions.length} агента, каждый пишет статью целиком)...`
+    )
     const drafts = await Promise.all(
       directions.map((dir) =>
         askClaude(

@@ -667,12 +667,16 @@ function runClaude(prompt, agent) {
   })
 }
 var CLAUDE_RETRY_DELAY_MS = 3e4
+var isQuotaExhausted = (message) =>
+  /out of (extra )?usage|usage limit reached|rate limit/i.test(message)
 async function askClaude(prompt, agent) {
   try {
     return await runClaude(prompt, agent)
   } catch (e) {
+    const message = e.message
+    if (isQuotaExhausted(message)) throw e
     console.error(
-      `[writer] claude \u0441\u043E\u0440\u0432\u0430\u043B\u0441\u044F: ${e.message} \u2014 \u043F\u043E\u0432\u0442\u043E\u0440 \u0447\u0435\u0440\u0435\u0437 30 \u0441\u0435\u043A`
+      `[writer] claude \u0441\u043E\u0440\u0432\u0430\u043B\u0441\u044F: ${message} \u2014 \u043F\u043E\u0432\u0442\u043E\u0440 \u0447\u0435\u0440\u0435\u0437 30 \u0441\u0435\u043A`
     )
     await new Promise((r) => setTimeout(r, CLAUDE_RETRY_DELAY_MS))
     return runClaude(prompt, agent)
@@ -1505,9 +1509,6 @@ PLURAL BRIDGE (9.9b): \u0432 \u0442\u0435\u043A\u0441\u0442\u0435 \u0441\u0442\u
 Markdown: ## \u0434\u043B\u044F H2, ### \u0434\u043B\u044F H3, **\u0436\u0438\u0440\u043D\u044B\u0439**, \u0442\u0430\u0431\u043B\u0438\u0446\u044B, \u043C\u0430\u0440\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u0441\u043F\u0438\u0441\u043A\u0438.`
   let markdown = ''
   if (!topic.singleAgent) {
-    console.log(
-      '[writer] \u0420\u0435\u0436\u0438\u043C: \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u043D\u0430\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F (3 \u0430\u0433\u0435\u043D\u0442\u0430)...'
-    )
     const directions = [
       {
         name: '\u041F\u0440\u044F\u043C\u043E\u0439 \u0437\u0430\u0445\u043E\u0434',
@@ -1541,6 +1542,9 @@ Markdown: ## \u0434\u043B\u044F H2, ### \u0434\u043B\u044F H3, **\u0436\u0438\u0
 \u0414\u041E\u041F\u041E\u041B\u041D\u0418\u0422\u0415\u041B\u042C\u041D\u042B\u0415 SEO-\u0422\u0420\u0415\u0411\u041E\u0412\u0410\u041D\u0418\u042F (\u043E\u0442 \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430, \u043F\u0440\u0438\u043E\u0440\u0438\u0442\u0435\u0442 \u0432\u044B\u0441\u043E\u043A\u0438\u0439):
 ${dynamicSeoBlock}`
       : ''
+    console.log(
+      `[writer] \u0420\u0435\u0436\u0438\u043C: \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u043D\u0430\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F (${directions.length} \u0430\u0433\u0435\u043D\u0442\u0430, \u043A\u0430\u0436\u0434\u044B\u0439 \u043F\u0438\u0448\u0435\u0442 \u0441\u0442\u0430\u0442\u044C\u044E \u0446\u0435\u043B\u0438\u043A\u043E\u043C)...`
+    )
     const drafts = await Promise.all(
       directions.map((dir) =>
         askClaude(
