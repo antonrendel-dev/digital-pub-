@@ -2,7 +2,7 @@
  * Content Factory — Scheduler
  * Берёт следующую одобренную неопубликованную тему и запускает writer.
  * Запуск: node scheduler.compiled.js
- * Cron: 0 6 * * 1,3,5 (пн/ср/пт в 06:00 UTC = 09:00 Москва)
+ * Cron: 0 8 * * * через publish-next.sh (каждый день в 08:00 CEST = 09:00 Москва)
  */
 
 import { spawn } from 'child_process'

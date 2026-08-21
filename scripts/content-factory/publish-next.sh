@@ -1,6 +1,6 @@
 #!/bin/bash
-# Запускается по cron пн/ср/пт в 09:00 МСК (06:00 UTC):
-# 0 6 * * 1,3,5 /home/claude/projects/digital-pub-/scripts/content-factory/publish-next.sh
+# Запускается по cron каждый день в 09:00 МСК (08:00 CEST):
+# 0 8 * * * /home/claude/projects/digital-pub-/scripts/content-factory/publish-next.sh
 
 set -a
 source /opt/bots/content-factory/.env
