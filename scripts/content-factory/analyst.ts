@@ -2,7 +2,8 @@
  * Content Factory — Analyst
  * Генерирует батч тем на календарный месяц, постит в Telegram топик SEO Лаба.
  * Запуск: node analyst.compiled.js
- * Cron: 0 9 * * 1 (каждый понедельник в 9:00)
+ * Cron: 0 9 25 * * — 25-го числа, батч на следующий месяц. Ритм месячный, а не
+ * недельный: за прогон собирается TOPICS_REQUESTED тем, то есть месяц публикаций.
  */
 
 import { spawn } from 'child_process'
