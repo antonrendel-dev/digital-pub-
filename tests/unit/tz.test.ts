@@ -5,6 +5,7 @@ import {
   buildTopvisorContext,
   checkTechSpec,
   containsMainKeyword,
+  isBrandKeyword,
   renderTechSpec,
 } from '../../scripts/content-factory/lib/tz'
 
@@ -236,5 +237,40 @@ describe('checkTechSpec', () => {
 
     expect(rules).toContain('Длинный title')
     expect(rules).toContain('Description вне 130-155')
+  })
+})
+
+describe('брендовые ключи в STOP-листе', () => {
+  it('узнаёт бренд в любом написании', () => {
+    expect(isBrandKeyword('диджитал паб')).toBe(true)
+    expect(isBrandKeyword('digital pub ru')).toBe(true)
+    expect(isBrandKeyword('d-pub вакансии')).toBe(true)
+    expect(isBrandKeyword('вакансии digital маркетолога')).toBe(false)
+  })
+
+  // Регрессия: в строку сопоставления входит заголовок, а заголовки у нас сплошь
+  // «... digital-специалисту». По этому слову к теме подтягивались брендовые
+  // запросы, закреплённые за главной, — на очереди из 40 тем 24 такие позиции.
+  it('не тащит бренд в STOP-лист из-за слова digital в заголовке', () => {
+    const brandSemantics = {
+      snapshotDate: '2026-08-15',
+      keywords: [
+        { keyword: 'digital pub', position: 1, relevantUrl: 'https://d-pub.ru/' },
+        { keyword: 'диджитал паб', position: 1, relevantUrl: 'https://d-pub.ru/' },
+        {
+          keyword: 'вакансии digital аналитика',
+          position: 34,
+          relevantUrl: 'https://d-pub.ru/vacancies/analitika',
+        },
+      ],
+    }
+
+    const ctx = buildTopvisorContext(
+      'профессиональное выгорание признаки',
+      'Профессиональное выгорание: признаки и что делать digital-специалисту',
+      brandSemantics
+    )
+
+    expect(ctx.stopList.map((k) => k.keyword)).toEqual(['вакансии digital аналитика'])
   })
 })

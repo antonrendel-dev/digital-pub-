@@ -298,6 +298,10 @@ function containsMainKeyword(phrase, mainKeyword) {
   const phraseStems = new Set(stems(phrase))
   return stems(mainKeyword).every((s) => phraseStems.has(s))
 }
+var BRAND_PATTERN = /(диджитал\s*паб|digital\s*pub|d-?pub)/i
+function isBrandKeyword(keyword) {
+  return BRAND_PATTERN.test(keyword)
+}
 function sharedSubjectStems(a, b) {
   const bStems = new Set(stems(b))
   return [...new Set(stems(a).filter((s) => bStems.has(s) && !INTENT_STEMS.has(s)))]
@@ -305,7 +309,10 @@ function sharedSubjectStems(a, b) {
 function buildTopvisorContext(topicKeyword, topicTitle, semantics) {
   const subject = `${topicKeyword} ${topicTitle}`
   const related = semantics.keywords.filter(
-    (k) => k.relevantUrl && sharedSubjectStems(k.keyword, subject).length > 0
+    (k) =>
+      k.relevantUrl &&
+      !isBrandKeyword(k.keyword) &&
+      sharedSubjectStems(k.keyword, subject).length > 0
   )
   const byPosition = [...related].sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
   return {

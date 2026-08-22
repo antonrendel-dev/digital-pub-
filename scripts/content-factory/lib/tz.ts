@@ -142,6 +142,20 @@ export function containsMainKeyword(phrase: string, mainKeyword: string): boolea
   return stems(mainKeyword).every((s) => phraseStems.has(s))
 }
 
+// Брендовые запросы закреплены за главной и в STOP-лист попадать не должны:
+// конкурировать с собственной главной по «диджитал паб» статья не может, а
+// запретить писателю слово «digital» — значит запретить половину словаря.
+//
+// Ловятся они не по смыслу, а по механике сопоставления: в строку темы входит
+// заголовок, а в заголовках у нас сплошь «digital-специалисту». На очереди из
+// 40 тем это давало 24 брендовые позиции в STOP-листах у шести тем — ровно у
+// тех шести, где в заголовке есть «digital».
+const BRAND_PATTERN = /(диджитал\s*паб|digital\s*pub|d-?pub)/i
+
+export function isBrandKeyword(keyword: string): boolean {
+  return BRAND_PATTERN.test(keyword)
+}
+
 /** Общие основы двух фраз за вычетом интент-слов — то, что реально задаёт тему. */
 export function sharedSubjectStems(a: string, b: string): string[] {
   const bStems = new Set(stems(b))
@@ -159,7 +173,10 @@ export function buildTopvisorContext(
 ): TopvisorContext {
   const subject = `${topicKeyword} ${topicTitle}`
   const related = semantics.keywords.filter(
-    (k) => k.relevantUrl && sharedSubjectStems(k.keyword, subject).length > 0
+    (k) =>
+      k.relevantUrl &&
+      !isBrandKeyword(k.keyword) &&
+      sharedSubjectStems(k.keyword, subject).length > 0
   )
 
   const byPosition = [...related].sort((a, b) => (a.position ?? 999) - (b.position ?? 999))

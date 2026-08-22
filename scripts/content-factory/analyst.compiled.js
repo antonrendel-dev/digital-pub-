@@ -35,6 +35,13 @@ function renumberByVolume(topics) {
   sorted.forEach((t, i) => (t.id = i + 1))
   return sorted
 }
+var TRAFFIC_MID_VOLUME = 700
+function trafficLabelFromVolume(volume) {
+  if (typeof volume !== 'number') return '\u0431\u0435\u0437 \u0437\u0430\u043C\u0435\u0440\u0430'
+  if (volume < MIN_WORDSTAT_VOLUME) return '\u043D\u0438\u0437\u043A\u0438\u0439'
+  if (volume < TRAFFIC_MID_VOLUME) return '\u0441\u0440\u0435\u0434\u043D\u0438\u0439'
+  return '\u0432\u044B\u0441\u043E\u043A\u0438\u0439'
+}
 
 // lib/pool.ts
 var VACANCY_TOKENS = [
@@ -376,6 +383,7 @@ ${pending.map((t) => `id ${t.id}: "${t.title}" [\u043A\u043B\u044E\u0447: ${t.ke
       t.title = r.title
       t.keyword = r.keyword
       t.wordstatVolume = await fetchWordstatVolume(r.keyword)
+      t.trafficEst = trafficLabelFromVolume(t.wordstatVolume)
     }
     const split = splitByVolume(pending)
     fixed.push(...split.passed)
@@ -468,7 +476,6 @@ ${publishedBlock}${plannedBlock}${poolBlock}${opportunityBlock}
     "keyword": "...",
     "audience": "\u0421\u043E\u0438\u0441\u043A\u0430\u0442\u0435\u043B\u044C|HR|\u041E\u0431\u0430",
     "type": "\u0413\u0430\u0439\u0434|\u041A\u043E\u043D\u0441\u043F\u0435\u043A\u0442|\u0421\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435|\u041A\u0435\u0439\u0441|\u0427\u0435\u043A\u043B\u0438\u0441\u0442",
-    "trafficEst": "\u043D\u0438\u0437\u043A\u0438\u0439|\u0441\u0440\u0435\u0434\u043D\u0438\u0439|\u0432\u044B\u0441\u043E\u043A\u0438\u0439",
     "source": "\u043F\u0443\u043B|\u0441\u0432\u043E\u0439"
   }
 ]`,
@@ -489,6 +496,7 @@ ${publishedBlock}${plannedBlock}${poolBlock}${opportunityBlock}
       t.wordstatVolume = await fetchWordstatVolume(t.keyword)
     })
   )
+  topics.forEach((t) => (t.trafficEst = trafficLabelFromVolume(t.wordstatVolume)))
   if (toMeasure.length && !wordstatIsAlive(toMeasure)) {
     console.log(
       '[analyst] Wordstat: \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430, \u0433\u0435\u0439\u0442 \u043F\u0440\u043E\u043F\u0443\u0449\u0435\u043D'

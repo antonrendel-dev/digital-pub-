@@ -9,6 +9,7 @@ import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
+import { isReadyToWrite } from './lib/topic-gate.js'
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const SCRIPTS_DIR = import.meta.dirname
@@ -20,6 +21,7 @@ interface Topic {
   audience: string
   type: string
   trafficEst: string
+  wordstatVolume?: number | null
   approved?: boolean
   published?: boolean
 }
@@ -38,7 +40,17 @@ function getNextApprovedTopic(topicsFile: string): Topic | null {
     date: string
     topics: Topic[]
   }
-  return topics.find((t) => t.approved && !t.published) || null
+  const next = topics.find(isReadyToWrite)
+  if (!next) {
+    const blocked = topics.filter((t) => t.approved && !t.published)
+    if (blocked.length) {
+      console.warn(
+        `[scheduler] Одобренных тем ${blocked.length}, но ни одной с замером частотности. ` +
+          `Первая: #${blocked[0].id} "${blocked[0].keyword}". Прогнать замер и повторить.`
+      )
+    }
+  }
+  return next || null
 }
 
 function countApprovedUnpublished(topicsFile: string): number {

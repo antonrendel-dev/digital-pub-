@@ -2,7 +2,9 @@ import {
   MAX_WORDSTAT_VOLUME,
   MIN_WORDSTAT_VOLUME,
   renumberByVolume,
+  isReadyToWrite,
   splitByVolume,
+  trafficLabelFromVolume,
   wordstatIsAlive,
 } from '../../scripts/content-factory/lib/topic-gate'
 
@@ -127,5 +129,60 @@ describe('renumberByVolume', () => {
     ])
 
     expect(new Set(result.map((t) => t.id)).size).toBe(4)
+  })
+})
+
+describe('trafficLabelFromVolume', () => {
+  it('ставит метку по замеру, а не по догадке аналитика', () => {
+    expect(trafficLabelFromVolume(179)).toBe('низкий')
+    expect(trafficLabelFromVolume(409)).toBe('средний')
+    expect(trafficLabelFromVolume(1340)).toBe('высокий')
+  })
+
+  it('границы коридора относит к более осторожной метке', () => {
+    expect(trafficLabelFromVolume(MIN_WORDSTAT_VOLUME - 1)).toBe('низкий')
+    expect(trafficLabelFromVolume(MIN_WORDSTAT_VOLUME)).toBe('средний')
+    expect(trafficLabelFromVolume(699)).toBe('средний')
+    expect(trafficLabelFromVolume(700)).toBe('высокий')
+  })
+
+  it('без замера не выдумывает метку', () => {
+    expect(trafficLabelFromVolume(null)).toBe('без замера')
+    expect(trafficLabelFromVolume(undefined)).toBe('без замера')
+  })
+
+  // Регрессия на батч 14.08.2026: у темы «зарплата продуктового аналитика» в файле
+  // стояло 6151/мес и метка «высокий», а замер дал 179 — расхождение в 34 раза.
+  it('не наследует завышенную оценку: 179/мес это низкий трафик', () => {
+    expect(trafficLabelFromVolume(179)).not.toBe('высокий')
+  })
+})
+
+describe('isReadyToWrite', () => {
+  const t = (over: Record<string, unknown>) => ({
+    id: 1,
+    keyword: 'резюме таргетолога',
+    wordstatVolume: 480,
+    approved: true,
+    published: false,
+    ...over,
+  })
+
+  it('берёт в работу одобренную неопубликованную тему с замером', () => {
+    expect(isReadyToWrite(t({}))).toBe(true)
+  })
+
+  it('не берёт тему без замера частотности', () => {
+    expect(isReadyToWrite(t({ wordstatVolume: null }))).toBe(false)
+    expect(isReadyToWrite(t({ wordstatVolume: undefined }))).toBe(false)
+  })
+
+  it('нулевой замер это ответ Вордстата, а не его отсутствие — тема проходит', () => {
+    expect(isReadyToWrite(t({ wordstatVolume: 0 }))).toBe(true)
+  })
+
+  it('не берёт неодобренную и уже опубликованную', () => {
+    expect(isReadyToWrite(t({ approved: false }))).toBe(false)
+    expect(isReadyToWrite(t({ published: true }))).toBe(false)
   })
 })

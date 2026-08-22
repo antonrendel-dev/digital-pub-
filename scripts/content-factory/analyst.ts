@@ -17,6 +17,7 @@ import {
   MIN_WORDSTAT_VOLUME,
   renumberByVolume,
   splitByVolume,
+  trafficLabelFromVolume,
   wordstatIsAlive,
 } from './lib/topic-gate.js'
 import { fetchWebmasterOpportunities, fetchWordstatVolume } from './lib/yandex.js'
@@ -157,6 +158,8 @@ ${pending.map((t) => `id ${t.id}: "${t.title}" [ключ: ${t.keyword} — ${t.w
       t.title = r.title
       t.keyword = r.keyword
       t.wordstatVolume = await fetchWordstatVolume(r.keyword)
+      // Ключ сменился — метка трафика от старого ключа больше ничего не значит.
+      t.trafficEst = trafficLabelFromVolume(t.wordstatVolume)
     }
 
     const split = splitByVolume(pending)
@@ -250,7 +253,6 @@ ${publishedBlock}${plannedBlock}${poolBlock}${opportunityBlock}
     "keyword": "...",
     "audience": "Соискатель|HR|Оба",
     "type": "Гайд|Конспект|Сравнение|Кейс|Чеклист",
-    "trafficEst": "низкий|средний|высокий",
     "source": "пул|свой"
   }
 ]`,
@@ -276,6 +278,11 @@ ${publishedBlock}${plannedBlock}${poolBlock}${opportunityBlock}
       t.wordstatVolume = await fetchWordstatVolume(t.keyword)
     })
   )
+
+  // Метку трафика ставим сами, из замера. Раньше её возвращал аналитик вместе
+  // с темой, и она ни на чём не основывалась: в батче 14.08 двенадцать тем из
+  // пятидесяти одной были завышены втрое и больше.
+  topics.forEach((t) => (t.trafficEst = trafficLabelFromVolume(t.wordstatVolume)))
 
   // Живость проверяем только по замерам этого прогона: частотности из пула
   // положительны всегда и замаскировали бы мёртвый Вордстат.

@@ -61,3 +61,30 @@ export function renumberByVolume<T extends GatedTopic>(topics: T[]): T[] {
   sorted.forEach((t, i) => (t.id = i + 1))
   return sorted
 }
+
+// Метка трафика раньше приходила от аналитика вместе с темой — то есть была
+// догадкой модели, не связанной с замером. На батче 14.08 это разошлось с
+// реальностью в 34 раза («зарплата продуктового аналитика»: заявлено 6151/мес,
+// замер 179). Тони одобряет темы по этой метке, поэтому она считается из
+// wordstatVolume и ниоткуда больше.
+//
+// Границы привязаны к коридору: нижняя треть коридора — низкий трафик,
+// верхняя — высокий. Тема вне коридора до плана не доходит, но метку получает
+// честную: её показывают в блоке «одобрять на свой риск».
+export const TRAFFIC_MID_VOLUME = 700
+
+export function trafficLabelFromVolume(volume: number | null | undefined): string {
+  if (typeof volume !== 'number') return 'без замера'
+  if (volume < MIN_WORDSTAT_VOLUME) return 'низкий'
+  if (volume < TRAFFIC_MID_VOLUME) return 'средний'
+  return 'высокий'
+}
+
+// Второй рубеж, уже перед написанием. Гейт выше ловит темы без замера на этапе
+// плана, но одобренная тема живёт в файле неделями, и правка ключа руками замер
+// не пересчитывает. Пять статей из десяти опубликованных вышли по ключу с
+// неизвестной частотностью — последняя 20.08.2026, за два часа до появления
+// гейта. Здесь такая тема просто не берётся в работу.
+export function isReadyToWrite(t: GatedTopic & { approved?: boolean; published?: boolean }) {
+  return Boolean(t.approved) && !t.published && isMeasured(t)
+}
