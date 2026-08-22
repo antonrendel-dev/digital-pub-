@@ -5,19 +5,18 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getAllFilterCombinations } from '@/lib/spec-filter-meta'
 import { getVacancySitemapEntries, getResumeSitemapEntries } from '@/lib/sitemap/vacancies'
+import { SITEMAP_BASE_URL, SITEMAP_SHARDS, isKnownShard } from '@/lib/sitemap/shards'
 
-const BASE_URL = 'https://d-pub.ru'
+const BASE_URL = SITEMAP_BASE_URL
 
 export const revalidate = 600
 
 /**
- * Sitemap split strategy:
- *   id=0 → static pages + articles + category tag pages
- *   id=1 → individual vacancy pages (with real lastModified from updatedAt)
- *   id=2 → individual resume pages (with real lastModified from updatedAt)
+ * Sitemap split strategy — состав шардов описан в lib/sitemap/shards.ts,
+ * оттуда же его берут robots.txt и индексный файл.
  */
 export function generateSitemaps() {
-  return [{ id: 0 }, { id: 1 }, { id: 2 }]
+  return SITEMAP_SHARDS.map((s) => ({ id: s.id }))
 }
 
 const KNOWN_TAG_SLUGS = [
@@ -70,6 +69,15 @@ export default async function sitemap({
   // Next отдаёт id из URL строкой, хотя типизирует его как number. Строгое
   // сравнение с числом всегда ложно — шарды 1 и 2 отдавали содержимое шарда 0.
   const shard = Number(id)
+
+  // Незаявленный шард отдаёт пустой набор, а не содержимое нулевого. Раньше
+  // «остальное» проваливалось в ветку id=0, и /sitemap/3.xml, которого нет ни
+  // в generateSitemaps, ни в robots, отдавал 226 адресов — полную копию
+  // нулевого шарда, то есть дубль всей статики для поисковика.
+  if (!isKnownShard(shard)) {
+    console.warn(`[sitemap] Запрошен незаявленный шард ${id}, отдаю пустой`)
+    return []
+  }
 
   // Single Payload instance shared by all DB queries
   let payloadInstance: Awaited<ReturnType<typeof getPayload>> | null = null

@@ -35,6 +35,25 @@ describe('Sitemap', () => {
     expect(sitemaps).toEqual([{ id: 0 }, { id: 1 }, { id: 2 }])
   })
 
+  // Регрессия 22.08.2026: /sitemap/3.xml отдавал 226 адресов — копию нулевого
+  // шарда. Незаявленный шард обязан быть пустым, иначе это дубль для робота.
+  test('незаявленный шард отдаёт пустой набор, а не копию нулевого', async () => {
+    const zero = await sitemap({ id: 0 })
+    expect(zero.length).toBeGreaterThan(0)
+
+    for (const unknown of [3, 99, -1]) {
+      await expect(sitemap({ id: unknown })).resolves.toEqual([])
+    }
+  })
+
+  // Next отдаёт id из URL строкой, хотя типизирует его числом.
+  test('строковый id разбирается так же, как числовой', async () => {
+    const byNumber = await sitemap({ id: 0 })
+    const byString = await sitemap({ id: '0' })
+    expect(byString.map((e) => e.url)).toEqual(byNumber.map((e) => e.url))
+    await expect(sitemap({ id: '3' })).resolves.toEqual([])
+  })
+
   test('generates sitemap entries for id=0', async () => {
     const entries = await sitemap({ id: 0 })
     expect(Array.isArray(entries)).toBe(true)

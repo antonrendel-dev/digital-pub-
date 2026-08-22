@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { SITEMAP_BASE_URL } from '@/lib/sitemap/shards'
 
 export default function robots(): MetadataRoute.Robots {
   if (process.env.PAYLOAD_PUSH_DB) {
@@ -22,10 +23,8 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/', '/zp-redirect'],
       },
     ],
-    sitemap: [
-      'https://d-pub.ru/sitemap/0.xml',
-      'https://d-pub.ru/sitemap/1.xml',
-      'https://d-pub.ru/sitemap/2.xml',
-    ],
+    // Один вход вместо перечня шардов: список живёт в lib/sitemap/shards.ts,
+    // и добавление шарда больше не требует правки robots.
+    sitemap: `${SITEMAP_BASE_URL}/sitemap_index.xml`,
   }
 }
