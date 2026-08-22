@@ -54,7 +54,7 @@
 | ------------------- | ------------------------------------------------------------------------------------------------- |
 | peopleinvestor.ru   | домен не резолвится                                                                               |
 | epicstars.ru        | домен не резолвится                                                                               |
-| zillion.net         | домен не резолвится                                                                               |
+| zillion.net         | не резолвится системным DNS, в браузере таймаут — недоступен обоими способами                     |
 | blog.smmplanner.com | поддомен не резолвится; корневой smmplanner.com живой — блог переехал                             |
 | startuppoint.ru     | 404 (в таблице уже отмечено)                                                                      |
 | toster.ru           | редиректит на `qna.habr.com`. Тостера как отдельной площадки нет, это Хабр Q&A, а Хабр в nofollow |
@@ -108,4 +108,4 @@ delovoymir.biz. На доступных страницах ссылок на ч�
 - Likeni: NoFollow → на самом деле dofollow
 - TenChat: DoFollow подтверждён (я вчера ошибочно писал обратное)
 - toster.ru, searchengines.ru, blog.ingate.ru — заменить домены или убрать
-- peopleinvestor.ru, epicstars.ru, zillion.net, blog.smmplanner.com — убрать, доменов нет
+- peopleinvestor.ru, epicstars.ru, blog.smmplanner.com — убрать, домены не резолвятся; zillion.net недоступен, но сигналы разного типа
