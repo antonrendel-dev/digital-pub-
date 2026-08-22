@@ -3,7 +3,12 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCountsByType } from '@/lib/tags'
 import TagsSidebar from '@/components/TagsSidebar'
-import { RESUME_TAG_TITLE, RESUME_TAG_H1, RESUME_TAG_DESCRIPTION } from '@/lib/tagH1'
+import {
+  RESUME_TAG_TITLE,
+  RESUME_TAG_H1,
+  RESUME_TAG_DESCRIPTION,
+  RESUME_TAG_SEO_TEXT,
+} from '@/lib/tagH1'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { getResumeTagFaq } from '@/lib/resume-tag-faq'
 import PageShell from '@/components/PageShell'
@@ -105,6 +110,10 @@ export default async function TagPage({ params }: Props) {
     })),
   }
 
+  // Текст под наём, если он для этого тега написан; иначе — общий из Payload,
+  // который делится со страницей вакансий. См. RESUME_TAG_SEO_TEXT.
+  const seoText = RESUME_TAG_SEO_TEXT[tagSlug] ?? tag.seoText
+
   return (
     <PageShell>
       <JsonLd data={breadcrumbLd} />
@@ -171,11 +180,11 @@ export default async function TagPage({ params }: Props) {
           </aside>
         </div>
 
-        {tag.seoText && (
+        {seoText && (
           <div className="mt-8 pt-6 border-t border-border-light">
             <div
               className="prose prose-sm max-w-none text-text-muted [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-text [&_h1]:mb-4 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-text [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_li]:text-sm [&_strong]:font-semibold [&_strong]:text-text"
-              dangerouslySetInnerHTML={{ __html: sanitizeSeoHtml(tag.seoText) }}
+              dangerouslySetInnerHTML={{ __html: sanitizeSeoHtml(seoText) }}
             />
           </div>
         )}
