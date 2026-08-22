@@ -10,6 +10,7 @@ import PostDetail from '@/components/PostDetail'
 import VacancyGrid from '@/components/VacancyGrid'
 import TagsSidebar from '@/components/TagsSidebar'
 import JsonLd from '@/components/JsonLd'
+import { ogImageUrl } from '@/lib/og'
 import {
   buildVacancyTitle,
   buildVacancyDescription,
@@ -91,7 +92,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
       images: post.imageUrl
         ? [{ url: post.imageUrl, alt: post.title }]
-        : [{ url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' }],
+        : [
+            {
+              url: ogImageUrl({
+                title: post.title,
+                kind: 'vacancy',
+                subtitle: post.salary || post.company || undefined,
+              }),
+              width: 1200,
+              height: 630,
+              alt: post.title,
+            },
+          ],
     },
     twitter: {
       card: 'summary_large_image',
