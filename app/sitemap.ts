@@ -4,7 +4,11 @@ import { ARTICLE_TAGS } from '@/lib/article-tags'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getAllFilterCombinations } from '@/lib/spec-filter-meta'
-import { getVacancySitemapEntries, getResumeSitemapEntries } from '@/lib/sitemap/vacancies'
+import {
+  getVacancySitemapEntries,
+  getResumeSitemapEntries,
+  SitemapUnavailableError,
+} from '@/lib/sitemap/vacancies'
 import { SITEMAP_BASE_URL, SITEMAP_SHARDS, isKnownShard } from '@/lib/sitemap/shards'
 
 const BASE_URL = SITEMAP_BASE_URL
@@ -87,15 +91,17 @@ export default async function sitemap({
     console.warn(`[sitemap:${id}] DB unavailable`)
   }
 
-  // id=1 → individual vacancy pages
+  // Шарды вакансий и резюме держатся только на базе — статического запасного
+  // списка у них нет. Отдать пустой набор значит закэшировать его на десять
+  // минут и показать поисковику, что 1680 карточек исчезли. Лучше упасть:
+  // Next продолжит отдавать прошлую удачную сборку.
   if (shard === 1) {
-    if (!payloadInstance) return []
+    if (!payloadInstance) throw new SitemapUnavailableError('getPayload failed')
     return getVacancySitemapEntries(payloadInstance, now)
   }
 
-  // id=2 → individual resume pages
   if (shard === 2) {
-    if (!payloadInstance) return []
+    if (!payloadInstance) throw new SitemapUnavailableError('getPayload failed')
     return getResumeSitemapEntries(payloadInstance, now)
   }
 

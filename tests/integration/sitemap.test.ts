@@ -104,11 +104,22 @@ describe('Sitemap', () => {
     }
   })
 
-  test('id=1 and id=2 return empty arrays when DB unavailable', async () => {
-    const vacancies = await sitemap({ id: 1 })
-    const resumes = await sitemap({ id: 2 })
-    expect(vacancies).toEqual([])
-    expect(resumes).toEqual([])
+  // Регрессия 23.08.2026: при недоступной базе шарды 1 и 2 отдавали пустой
+  // массив, Next кэшировал его на revalidate=600 и раздавал роботам. Яндекс
+  // прочитал оба шарда ровно в такой момент и записал в панели 0 URL при
+  // 1333 и 347 живых адресах. Пустой сайтмап — это заявление «страниц больше
+  // нет», поэтому сбой базы обязан быть падением, а не пустым ответом:
+  // Next оставит в кэше прошлую удачную версию.
+  test('id=1 и id=2 падают при недоступной базе, а не отдают пустоту', async () => {
+    await expect(sitemap({ id: 1 })).rejects.toThrow(/база недоступна/i)
+    await expect(sitemap({ id: 2 })).rejects.toThrow(/база недоступна/i)
+  })
+
+  // Нулевой шард держится на статике и MDX — ему база нужна лишь для тегов и
+  // статей из Payload. Он обязан продолжать отдавать содержимое без неё.
+  test('нулевой шард переживает недоступную базу', async () => {
+    const entries = await sitemap({ id: 0 })
+    expect(entries.length).toBeGreaterThan(0)
   })
 
   /**

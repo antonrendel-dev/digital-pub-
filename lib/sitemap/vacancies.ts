@@ -21,6 +21,19 @@ const TOOL_REDIRECT_SLUGS = new Set([
   'photoshop',
 ])
 
+// Пустой ответ при недоступной базе кэшируется и уезжает в поисковик как
+// «этих адресов больше нет». 23.08.2026 Яндекс прочитал шарды 1 и 2 ровно в
+// такой момент и записал у обоих 0 URL, хотя вживую там 1333 и 347. Поэтому
+// сбой базы пробрасывается наверх: Next оставит в кэше прошлую удачную версию
+// вместо того, чтобы сохранить пустоту на десять минут.
+export class SitemapUnavailableError extends Error {
+  constructor(cause: unknown) {
+    super('Сайтмап не собран: база недоступна')
+    this.name = 'SitemapUnavailableError'
+    this.cause = cause
+  }
+}
+
 type PayloadPost = {
   slug: string | null
   type: 'vacancy' | 'resume'
@@ -69,9 +82,9 @@ export async function getVacancySitemapEntries(
           },
         ]
       })
-  } catch {
+  } catch (e) {
     console.warn('[sitemap] DB error fetching vacancy posts')
-    return []
+    throw new SitemapUnavailableError(e)
   }
 }
 
@@ -116,8 +129,8 @@ export async function getResumeSitemapEntries(
           },
         ]
       })
-  } catch {
+  } catch (e) {
     console.warn('[sitemap] DB error fetching resume posts')
-    return []
+    throw new SitemapUnavailableError(e)
   }
 }

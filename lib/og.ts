@@ -84,6 +84,19 @@ export function ogTitleFontSize(title: string): number {
 }
 
 /**
+ * Склонение существительного при числе: «1 вакансия», «2 вакансии», «5 вакансий».
+ * Нужно в подписи карточки — «347 резюме» без склонения выглядит как машинный вывод.
+ */
+export function ruPlural(n: number, forms: [string, string, string]): string {
+  const mod100 = Math.abs(n) % 100
+  const mod10 = mod100 % 10
+  if (mod100 >= 11 && mod100 <= 14) return forms[2]
+  if (mod10 === 1) return forms[0]
+  if (mod10 >= 2 && mod10 <= 4) return forms[1]
+  return forms[2]
+}
+
+/**
  * Адрес динамической картинки. Ставится там, где раньше подставлялся общий
  * og-image.png: у вакансии без своего изображения и у статьи без обложки.
  * Свою картинку не вытесняет — обложка статьи всегда лучше сгенерированной.

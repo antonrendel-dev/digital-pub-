@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
+import { ogImageUrl, ruPlural } from '@/lib/og'
 import Link from 'next/link'
 import { getTagBySlug, getPostsByTag, getTagsWithCounts, getCategoryStats } from '@/lib/tags'
 import { getArticles } from '@/lib/articles'
@@ -66,7 +67,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       type: 'website',
       images: [
-        { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+        {
+          url: ogImageUrl({
+            title,
+            kind: 'vacancy',
+            subtitle: `${n} ${ruPlural(posts.length, ['вакансия', 'вакансии', 'вакансий'])} из Telegram-каналов`,
+          }),
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
       ],
     },
     twitter: {

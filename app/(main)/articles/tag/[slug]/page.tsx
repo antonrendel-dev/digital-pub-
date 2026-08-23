@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getArticles, mergeAndSortArticles, type MergedArticle } from '@/lib/articles'
 import { tagBySlug } from '@/lib/article-tags'
+import { ogImageUrl } from '@/lib/og'
 import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
 import ArticlesGrid from '@/components/ArticlesGrid'
@@ -36,7 +37,12 @@ export async function generateMetadata({
       url: `https://d-pub.ru/articles/tag/${slug}`,
       type: 'website',
       images: [
-        { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+        {
+          url: ogImageUrl({ title: tag.pageTitle, kind: 'article', subtitle: tag.name }),
+          width: 1200,
+          height: 630,
+          alt: tag.pageTitle,
+        },
       ],
     },
     twitter: {

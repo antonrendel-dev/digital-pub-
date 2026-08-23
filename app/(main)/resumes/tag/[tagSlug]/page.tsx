@@ -10,6 +10,7 @@ import {
   RESUME_TAG_SEO_TEXT,
 } from '@/lib/tagH1'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
+import { ogImageUrl } from '@/lib/og'
 import { getResumeTagFaq } from '@/lib/resume-tag-faq'
 import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
@@ -44,7 +45,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       type: 'website',
       images: [
-        { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+        {
+          url: ogImageUrl({
+            title,
+            kind: 'resume',
+            subtitle: `${posts.length} резюме из Telegram-каналов`,
+          }),
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
       ],
     },
     twitter: {

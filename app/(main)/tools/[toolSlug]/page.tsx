@@ -5,6 +5,7 @@ import { getPostsByTool } from '@/lib/posts'
 import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
 import JsonLd from '@/components/JsonLd'
+import { ogImageUrl } from '@/lib/og'
 
 export const revalidate = 60
 
@@ -864,7 +865,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: canonical,
       type: 'website',
       images: [
-        { url: 'https://d-pub.ru/og-image.png', width: 1200, height: 630, alt: 'Диджитал Паб' },
+        {
+          url: ogImageUrl({
+            title: tool.metaTitle,
+            subtitle: `Вакансии и резюме: ${tool.name}`,
+          }),
+          width: 1200,
+          height: 630,
+          alt: tool.metaTitle,
+        },
       ],
     },
     twitter: {

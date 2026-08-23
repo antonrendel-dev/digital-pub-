@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import {
   OG_KINDS,
   OG_SIZE,
@@ -7,6 +9,7 @@ import {
   ogImageUrl,
   ogKindLabel,
   ogTitleFontSize,
+  ruPlural,
 } from '../../lib/og'
 
 describe('clampOgTitle', () => {
@@ -152,3 +155,43 @@ function readCmapCodepoints(buf: Buffer): Set<number> {
   }
   return out
 }
+
+describe('ruPlural', () => {
+  const forms: [string, string, string] = ['вакансия', 'вакансии', 'вакансий']
+
+  it('склоняет по последней цифре', () => {
+    expect(ruPlural(1, forms)).toBe('вакансия')
+    expect(ruPlural(3, forms)).toBe('вакансии')
+    expect(ruPlural(7, forms)).toBe('вакансий')
+    expect(ruPlural(21, forms)).toBe('вакансия')
+    expect(ruPlural(42, forms)).toBe('вакансии')
+  })
+
+  it('одиннадцать–четырнадцать — исключение', () => {
+    for (const n of [11, 12, 13, 14, 111, 112]) expect(ruPlural(n, forms)).toBe('вакансий')
+  })
+
+  it('ноль — родительный падеж', () => {
+    expect(ruPlural(0, forms)).toBe('вакансий')
+  })
+})
+
+// Проверка 23.08.2026: карточки вакансий, резюме и статей на проде поголовно
+// имеют собственную обложку, поэтому ветка с генерацией у них не срабатывает
+// никогда. Общая og-image.png оставалась ровно там, где превью и делят чаще
+// всего, — на категориях, тегах и страницах инструментов. Тест держит эти
+// страницы на динамической карточке, чтобы правка не отъехала обратно.
+describe('страницы-списки не откатываются на общую картинку', () => {
+  const PAGES = [
+    'app/(main)/vacancies/[category]/page.tsx',
+    'app/(main)/resumes/tag/[tagSlug]/page.tsx',
+    'app/(main)/articles/tag/[slug]/page.tsx',
+    'app/(main)/tools/[toolSlug]/page.tsx',
+  ]
+
+  it.each(PAGES)('%s собирает og через ogImageUrl', (rel) => {
+    const src = fs.readFileSync(path.join(process.cwd(), rel), 'utf8')
+    expect(src).toContain('ogImageUrl(')
+    expect(src).not.toContain('og-image.png')
+  })
+})
