@@ -20,11 +20,13 @@ jest.mock('@payload-config', () => ({}), { virtual: true })
 import sitemap, { generateSitemaps } from '@/app/sitemap'
 import { getArticles } from '@/lib/articles'
 import { getPayload } from 'payload'
+import { resetShardCache } from '@/lib/sitemap/cache'
 
 const mockGetPayload = jest.mocked(getPayload)
 
 beforeEach(() => {
   jest.resetAllMocks()
+  resetShardCache()
   // Simulate DB unavailable — sitemap falls back to static content
   mockGetPayload.mockRejectedValue(new Error('DB unavailable in test env'))
 })

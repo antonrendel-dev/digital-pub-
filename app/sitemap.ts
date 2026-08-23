@@ -10,10 +10,16 @@ import {
   SitemapUnavailableError,
 } from '@/lib/sitemap/vacancies'
 import { SITEMAP_BASE_URL, SITEMAP_SHARDS, isKnownShard } from '@/lib/sitemap/shards'
+import { cachedShard } from '@/lib/sitemap/cache'
 
 const BASE_URL = SITEMAP_BASE_URL
 
-export const revalidate = 600
+// Не ISR, а рендер на запрос. При статической пререндеринге шарды вакансий и
+// резюме уезжали на прод пустыми: база недоступна из раннера GitHub Actions
+// (`ENOTFOUND postgres.***.h2` в логе сборки 23.08.2026), а пустой результат
+// становился готовым артефактом и раздавался роботам до первой ревалидации.
+// Повторные обращения гасит cachedShard, TTL те же десять минут.
+export const dynamic = 'force-dynamic'
 
 /**
  * Sitemap split strategy — состав шардов описан в lib/sitemap/shards.ts,
@@ -96,13 +102,17 @@ export default async function sitemap({
   // минут и показать поисковику, что 1680 карточек исчезли. Лучше упасть:
   // Next продолжит отдавать прошлую удачную сборку.
   if (shard === 1) {
-    if (!payloadInstance) throw new SitemapUnavailableError('getPayload failed')
-    return getVacancySitemapEntries(payloadInstance, now)
+    return cachedShard('vacancies', async () => {
+      if (!payloadInstance) throw new SitemapUnavailableError('getPayload failed')
+      return getVacancySitemapEntries(payloadInstance, now)
+    })
   }
 
   if (shard === 2) {
-    if (!payloadInstance) throw new SitemapUnavailableError('getPayload failed')
-    return getResumeSitemapEntries(payloadInstance, now)
+    return cachedShard('resumes', async () => {
+      if (!payloadInstance) throw new SitemapUnavailableError('getPayload failed')
+      return getResumeSitemapEntries(payloadInstance, now)
+    })
   }
 
   // id=0 → static pages + articles + category tag pages + filter combos
