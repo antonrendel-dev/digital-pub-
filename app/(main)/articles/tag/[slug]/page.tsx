@@ -38,7 +38,13 @@ export async function generateMetadata({
       type: 'website',
       images: [
         {
-          url: ogImageUrl({ title: tag.pageTitle, kind: 'article', subtitle: tag.name }),
+          url: ogImageUrl({
+            title: tag.pageTitle,
+            kind: 'article',
+            // tag.name в словаре записан со строчной («зарплаты») — в подписи
+            // карточки это читается как обрывок фразы.
+            subtitle: `Статьи по теме: ${tag.name}`,
+          }),
           width: 1200,
           height: 630,
           alt: tag.pageTitle,
