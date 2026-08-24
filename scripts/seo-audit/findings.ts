@@ -1,0 +1,173 @@
+/**
+ * Превращение двух снапшотов в поводы для задач.
+ *
+ * Отдельный модуль без сети и записи на диск: сюда подаются два готовых
+ * снапшота, обратно приходит список находок. Так логику можно гонять тестами
+ * на выдуманных данных, не дожидаясь 30-го числа.
+ *
+ * Граница ответственности крона (решено 24.08.2026): здесь только ДОЖИМ
+ * СДЕЛАННОГО — существующие страницы и отслеживаемые ключи. Всё, чего ещё нет,
+ * ведёт ежедневный крон задач.
+ */
+
+/** Ключ упал не меньше чем на столько позиций — повод. */
+const DROP_THRESHOLD = 5
+
+/** Коридор «в шаге от топ-10»: дожать дешевле, чем брать новый запрос. */
+const NEAR_TOP = [11, 30]
+
+/** Просмотры страницы упали больше чем на столько процентов — повод. */
+const PAGEVIEW_DROP_PCT = 50
+
+/** Меньше этого числа просмотров — статистика слишком мелкая, шум. */
+const PAGEVIEW_FLOOR = 10
+
+/** Показов много, кликов нет — сниппет или интент мимо. */
+const ZERO_CLICK_SHOWS = 30
+
+export interface Snapshot {
+  collectedAt?: string
+  topvisor?: { ok: boolean; data?: { positions?: Record<string, number | null> } }
+  metrika?: { ok: boolean; data?: { topPages?: Array<{ path: string; pageviews: number }> } }
+  webmaster?: {
+    ok: boolean
+    data?: { queries?: Array<{ query: string; shows: number; clicks: number }> }
+  }
+}
+
+export interface Score {
+  s: number
+  g: number
+  r: number
+  a: number
+  total: number
+}
+
+export interface Finding {
+  type: 'left-top10' | 'position-drop' | 'near-top10' | 'pageviews-drop' | 'zero-clicks'
+  key: string
+  title: string
+  detail: string
+  /** Стабильный ключ, по которому находка узнаётся в уже заведённых задачах. */
+  dedupKey: string
+  score: Score
+}
+
+/**
+ * Позиция в снапшоте: число, либо null для «дальше сотни».
+ * null сравнивать напрямую нельзя — считаем его как 101, иначе выход из топа
+ * выглядит как улучшение.
+ */
+const pos = (v: unknown): number => (typeof v === 'number' ? v : 101)
+const known = (v: unknown): v is number => typeof v === 'number'
+
+function scoreOf(s: number, g: number, r: number, a: number): Score {
+  return { s, g, r, a, total: s + g + r + a }
+}
+
+export function buildFindings(prev: Snapshot, curr: Snapshot): Finding[] {
+  const out: Finding[] = []
+  const prevPos = prev?.topvisor?.ok ? (prev.topvisor.data?.positions ?? {}) : {}
+  const currPos = curr?.topvisor?.ok ? (curr.topvisor.data?.positions ?? {}) : {}
+
+  for (const [key, raw] of Object.entries(currPos)) {
+    const now = pos(raw)
+    const was = pos(prevPos[key])
+    const hadBefore = Object.prototype.hasOwnProperty.call(prevPos, key)
+
+    // Выпадение из топ-10 — самое дорогое, что может случиться с готовой страницей.
+    if (hadBefore && known(prevPos[key]) && was <= 10 && now > 10) {
+      out.push({
+        type: 'left-top10',
+        key,
+        title: `Ключ «${key}» вышел из топ-10: ${was} → ${known(raw) ? now : '>100'}`,
+        detail:
+          `Страница по этому запросу уже была в десятке, значит контент и структура ` +
+          `работали. Разобраться, что изменилось: конкурент, каннибализация или правка на нашей стороне.`,
+        dedupKey: `left-top10:${key}`,
+        score: scoreOf(20, 20, 0, 18),
+      })
+      continue
+    }
+
+    // Заметное падение внутри топ-100.
+    if (hadBefore && known(prevPos[key]) && known(raw) && now - was >= DROP_THRESHOLD) {
+      out.push({
+        type: 'position-drop',
+        key,
+        title: `Ключ «${key}» просел на ${now - was}: ${was} → ${now}`,
+        detail: `Падение внутри топ-100. Проверить страницу, свежесть данных и перелинковку.`,
+        dedupKey: `position-drop:${key}`,
+        score: scoreOf(12, 18, 0, 18),
+      })
+      continue
+    }
+
+    // Кандидат на дожим: новыми статьями это не лечится, ключ уже закреплён
+    // за страницей, вторая даст каннибализацию.
+    if (known(raw) && now >= NEAR_TOP[0] && now <= NEAR_TOP[1]) {
+      out.push({
+        type: 'near-top10',
+        key,
+        title: `Ключ «${key}» на ${now} — кандидат на дожим`,
+        detail:
+          `В коридоре ${NEAR_TOP[0]}–${NEAR_TOP[1]} прирост даёт переписывание существующей ` +
+          `страницы: объём, вхождения, FAQ, перелинковка. Новая статья только поделит выдачу.`,
+        dedupKey: `near-top10:${key}`,
+        score: scoreOf(18, 15, 0, 18),
+      })
+    }
+  }
+
+  // Просмотры страниц: обвал сделанного важнее ровного фона.
+  const prevPages = new Map(
+    (prev?.metrika?.ok ? (prev.metrika.data?.topPages ?? []) : []).map((p) => [p.path, p.pageviews])
+  )
+  for (const p of curr?.metrika?.ok ? (curr.metrika.data?.topPages ?? []) : []) {
+    const before = prevPages.get(p.path)
+    if (before == null || before < PAGEVIEW_FLOOR) continue
+    const dropPct = Math.round(((before - p.pageviews) / before) * 100)
+    if (dropPct >= PAGEVIEW_DROP_PCT) {
+      out.push({
+        type: 'pageviews-drop',
+        key: p.path,
+        title: `Просмотры ${p.path} упали на ${dropPct}%: ${before} → ${p.pageviews}`,
+        detail: `Проверить индексацию, позиции по ключам страницы и не сломалась ли она.`,
+        dedupKey: `pageviews-drop:${p.path}`,
+        score: scoreOf(15, 18, 0, 18),
+      })
+    }
+  }
+
+  // Показы есть, кликов нет — работает сниппет, а не страница.
+  for (const q of curr?.webmaster?.ok ? (curr.webmaster.data?.queries ?? []) : []) {
+    if (q.shows >= ZERO_CLICK_SHOWS && q.clicks === 0) {
+      out.push({
+        type: 'zero-clicks',
+        key: q.query,
+        title: `«${q.query}»: ${q.shows} показов, ноль кликов`,
+        detail:
+          `Нас показывают, но не выбирают. Смотреть title и description страницы, ` +
+          `которая ранжируется, и соответствие интенту.`,
+        dedupKey: `zero-clicks:${q.query}`,
+        score: scoreOf(10, 15, 0, 18),
+      })
+    }
+  }
+
+  return out.sort((a, b) => b.score.total - a.score.total)
+}
+
+/** Отсекаем то, на что уже заведена открытая задача. */
+export function filterKnown(findings: Finding[], existingDedupKeys: Iterable<string>): Finding[] {
+  const seen = new Set(existingDedupKeys)
+  return findings.filter((f) => !seen.has(f.dedupKey))
+}
+
+export const THRESHOLDS = {
+  DROP_THRESHOLD,
+  NEAR_TOP,
+  PAGEVIEW_DROP_PCT,
+  PAGEVIEW_FLOOR,
+  ZERO_CLICK_SHOWS,
+}

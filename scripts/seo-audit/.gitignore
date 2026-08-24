@@ -1,4 +1,4 @@
-data/.lock
-data/snapshots/*.tmp
-data/exports/
 data/snapshots/
+data/exports/
+data/pending-tasks.json
+data/.lock
