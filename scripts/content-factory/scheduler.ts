@@ -9,6 +9,7 @@ import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { sendMessage } from './lib/telegram.js'
+import { sendFailureAlert, alertSentRecently } from './lib/alert.js'
 import { isReadyToWrite } from './lib/topic-gate.js'
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
@@ -77,6 +78,9 @@ function runWriter(topicId: number): Promise<void> {
   })
 }
 
+/** Тема текущего прогона — нужна отбойнику, если writer умер до своего. */
+let startedTopic: { id: number; title: string } | null = null
+
 async function main() {
   const topicsFile = getLatestTopicsFile()
 
@@ -102,6 +106,7 @@ async function main() {
     return
   }
 
+  startedTopic = { id: nextTopic.id, title: nextTopic.title }
   const remaining = countApprovedUnpublished(topicsFile)
   console.log(`[scheduler] Запускаю тему #${nextTopic.id}: "${nextTopic.title}"`)
   console.log(`[scheduler] Осталось одобренных тем: ${remaining}`)
@@ -119,6 +124,20 @@ async function main() {
 
 main().catch(async (e) => {
   console.error('[scheduler] Ошибка:', e)
-  await sendMessage(`❌ Ошибка планировщика:\n${e.message}`).catch(() => {})
+  // Если writer уже отправил подробный отбойник — второе сообщение поверх
+  // первого только мешает. Но когда writer умирает до отправки (17.08.2026 он
+  // падал на spawn E2BIG ещё до старта), сообщить обязан планировщик.
+  if (!alertSentRecently()) {
+    await sendFailureAlert({
+      source: 'scheduler',
+      stage: startedTopic ? 'запуск writer' : 'выбор темы',
+      topicId: startedTopic?.id ?? null,
+      topicTitle: startedTopic?.title ?? null,
+      error: e,
+      topicStaysInQueue: Boolean(startedTopic),
+    })
+  } else {
+    console.log('[scheduler] Подробный отбойник уже ушёл из writer, не дублирую')
+  }
   process.exit(1)
 })

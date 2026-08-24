@@ -615,7 +615,8 @@
       "audience": "HR",
       "type": "Сравнение",
       "trafficEst": "средний",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 20,
@@ -624,7 +625,8 @@
       "audience": "HR",
       "type": "Гайд",
       "trafficEst": "низкий",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 21,
@@ -633,7 +635,8 @@
       "audience": "HR",
       "type": "Сравнение",
       "trafficEst": "низкий",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 25,

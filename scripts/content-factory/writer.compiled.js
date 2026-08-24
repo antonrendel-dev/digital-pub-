@@ -1,6 +1,6 @@
 // writer.ts
 import { execSync, spawn } from 'child_process'
-import fs4 from 'fs'
+import fs5 from 'fs'
 import os2 from 'os'
 import path4 from 'path'
 
@@ -243,8 +243,88 @@ async function sendMessage(text, extra = {}) {
   return data.result.message_id
 }
 
-// lib/tz.ts
+// lib/alert.ts
 import fs3 from 'fs'
+var FACTORY_DIR = '/home/claude/projects/digital-pub-/scripts/content-factory'
+var LOG_PATH = '/home/claude/projects/digital-pub-/logs/content-factory.log'
+var FLAG_PATH = `${FACTORY_DIR}/data/.alert-sent`
+var FLAG_TTL_MS = 10 * 60 * 1e3
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+function readLogTail(lines = 10, logPath = LOG_PATH) {
+  try {
+    const all = fs3.readFileSync(logPath, 'utf-8').split('\n')
+    return all
+      .slice(-lines - 1)
+      .join('\n')
+      .trim()
+  } catch {
+    return ''
+  }
+}
+function markAlertSent() {
+  try {
+    fs3.writeFileSync(FLAG_PATH, String(Date.now()))
+  } catch {}
+}
+function formatFailure(p, logTail = readLogTail()) {
+  const err = p.error instanceof Error ? p.error.message : String(p.error)
+  const lines = [
+    `\u274C <b>\u041A\u043E\u043D\u0442\u0435\u043D\u0442-\u0437\u0430\u0432\u043E\u0434: \u043F\u0440\u043E\u0433\u043E\u043D \u043D\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D</b>`,
+    '',
+  ]
+  if (p.topicId != null || p.topicTitle) {
+    const num = p.topicId != null ? `#${p.topicId}` : ''
+    const title = p.topicTitle ? `${num ? ': ' : ''}${escapeHtml(p.topicTitle)}` : ''
+    lines.push(`\u{1F4CC} \u0422\u0435\u043C\u0430 ${num}${title}`.replace(/\s+/g, ' ').trim())
+  }
+  lines.push(
+    `\u2699\uFE0F \u0423\u043F\u0430\u043B\u043E \u043D\u0430: ${escapeHtml(p.stage || '\u0441\u0442\u0430\u0440\u0442, \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0448\u0430\u0433\u0430')}`
+  )
+  lines.push(`\u{1F527} \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A: ${escapeHtml(p.source)}`)
+  if (p.attempt)
+    lines.push(
+      `\u{1F501} \u041F\u043E\u043F\u044B\u0442\u043A\u0430 ${p.attempt.current} \u0438\u0437 ${p.attempt.total}`
+    )
+  lines.push(
+    '',
+    `<b>\u041E\u0448\u0438\u0431\u043A\u0430</b>`,
+    `<pre>${escapeHtml(err.slice(0, 600))}</pre>`
+  )
+  if (logTail) {
+    lines.push(
+      `<b>\u0425\u0432\u043E\u0441\u0442 \u043B\u043E\u0433\u0430</b>`,
+      `<pre>${escapeHtml(logTail.slice(-1200))}</pre>`
+    )
+  }
+  if (p.topicStaysInQueue) {
+    lines.push(
+      '',
+      `\u2705 \u0422\u0435\u043C\u0430 \u043E\u0441\u0442\u0430\u043B\u0430\u0441\u044C \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 \u2014 \u0437\u0430\u0432\u0442\u0440\u0430 \u0437\u0430\u0432\u043E\u0434 \u0432\u043E\u0437\u044C\u043C\u0451\u0442 \u0435\u0451 \u0436\u0435.`
+    )
+  }
+  return lines.join('\n')
+}
+async function sendFailureAlert(p) {
+  const text = formatFailure(p)
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await sendMessage(text)
+      markAlertSent()
+      return true
+    } catch (e) {
+      console.error(
+        `[alert] \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/3): ${e.message}`
+      )
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 15e3))
+    }
+  }
+  return false
+}
+
+// lib/tz.ts
+import fs4 from 'fs'
 import path3 from 'path'
 var SEMANTICS_RELATIVE_PATH = path3.join('data', 'topvisor-semantics.json')
 var VOLUMES_FILE = 'semantics-volumes.json'
@@ -272,13 +352,13 @@ var INTENT_STEMS = new Set(
   ].map((w) => w.slice(0, 5))
 )
 function loadTopvisorSemantics(file) {
-  if (!fs3.existsSync(file)) {
+  if (!fs4.existsSync(file)) {
     console.warn(
       `[tz] \u0411\u0430\u043D\u043A \u0441\u0435\u043C\u0430\u043D\u0442\u0438\u043A\u0438 \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D: ${file}. STOP-\u043B\u0438\u0441\u0442 \u0431\u0443\u0434\u0435\u0442 \u043F\u0443\u0441\u0442\u044B\u043C.`
     )
     return { keywords: [], snapshotDate: '' }
   }
-  const raw = JSON.parse(fs3.readFileSync(file, 'utf-8'))
+  const raw = JSON.parse(fs4.readFileSync(file, 'utf-8'))
   const volumes = loadVolumes(path3.join(path3.dirname(file), VOLUMES_FILE))
   return {
     keywords: (raw.keywords ?? []).map((k) => ({ ...k, volume: volumes.get(k.keyword) ?? null })),
@@ -286,8 +366,8 @@ function loadTopvisorSemantics(file) {
   }
 }
 function loadVolumes(file) {
-  if (!fs3.existsSync(file)) return /* @__PURE__ */ new Map()
-  const raw = JSON.parse(fs3.readFileSync(file, 'utf-8'))
+  if (!fs4.existsSync(file)) return /* @__PURE__ */ new Map()
+  const raw = JSON.parse(fs4.readFileSync(file, 'utf-8'))
   const out = /* @__PURE__ */ new Map()
   for (const [keyword, data] of Object.entries(raw.seeds ?? {})) {
     if (typeof data.volume === 'number') out.set(keyword, data.volume)
@@ -727,30 +807,47 @@ function runClaude(prompt, agent) {
     child.on('error', reject)
   })
 }
-var CLAUDE_RETRY_DELAY_MS = 3e4
+var currentStage = null
+var currentTopic = null
+var baseConsoleLog = console.log.bind(console)
+console.log = (...args) => {
+  if (typeof args[0] === 'string') {
+    const m = args[0].match(/\[writer\]\s+(Шаг[^.…]*)/)
+    if (m) currentStage = m[1].trim()
+  }
+  baseConsoleLog(...args)
+}
+var CLAUDE_RETRY_DELAYS_MS = [3e4, 12e4, 3e5]
 var isQuotaExhausted = (message) =>
   /out of (extra )?usage|usage limit reached|rate limit/i.test(message)
 async function askClaude(prompt, agent) {
-  try {
-    return await runClaude(prompt, agent)
-  } catch (e) {
-    const message = e.message
-    if (isQuotaExhausted(message)) throw e
-    console.error(
-      `[writer] claude \u0441\u043E\u0440\u0432\u0430\u043B\u0441\u044F: ${message} \u2014 \u043F\u043E\u0432\u0442\u043E\u0440 \u0447\u0435\u0440\u0435\u0437 30 \u0441\u0435\u043A`
-    )
-    await new Promise((r) => setTimeout(r, CLAUDE_RETRY_DELAY_MS))
-    return runClaude(prompt, agent)
+  const total = CLAUDE_RETRY_DELAYS_MS.length + 1
+  let last
+  for (let attempt = 1; attempt <= total; attempt++) {
+    try {
+      return await runClaude(prompt, agent)
+    } catch (e) {
+      last = e
+      const message = e.message
+      if (isQuotaExhausted(message)) throw e
+      if (attempt === total) break
+      const wait = CLAUDE_RETRY_DELAYS_MS[attempt - 1]
+      console.error(
+        `[writer] claude \u0441\u043E\u0440\u0432\u0430\u043B\u0441\u044F (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/${total}): ${message} \u2014 \u043F\u043E\u0432\u0442\u043E\u0440 \u0447\u0435\u0440\u0435\u0437 ${Math.round(wait / 1e3)} \u0441\u0435\u043A`
+      )
+      await new Promise((r) => setTimeout(r, wait))
+    }
   }
+  throw last
 }
 function snapshotGeneratedImages() {
   const generatedDir = path4.join(CODEX_HOME, 'generated_images')
   const images = /* @__PURE__ */ new Set()
-  if (!fs4.existsSync(generatedDir)) return images
-  for (const session of fs4.readdirSync(generatedDir)) {
+  if (!fs5.existsSync(generatedDir)) return images
+  for (const session of fs5.readdirSync(generatedDir)) {
     const sessionDir = path4.join(generatedDir, session)
     try {
-      for (const file of fs4.readdirSync(sessionDir)) {
+      for (const file of fs5.readdirSync(sessionDir)) {
         if (file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.jpg')) {
           images.add(path4.join(sessionDir, file))
         }
@@ -795,7 +892,7 @@ function convertSketchToWebP(srcPng, destWebp) {
   })
 }
 async function generateImageWithCodex(imagePrompt, slug, topic) {
-  if (!fs4.existsSync(CODEX_BIN)) {
+  if (!fs5.existsSync(CODEX_BIN)) {
     console.log(
       '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438'
     )
@@ -808,7 +905,7 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
   const gender = GENDERS[genderIdx]
   const setting = detectSetting(topic.keyword, topic.title, topic.id)
   const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable \u2014 do NOT change the gender. MANDATORY: include exactly 1 human person prominently in the foreground. CHARACTER ANGLE: ${perspective}. SETTING: ${setting}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. REALISM: candid photo feel \u2014 natural relaxed poses, objects placed as in real life. LAPTOP RULE: the person works at a laptop. The laptop sits naturally on the desk. The screen faces the person (not the camera) and glows softly with indistinct ambient light \u2014 no readable text, no charts, no UI elements, just a warm or cool glow suggesting active use. Think: professional stock photo where the screen is implied but never the focus. FORBIDDEN: any specific content (charts, dashboards, text) on any screen surface, including the outside back of the lid. SCENE CONTEXT (activity and mood only \u2014 gender, setting, and laptop rule already fixed above): ${imagePrompt}. Generate this pixel art image now.`
-  const refArg = fs4.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
+  const refArg = fs5.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
   const runCodex = () =>
     new Promise((resolve) => {
       const child = spawn(
@@ -851,7 +948,7 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
   console.log(
     `[writer] \u041D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: ${newImage}`
   )
-  fs4.mkdirSync(IMAGES_DIR, { recursive: true })
+  fs5.mkdirSync(IMAGES_DIR, { recursive: true })
   const destWebp = path4.join(IMAGES_DIR, `${slug}.webp`)
   try {
     convertToWebP(newImage, destWebp)
@@ -863,7 +960,7 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
       e.message
     )
     const destPng = path4.join(IMAGES_DIR, `${slug}.png`)
-    fs4.copyFileSync(newImage, destPng)
+    fs5.copyFileSync(newImage, destPng)
     return `/images/posts/${slug}.png`
   }
 }
@@ -952,8 +1049,8 @@ ${h2List}
         continue
       }
       const buffer = Buffer.from(await response.arrayBuffer())
-      fs4.mkdirSync(IMAGES_DIR, { recursive: true })
-      fs4.writeFileSync(localPath, buffer)
+      fs5.mkdirSync(IMAGES_DIR, { recursive: true })
+      fs5.writeFileSync(localPath, buffer)
       console.log(
         `[writer] QuickChart \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`
       )
@@ -968,7 +1065,7 @@ ${h2List}
   return results
 }
 async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structure, markdown) {
-  if (!fs4.existsSync(CODEX_BIN)) {
+  if (!fs5.existsSync(CODEX_BIN)) {
     console.log(
       '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447\u0438'
     )
@@ -1008,7 +1105,7 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
       )
       continue
     }
-    fs4.mkdirSync(IMAGES_DIR, { recursive: true })
+    fs5.mkdirSync(IMAGES_DIR, { recursive: true })
     const suffix = i === 0 ? '-sketch' : `-sketch${i + 1}`
     const destWebp = path4.join(IMAGES_DIR, `${slug}${suffix}.webp`)
     try {
@@ -1020,7 +1117,7 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
       results.push(webPath)
     } catch {
       const destPng = path4.join(IMAGES_DIR, `${slug}${suffix}.png`)
-      fs4.copyFileSync(newImage, destPng)
+      fs5.copyFileSync(newImage, destPng)
       results.push(`/images/posts/${slug}${suffix}.png`)
     }
   }
@@ -1710,7 +1807,7 @@ ${dynamicSeoBlock}`
     44, 34, 166, 202, 210, 208, 108, 40, 32, 100, 96, 36, 206, 172, 78,
   ])
   const allBiases = JSON.parse(
-    fs4.readFileSync(path4.join(DATA_DIR, 'nudge-biases.json'), 'utf-8')
+    fs5.readFileSync(path4.join(DATA_DIR, 'nudge-biases.json'), 'utf-8')
   ).biases
   const nudgeCatalog = allBiases
     .filter((b) => nudgeBiasIds.has(b.id))
@@ -1890,7 +1987,7 @@ tags: ${tags}${imageLine}${schemaLine}
 `
 }
 function getLatestTopicsFile() {
-  const files = fs4
+  const files = fs5
     .readdirSync(DATA_DIR)
     .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
     .sort()
@@ -1902,10 +1999,10 @@ function getLatestTopicsFile() {
   return path4.join(DATA_DIR, files[0])
 }
 function markTopicPublished(topicsFile, topicId) {
-  const raw = JSON.parse(fs4.readFileSync(topicsFile, 'utf-8'))
+  const raw = JSON.parse(fs5.readFileSync(topicsFile, 'utf-8'))
   const topic = raw.topics.find((t) => t.id === topicId)
   if (topic) topic.published = true
-  fs4.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+  fs5.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
 }
 function gitCommitAndPush(slug, title, hasImage) {
   const mdxPath = path4.join('content', 'articles', `${slug}.mdx`)
@@ -1949,12 +2046,13 @@ async function main() {
     process.exit(1)
   }
   const topicsFile = getLatestTopicsFile()
-  const { topics } = JSON.parse(fs4.readFileSync(topicsFile, 'utf8'))
+  const { topics } = JSON.parse(fs5.readFileSync(topicsFile, 'utf8'))
   const topic = topics.find((t) => t.id === topicNum)
   if (!topic)
     throw new Error(
       `\u0422\u0435\u043C\u0430 #${topicNum} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${topicsFile}`
     )
+  currentTopic = { id: topic.id, title: topic.title }
   console.log(
     `[writer] \u041F\u0438\u0448\u0443 \u0441\u0442\u0430\u0442\u044C\u044E: "${topic.title}"`
   )
@@ -1978,7 +2076,7 @@ async function main() {
     `[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u0433\u043E\u0442\u043E\u0432\u0430, slug: ${result.slug}`
   )
   const mdxPath = path4.join(ARTICLES_DIR, `${result.slug}.mdx`)
-  if (fs4.existsSync(mdxPath)) {
+  if (fs5.existsSync(mdxPath)) {
     result.slug = `${result.slug}-${Date.now().toString(36)}`
     console.log(
       `[writer] Slug \u0441\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D: ${result.slug}`
@@ -2021,8 +2119,8 @@ async function main() {
   const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
-  fs4.mkdirSync(ARTICLES_DIR, { recursive: true })
-  fs4.writeFileSync(path4.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
+  fs5.mkdirSync(ARTICLES_DIR, { recursive: true })
+  fs5.writeFileSync(path4.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
   console.log(
     `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
   )
@@ -2115,10 +2213,16 @@ ${runaway}`).catch(() => {})
   }
   console.log(`[writer] \u0413\u043E\u0442\u043E\u0432\u043E: ${articleUrl}`)
 }
-main().catch((e) => {
+main().catch(async (e) => {
   console.error('[writer] \u041E\u0448\u0438\u0431\u043A\u0430:', e)
-  sendMessage(`\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0440\u0438 \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u0438 \u0441\u0442\u0430\u0442\u044C\u0438:
-${e.message}`).catch(() => {})
+  await sendFailureAlert({
+    source: 'writer',
+    stage: currentStage,
+    topicId: currentTopic?.id ?? null,
+    topicTitle: currentTopic?.title ?? null,
+    error: e,
+    topicStaysInQueue: true,
+  })
   process.exit(1)
 })
 export { SpecRejected }

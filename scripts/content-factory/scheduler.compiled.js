@@ -1,6 +1,6 @@
 // scheduler.ts
 import { spawn } from 'child_process'
-import fs from 'fs'
+import fs2 from 'fs'
 import path from 'path'
 
 // lib/telegram.js
@@ -29,6 +29,94 @@ async function sendMessage(text, extra = {}) {
   return data.result.message_id
 }
 
+// lib/alert.ts
+import fs from 'fs'
+var FACTORY_DIR = '/home/claude/projects/digital-pub-/scripts/content-factory'
+var LOG_PATH = '/home/claude/projects/digital-pub-/logs/content-factory.log'
+var FLAG_PATH = `${FACTORY_DIR}/data/.alert-sent`
+var FLAG_TTL_MS = 10 * 60 * 1e3
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+function readLogTail(lines = 10, logPath = LOG_PATH) {
+  try {
+    const all = fs.readFileSync(logPath, 'utf-8').split('\n')
+    return all
+      .slice(-lines - 1)
+      .join('\n')
+      .trim()
+  } catch {
+    return ''
+  }
+}
+function markAlertSent() {
+  try {
+    fs.writeFileSync(FLAG_PATH, String(Date.now()))
+  } catch {}
+}
+function alertSentRecently(ttlMs = FLAG_TTL_MS) {
+  try {
+    const at = Number(fs.readFileSync(FLAG_PATH, 'utf-8'))
+    return Number.isFinite(at) && Date.now() - at < ttlMs
+  } catch {
+    return false
+  }
+}
+function formatFailure(p, logTail = readLogTail()) {
+  const err = p.error instanceof Error ? p.error.message : String(p.error)
+  const lines = [
+    `\u274C <b>\u041A\u043E\u043D\u0442\u0435\u043D\u0442-\u0437\u0430\u0432\u043E\u0434: \u043F\u0440\u043E\u0433\u043E\u043D \u043D\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D</b>`,
+    '',
+  ]
+  if (p.topicId != null || p.topicTitle) {
+    const num = p.topicId != null ? `#${p.topicId}` : ''
+    const title = p.topicTitle ? `${num ? ': ' : ''}${escapeHtml(p.topicTitle)}` : ''
+    lines.push(`\u{1F4CC} \u0422\u0435\u043C\u0430 ${num}${title}`.replace(/\s+/g, ' ').trim())
+  }
+  lines.push(
+    `\u2699\uFE0F \u0423\u043F\u0430\u043B\u043E \u043D\u0430: ${escapeHtml(p.stage || '\u0441\u0442\u0430\u0440\u0442, \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0448\u0430\u0433\u0430')}`
+  )
+  lines.push(`\u{1F527} \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A: ${escapeHtml(p.source)}`)
+  if (p.attempt)
+    lines.push(
+      `\u{1F501} \u041F\u043E\u043F\u044B\u0442\u043A\u0430 ${p.attempt.current} \u0438\u0437 ${p.attempt.total}`
+    )
+  lines.push(
+    '',
+    `<b>\u041E\u0448\u0438\u0431\u043A\u0430</b>`,
+    `<pre>${escapeHtml(err.slice(0, 600))}</pre>`
+  )
+  if (logTail) {
+    lines.push(
+      `<b>\u0425\u0432\u043E\u0441\u0442 \u043B\u043E\u0433\u0430</b>`,
+      `<pre>${escapeHtml(logTail.slice(-1200))}</pre>`
+    )
+  }
+  if (p.topicStaysInQueue) {
+    lines.push(
+      '',
+      `\u2705 \u0422\u0435\u043C\u0430 \u043E\u0441\u0442\u0430\u043B\u0430\u0441\u044C \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 \u2014 \u0437\u0430\u0432\u0442\u0440\u0430 \u0437\u0430\u0432\u043E\u0434 \u0432\u043E\u0437\u044C\u043C\u0451\u0442 \u0435\u0451 \u0436\u0435.`
+    )
+  }
+  return lines.join('\n')
+}
+async function sendFailureAlert(p) {
+  const text = formatFailure(p)
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await sendMessage(text)
+      markAlertSent()
+      return true
+    } catch (e) {
+      console.error(
+        `[alert] \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/3): ${e.message}`
+      )
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 15e3))
+    }
+  }
+  return false
+}
+
 // lib/topic-gate.ts
 var isMeasured = (t) => typeof t.wordstatVolume === 'number'
 function isReadyToWrite(t) {
@@ -39,7 +127,7 @@ function isReadyToWrite(t) {
 var DATA_DIR = path.join(import.meta.dirname, 'data')
 var SCRIPTS_DIR = import.meta.dirname
 function getLatestTopicsFile() {
-  const files = fs
+  const files = fs2
     .readdirSync(DATA_DIR)
     .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
     .sort()
@@ -47,7 +135,7 @@ function getLatestTopicsFile() {
   return files.length ? path.join(DATA_DIR, files[0]) : null
 }
 function getNextApprovedTopic(topicsFile) {
-  const { topics } = JSON.parse(fs.readFileSync(topicsFile, 'utf-8'))
+  const { topics } = JSON.parse(fs2.readFileSync(topicsFile, 'utf-8'))
   const next = topics.find(isReadyToWrite)
   if (!next) {
     const blocked = topics.filter((t) => t.approved && !t.published)
@@ -60,7 +148,7 @@ function getNextApprovedTopic(topicsFile) {
   return next || null
 }
 function countApprovedUnpublished(topicsFile) {
-  const { topics } = JSON.parse(fs.readFileSync(topicsFile, 'utf-8'))
+  const { topics } = JSON.parse(fs2.readFileSync(topicsFile, 'utf-8'))
   return topics.filter((t) => t.approved && !t.published).length
 }
 function runWriter(topicId) {
@@ -83,6 +171,7 @@ function runWriter(topicId) {
     child.on('error', reject)
   })
 }
+var startedTopic = null
 async function main() {
   const topicsFile = getLatestTopicsFile()
   if (!topicsFile) {
@@ -114,6 +203,7 @@ async function main() {
     )
     return
   }
+  startedTopic = { id: nextTopic.id, title: nextTopic.title }
   const remaining = countApprovedUnpublished(topicsFile)
   console.log(
     `[scheduler] \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E \u0442\u0435\u043C\u0443 #${nextTopic.id}: "${nextTopic.title}"`
@@ -133,7 +223,21 @@ async function main() {
 }
 main().catch(async (e) => {
   console.error('[scheduler] \u041E\u0448\u0438\u0431\u043A\u0430:', e)
-  await sendMessage(`\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A\u0430:
-${e.message}`).catch(() => {})
+  if (!alertSentRecently()) {
+    await sendFailureAlert({
+      source: 'scheduler',
+      stage: startedTopic
+        ? '\u0437\u0430\u043F\u0443\u0441\u043A writer'
+        : '\u0432\u044B\u0431\u043E\u0440 \u0442\u0435\u043C\u044B',
+      topicId: startedTopic?.id ?? null,
+      topicTitle: startedTopic?.title ?? null,
+      error: e,
+      topicStaysInQueue: Boolean(startedTopic),
+    })
+  } else {
+    console.log(
+      '[scheduler] \u041F\u043E\u0434\u0440\u043E\u0431\u043D\u044B\u0439 \u043E\u0442\u0431\u043E\u0439\u043D\u0438\u043A \u0443\u0436\u0435 \u0443\u0448\u0451\u043B \u0438\u0437 writer, \u043D\u0435 \u0434\u0443\u0431\u043B\u0438\u0440\u0443\u044E'
+    )
+  }
   process.exit(1)
 })

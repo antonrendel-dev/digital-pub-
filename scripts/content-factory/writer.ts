@@ -23,6 +23,7 @@ import {
   transcriptDir,
 } from './lib/session-stats.js'
 import { sendMessage } from './lib/telegram.js'
+import { sendFailureAlert } from './lib/alert.js'
 import {
   OVERSPAM_RULE,
   SEMANTICS_RELATIVE_PATH,
@@ -275,25 +276,54 @@ function runClaude(prompt: string, agent?: AgentName): Promise<string> {
   })
 }
 
-// Одна повторная попытка: CLI изредка срывается молча, а на втором заходе тот же
-// промпт проходит. Публикация идёт раз в сутки, и потерять её из-за разовой
-// осечки дороже, чем подождать полминуты.
-const CLAUDE_RETRY_DELAY_MS = 30_000
+// Последний пройденный шаг и тема прогона — нужны отбойнику, чтобы в сообщении
+// было «упало на шаге 1б: SEO-рисерч», а не «код 1». Перехватываем console.log
+// вместо правки дюжины мест: метка сама подхватит шаги, которые появятся позже,
+// и не разъедется с тем, что видно в логе.
+let currentStage: string | null = null
+let currentTopic: { id: number; title: string } | null = null
 
-// Исчерпанный лимит за полминуты не восстановится, и повтор только тянет время.
+const baseConsoleLog = console.log.bind(console)
+console.log = (...args: unknown[]) => {
+  if (typeof args[0] === 'string') {
+    const m = args[0].match(/\[writer\]\s+(Шаг[^.…]*)/)
+    if (m) currentStage = m[1].trim()
+  }
+  baseConsoleLog(...args)
+}
+
+// Повторы с нарастающей паузой. Раньше была одна попытка через полминуты:
+// для разовой осечки CLI этого хватало, ради чего повтор и делался. Для волны
+// перегрузки на стороне API не хватало никогда — 24.08.2026 прогон упал на
+// 529 Overloaded, повторился через 30 секунд, получил тот же 529 и вышел.
+// Перегрузка живёт минуты, а не полминуты, поэтому шаг паузы растёт.
+const CLAUDE_RETRY_DELAYS_MS = [30_000, 120_000, 300_000]
+
+// Исчерпанный лимит за эти паузы не восстановится, и повтор только тянет время.
 const isQuotaExhausted = (message: string): boolean =>
   /out of (extra )?usage|usage limit reached|rate limit/i.test(message)
 
 async function askClaude(prompt: string, agent?: AgentName): Promise<string> {
-  try {
-    return await runClaude(prompt, agent)
-  } catch (e) {
-    const message = (e as Error).message
-    if (isQuotaExhausted(message)) throw e
-    console.error(`[writer] claude сорвался: ${message} — повтор через 30 сек`)
-    await new Promise((r) => setTimeout(r, CLAUDE_RETRY_DELAY_MS))
-    return runClaude(prompt, agent)
+  const total = CLAUDE_RETRY_DELAYS_MS.length + 1
+  let last: unknown
+
+  for (let attempt = 1; attempt <= total; attempt++) {
+    try {
+      return await runClaude(prompt, agent)
+    } catch (e) {
+      last = e
+      const message = (e as Error).message
+      if (isQuotaExhausted(message)) throw e
+      if (attempt === total) break
+      const wait = CLAUDE_RETRY_DELAYS_MS[attempt - 1]
+      console.error(
+        `[writer] claude сорвался (попытка ${attempt}/${total}): ${message} — ` +
+          `повтор через ${Math.round(wait / 1000)} сек`
+      )
+      await new Promise((r) => setTimeout(r, wait))
+    }
   }
+  throw last
 }
 
 // ─── Codex image generation ──────────────────────────────────────────────────
@@ -1670,6 +1700,7 @@ async function main() {
   const { topics } = JSON.parse(fs.readFileSync(topicsFile, 'utf8')) as { topics: Topic[] }
   const topic = topics.find((t) => t.id === topicNum)
   if (!topic) throw new Error(`Тема #${topicNum} не найдена в ${topicsFile}`)
+  currentTopic = { id: topic.id, title: topic.title }
 
   console.log(`[writer] Пишу статью: "${topic.title}"`)
   // Анонс — не повод отменять публикацию: недоступный Telegram ронял прогон
@@ -1821,8 +1852,17 @@ async function main() {
   console.log(`[writer] Готово: ${articleUrl}`)
 }
 
-main().catch((e) => {
+main().catch(async (e) => {
   console.error('[writer] Ошибка:', e)
-  sendMessage(`❌ Ошибка при генерации статьи:\n${e.message}`).catch(() => {})
+  // Тема помечается опубликованной только после успешной записи файла, поэтому
+  // при любом падении она остаётся в очереди и завтра будет взята снова.
+  await sendFailureAlert({
+    source: 'writer',
+    stage: currentStage,
+    topicId: currentTopic?.id ?? null,
+    topicTitle: currentTopic?.title ?? null,
+    error: e,
+    topicStaysInQueue: true,
+  })
   process.exit(1)
 })

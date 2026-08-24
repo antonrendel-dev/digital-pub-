@@ -1,0 +1,114 @@
+{
+  "experiment": "Переписка статей по стандарту v6.6 на fable-5: до/после",
+  "point_A_period": "2026-07-17..2026-08-13",
+  "captured": "2026-08-14",
+  "source": "GSC search-console API, aggregation byPage",
+  "rewrite_candidates": [
+    {
+      "url": "/articles/rezyume-kopiraytera",
+      "impressions": 75,
+      "clicks": 0,
+      "position": 19.4,
+      "top_queries": {
+        "резюме копирайтера": 23.2,
+        "резюме для копирайтера": 18.0,
+        "копирайтер резюме": 21.6,
+        "резюме копирайтер": 20.6
+      }
+    },
+    {
+      "url": "/articles/zarplata-seo-specialista",
+      "impressions": 63,
+      "clicks": 0,
+      "position": 15.4,
+      "top_queries": {
+        "seo специалист зарплата": 83.3,
+        "прочие анонимизированы — page-level 15.4": null
+      }
+    },
+    {
+      "url": "/articles/rezyume-smm-spetsialista",
+      "impressions": 61,
+      "clicks": 0,
+      "position": 31.7,
+      "top_queries": {
+        "смм специалист резюме": 22.3,
+        "резюме смм": 24.4,
+        "резюме smm специалиста": 15.5,
+        "резюме смм специалиста": 32.0
+      }
+    },
+    {
+      "url": "/articles/zarplata-smm-spetsialista-realnie-dannye-iz-vakansiy",
+      "impressions": 34,
+      "clicks": 0,
+      "position": 21.1,
+      "top_queries": {
+        "smm менеджер зарплата": 58.3,
+        "зарплата смм менеджера": 48.0
+      }
+    },
+    {
+      "url": "/articles/zarplata-ux-ui-dizajnera",
+      "impressions": 24,
+      "clicks": 0,
+      "position": 18.3,
+      "top_queries": {
+        "сколько получает ui ux дизайнер": 78.5
+      }
+    }
+  ],
+  "control_group_do_not_touch": [
+    {
+      "url": "/articles/rezyume-targetologa-shablon-2026",
+      "impressions": 33,
+      "clicks": 0,
+      "position": 16.9,
+      "note": "уже усилена коммитом e1fd27b — исключена из кандидатов, чтобы не смешивать эффекты"
+    },
+    {
+      "url": "/articles/zarplata-kopiraytera-2026",
+      "impressions": 23,
+      "clicks": 0,
+      "position": 11.2
+    },
+    {
+      "url": "/articles/telegram-kanaly-vakansii-smm",
+      "impressions": 16,
+      "clicks": 0,
+      "position": 15.4
+    },
+    {
+      "url": "/articles/rezume-marketologa",
+      "impressions": 12,
+      "clicks": 0,
+      "position": 22.5
+    },
+    {
+      "url": "/articles/vakansii-direktolog-yandex-direct",
+      "impressions": 13,
+      "clicks": 0,
+      "position": 16.7
+    }
+  ],
+  "leaders_reference": [
+    {
+      "url": "/articles/portfolio-smm-spetsialista-primery",
+      "impressions": 48,
+      "clicks": 3,
+      "position": 8.8
+    },
+    {
+      "url": "/articles/zarplata-analitika-dannykh",
+      "impressions": 33,
+      "clicks": 0,
+      "position": 7.1
+    },
+    {
+      "url": "/articles/stoimost-uslug-frilansera-digital-2026",
+      "impressions": 47,
+      "clicks": 0,
+      "position": 9.8
+    }
+  ]
+}
