@@ -46,14 +46,17 @@ export function splitMessage(text, limit = CHUNK_LIMIT) {
   return chunks
 }
 
-async function send(text) {
+async function send(text, threadId) {
   const body = {
     chat_id: CHAT_ID,
     text,
     parse_mode: 'HTML',
     disable_web_page_preview: true,
   }
-  if (THREAD_ID) body.message_thread_id = THREAD_ID
+  // Тема по умолчанию — «SEO лаба». Ежедневный крон задач пишет в свою:
+  // отчёты о позициях и разбор доски мешаются, если валить их в один топик.
+  const thread = threadId ?? THREAD_ID
+  if (thread) body.message_thread_id = thread
 
   const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: 'POST',
@@ -90,7 +93,7 @@ export async function sendDocument(filePath, caption = '') {
   return data.result.message_id
 }
 
-export async function sendLongMessage(text) {
+export async function sendLongMessage(text, { threadId } = {}) {
   if (!BOT_TOKEN) throw new Error('CONTENT_BOT_TOKEN не задан')
   if (!CHAT_ID) throw new Error('SEO_LAB_CHAT_ID не задан')
 
@@ -98,7 +101,7 @@ export async function sendLongMessage(text) {
   const ids = []
   for (const [i, chunk] of chunks.entries()) {
     const suffix = chunks.length > 1 ? `\n\n<i>(${i + 1}/${chunks.length})</i>` : ''
-    ids.push(await send(chunk + suffix))
+    ids.push(await send(chunk + suffix, threadId))
     if (i < chunks.length - 1) await new Promise((r) => setTimeout(r, PAUSE_MS))
   }
   return ids

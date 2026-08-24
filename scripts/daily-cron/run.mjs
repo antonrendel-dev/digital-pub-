@@ -16,6 +16,14 @@ import { clearLock, readLock, writeLock } from './lib/state.mjs'
 import { listOpenTasks, loadToken, updateDescription } from '../seo-audit/lib/todoist.mjs'
 import { sendLongMessage } from '../seo-audit/lib/telegram.mjs'
 
+/**
+ * Топик, в котором ведём задачи, — отдельный от «SEO лабы».
+ * Там лежат отчёты о позициях, и валить туда же утренний разбор доски значит
+ * перемешать два разных разговора. Значение можно переопределить переменной
+ * TASKS_TOPIC_ID, если тему когда-нибудь перенесут.
+ */
+const TASKS_TOPIC_ID = Number(process.env.TASKS_TOPIC_ID ?? 84)
+
 /** Разметка новых задач. Балл черновой и помечен как черновой. */
 async function scoreNewTasks(token, tasks) {
   const pending = needScoring(tasks)
@@ -55,7 +63,7 @@ export async function run(nowIso = new Date().toISOString()) {
   }
 
   console.log(`[daily] Решение: ${decision.kind}`)
-  await sendLongMessage(text)
+  await sendLongMessage(text, { threadId: TASKS_TOPIC_ID })
   return decision
 }
 
