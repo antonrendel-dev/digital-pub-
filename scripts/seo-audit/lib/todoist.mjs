@@ -75,3 +75,8 @@ export async function appendToTask(token, taskId, note) {
     body: { description: `${task.description || ''}${note}` },
   })
 }
+
+/** Заменить описание задачи целиком. */
+export async function updateDescription(token, taskId, description) {
+  return call(token, `/tasks/${taskId}`, { method: 'POST', body: { description } })
+}
