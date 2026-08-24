@@ -175,7 +175,6 @@ async function handleMessage(msg: {
         `/content_write 5 — немедленно написать статью #5\n` +
         `/content_next — показать очередь одобренных тем\n` +
         `/content_regen &lt;slug&gt; [сцена] — перегенерировать картинку статьи\n` +
-        `/seo_tasks 1 3 — завести тикеты по находкам SEO-крона (all — все)\n` +
         `/content_help — эта справка\n\n` +
         `<b>Автоматика:</b>\n` +
         `Каждый пн/ср/пт в 09:00 МСК берётся следующая одобренная тема и публикуется.`
@@ -290,41 +289,6 @@ async function handleMessage(msg: {
       return
     }
     await reply(chatId, threadId, getQueueSummary(topicsFile))
-    return
-  }
-
-  // Ответ на предложение SEO-крона. Крон присылает пронумерованный список
-  // находок и ждёт выбора: заводить всё подряд без спроса — верный способ
-  // превратить доску в свалку.
-  if (command === '/seo_tasks') {
-    try {
-      const { createSelected } = await import('../seo-audit/create-tasks.mjs')
-      const { created, skipped, reason } = await createSelected(args)
-      if (reason) {
-        await reply(chatId, threadId, `📭 ${reason}. Список появляется после прогона аудита.`)
-        return
-      }
-      const parts: string[] = []
-      if (created.length) {
-        parts.push(
-          `✅ <b>Заведено тикетов: ${created.length}</b>\n` +
-            created.map((t: string) => `• ${t}`).join('\n')
-        )
-      }
-      if (skipped.length) {
-        parts.push(
-          `⏭ <b>Пропущено как уже заведённое: ${skipped.length}</b>\n` +
-            skipped.map((t: string) => `• ${t}`).join('\n')
-        )
-      }
-      await reply(
-        chatId,
-        threadId,
-        parts.join('\n\n') || 'Ничего не выбрано. Пример: <code>/seo_tasks 1 3</code>'
-      )
-    } catch (e) {
-      await reply(chatId, threadId, `❌ Не смог завести тикеты:\n${(e as Error).message}`)
-    }
     return
   }
 }

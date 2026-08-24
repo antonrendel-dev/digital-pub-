@@ -1,16 +1,5 @@
+const MAX_NEW_TASKS_PER_RUN = 12;
 const DEDUP_PREFIX = "SEO-\u041A\u0420\u041E\u041D-\u041C\u0415\u0422\u041A\u0410:";
-function parseSelection(args, total) {
-  const joined = args.join(" ").trim().toLowerCase();
-  if (!joined || joined === "all" || joined === "\u0432\u0441\u0435") {
-    return Array.from({ length: total }, (_, i) => i);
-  }
-  const picked = /* @__PURE__ */ new Set();
-  for (const part of joined.split(/[\s,]+/)) {
-    const n = Number(part);
-    if (Number.isInteger(n) && n >= 1 && n <= total) picked.add(n - 1);
-  }
-  return [...picked].sort((a, b) => a - b);
-}
 function describeFinding(f) {
   return [
     `\u0411\u0410\u041B\u041B: ${f.score.total}/100  (\u0441\u043F\u0440\u043E\u0441 ${f.score.s}/30 \xB7 \u0433\u043E\u0442\u043E\u0432\u043D\u043E\u0441\u0442\u044C ${f.score.g}/25 \xB7 \u0440\u0430\u0437\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u043A\u0430 ${f.score.r}/25 \xB7 \u0430\u0432\u0442\u043E\u043D\u043E\u043C\u043D\u043E\u0441\u0442\u044C ${f.score.a}/20)`,
@@ -35,9 +24,30 @@ function extractDedupKeys(tasks) {
   }
   return keys;
 }
+function matchesFinding(finding, task) {
+  const desc = task.description || "";
+  if (desc.includes(`${DEDUP_PREFIX} ${finding.dedupKey}`)) return "mark";
+  const needle = finding.key.toLowerCase().trim();
+  if (needle.length < 4) return null;
+  const hay = `${task.content || ""} ${desc}`.toLowerCase();
+  return hay.includes(needle) ? "text" : null;
+}
+function mergeNote(finding, date) {
+  return [
+    "",
+    "\u2500".repeat(40),
+    `\u041E\u0411\u041D\u041E\u0412\u041B\u0415\u041D\u0418\u0415 SEO-\u041A\u0420\u041E\u041D\u0410 ${date}`,
+    finding.title,
+    finding.detail,
+    `\u0411\u0430\u043B\u043B \u043D\u0430\u0445\u043E\u0434\u043A\u0438: ${finding.score.total}/100`,
+    `${DEDUP_PREFIX} ${finding.dedupKey}`
+  ].join("\n");
+}
 export {
   DEDUP_PREFIX,
+  MAX_NEW_TASKS_PER_RUN,
   describeFinding,
   extractDedupKeys,
-  parseSelection
+  matchesFinding,
+  mergeNote
 };

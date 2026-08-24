@@ -9,6 +9,13 @@ import { join } from 'node:path'
 
 const PROJECT_ID = '6grWxWfJVfg6rcwh'
 const SECTION_BACKLOG = '6grWxXRp2mx5hHH9'
+
+/**
+ * Раздел «Готово». В этой доске закрытые задачи не отмечают галочкой, а
+ * переносят сюда, поэтому API отдаёт их наравне с живыми. Дописывать
+ * наблюдение в уже закрытую задачу бессмысленно: её никто не откроет.
+ */
+const SECTION_DONE = '6grWxXVqjwQ7c8wh'
 const API = 'https://api.todoist.com/api/v1'
 
 export function loadToken() {
@@ -40,7 +47,7 @@ async function call(token, path, { method = 'GET', body } = {}) {
   }
 }
 
-/** Все открытые задачи проекта — постранично, лимит API 200 за раз. */
+/** Живые задачи проекта: без отмеченных и без лежащих в «Готово». */
 export async function listOpenTasks(token) {
   const out = []
   let cursor = null
@@ -50,12 +57,21 @@ export async function listOpenTasks(token) {
     out.push(...page.results)
     cursor = page.next_cursor
   } while (cursor)
-  return out
+  return out.filter((t) => !t.checked && t.section_id !== SECTION_DONE)
 }
 
 export async function createTask(token, { content, description, priority = 2 }) {
   return call(token, '/tasks', {
     method: 'POST',
     body: { content, description, project_id: PROJECT_ID, section_id: SECTION_BACKLOG, priority },
+  })
+}
+
+/** Дописать блок в конец описания задачи, ничего не затирая. */
+export async function appendToTask(token, taskId, note) {
+  const task = await call(token, `/tasks/${taskId}`)
+  return call(token, `/tasks/${taskId}`, {
+    method: 'POST',
+    body: { description: `${task.description || ''}${note}` },
   })
 }

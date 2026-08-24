@@ -8,26 +8,18 @@
 
 import type { Finding } from './findings'
 
+/**
+ * Сколько задач крон заводит за один прогон.
+ *
+ * Ограничение есть намеренно: за две недели может накопиться три десятка
+ * поводов, и вывалить их разом в доску — то же самое, что не заводить вовсе,
+ * разгребать всё равно никто не станет. Берём самые тяжёлые по баллу,
+ * остальные перечисляем в отчёте — молча ничего не теряем.
+ */
+export const MAX_NEW_TASKS_PER_RUN = 12
+
 /** Метка находки прячется в описании — по ней задача узнаётся при следующем прогоне. */
 export const DEDUP_PREFIX = 'SEO-КРОН-МЕТКА:'
-
-/**
- * «1 3» → [0, 2]; «all», «все» и пустой ввод → все индексы.
- * Номера приходят из чата, поэтому мусор и промахи пальцем молча отбрасываем,
- * а не отвечаем ошибкой на каждую опечатку.
- */
-export function parseSelection(args: string[], total: number): number[] {
-  const joined = args.join(' ').trim().toLowerCase()
-  if (!joined || joined === 'all' || joined === 'все') {
-    return Array.from({ length: total }, (_, i) => i)
-  }
-  const picked = new Set<number>()
-  for (const part of joined.split(/[\s,]+/)) {
-    const n = Number(part)
-    if (Number.isInteger(n) && n >= 1 && n <= total) picked.add(n - 1)
-  }
-  return [...picked].sort((a, b) => a - b)
-}
 
 /** Описание задачи. Первая строка — балл в том же формате, что у остальной доски. */
 export function describeFinding(f: Finding): string {
@@ -62,4 +54,37 @@ export function extractDedupKeys(tasks: Array<{ description?: string | null }>):
     if (m) keys.add(m[1].trim())
   }
   return keys
+}
+
+/**
+ * Подходит ли уже существующая задача под находку.
+ *
+ * Два уровня. Точный — по метке, её крон ставит сам. Свободный — по тому, что
+ * в заголовке задачи упоминается тот же ключ или адрес страницы: такие задачи
+ * Тони и я заводим руками, метки у них нет, а дублировать их незачем.
+ */
+export function matchesFinding(
+  finding: Finding,
+  task: { content?: string | null; description?: string | null }
+): 'mark' | 'text' | null {
+  const desc = task.description || ''
+  if (desc.includes(`${DEDUP_PREFIX} ${finding.dedupKey}`)) return 'mark'
+
+  const needle = finding.key.toLowerCase().trim()
+  if (needle.length < 4) return null
+  const hay = `${task.content || ''} ${desc}`.toLowerCase()
+  return hay.includes(needle) ? 'text' : null
+}
+
+/** Блок, который дописывается в уже существующую задачу вместо нового тикета. */
+export function mergeNote(finding: Finding, date: string): string {
+  return [
+    '',
+    '─'.repeat(40),
+    `ОБНОВЛЕНИЕ SEO-КРОНА ${date}`,
+    finding.title,
+    finding.detail,
+    `Балл находки: ${finding.score.total}/100`,
+    `${DEDUP_PREFIX} ${finding.dedupKey}`,
+  ].join('\n')
 }
