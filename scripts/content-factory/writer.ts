@@ -1635,14 +1635,43 @@ function getLatestTopicsFile(): string {
   return path.join(DATA_DIR, files[0])
 }
 
+/**
+ * Отметить тему опубликованной во ВСЕХ файлах батчей, где она встречается.
+ *
+ * Раньше статус писался только в самый свежий файл. Аналитик переносит темы
+ * между батчами, сохраняя id, поэтому одна и та же тема лежит в нескольких
+ * файлах — и в старых её флаг оставался ложным навсегда. Проверка 24.08.2026:
+ * в topics_2026-06-14.json темы #25 и #116 числились неопубликованными, хотя
+ * статьи по ним давно на сайте. Судить по таким данным о состоянии завода
+ * нельзя: очередь выглядит длиннее, чем есть.
+ *
+ * Сверяем не только id, но и заголовок: id в разных батчах могут совпасть у
+ * разных тем, и тогда отметка уехала бы не туда.
+ */
 function markTopicPublished(topicsFile: string, topicId: number): void {
-  const raw = JSON.parse(fs.readFileSync(topicsFile, 'utf-8')) as {
-    date: string
-    topics: Topic[]
+  const dir = path.dirname(topicsFile)
+  const source = JSON.parse(fs.readFileSync(topicsFile, 'utf-8')) as { topics: Topic[] }
+  const target = source.topics.find((t) => t.id === topicId)
+  if (!target) {
+    console.warn(`[writer] Тема #${topicId} не найдена в ${path.basename(topicsFile)}`)
+    return
   }
-  const topic = raw.topics.find((t) => t.id === topicId)
-  if (topic) topic.published = true
-  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
+    .map((f) => path.join(dir, f))
+
+  const touched: string[] = []
+  for (const file of files) {
+    const raw = JSON.parse(fs.readFileSync(file, 'utf-8')) as { topics: Topic[] }
+    const hit = raw.topics.find((t) => t.id === topicId && t.title === target.title)
+    if (!hit || hit.published) continue
+    hit.published = true
+    fs.writeFileSync(file, JSON.stringify(raw, null, 2))
+    touched.push(path.basename(file))
+  }
+  console.log(`[writer] Тема #${topicId} отмечена опубликованной в: ${touched.join(', ')}`)
 }
 
 function gitCommitAndPush(slug: string, title: string, hasImage: boolean): void {

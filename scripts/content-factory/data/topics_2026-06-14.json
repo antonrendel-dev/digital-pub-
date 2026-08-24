@@ -645,7 +645,8 @@
       "audience": "Оба",
       "type": "Сравнение",
       "trafficEst": "низкий",
-      "approved": true
+      "approved": true,
+      "published": true
     },
     {
       "id": 115,
@@ -657,7 +658,8 @@
       "monthlyImpressions": 179,
       "priority": "high",
       "approved": true,
-      "notes": "Яндекс позиция 24. Резюме-кластер. Таргет: /vacancies/target + /resumes. Ключи: резюме таргетолога, образец резюме таргетолога. Перелинковка с rezyume-targetologa-shablon-2026 если существует."
+      "notes": "Яндекс позиция 24. Резюме-кластер. Таргет: /vacancies/target + /resumes. Ключи: резюме таргетолога, образец резюме таргетолога. Перелинковка с rezyume-targetologa-shablon-2026 если существует.",
+      "published": true
     },
     {
       "id": 116,
@@ -668,7 +670,8 @@
       "trafficEst": "высокий",
       "priority": "high",
       "approved": true,
-      "notes": "Зарплатный кластер. /vacancies/razrabotka набирает показы в GSC. Ключи: зарплата frontend разработчика, сколько зарабатывает frontend, зарплата верстальщика. Антиканнибализация с zarplata-analitika-dannykh."
+      "notes": "Зарплатный кластер. /vacancies/razrabotka набирает показы в GSC. Ключи: зарплата frontend разработчика, сколько зарабатывает frontend, зарплата верстальщика. Антиканнибализация с zarplata-analitika-dannykh.",
+      "published": true
     }
   ]
 }

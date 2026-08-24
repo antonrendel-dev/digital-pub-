@@ -1999,10 +1999,31 @@ function getLatestTopicsFile() {
   return path4.join(DATA_DIR, files[0])
 }
 function markTopicPublished(topicsFile, topicId) {
-  const raw = JSON.parse(fs5.readFileSync(topicsFile, 'utf-8'))
-  const topic = raw.topics.find((t) => t.id === topicId)
-  if (topic) topic.published = true
-  fs5.writeFileSync(topicsFile, JSON.stringify(raw, null, 2))
+  const dir = path4.dirname(topicsFile)
+  const source = JSON.parse(fs5.readFileSync(topicsFile, 'utf-8'))
+  const target = source.topics.find((t) => t.id === topicId)
+  if (!target) {
+    console.warn(
+      `[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${path4.basename(topicsFile)}`
+    )
+    return
+  }
+  const files = fs5
+    .readdirSync(dir)
+    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
+    .map((f) => path4.join(dir, f))
+  const touched = []
+  for (const file of files) {
+    const raw = JSON.parse(fs5.readFileSync(file, 'utf-8'))
+    const hit = raw.topics.find((t) => t.id === topicId && t.title === target.title)
+    if (!hit || hit.published) continue
+    hit.published = true
+    fs5.writeFileSync(file, JSON.stringify(raw, null, 2))
+    touched.push(path4.basename(file))
+  }
+  console.log(
+    `[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043E\u0442\u043C\u0435\u0447\u0435\u043D\u0430 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u043E\u0439 \u0432: ${touched.join(', ')}`
+  )
 }
 function gitCommitAndPush(slug, title, hasImage) {
   const mdxPath = path4.join('content', 'articles', `${slug}.mdx`)
