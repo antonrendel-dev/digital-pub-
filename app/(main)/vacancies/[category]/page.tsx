@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           url: ogImageUrl({
             title,
             kind: 'vacancy',
-            subtitle: `${n} ${ruPlural(posts.length, ['вакансия', 'вакансии', 'вакансий'])} из Telegram-каналов`,
+            subtitle: `${posts.length} ${ruPlural(posts.length, ['вакансия', 'вакансии', 'вакансий'])} из Telegram-каналов`,
           }),
           width: 1200,
           height: 630,
