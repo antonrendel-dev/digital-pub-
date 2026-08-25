@@ -38,7 +38,8 @@ function decide(tasks, lock, nowIso) {
     }
   }
   const list = candidates(tasks);
-  if (!list.length) return { kind: "idle", reason: "\u043D\u0435\u0442 \u0437\u0430\u0434\u0430\u0447 \u0441 \u0431\u0430\u043B\u043B\u043E\u043C \u0438 \u043C\u0435\u0442\u043A\u043E\u0439 \xAB\u0430\u0432\u0442\u043E\xBB \u0438\u043B\u0438 \xAB\u0432\u043E\u043F\u0440\u043E\u0441\xBB" };
+  if (!list.length)
+    return { kind: "idle", reason: "\u043D\u0435\u0442 \u0437\u0430\u0434\u0430\u0447 \u0441 \u0431\u0430\u043B\u043B\u043E\u043C \u0438 \u043C\u0435\u0442\u043A\u043E\u0439 \xAB\u0430\u0432\u0442\u043E\xBB \u0438\u043B\u0438 \xAB\u0432\u043E\u043F\u0440\u043E\u0441\xBB" };
   const top = list[0];
   return { kind: "offer", task: top.task, score: top.score, label: top.label };
 }

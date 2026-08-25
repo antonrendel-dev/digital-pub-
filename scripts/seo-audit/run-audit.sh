@@ -1,11 +1,32 @@
 #!/bin/bash
-# SEO-аудит: сбор данных + отчёт в топик «SEO лаба».
-# Cron (15 и 30 числа, 09:00 МСК — в феврале 28-го вместо 30-го):
-#   CRON_TZ=Europe/Moscow
-#   0 9 15 * * /home/claude/projects/digital-pub-/scripts/seo-audit/run-audit.sh
-#   0 9 30 1,3,4,5,6,7,8,9,10,11,12 * /home/claude/projects/digital-pub-/scripts/seo-audit/run-audit.sh
-#   0 9 28 2 * /home/claude/projects/digital-pub-/scripts/seo-audit/run-audit.sh
+# SEO-аудит: сбор данных, отчёт в топик «SEO лаба» и сведение находок с доской.
+# Нужное время — 15-е и 30-е числа (в феврале 28-е), 09:00 МСК.
+#
+# Cron запускает нас КАЖДЫЙ час, а день и час скрипт выбирает сам:
+#   0 * * * * /home/claude/projects/digital-pub-/scripts/seo-audit/run-audit.sh
+#
+# Почему не CRON_TZ. Проверено 25.08.2026: на этой машине она не работает —
+# запись, поставленная на московские 10:12, не сработала в серверные 09:12.
+# Сервер летом CEST, зимой CET, Москва круглый год UTC+3, поэтому и простой
+# сдвиг на час уехал бы при переводе часов.
 set -euo pipefail
+
+TARGET_HOUR=09
+MSK_HOUR=$(TZ=Europe/Moscow date +%H)
+MSK_DAY=$(TZ=Europe/Moscow date +%d)
+MSK_MONTH=$(TZ=Europe/Moscow date +%m)
+
+# В феврале 30-го не бывает, поэтому второй прогон месяца — 28-го.
+SECOND_RUN_DAY=30
+[ "$MSK_MONTH" = "02" ] && SECOND_RUN_DAY=28
+
+if [ "${FORCE_RUN:-}" != "1" ]; then
+  [ "$MSK_HOUR" = "$TARGET_HOUR" ] || exit 0
+  case "$MSK_DAY" in
+    15 | "$SECOND_RUN_DAY") ;;
+    *) exit 0 ;;
+  esac
+fi
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG="/home/claude/projects/digital-pub-/logs/seo-audit.log"

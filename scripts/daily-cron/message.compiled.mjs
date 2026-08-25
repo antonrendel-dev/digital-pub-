@@ -18,7 +18,12 @@ function extractQuestions(task) {
   return m[1].split("\n").map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean).slice(0, 6);
 }
 function renderOffer(task, score, label) {
-  const lines = [`\u2600\uFE0F <b>\u0417\u0430\u0434\u0430\u0447\u0430 \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F</b>`, "", `<b>${esc(task.content)}</b>`, `\u0411\u0430\u043B\u043B: ${score}/100`];
+  const lines = [
+    `\u2600\uFE0F <b>\u0417\u0430\u0434\u0430\u0447\u0430 \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F</b>`,
+    "",
+    `<b>${esc(task.content)}</b>`,
+    `\u0411\u0430\u043B\u043B: ${score}/100`
+  ];
   if (label === LABEL_ASK) {
     const qs = extractQuestions(task);
     lines.push("", "\u042D\u0442\u0443 \u0437\u0430\u0434\u0430\u0447\u0443 \u0431\u0435\u0437 \u0442\u0435\u0431\u044F \u043D\u0435 \u043D\u0430\u0447\u0430\u0442\u044C.");
@@ -54,9 +59,13 @@ function renderStale(lock, days) {
   ].join("\n");
 }
 function renderIdle(reason) {
-  return [`\u{1F634} <b>\u0417\u0430\u0434\u0430\u0447 \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F \u043D\u0435\u0442</b>`, "", esc(reason), "", "\u0414\u043E\u0441\u043A\u0430 \u0436\u0434\u0451\u0442 \u0440\u0430\u0437\u043C\u0435\u0442\u043A\u0438 \u0438\u043B\u0438 \u043F\u043E\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F."].join(
-    "\n"
-  );
+  return [
+    `\u{1F634} <b>\u0417\u0430\u0434\u0430\u0447 \u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F \u043D\u0435\u0442</b>`,
+    "",
+    esc(reason),
+    "",
+    "\u0414\u043E\u0441\u043A\u0430 \u0436\u0434\u0451\u0442 \u0440\u0430\u0437\u043C\u0435\u0442\u043A\u0438 \u0438\u043B\u0438 \u043F\u043E\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F."
+  ].join("\n");
 }
 function render(decision) {
   switch (decision.kind) {
