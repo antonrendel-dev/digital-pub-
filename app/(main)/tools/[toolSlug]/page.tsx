@@ -7,6 +7,7 @@ import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
 import JsonLd from '@/components/JsonLd'
 import { ogImageUrl } from '@/lib/og'
+import { fillCount } from '@/lib/fill-count'
 
 export const revalidate = 60
 
@@ -886,7 +887,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         : await getPostsByTool(tool.query)
       ).total
     : 0
-  const title = tool.metaTitle.replace('{N}', String(count))
+  const title = fillCount(tool.metaTitle, count)
   return {
     title,
     description: tool.metaDescription,

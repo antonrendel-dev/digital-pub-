@@ -18,6 +18,7 @@ import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { stripBrandSuffix } from '@/lib/seoTitle'
 import { getCategoryFaq } from '@/lib/category-faq'
 import { TAG_H1, TAG_TITLE, TAG_DESCRIPTION } from '@/lib/tagH1'
+import { fillCount } from '@/lib/fill-count'
 import {
   SPEC_SLUGS,
   FORMAT_SLUGS,
@@ -39,12 +40,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
   const hasVacancies = posts.length > 0
-  const n = posts.length.toString()
 
   const seoTitleClean = tag.seoTitle ? stripBrandSuffix(tag.seoTitle) : null
   const rawTitle =
     TAG_TITLE[category] ?? seoTitleClean ?? `Вакансии ${tag.name}: удалённо и в офисе`
-  const title = rawTitle.replace('{N}', n)
+  const title = fillCount(rawTitle, posts.length)
 
   const seoDescClean =
     tag.seoDescription?.replace(/\s*[–—-]\s*Диджитал Паб\.?\s*$/i, '').trim() ?? null
@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     TAG_DESCRIPTION[category] ??
     seoDescClean ??
     `Актуальные вакансии ${tag.name} из Telegram-каналов. Новые предложения ежедневно. Удалённая работа и офис.`
-  const description = rawDescription.replace('{N}', n)
+  const description = fillCount(rawDescription, posts.length)
 
   const url = `https://d-pub.ru/vacancies/${category}`
 
