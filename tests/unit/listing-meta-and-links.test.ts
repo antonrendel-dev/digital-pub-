@@ -24,30 +24,47 @@ const articleBodies = (): Array<{ file: string; body: string }> =>
     }))
 
 describe('мета листингов целится в спрос', () => {
-  // «вакансии без опыта работы» — 141 668/мес, «вакансии джуниор» — 1 163.
-  // Слово junior стоило странице спроса в сто раз больше собственного.
-  it('junior ведёт по «без опыта», а не по «junior»', () => {
-    expect(TAG_TITLE.junior).toContain('без опыта')
-    expect(TAG_H1.junior).toContain('без опыта')
-    expect(TAG_TITLE.junior.toLowerCase()).not.toMatch(/^вакансии junior/)
+  const HEADS = ['junior', 'udalyonka', 'analitika'] as const
+
+  // Проверка 25.08.2026 на 660 ключах Топвизора дала правило без исключений:
+  // есть в запросе «digital» или роль — домен в топ-10, нет — за топ-100.
+  // Квалификатор в голове title и есть то, что держит эти страницы в выдаче,
+  // поэтому его отсутствие — регрессия, а не вопрос вкуса.
+  it('все три головы несут квалификатор «digital»', () => {
+    for (const slug of HEADS) {
+      expect(TAG_TITLE[slug].toLowerCase()).toContain('digital')
+      expect(TAG_H1[slug].toLowerCase()).toContain('digital')
+    }
   })
 
-  // «удалённая работа вакансии» — 125 782/мес. Прежний title разрывал пару
-  // словами «digital 2026», и точного вхождения не было.
-  it('udalyonka держит «удалённая работа» и «вакансии» рядом', () => {
-    // Форма слова роли не играет — Яндекс приводит к лемме. Важно, чтобы
-    // «удалённая работа» и «вакансии» стояли рядом, а не через полстроки.
+  // Голова 141 668/мес недостижима и не наша: хвост Вордстата — вахта, склад,
+  // «для женщин», а на странице digital-вакансии. Возврат к «вакансии junior»
+  // (3 457/мес) опирается на позицию 3 по «джуниор вакансии digital».
+  it('junior ведёт по «junior в digital», а не по общему «без опыта работы»', () => {
+    expect(TAG_TITLE.junior).toMatch(/^Вакансии junior в digital/)
+    expect(TAG_TITLE.junior.toLowerCase()).not.toContain('без опыта работы')
+    // Сам модификатор не потерян — он ловит комбинации из description.
+    expect(TAG_DESCRIPTION.junior.toLowerCase()).toContain('без опыта')
+  })
+
+  // По «работа в digital без опыта» ранжируется udalyonka (позиция 8-9, CTR 28,6%).
+  // Вторая страница на том же интенте отбирает сигнал у той, что уже зарабатывает.
+  it('junior не претендует на интент, занятый udalyonka', () => {
+    expect(TAG_TITLE.junior.toLowerCase()).not.toContain('работа в digital без опыта')
+  })
+
+  // «Удалённая работа» и «digital» должны стоять неразорванной парой: раньше
+  // между ними вклинивалось число, и фраза читалась как национальная голова.
+  it('udalyonka держит «удалённая работа» и «digital» рядом', () => {
     const t = TAG_TITLE.udalyonka.toLowerCase()
-    expect(t).toContain('удалённая работа')
-    const vac = t.indexOf('ваканси')
-    expect(vac).toBeGreaterThan(t.indexOf('удалённая работа'))
-    expect(vac - t.indexOf('удалённая работа')).toBeLessThan(25)
+    expect(t).toMatch(/^удалённая работа в digital/)
   })
 
-  // «вакансии аналитика» — 23 588/мес, «вакансии аналитика данных» — 3 676.
-  // Уточнение срезало спрос в шесть раз, а категория шире одних дата-аналитиков.
-  it('analitika не сужается до «данных» в title', () => {
-    expect(TAG_TITLE.analitika).toContain('Вакансии аналитика')
+  // «вакансии аналитика» (23 588/мес) — территория hh и SuperJob, у нас >100.
+  // Страницу кормит нишевый интент: «аналитик яндекс метрика вакансии» — 4.
+  // Сужение до «аналитика данных» снято: по нему за 30 дней ноль показов в GSC.
+  it('analitika стоит на «аналитика в digital», без сужения до «данных»', () => {
+    expect(TAG_TITLE.analitika).toMatch(/^Вакансии аналитика в digital/)
     expect(TAG_TITLE.analitika).not.toContain('аналитика данных')
   })
 
@@ -56,7 +73,7 @@ describe('мета листингов целится в спрос', () => {
   // при первой правке я забыл про хвост и получил 71 символ вместо 65.
 
   it('описания не потеряли подстановку числа', () => {
-    for (const slug of ['junior', 'udalyonka', 'analitika']) {
+    for (const slug of HEADS) {
       expect(TAG_DESCRIPTION[slug]).toContain('{N}')
     }
   })
