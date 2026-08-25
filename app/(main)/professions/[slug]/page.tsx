@@ -71,7 +71,11 @@ export default async function ProfessionPage({ params }: Props) {
   const profession = PROFESSIONS[slug]
   if (!profession) notFound()
 
-  const { posts, total } = await getPostsByProfession(profession.queries)
+  const { posts, total } = await getPostsByProfession(
+    profession.queries,
+    undefined,
+    profession.phrases
+  )
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',

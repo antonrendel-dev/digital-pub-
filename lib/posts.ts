@@ -152,18 +152,26 @@ export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
 /**
  * Вакансии по профессии.
  *
- * От getPostsByTool отличается тем, что принимает несколько формулировок сразу:
- * одну профессию рынок называет по-разному, и вакансия монтажёра может не
- * содержать слова «монтажёр» вовсе — там будет «видеомонтаж» или «монтаж Reels».
- * Замер 25.08.2026: по подстроке «монтаж» находится 337 вакансий, по «монтажер» — 87.
+ * Две ступени, и вторая обязательна. Payload `like` со строкой из нескольких
+ * слов ищет слова ПО ОТДЕЛЬНОСТИ: запрос «дизайнер презентаций» возвращает
+ * вакансии SMM-щика и маркетолога, где слово «дизайнер» стоит в одном месте,
+ * а «презентаций» — в другом. Проверено на проде 25.08.2026: 36 совпадений,
+ * из которых профильных почти нет.
  *
- * limit по умолчанию — PROFESSION_PREVIEW_LIMIT из lib/professions.
+ * Поэтому база отдаёт широкую выборку по однословным маркерам, а точная
+ * фраза проверяется уже в памяти. Иначе карточка профессии обещает вакансии,
+ * которых на ней нет, — ровно та ошибка, из-за которой /tools/wordpress
+ * показывал 19 «вакансий WordPress-разработчика» при двух настоящих.
  */
 export async function getPostsByProfession(
   queries: string[],
-  limit = PROFESSION_PREVIEW_LIMIT
-): Promise<{ posts: FeedPost[]; total: number }> {
-  if (queries.length === 0) return { posts: [], total: 0 }
+  limit = PROFESSION_PREVIEW_LIMIT,
+  phrases?: string[]
+): Promise<{ posts: FeedPost[]; total: number; capped: boolean }> {
+  if (queries.length === 0) return { posts: [], total: 0, capped: false }
+  // Потолок выборки: берём заведомо больше, чем покажем, чтобы после отсева
+  // осталось из чего выбирать. 300 хватает — самая массовая профессия даёт 126.
+  const SCAN_LIMIT = 300
   try {
     const payload = await getPayload({ config })
     const result = await payload.find({
@@ -180,16 +188,26 @@ export async function getPostsByProfession(
           },
         ],
       },
-      limit,
+      limit: SCAN_LIMIT,
       sort: '-createdAt',
     })
+
+    const docs = result.docs as unknown as PayloadPost[]
+    const needles = (phrases ?? queries).map((p) => p.toLowerCase())
+    const matched = docs.filter((doc) => {
+      const haystack = `${doc.title ?? ''} ${doc.description ?? ''}`.toLowerCase()
+      return needles.some((n) => haystack.includes(n))
+    })
+
     return {
-      posts: (result.docs as unknown as PayloadPost[]).map(toFeedPost),
-      total: result.totalDocs,
+      posts: matched.slice(0, limit).map(toFeedPost),
+      total: matched.length,
+      // Упёрлись в потолок сканирования — значит настоящее число больше.
+      capped: result.totalDocs > SCAN_LIMIT,
     }
   } catch (err) {
     console.warn('[posts] DB unavailable', err)
-    return { posts: [], total: 0 }
+    return { posts: [], total: 0, capped: false }
   }
 }
 

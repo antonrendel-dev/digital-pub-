@@ -42,7 +42,7 @@ export default async function ProfessionsHubPage() {
 
   const counts = await Promise.all(
     professions.map(async (p) => {
-      const { total } = await getPostsByProfession(p.queries, 1)
+      const { total } = await getPostsByProfession(p.queries, 1, p.phrases)
       return { profession: p, total }
     })
   )
