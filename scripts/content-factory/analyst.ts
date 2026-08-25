@@ -2,8 +2,11 @@
  * Content Factory — Analyst
  * Генерирует батч тем на календарный месяц, постит в Telegram топик SEO Лаба.
  * Запуск: node analyst.compiled.js
- * Cron: 0 9 25 * * — 25-го числа, батч на следующий месяц. Ритм месячный, а не
- * недельный: за прогон собирается TOPICS_REQUESTED тем, то есть месяц публикаций.
+ * Cron: ежедневно, но батч собирается только когда очередь просела ниже
+ * QUEUE_REFILL_THRESHOLD. Календарный запуск раз в месяц клал новый список
+ * поверх уже одобренных и замеренных тем: завод берёт первую неопубликованную,
+ * и старые оставались лежать. За прогон собирается TOPICS_REQUESTED тем —
+ * примерно месяц публикаций.
  */
 
 import { spawn } from 'child_process'
@@ -15,6 +18,7 @@ import { sendMessage } from './lib/telegram.js'
 import {
   MAX_WORDSTAT_VOLUME,
   MIN_WORDSTAT_VOLUME,
+  QUEUE_REFILL_THRESHOLD,
   renumberByVolume,
   splitByVolume,
   trafficLabelFromVolume,
@@ -354,7 +358,57 @@ function formatTopicsMessage(topics: Topic[], weak: Topic[], date: string): stri
   )
 }
 
+/**
+ * Очередь по всем батчам: тема, перенесённая между файлами, считается один раз.
+ * Флаг published теперь пишется во все файлы, где тема встречается, поэтому
+ * достаточно посмотреть на самый свежий — но старые проверяем на случай, если
+ * там осталось что-то неперенесённое.
+ */
+function currentQueue(): { size: number; file: string | null } {
+  if (!fs.existsSync(DATA_DIR)) return { size: 0, file: null }
+  const files = fs
+    .readdirSync(DATA_DIR)
+    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
+    .sort()
+  const seen = new Set<string>()
+  let size = 0
+  for (const f of files) {
+    const raw = JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), 'utf-8')) as {
+      topics: Array<{ id: number; title: string; approved?: boolean; published?: boolean }>
+    }
+    for (const t of raw.topics) {
+      const key = `${t.id}|${t.title}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      if (t.approved && !t.published) size++
+    }
+  }
+  return { size, file: files.at(-1) ?? null }
+}
+
 async function main() {
+  // Батч собирается по потребности, а не по календарю. Запускать аналитика,
+  // когда очередь на месяц вперёд, — значит положить новый список поверх уже
+  // одобренных и замеренных тем: завод берёт первую неопубликованную, и старые
+  // так и останутся лежать.
+  const queue = currentQueue()
+  if (queue.size >= QUEUE_REFILL_THRESHOLD) {
+    console.log(`[analyst] Очередь ${queue.size} >= ${QUEUE_REFILL_THRESHOLD}, батч не нужен`)
+    // Проверка идёт каждый день, и сообщать о каждом отказе — значит завалить
+    // топик ежедневным «всё в порядке». Предупреждаем только на подходе к
+    // порогу, чтобы одобрение нового списка не свалилось внезапно.
+    if (queue.size <= QUEUE_REFILL_THRESHOLD + 5) {
+      await sendMessage(
+        `📦 <b>Очередь тем подходит к концу</b>\n\n` +
+          `Осталось <b>${queue.size}</b> одобренных неопубликованных тем — примерно столько же дней публикаций.\n\n` +
+          `Соберу новый батч сам, когда останется меньше ${QUEUE_REFILL_THRESHOLD}. ` +
+          `Нужен раньше — <code>/content_plan</code>.`
+      )
+    }
+    return
+  }
+
+  console.log(`[analyst] Очередь ${queue.size}, собираю новый батч`)
   console.log('[analyst] Генерирую темы...')
   const { topics, weak } = await generateTopics()
 

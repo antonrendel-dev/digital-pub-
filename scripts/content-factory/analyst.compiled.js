@@ -42,6 +42,7 @@ function trafficLabelFromVolume(volume) {
   if (volume < TRAFFIC_MID_VOLUME) return '\u0441\u0440\u0435\u0434\u043D\u0438\u0439'
   return '\u0432\u044B\u0441\u043E\u043A\u0438\u0439'
 }
+var QUEUE_REFILL_THRESHOLD = 10
 
 // lib/pool.ts
 var VACANCY_TOKENS = [
@@ -561,7 +562,45 @@ function formatTopicsMessage(topics, weak, date) {
 <code>/content_approve 1 3 7</code>`
   )
 }
+function currentQueue() {
+  if (!fs2.existsSync(DATA_DIR)) return { size: 0, file: null }
+  const files = fs2
+    .readdirSync(DATA_DIR)
+    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
+    .sort()
+  const seen = /* @__PURE__ */ new Set()
+  let size = 0
+  for (const f of files) {
+    const raw = JSON.parse(fs2.readFileSync(path.join(DATA_DIR, f), 'utf-8'))
+    for (const t of raw.topics) {
+      const key = `${t.id}|${t.title}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      if (t.approved && !t.published) size++
+    }
+  }
+  return { size, file: files.at(-1) ?? null }
+}
 async function main() {
+  const queue = currentQueue()
+  if (queue.size >= QUEUE_REFILL_THRESHOLD) {
+    console.log(
+      `[analyst] \u041E\u0447\u0435\u0440\u0435\u0434\u044C ${queue.size} >= ${QUEUE_REFILL_THRESHOLD}, \u0431\u0430\u0442\u0447 \u043D\u0435 \u043D\u0443\u0436\u0435\u043D`
+    )
+    if (queue.size <= QUEUE_REFILL_THRESHOLD + 5) {
+      await sendMessage(
+        `\u{1F4E6} <b>\u041E\u0447\u0435\u0440\u0435\u0434\u044C \u0442\u0435\u043C \u043F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u043A \u043A\u043E\u043D\u0446\u0443</b>
+
+\u041E\u0441\u0442\u0430\u043B\u043E\u0441\u044C <b>${queue.size}</b> \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u043D\u0435\u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u044B\u0445 \u0442\u0435\u043C \u2014 \u043F\u0440\u0438\u043C\u0435\u0440\u043D\u043E \u0441\u0442\u043E\u043B\u044C\u043A\u043E \u0436\u0435 \u0434\u043D\u0435\u0439 \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0439.
+
+\u0421\u043E\u0431\u0435\u0440\u0443 \u043D\u043E\u0432\u044B\u0439 \u0431\u0430\u0442\u0447 \u0441\u0430\u043C, \u043A\u043E\u0433\u0434\u0430 \u043E\u0441\u0442\u0430\u043D\u0435\u0442\u0441\u044F \u043C\u0435\u043D\u044C\u0448\u0435 ${QUEUE_REFILL_THRESHOLD}. \u041D\u0443\u0436\u0435\u043D \u0440\u0430\u043D\u044C\u0448\u0435 \u2014 <code>/content_plan</code>.`
+      )
+    }
+    return
+  }
+  console.log(
+    `[analyst] \u041E\u0447\u0435\u0440\u0435\u0434\u044C ${queue.size}, \u0441\u043E\u0431\u0438\u0440\u0430\u044E \u043D\u043E\u0432\u044B\u0439 \u0431\u0430\u0442\u0447`
+  )
   console.log(
     '[analyst] \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0442\u0435\u043C\u044B...'
   )

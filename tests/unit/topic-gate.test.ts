@@ -1,6 +1,9 @@
 import {
   MAX_WORDSTAT_VOLUME,
   MIN_WORDSTAT_VOLUME,
+  QUEUE_REFILL_THRESHOLD,
+  countQueue,
+  needsNewBatch,
   renumberByVolume,
   isReadyToWrite,
   splitByVolume,
@@ -184,5 +187,35 @@ describe('isReadyToWrite', () => {
   it('не берёт неодобренную и уже опубликованную', () => {
     expect(isReadyToWrite(t({ approved: false }))).toBe(false)
     expect(isReadyToWrite(t({ published: true }))).toBe(false)
+  })
+})
+
+// Батч собирается по потребности, а не по календарю. 25.08.2026 очередь была
+// на 39 тем — до начала октября, — а крон всё равно собрал бы новый список,
+// и он лёг бы поверх уже одобренных и замеренных тем: завод берёт первую
+// неопубликованную, старые так и остались бы лежать.
+describe('порог пополнения очереди', () => {
+  const t = (approved: boolean, published: boolean) => ({ approved, published })
+
+  it('считает только одобренные и неопубликованные', () => {
+    expect(countQueue([t(true, false), t(true, true), t(false, false)])).toBe(1)
+  })
+
+  it('полная очередь нового батча не требует', () => {
+    const full = Array.from({ length: QUEUE_REFILL_THRESHOLD }, () => t(true, false))
+    expect(needsNewBatch(full)).toBe(false)
+  })
+
+  it('на шаг ниже порога — требует', () => {
+    const low = Array.from({ length: QUEUE_REFILL_THRESHOLD - 1 }, () => t(true, false))
+    expect(needsNewBatch(low)).toBe(true)
+  })
+
+  it('пустая очередь требует', () => {
+    expect(needsNewBatch([])).toBe(true)
+  })
+
+  it('порог даёт запас на одобрение, а не срабатывает в ноль', () => {
+    expect(QUEUE_REFILL_THRESHOLD).toBeGreaterThan(3)
   })
 })

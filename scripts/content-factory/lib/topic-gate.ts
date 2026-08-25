@@ -88,3 +88,26 @@ export function trafficLabelFromVolume(volume: number | null | undefined): strin
 export function isReadyToWrite(t: GatedTopic & { approved?: boolean; published?: boolean }) {
   return Boolean(t.approved) && !t.published && isMeasured(t)
 }
+
+/**
+ * Сколько неопубликованных одобренных тем должно остаться, чтобы имело смысл
+ * собирать новый батч.
+ *
+ * Аналитик собирает ~30 тем — месяц публикаций по штуке в день. Запускать его
+ * по календарю бессмысленно: 25.08.2026 очередь была на 39 тем, то есть до
+ * начала октября, а новый батч всё равно лёг бы сверху и вытеснил уже
+ * замеренные темы. Порог даёт запас на одобрение: когда остаётся десять дней,
+ * Тони есть когда посмотреть список.
+ */
+export const QUEUE_REFILL_THRESHOLD = 10
+
+export function countQueue(topics: Array<{ approved?: boolean; published?: boolean }>): number {
+  return topics.filter((t) => t.approved && !t.published).length
+}
+
+export function needsNewBatch(
+  topics: Array<{ approved?: boolean; published?: boolean }>,
+  threshold = QUEUE_REFILL_THRESHOLD
+): boolean {
+  return countQueue(topics) < threshold
+}
