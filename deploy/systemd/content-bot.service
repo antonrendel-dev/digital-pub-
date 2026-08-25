@@ -1,0 +1,24 @@
+[Unit]
+# Бот контент-завода: принимает /content_plan, /content_approve, /content_write,
+# /content_next, /content_regen в топике «SEO лаба».
+#
+# Раньше жил в tmux-сессии и после перезапуска не поднимался: 25.08.2026
+# обнаружен полностью остановленным, команды одобрения тем не работали.
+# Пользовательский юнит, а не системный: sudo без пароля на этой машине нет,
+# зато включён linger — сервис стартует при загрузке и переживает выход из сессии.
+Description=Content Factory bot (d-pub)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/claude/projects/digital-pub-/scripts/content-factory
+EnvironmentFile=/opt/bots/content-factory/.env
+ExecStart=/usr/bin/node /home/claude/projects/digital-pub-/scripts/content-factory/content-bot.compiled.js
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/claude/projects/digital-pub-/logs/content-bot.log
+StandardError=append:/home/claude/projects/digital-pub-/logs/content-bot.log
+
+[Install]
+WantedBy=default.target
