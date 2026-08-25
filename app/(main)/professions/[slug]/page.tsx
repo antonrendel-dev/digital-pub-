@@ -10,6 +10,17 @@ import { PROFESSIONS, PROFESSIONS_MEASURED_AT, PROFESSION_SLUGS } from '@/lib/pr
 
 const BASE_URL = 'https://d-pub.ru'
 
+/**
+ * Без этой строки страница пререндерится один раз на сборке и остаётся такой
+ * навсегда. У раннера GitHub Actions нет доступа к базе (`ENOTFOUND
+ * postgres.***.h2` в логе), поэтому на прод уезжает карточка с нулём вакансий
+ * и надписью «сейчас нет открытых вакансий» — что и произошло 25.08.2026.
+ * Тот же механизм ранее уронил шарды sitemap.
+ *
+ * Пять минут: описание профессии статично, меняется только список вакансий.
+ */
+export const revalidate = 300
+
 export function generateStaticParams() {
   return PROFESSION_SLUGS.map((slug) => ({ slug }))
 }
