@@ -7,6 +7,11 @@ import { getPrimaryCategorySlug } from '@/lib/postUtils'
 import PageShell from '@/components/PageShell'
 import PostDetail from '@/components/PostDetail'
 
+// Читает БД. Без этого маршрут пререндерится на сборке, где базы нет,
+// и уезжает на прод пустым артефактом — так было с шардами sitemap 23.08
+// и с карточками профессий 25.08.2026. Пять минут — как у соседних листингов.
+export const revalidate = 300
+
 const idSchema = z.string().regex(/^\d{1,10}$/)
 
 interface Props {

@@ -16,6 +16,11 @@ import PageShell from '@/components/PageShell'
 import JobCard from '@/components/feed/JobCard'
 import JsonLd from '@/components/JsonLd'
 
+// Читает БД. Без этого маршрут пререндерится на сборке, где базы нет,
+// и уезжает на прод пустым артефактом — так было с шардами sitemap 23.08
+// и с карточками профессий 25.08.2026. Пять минут — как у соседних листингов.
+export const revalidate = 300
+
 interface Props {
   params: Promise<{ tagSlug: string }>
 }

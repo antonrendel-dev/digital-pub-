@@ -11,3 +11,13 @@ fi
 
 # 2. Lint + format staged files
 npx lint-staged
+
+# 3. Types must compile — иначе сломанный код уезжает в пуш,
+# а падает уже CI. Так было 25.08.2026: eslint и prettier прошли,
+# tsc никто не звал, и коммит с несуществующей переменной ушёл в main.
+echo "⏳ tsc..."
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo "❌ tsc: типы не сходятся — commit blocked"
+  exit 1
+fi
