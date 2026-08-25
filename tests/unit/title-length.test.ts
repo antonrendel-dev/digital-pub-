@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import { SITE_NAME } from '../../lib/seoTitle'
 import { RESUME_TAG_TITLE, TAG_TITLE } from '../../lib/tagH1'
 import {
@@ -38,6 +40,22 @@ describe('длина <title> листингов', () => {
       }
     }
 
+    expect(tooLong(entries)).toEqual([])
+  })
+
+  it('title страниц инструментов влезает в сниппет', () => {
+    // Раздел /tools этой проверкой не был покрыт вовсе: TOOLS живёт в page.tsx,
+    // а не в lib, и в тесты не импортировался. Читаем файл как текст —
+    // дешевле, чем выносить объект ради одной проверки.
+    const src = fs.readFileSync(
+      path.join(process.cwd(), 'app', '(main)', 'tools', '[toolSlug]', 'page.tsx'),
+      'utf8'
+    )
+    const entries: [string, string][] = [...src.matchAll(/metaTitle: '([^']+)'/g)].map((m, i) => [
+      `tool#${i}`,
+      m[1],
+    ])
+    expect(entries.length).toBeGreaterThan(10)
     expect(tooLong(entries)).toEqual([])
   })
 })

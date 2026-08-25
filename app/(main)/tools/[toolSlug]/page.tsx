@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getPostsByTool } from '@/lib/posts'
+import { getPostsByProfession, getPostsByTool } from '@/lib/posts'
 import { professionsByTool } from '@/lib/professions'
 import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
@@ -17,7 +17,16 @@ const TOOLS: Record<
   {
     slug: string
     name: string
+    /** Однословный маркер для широкой выборки из базы. */
     query: string
+    /**
+     * Точная выборка, когда `query` ловит чужое. Payload дробит многословный
+     * `like` на слова, а короткая подстрока цепляет однокоренные: «директ»
+     * находит 162 вакансии, из которых 45 — про директоров и арт-директоров.
+     * Если заданы — выборка идёт через getPostsByProfession с отсевом по фразам.
+     */
+    queries?: string[]
+    phrases?: string[]
     h1: string
     metaTitle: string
     metaDescription: string
@@ -341,11 +350,25 @@ const TOOLS: Record<
   'yandex-direct': {
     slug: 'yandex-direct',
     name: 'Яндекс.Директ',
-    query: 'яндекс.директ',
-    h1: 'Вакансии с Яндекс.Директ — работа директологом и специалистом по контексту',
-    metaTitle: 'Вакансии Яндекс.Директ — директологи и PPC',
+    // Замер 25.08.2026 показал, что страница целилась не туда. «Вакансии яндекс
+    // директ» — 803/мес и позиция 64, а мимо шли два ключа крупнее: «директ
+    // вакансии» 1 086 и «директолог вакансии» 421. Латинское «direct» при этом
+    // мертво — 15/мес, то есть кириллица здесь крупнее в 72 раза.
+    // PPC из title убран: аббревиатуру в рунете почти не ищут, место занимала зря.
+    query: 'директ',
+    queries: ['директ', 'контекстн', 'ppc'],
+    phrases: [
+      'яндекс директ',
+      'яндекс.директ',
+      'директолог',
+      'контекстной рекламы',
+      'контекстная реклама',
+      'контекстолог',
+    ],
+    h1: 'Вакансии директолога и специалиста по контекстной рекламе',
+    metaTitle: 'Вакансии директолога — {N}: Яндекс Директ',
     metaDescription:
-      'Вакансии директологов и специалистов по Яндекс.Директ из Telegram-каналов. Актуальные офферы на d-pub.ru — контекстная реклама, каждый день.',
+      'Вакансии директолога и контекстолога из Telegram-каналов: Яндекс Директ, контекстная реклама, РСЯ. Зарплаты и требования — отклик напрямую, без регистрации.',
     seoText: `<p>Яндекс.Директ — главная платформа контекстной рекламы в Рунете. После ухода Google Ads в 2022 году бюджеты рекламодателей сосредоточились именно здесь. <strong>Вакансии Яндекс Директ</strong> стабильно входят в топ спроса на digital-рынке: по данным hh.ru и SuperJob, директологи уступают по количеству открытых позиций только SEO-специалистам и маркетологам.</p>
 <p>На d-pub.ru агрегируются <strong>директолог вакансии</strong> из Telegram-каналов digital-найма — там компании публикуют предложения раньше, чем на job-платформах. Многие офферы не попадают на hh.ru совсем.</p>
 <h2>Яндекс.Директ удалённо: особенности найма</h2>
@@ -856,30 +879,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!tool) return { title: 'Инструмент не найден' }
 
   const canonical = `${BASE_URL}/tools/${tool.slug}`
+  // Число вакансий нужно только тем страницам, где оно стоит в title.
+  const count = tool.metaTitle.includes('{N}')
+    ? (tool.queries
+        ? await getPostsByProfession(tool.queries, 1, tool.phrases)
+        : await getPostsByTool(tool.query)
+      ).total
+    : 0
+  const title = tool.metaTitle.replace('{N}', String(count))
   return {
-    title: tool.metaTitle,
+    title,
     description: tool.metaDescription,
     alternates: { canonical },
     openGraph: {
-      title: tool.metaTitle,
+      title: title,
       description: tool.metaDescription,
       url: canonical,
       type: 'website',
       images: [
         {
           url: ogImageUrl({
-            title: tool.metaTitle,
+            title: title,
             subtitle: `Вакансии и резюме: ${tool.name}`,
           }),
           width: 1200,
           height: 630,
-          alt: tool.metaTitle,
+          alt: title,
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: tool.metaTitle,
+      title: title,
       description: tool.metaDescription,
     },
   }
@@ -890,7 +921,9 @@ export default async function ToolPage({ params }: Props) {
   const tool = TOOLS[toolSlug]
   if (!tool) notFound()
 
-  const { posts, total } = await getPostsByTool(tool.query)
+  const { posts, total } = tool.queries
+    ? await getPostsByProfession(tool.queries, 20, tool.phrases)
+    : await getPostsByTool(tool.query)
   const professions = professionsByTool(toolSlug)
 
   const breadcrumbLd = {
