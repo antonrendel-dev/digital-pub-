@@ -130,6 +130,51 @@ describe('раздел профессий', () => {
     expect(without).toEqual([])
   })
 
+  /**
+   * Три шлюза отбора инструментов. Повод — претензия владельца 25.08.2026:
+   * «в рилсмейкере написано Съёмка, Нейросети, Figma — причём тут Figma?»
+   * и «в веб-дизайнере что делает Photoshop, в 2026 году сайты в нём не рисуют».
+   * Оба попали в блок как статистический шум: Figma 16,1% при фоне 9,2%,
+   * Photoshop 8,7% при двух упоминаниях.
+   */
+  const BASELINE: Record<string, number> = {
+    Figma: 0.092,
+    Нейросети: 0.216,
+    // 8,8% — по той же регулярке, которой считаны сами счётчики (съемк|съёмк).
+    // Более широкий вариант даёт 11,4%, но смешивать замеры разных регулярок
+    // нельзя: доля и фон обязаны считаться одинаково, иначе порог врёт.
+    Съёмка: 0.088,
+    CapCut: 0.056,
+    Photoshop: 0.035,
+    Tilda: 0.026,
+    Canva: 0.042,
+    'Premiere Pro': 0.023,
+  }
+
+  it('инструмент в блоке превышает фон по базе, а не просто част', () => {
+    const weak: string[] = []
+    for (const p of professions) {
+      for (const tool of p.tools) {
+        const share = tool.count / p.vacanciesAtMeasure
+        const bg = BASELINE[tool.name]
+        if (share < 0.15) weak.push(`${p.slug}/${tool.name}: доля ${(share * 100).toFixed(1)}%`)
+        else if (bg && share / bg < 1.8)
+          weak.push(`${p.slug}/${tool.name}: превышение ×${(share / bg).toFixed(1)}`)
+        else if (tool.count < 2) weak.push(`${p.slug}/${tool.name}: ${tool.count} вакансия`)
+      }
+    }
+    expect(weak).toEqual([])
+  })
+
+  it('блок инструментов либо пуст, либо содержателен', () => {
+    // Блок с одной строкой выглядит сломанным. Либо два инструмента и больше,
+    // либо не показываем вовсе — у проджекта и сценариста фон не превысил никто.
+    const lonely = professions
+      .filter((p) => p.tools.length === 1 && p.vacanciesAtMeasure > 40)
+      .map((p) => `${p.slug}: ${p.tools.length}`)
+    expect(lonely.length).toBeLessThanOrEqual(1)
+  })
+
   it('счётчики инструментов не превышают числа вакансий профессии', () => {
     const broken: string[] = []
     for (const p of professions) {

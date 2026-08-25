@@ -193,48 +193,50 @@ export default async function ProfessionPage({ params }: Props) {
           отвечает на вопрос, на который не отвечают ни hh, ни Telegram-каналы:
           не «что полезно знать», а «что просят прямо сейчас и в скольких вакансиях».
         */}
-        <section className="mb-10">
-          <h2 className="text-lg font-semibold text-text mb-1">Что просят работодатели</h2>
-          <p className="text-xs text-text-light mb-4">
-            По {profession.vacanciesAtMeasure} вакансиям профессии, замер от{' '}
-            {PROFESSIONS_MEASURED_AT}
-          </p>
-          <div className="space-y-2">
-            {profession.tools.map((tool) => {
-              const row = (
-                <>
-                  <span className="font-medium text-text">{tool.name}</span>
-                  <span className="text-sm text-text-muted">
-                    в {tool.count} из {profession.vacanciesAtMeasure}
-                  </span>
-                </>
-              )
-              return tool.toolSlug ? (
-                <Link
-                  key={tool.name}
-                  href={`/tools/${tool.toolSlug}`}
-                  className="flex items-center justify-between gap-3 no-underline bg-bg-card border border-border rounded-lg px-4 py-3 hover:border-accent transition-colors"
-                >
-                  {row}
-                </Link>
-              ) : (
-                <div
-                  key={tool.name}
-                  className="flex items-center justify-between gap-3 bg-bg-card border border-border rounded-lg px-4 py-3"
-                >
-                  {row}
-                </div>
-              )
-            })}
-          </div>
-          {topTool && (
-            <p className="text-sm text-text-muted mt-3">
-              Чаще всего в требованиях встречается {topTool.name} — {topTool.count} упоминаний из{' '}
-              {profession.vacanciesAtMeasure}. Одного инструмента обычно мало: в большинстве
-              вакансий их просят в связке.
+        {profession.tools.length > 0 && (
+          <section className="mb-10">
+            <h2 className="text-lg font-semibold text-text mb-1">Что просят работодатели</h2>
+            <p className="text-xs text-text-light mb-4">
+              По {profession.vacanciesAtMeasure} вакансиям профессии, замер от{' '}
+              {PROFESSIONS_MEASURED_AT}
             </p>
-          )}
-        </section>
+            <div className="space-y-2">
+              {profession.tools.map((tool) => {
+                const row = (
+                  <>
+                    <span className="font-medium text-text">{tool.name}</span>
+                    <span className="text-sm text-text-muted">
+                      в {tool.count} из {profession.vacanciesAtMeasure}
+                    </span>
+                  </>
+                )
+                return tool.toolSlug ? (
+                  <Link
+                    key={tool.name}
+                    href={`/tools/${tool.toolSlug}`}
+                    className="flex items-center justify-between gap-3 no-underline bg-bg-card border border-border rounded-lg px-4 py-3 hover:border-accent transition-colors"
+                  >
+                    {row}
+                  </Link>
+                ) : (
+                  <div
+                    key={tool.name}
+                    className="flex items-center justify-between gap-3 bg-bg-card border border-border rounded-lg px-4 py-3"
+                  >
+                    {row}
+                  </div>
+                )
+              })}
+            </div>
+            {topTool && (
+              <p className="text-sm text-text-muted mt-3">
+                Чаще всего в требованиях встречается {topTool.name} — {topTool.count} упоминаний из{' '}
+                {profession.vacanciesAtMeasure}. Одного инструмента обычно мало: в большинстве
+                вакансий их просят в связке.
+              </p>
+            )}
+          </section>
+        )}
 
         <section className="mb-10">
           <h2 className="text-lg font-semibold text-text mb-3">С чего начать</h2>
