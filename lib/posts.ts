@@ -1,7 +1,8 @@
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
 import config from '@payload-config'
 import { z } from 'zod'
 import type { FeedPost } from './postUtils'
+import { PROFESSION_PREVIEW_LIMIT } from './professions'
 
 export { getPrimaryCategorySlug, type FeedPost } from './postUtils'
 
@@ -145,6 +146,50 @@ export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
   } catch (err) {
     console.warn('[posts] DB unavailable', err)
     return null
+  }
+}
+
+/**
+ * Вакансии по профессии.
+ *
+ * От getPostsByTool отличается тем, что принимает несколько формулировок сразу:
+ * одну профессию рынок называет по-разному, и вакансия монтажёра может не
+ * содержать слова «монтажёр» вовсе — там будет «видеомонтаж» или «монтаж Reels».
+ * Замер 25.08.2026: по подстроке «монтаж» находится 337 вакансий, по «монтажер» — 87.
+ *
+ * limit по умолчанию — PROFESSION_PREVIEW_LIMIT из lib/professions.
+ */
+export async function getPostsByProfession(
+  queries: string[],
+  limit = PROFESSION_PREVIEW_LIMIT
+): Promise<{ posts: FeedPost[]; total: number }> {
+  if (queries.length === 0) return { posts: [], total: 0 }
+  try {
+    const payload = await getPayload({ config })
+    const result = await payload.find({
+      collection: 'posts',
+      where: {
+        and: [
+          { status: { equals: 'published' } },
+          { type: { equals: 'vacancy' } },
+          {
+            or: queries.flatMap((q) => [
+              { title: { like: q } } as Where,
+              { description: { like: q } } as Where,
+            ]),
+          },
+        ],
+      },
+      limit,
+      sort: '-createdAt',
+    })
+    return {
+      posts: (result.docs as unknown as PayloadPost[]).map(toFeedPost),
+      total: result.totalDocs,
+    }
+  } catch (err) {
+    console.warn('[posts] DB unavailable', err)
+    return { posts: [], total: 0 }
   }
 }
 

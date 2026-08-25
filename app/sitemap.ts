@@ -11,6 +11,7 @@ import {
 } from '@/lib/sitemap/vacancies'
 import { SITEMAP_BASE_URL, SITEMAP_SHARDS, isKnownShard } from '@/lib/sitemap/shards'
 import { cachedShard } from '@/lib/sitemap/cache'
+import { PROFESSION_SLUGS } from '@/lib/professions'
 
 const BASE_URL = SITEMAP_BASE_URL
 
@@ -144,6 +145,13 @@ export default async function sitemap({
     { url: `${BASE_URL}/resumes`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: `${BASE_URL}/articles`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${BASE_URL}/tools`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE_URL}/professions`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    ...PROFESSION_SLUGS.map((slug) => ({
+      url: `${BASE_URL}/professions/${slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.75,
+    })),
     { url: `${BASE_URL}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     {
       url: `${BASE_URL}/from-telegram`,

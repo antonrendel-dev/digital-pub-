@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getPostsByTool } from '@/lib/posts'
+import { professionsByTool } from '@/lib/professions'
 import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
 import JsonLd from '@/components/JsonLd'
@@ -890,6 +891,7 @@ export default async function ToolPage({ params }: Props) {
   if (!tool) notFound()
 
   const { posts, total } = await getPostsByTool(tool.query)
+  const professions = professionsByTool(toolSlug)
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -950,6 +952,37 @@ export default async function ToolPage({ params }: Props) {
           </div>
         ) : (
           <VacancyGrid posts={posts} />
+        )}
+
+        {/*
+          Мост «инструмент → профессия». Человек пришёл с навыком — уходит с
+          профессией и вилкой. Анкор информационный («кем берут»), транзакционный
+          сигнал с этой страницы никуда не уходит: иначе она начнёт конкурировать
+          с карточкой профессии за один и тот же запрос.
+        */}
+        {professions.length > 0 && (
+          <section className="mt-12 pt-8 border-t border-border">
+            <h2 className="text-lg font-semibold text-text mb-4">Кем берут с {tool.name}</h2>
+            <div className="space-y-2">
+              {professions.map(({ profession, count }) => (
+                <Link
+                  key={profession.slug}
+                  href={`/professions/${profession.slug}`}
+                  className="flex items-center justify-between gap-3 no-underline bg-bg-card border border-border rounded-lg px-4 py-3 hover:border-accent transition-colors"
+                >
+                  <span>
+                    <span className="font-medium text-text">{profession.nameNominative}</span>
+                    <span className="text-sm text-text-muted"> — просят в {count} вакансиях</span>
+                  </span>
+                  {profession.salary && (
+                    <span className="text-sm text-text-muted whitespace-nowrap">
+                      медиана {Math.round(profession.salary.median / 1000)}К
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
 
         <article

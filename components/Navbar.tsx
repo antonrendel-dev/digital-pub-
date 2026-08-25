@@ -68,11 +68,17 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
 
           {/* Desktop Nav Links */}
           <div className="hidden lg:flex items-center gap-6">
-            <Link href="/" className={navCls('/')}>
-              Главная
-            </Link>
+            {/*
+              «Главной» здесь нет намеренно: логотип слева ведёт туда же, и пункт
+              был дублем. Освободившийся слот занимают «Профессии» — они стоят
+              сразу за «Вакансиями», потому что это связка «кем» и «где»,
+              и разрывать её другим разделом не стоит.
+            */}
             <Link href="/vacancies" className={navCls('/vacancies')}>
               Вакансии
+            </Link>
+            <Link href="/professions" className={navCls('/professions')}>
+              Профессии
             </Link>
             <Link href="/resumes" className={navCls('/resumes')}>
               Резюме
@@ -217,6 +223,13 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
               onClick={() => setMenuOpen(false)}
             >
               Вакансии
+            </Link>
+            <Link
+              href="/professions"
+              className={mobileCls('/professions')}
+              onClick={() => setMenuOpen(false)}
+            >
+              Профессии
             </Link>
             <Link
               href="/resumes"
