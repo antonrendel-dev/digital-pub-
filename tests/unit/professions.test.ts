@@ -6,6 +6,7 @@ import {
   PROFESSION_SLUGS,
   PROFESSION_PREVIEW_LIMIT,
   professionsByTool,
+  professionsByListing,
 } from '../../lib/professions'
 import { SITE_NAME } from '../../lib/seoTitle'
 
@@ -173,6 +174,32 @@ describe('раздел профессий', () => {
       .filter((p) => p.tools.length === 1 && p.vacanciesAtMeasure > 40)
       .map((p) => `${p.slug}: ${p.tools.length}`)
     expect(lonely.length).toBeLessThanOrEqual(1)
+  })
+
+  it('мост с листингом двусторонний', () => {
+    // С карточки ссылка на листинг уже есть (relatedListing). Обратный индекс
+    // обязан вернуть эту же карточку, иначе половина моста висит в воздухе.
+    for (const p of professions) {
+      const back = professionsByListing(p.relatedListing.href).map((x) => x.slug)
+      expect(back).toContain(p.slug)
+    }
+  })
+
+  it('анкоры асимметричны по типу запроса', () => {
+    // С профессии вниз идёт транзакционный сигнал («вакансии …»), с листинга
+    // наверх — информационный («кто такой …»). Одинаковый тип с обеих сторон
+    // превращает усиление в конкуренцию: измеренная цена такой ошибки —
+    // 1 064 показа и ноль кликов в кластере контент-менеджера.
+    for (const p of professions) {
+      expect(p.relatedListing.label.toLowerCase()).toMatch(/ваканси|резюме/)
+    }
+    const src = fs.readFileSync(
+      path.join(process.cwd(), 'app', '(main)', 'vacancies', '[category]', 'page.tsx'),
+      'utf8'
+    )
+    expect(src).toContain('Кто такой')
+    // Обратный анкор не должен нести ключ листинга.
+    expect(src).not.toMatch(/Вакансии \{p\.nameNominative/)
   })
 
   it('счётчики инструментов не превышают числа вакансий профессии', () => {

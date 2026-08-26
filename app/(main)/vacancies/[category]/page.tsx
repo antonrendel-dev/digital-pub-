@@ -19,6 +19,7 @@ import { stripBrandSuffix } from '@/lib/seoTitle'
 import { getCategoryFaq } from '@/lib/category-faq'
 import { TAG_H1, TAG_TITLE, TAG_DESCRIPTION } from '@/lib/tagH1'
 import { fillCount } from '@/lib/fill-count'
+import { professionsByListing } from '@/lib/professions'
 import {
   SPEC_SLUGS,
   FORMAT_SLUGS,
@@ -98,6 +99,7 @@ export default async function CategoryPage({ params }: Props) {
     getCategoryStats(category),
   ])
   const faqItems = getCategoryFaq(category)
+  const professions = professionsByListing(`/vacancies/${category}`)
   const allArticles = getArticles()
   const relatedArticles = getRelatedArticlesForCategory(category, allArticles, 3)
   const relatedSpecCategories = getRelatedSpecCategories(category)
@@ -268,6 +270,40 @@ export default async function CategoryPage({ params }: Props) {
 
             {/* Spec→spec cross-links */}
             <RelatedSpecCategoriesBlock categories={relatedSpecCategories} />
+
+            {/*
+              Обратная сторона моста: с листинга на карточку профессии уходит
+              ИНФОРМАЦИОННЫЙ анкор «кто такой …», тогда как с карточки на
+              листинг — транзакционный «вакансии …». Одинаковый тип с обеих
+              сторон превратил бы усиление в конкуренцию за один запрос.
+            */}
+            {professions.length > 0 && (
+              <section className="mt-12 pt-8 border-t border-border">
+                <h2 className="text-xl font-bold text-text mb-4">Профессии в этом направлении</h2>
+                <p className="text-sm text-text-muted mb-4">
+                  Чем занимаются, сколько платят и что просят работодатели — по живым вакансиям
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {professions.map((p) => (
+                    <Link
+                      key={p.slug}
+                      href={`/professions/${p.slug}`}
+                      className="group block no-underline bg-bg-card border border-border rounded-lg px-4 py-3 hover:border-accent transition-colors"
+                    >
+                      <span className="font-medium text-text group-hover:text-accent transition-colors">
+                        Кто такой {p.nameNominative.toLowerCase()}
+                      </span>
+                      {p.salary && (
+                        <span className="block text-sm text-text-muted mt-0.5">
+                          медиана {Math.round(p.salary.median / 1000)}К · {p.vacanciesAtMeasure}{' '}
+                          вакансий
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* FAQ block */}
             <section className="mt-12 pt-8 border-t border-border">
