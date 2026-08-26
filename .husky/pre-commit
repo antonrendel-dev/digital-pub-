@@ -10,7 +10,14 @@ if [ $? -ne 0 ]; then
 fi
 
 # 2. Lint + format staged files
+# Код возврата проверяется явно: 26.08.2026 lint-staged упал на файле с any,
+# откатил свои правки — и коммит всё равно ушёл в main, потому что дальше
+# скрипт просто продолжался. Падение линтера должно останавливать коммит.
 npx lint-staged
+if [ $? -ne 0 ]; then
+  echo "❌ lint-staged: правки не прошли линтер — commit blocked"
+  exit 1
+fi
 
 # 3. Types must compile — иначе сломанный код уезжает в пуш,
 # а падает уже CI. Так было 25.08.2026: eslint и prettier прошли,
