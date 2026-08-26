@@ -16,6 +16,7 @@ import {
 } from './lib/lsi.js'
 import { lookupPhrases, savePhrases } from './lib/lsi-cache.js'
 import { FACTORY_MODEL } from './lib/model.js'
+import { buildAgentCommand, supportsAgentProfiles } from './lib/agent-cli.js'
 import {
   collectSessionStats,
   runawayWarning,
@@ -248,11 +249,14 @@ function runClaude(prompt: string, agent?: AgentName): Promise<string> {
   return new Promise((resolve, reject) => {
     // --allowedTools обязателен: с --agent, но без него скилл не загружается
     // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
-    const args = agent
-      ? ['-p', '--model', FACTORY_MODEL, '--agent', agent, '--allowedTools', AGENT_TOOLS]
-      : ['-p', '--model', FACTORY_MODEL]
+    const { cmd, args } = buildAgentCommand('', {
+      model: FACTORY_MODEL,
+      agent: agent && supportsAgentProfiles() ? agent : undefined,
+      allowedTools: AGENT_TOOLS,
+      promptViaStdin: true,
+    })
     // Промпт через stdin: аргументом argv длинные промпты (3 черновика) бьются об ARG_MAX → spawn E2BIG
-    const child = spawn('claude', args, {
+    const child = spawn(cmd, args, {
       env: process.env,
       stdio: ['pipe', 'pipe', 'pipe'],
     })

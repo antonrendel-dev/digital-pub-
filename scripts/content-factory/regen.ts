@@ -8,6 +8,7 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { FACTORY_MODEL } from './lib/model.js'
+import { buildAgentCommand } from './lib/agent-cli.js'
 
 const SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
 const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '../..')
@@ -62,7 +63,8 @@ function convertToWebP(srcPng: string, destWebp: string): void {
 
 function askClaude(prompt: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn('claude', ['-p', '--model', FACTORY_MODEL, prompt], {
+    const { cmd, args } = buildAgentCommand(prompt, { model: FACTORY_MODEL })
+    const child = spawn(cmd, args, {
       env: process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
     })

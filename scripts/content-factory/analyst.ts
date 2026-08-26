@@ -13,6 +13,7 @@ import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { FACTORY_MODEL } from './lib/model.js'
+import { buildAgentCommand, supportsAgentProfiles } from './lib/agent-cli.js'
 import { loadPhrasePool, renderPoolBlock } from './lib/pool.js'
 import { sendMessage } from './lib/telegram.js'
 import {
@@ -89,11 +90,14 @@ function askClaude(prompt: string, agent?: 'analyst' | 'seo'): Promise<string> {
   return new Promise((resolve, reject) => {
     // --allowedTools обязателен: с --agent, но без него скилл не загружается
     // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
-    const args = agent
-      ? ['-p', '--model', FACTORY_MODEL, '--agent', agent, '--allowedTools', AGENT_TOOLS]
-      : ['-p', '--model', FACTORY_MODEL]
+    const { cmd, args } = buildAgentCommand('', {
+      model: FACTORY_MODEL,
+      agent: agent && supportsAgentProfiles() ? agent : undefined,
+      allowedTools: AGENT_TOOLS,
+      promptViaStdin: true,
+    })
     // Промпт через stdin: аргументом argv длинный контент-план бьётся об ARG_MAX → spawn E2BIG
-    const child = spawn('claude', args, {
+    const child = spawn(cmd, args, {
       env: process.env,
       stdio: ['pipe', 'pipe', 'pipe'],
     })

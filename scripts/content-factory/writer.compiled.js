@@ -1,981 +1,877 @@
 // writer.ts
-import { execSync, spawn } from 'child_process'
-import fs5 from 'fs'
-import os2 from 'os'
-import path4 from 'path'
+import { execSync, spawn } from "child_process";
+import fs5 from "fs";
+import os2 from "os";
+import path4 from "path";
 
 // lib/lsi.ts
-var MAX_MAIN_KEY_USES = 6
-var MAX_ANCHOR_PHRASES = 3
-var MIN_PHRASE_COUNT = 30
-var TARGET_PHRASES = 15
+var MAX_MAIN_KEY_USES = 6;
+var MAX_ANCHOR_PHRASES = 3;
+var MIN_PHRASE_COUNT = 30;
+var TARGET_PHRASES = 15;
 var SERVICE_WORDS = /* @__PURE__ */ new Set([
-  '\u0438\u043B\u0438',
-  '\u0441',
-  '\u0432',
-  '\u043D\u0430',
-  '\u0434\u043B\u044F',
-  '\u043F\u043E',
-  '\u0438\u0437',
-  '\u0438',
-  '\u043A',
-  '\u0437\u0430',
-  '\u0431\u0435\u0437',
-  '\u0447\u0442\u043E',
-  '\u043A\u0430\u043A',
-  '\u044D\u0442\u043E',
-  '\u043E\u0442',
-  '\u0434\u043E',
-  '\u0443',
-  '\u043E',
-])
-var STEM_LENGTH = 5
+  "\u0438\u043B\u0438",
+  "\u0441",
+  "\u0432",
+  "\u043D\u0430",
+  "\u0434\u043B\u044F",
+  "\u043F\u043E",
+  "\u0438\u0437",
+  "\u0438",
+  "\u043A",
+  "\u0437\u0430",
+  "\u0431\u0435\u0437",
+  "\u0447\u0442\u043E",
+  "\u043A\u0430\u043A",
+  "\u044D\u0442\u043E",
+  "\u043E\u0442",
+  "\u0434\u043E",
+  "\u0443",
+  "\u043E"
+]);
+var STEM_LENGTH = 5;
 function stems(phrase) {
-  return phrase
-    .toLowerCase()
-    .replace(/ё/g, '\u0435')
-    .split(/[^a-zа-я0-9]+/)
-    .filter((w) => w.length > 0 && !SERVICE_WORDS.has(w))
-    .map((w) => w.slice(0, STEM_LENGTH))
+  return phrase.toLowerCase().replace(/ё/g, "\u0435").split(/[^a-zа-я0-9]+/).filter((w) => w.length > 0 && !SERVICE_WORDS.has(w)).map((w) => w.slice(0, STEM_LENGTH));
 }
 function selectLsiPhrases(raw, mainKeyword, mainVolume) {
-  const floor = Math.max(MIN_PHRASE_COUNT, Math.round((mainVolume ?? 0) * 0.05))
-  const mainStems = new Set(stems(mainKeyword))
-  const anchors = []
-  const tail = []
-  const seenModifiers = /* @__PURE__ */ new Set()
+  const floor = Math.max(MIN_PHRASE_COUNT, Math.round((mainVolume ?? 0) * 0.05));
+  const mainStems = new Set(stems(mainKeyword));
+  const anchors = [];
+  const tail = [];
+  const seenModifiers = /* @__PURE__ */ new Set();
   for (const p of [...raw].sort((a, b) => b.count - a.count)) {
-    if (p.count < floor) continue
-    const modifiers = stems(p.phrase).filter((s) => !mainStems.has(s))
+    if (p.count < floor) continue;
+    const modifiers = stems(p.phrase).filter((s) => !mainStems.has(s));
     if (modifiers.length === 0) {
-      if (anchors.length < MAX_ANCHOR_PHRASES) anchors.push(p)
-      continue
+      if (anchors.length < MAX_ANCHOR_PHRASES) anchors.push(p);
+      continue;
     }
-    const signature = [...modifiers].sort().join('|')
-    if (seenModifiers.has(signature)) continue
-    seenModifiers.add(signature)
-    tail.push({ ...p, modifiers })
+    const signature = [...modifiers].sort().join("|");
+    if (seenModifiers.has(signature)) continue;
+    seenModifiers.add(signature);
+    tail.push({ ...p, modifiers });
   }
-  return { anchors, tail: tail.slice(0, Math.max(0, TARGET_PHRASES - anchors.length)), floor }
+  return { anchors, tail: tail.slice(0, Math.max(0, TARGET_PHRASES - anchors.length)), floor };
 }
 function modifierWords(phrase, mainKeyword) {
-  const mainStems = new Set(stems(mainKeyword))
-  return phrase
-    .toLowerCase()
-    .replace(/ё/g, '\u0435')
-    .split(/\s+/)
-    .filter((w) => {
-      const s = w.replace(/[^a-zа-я0-9]/g, '').slice(0, STEM_LENGTH)
-      return s.length > 0 && !mainStems.has(s)
-    })
-    .join(' ')
+  const mainStems = new Set(stems(mainKeyword));
+  return phrase.toLowerCase().replace(/ё/g, "\u0435").split(/\s+/).filter((w) => {
+    const s = w.replace(/[^a-zа-я0-9]/g, "").slice(0, STEM_LENGTH);
+    return s.length > 0 && !mainStems.has(s);
+  }).join(" ");
 }
 function buildWordstatBlock(selection, mainKeyword, mainVolume) {
-  const { anchors, tail } = selection
-  if (!anchors.length && !tail.length) return ''
-  const volumeNote =
-    typeof mainVolume === 'number'
-      ? ` \u2014 ${mainVolume.toLocaleString()}/\u043C\u0435\u0441`
-      : ''
+  const { anchors, tail } = selection;
+  if (!anchors.length && !tail.length) return "";
+  const volumeNote = typeof mainVolume === "number" ? ` \u2014 ${mainVolume.toLocaleString()}/\u043C\u0435\u0441` : "";
   const lines = [
-    '',
-    '\u041A\u041B\u042E\u0427\u0418 \u0418\u0417 WORDSTAT (\u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435, \u043D\u0435 \u0432\u044B\u0434\u0443\u043C\u043A\u0430)',
-    '',
+    "",
+    "\u041A\u041B\u042E\u0427\u0418 \u0418\u0417 WORDSTAT (\u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435, \u043D\u0435 \u0432\u044B\u0434\u0443\u043C\u043A\u0430)",
+    "",
     `\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${mainKeyword}"${volumeNote}`,
-    '',
+    "",
     `\u0411\u042E\u0414\u0416\u0415\u0422 \u0412\u0425\u041E\u0416\u0414\u0415\u041D\u0418\u0419. \u0422\u043E\u0447\u043D\u0430\u044F \u0444\u0440\u0430\u0437\u0430 "${mainKeyword}" \u0432\u0441\u0442\u0440\u0435\u0447\u0430\u0435\u0442\u0441\u044F \u0432 \u0441\u0442\u0430\u0442\u044C\u0435 \u043D\u0435 \u0431\u043E\u043B\u0435\u0435`,
     `${MAX_MAIN_KEY_USES} \u0440\u0430\u0437, \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u0440\u0430\u0437\u0443 \u0432 \u043A\u0430\u0436\u0434\u043E\u043C \u0438\u0437 \u043C\u0435\u0441\u0442: title, H1, \u043F\u0435\u0440\u0432\u044B\u0435 60 \u0441\u043B\u043E\u0432,`,
-    '\u043F\u0435\u0440\u0432\u044B\u0439 H2, \u043E\u0434\u0438\u043D \u043E\u0442\u0432\u0435\u0442 FAQ, meta description. \u0412\u0441\u0451 \u0441\u0432\u0435\u0440\u0445 \u044D\u0442\u043E\u0433\u043E \u2014 \u043F\u0435\u0440\u0435\u0441\u043F\u0430\u043C:',
-    '\u042F\u043D\u0434\u0435\u043A\u0441 \u0448\u0442\u0440\u0430\u0444\u0443\u0435\u0442 \u0437\u0430 keyword stuffing \u0438 \u0440\u0430\u0437\u043C\u044B\u0432\u0430\u0435\u0442 BERT-\u0432\u0435\u043A\u0442\u043E\u0440 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B.',
-    '\u0412 \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u043E\u043C \u0442\u0435\u043A\u0441\u0442\u0435 \u0437\u0430\u043C\u0435\u043D\u044F\u0439 \u043A\u043B\u044E\u0447 \u0441\u0438\u043D\u043E\u043D\u0438\u043C\u043E\u043C, \u043C\u0435\u0441\u0442\u043E\u0438\u043C\u0435\u043D\u0438\u0435\u043C \u0438\u043B\u0438 \u043D\u043E\u043C\u0438\u043D\u0430\u043B\u044C\u043D\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u043E\u0439.',
-  ]
+    "\u043F\u0435\u0440\u0432\u044B\u0439 H2, \u043E\u0434\u0438\u043D \u043E\u0442\u0432\u0435\u0442 FAQ, meta description. \u0412\u0441\u0451 \u0441\u0432\u0435\u0440\u0445 \u044D\u0442\u043E\u0433\u043E \u2014 \u043F\u0435\u0440\u0435\u0441\u043F\u0430\u043C:",
+    "\u042F\u043D\u0434\u0435\u043A\u0441 \u0448\u0442\u0440\u0430\u0444\u0443\u0435\u0442 \u0437\u0430 keyword stuffing \u0438 \u0440\u0430\u0437\u043C\u044B\u0432\u0430\u0435\u0442 BERT-\u0432\u0435\u043A\u0442\u043E\u0440 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B.",
+    "\u0412 \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u043E\u043C \u0442\u0435\u043A\u0441\u0442\u0435 \u0437\u0430\u043C\u0435\u043D\u044F\u0439 \u043A\u043B\u044E\u0447 \u0441\u0438\u043D\u043E\u043D\u0438\u043C\u043E\u043C, \u043C\u0435\u0441\u0442\u043E\u0438\u043C\u0435\u043D\u0438\u0435\u043C \u0438\u043B\u0438 \u043D\u043E\u043C\u0438\u043D\u0430\u043B\u044C\u043D\u043E\u0439 \u0433\u0440\u0443\u043F\u043F\u043E\u0439."
+  ];
   if (tail.length) {
     lines.push(
-      '',
-      '\u0423\u0422\u041E\u0427\u041D\u042F\u042E\u0429\u0418\u0415 \u0421\u041C\u042B\u0421\u041B\u042B. \u042D\u0442\u043E \u0442\u043E, \u0447\u0442\u043E \u043B\u044E\u0434\u0438 \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u044E\u0442 \u043A \u0433\u043B\u0430\u0432\u043D\u043E\u043C\u0443 \u043A\u043B\u044E\u0447\u0443 \u2014 \u0440\u0430\u0441\u043A\u0440\u043E\u0439',
-      '\u041A\u0410\u0416\u0414\u042B\u0419 \u043F\u043E \u0441\u043C\u044B\u0441\u043B\u0443 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u043C \u043F\u0430\u0441\u0441\u0430\u0436\u0435\u043C \u0438\u043B\u0438 \u043F\u043E\u0434\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u043C. \u041D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439 \u043F\u0440\u0438 \u044D\u0442\u043E\u043C',
-      '\u0433\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447 \u0446\u0435\u043B\u0438\u043A\u043E\u043C, \u0431\u0435\u0440\u0438 \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0441\u043B\u043E\u0432\u0430:'
-    )
+      "",
+      "\u0423\u0422\u041E\u0427\u041D\u042F\u042E\u0429\u0418\u0415 \u0421\u041C\u042B\u0421\u041B\u042B. \u042D\u0442\u043E \u0442\u043E, \u0447\u0442\u043E \u043B\u044E\u0434\u0438 \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u044E\u0442 \u043A \u0433\u043B\u0430\u0432\u043D\u043E\u043C\u0443 \u043A\u043B\u044E\u0447\u0443 \u2014 \u0440\u0430\u0441\u043A\u0440\u043E\u0439",
+      "\u041A\u0410\u0416\u0414\u042B\u0419 \u043F\u043E \u0441\u043C\u044B\u0441\u043B\u0443 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u043C \u043F\u0430\u0441\u0441\u0430\u0436\u0435\u043C \u0438\u043B\u0438 \u043F\u043E\u0434\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u043C. \u041D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439 \u043F\u0440\u0438 \u044D\u0442\u043E\u043C",
+      "\u0433\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447 \u0446\u0435\u043B\u0438\u043A\u043E\u043C, \u0431\u0435\u0440\u0438 \u0432\u044B\u0434\u0435\u043B\u0435\u043D\u043D\u044B\u0435 \u0441\u043B\u043E\u0432\u0430:"
+    );
     for (const p of tail) {
       lines.push(
         `  - ${modifierWords(p.phrase, mainKeyword)} (\u0438\u0437 "${p.phrase}", ${p.count.toLocaleString()}/\u043C\u0435\u0441)`
-      )
+      );
     }
   }
-  return lines.join('\n') + '\n'
+  return lines.join("\n") + "\n";
 }
 
 // lib/lsi-cache.ts
-import fs from 'fs'
-import path from 'path'
-var MAX_CACHE_AGE_DAYS = 180
-var normalizeKey = (s) =>
-  s
-    .toLowerCase()
-    .replace(/ё/g, '\u0435')
-    .replace(/[^а-яa-z0-9]+/g, ' ')
-    .trim()
+import fs from "fs";
+import path from "path";
+var MAX_CACHE_AGE_DAYS = 180;
+var normalizeKey = (s) => s.toLowerCase().replace(/ё/g, "\u0435").replace(/[^а-яa-z0-9]+/g, " ").trim();
 function isFresh(measuredAt, now, maxAgeDays) {
-  if (!measuredAt) return false
-  const at = new Date(measuredAt)
-  if (Number.isNaN(at.getTime())) return false
-  return (now.getTime() - at.getTime()) / 864e5 <= maxAgeDays
+  if (!measuredAt) return false;
+  const at = new Date(measuredAt);
+  if (Number.isNaN(at.getTime())) return false;
+  return (now.getTime() - at.getTime()) / 864e5 <= maxAgeDays;
 }
 function readStore(file) {
-  if (!fs.existsSync(file)) return null
+  if (!fs.existsSync(file)) return null;
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8'))
+    return JSON.parse(fs.readFileSync(file, "utf-8"));
   } catch {
-    console.warn(
-      `[lsi-cache] \u0411\u0438\u0442\u044B\u0439 \u0444\u0430\u0439\u043B \u0437\u0430\u043C\u0435\u0440\u043E\u0432, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E: ${file}`
-    )
-    return null
+    console.warn(`[lsi-cache] \u0411\u0438\u0442\u044B\u0439 \u0444\u0430\u0439\u043B \u0437\u0430\u043C\u0435\u0440\u043E\u0432, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E: ${file}`);
+    return null;
   }
 }
-function lookupPhrases(
-  files,
-  keyword,
-  now = /* @__PURE__ */ new Date(),
-  maxAgeDays = MAX_CACHE_AGE_DAYS
-) {
-  const target = normalizeKey(keyword)
+function lookupPhrases(files, keyword, now = /* @__PURE__ */ new Date(), maxAgeDays = MAX_CACHE_AGE_DAYS) {
+  const target = normalizeKey(keyword);
   for (const file of files) {
-    const store = readStore(file)
-    if (!store?.seeds) continue
-    const fileDate = store.updatedAt ?? store.snapshotDate
+    const store = readStore(file);
+    if (!store?.seeds) continue;
+    const fileDate = store.updatedAt ?? store.snapshotDate;
     for (const [seed, data] of Object.entries(store.seeds)) {
-      if (normalizeKey(seed) !== target) continue
-      const nested = (data.nested ?? []).filter((n) => n.count > 0)
-      if (!nested.length) break
-      if (!isFresh(data.measuredAt ?? fileDate, now, maxAgeDays)) break
-      return { nested, source: path.basename(file) }
+      if (normalizeKey(seed) !== target) continue;
+      const nested = (data.nested ?? []).filter((n) => n.count > 0);
+      if (!nested.length) break;
+      if (!isFresh(data.measuredAt ?? fileDate, now, maxAgeDays)) break;
+      return { nested, source: path.basename(file) };
     }
   }
-  return null
+  return null;
 }
 function savePhrases(file, keyword, nested, now = /* @__PURE__ */ new Date()) {
-  if (!nested.length) return
-  const store = readStore(file) ?? {}
-  const seeds = store.seeds ?? {}
-  seeds[keyword] = { nested, measuredAt: now.toISOString() }
+  if (!nested.length) return;
+  const store = readStore(file) ?? {};
+  const seeds = store.seeds ?? {};
+  seeds[keyword] = { nested, measuredAt: now.toISOString() };
   fs.writeFileSync(
     file,
     JSON.stringify({ ...store, seeds, updatedAt: now.toISOString() }, null, 2),
-    'utf-8'
-  )
+    "utf-8"
+  );
 }
 
 // lib/model.ts
-var FACTORY_MODEL = process.env.CONTENT_FACTORY_MODEL || 'claude-opus-5'
+var FACTORY_MODEL = process.env.CONTENT_FACTORY_MODEL || "claude-opus-5";
+
+// lib/agent-cli.ts
+var PROFILES = {
+  claude(prompt, { model, agent, allowedTools, promptViaStdin }) {
+    const args = ["-p"];
+    if (model) args.push("--model", model);
+    if (agent) {
+      args.push("--agent", agent);
+      if (allowedTools) args.push("--allowedTools", allowedTools);
+    }
+    if (!promptViaStdin) args.push(prompt);
+    return { cmd: "claude", args };
+  },
+  codex(prompt, { model, promptViaStdin }) {
+    const args = ["exec"];
+    if (model) args.push("--model", model);
+    if (!promptViaStdin) args.push(prompt);
+    return { cmd: process.env.CONTENT_FACTORY_CLI_BIN || "codex", args };
+  }
+};
+var AGENT_CLI = process.env.CONTENT_FACTORY_CLI || "claude";
+function buildAgentCommand(prompt, opts = {}) {
+  const profile = PROFILES[AGENT_CLI];
+  if (!profile) {
+    throw new Error(
+      `\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 CONTENT_FACTORY_CLI=\xAB${AGENT_CLI}\xBB. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435: ${Object.keys(PROFILES).join(", ")}`
+    );
+  }
+  return profile(prompt, opts);
+}
+function supportsAgentProfiles() {
+  return AGENT_CLI === "claude";
+}
 
 // lib/session-stats.ts
-import fs2 from 'fs'
-import os from 'os'
-import path2 from 'path'
-var RUNAWAY_TURNS = 25
+import fs2 from "fs";
+import os from "os";
+import path2 from "path";
+var RUNAWAY_TURNS = 25;
 function transcriptDir(cwd, home = os.homedir()) {
-  return path2.join(home, '.claude', 'projects', cwd.replace(/\//g, '-'))
+  return path2.join(home, ".claude", "projects", cwd.replace(/\//g, "-"));
 }
 function readStat(file) {
-  let turns = 0
-  let agent = '\u2014'
-  for (const line of fs2.readFileSync(file, 'utf8').split('\n')) {
-    if (!line) continue
+  let turns = 0;
+  let agent = "\u2014";
+  for (const line of fs2.readFileSync(file, "utf8").split("\n")) {
+    if (!line) continue;
     try {
-      const entry = JSON.parse(line)
-      if (entry.type === 'assistant') turns++
-      else if (entry.type === 'agent-setting' && entry.agentSetting) agent = entry.agentSetting
-    } catch {}
+      const entry = JSON.parse(line);
+      if (entry.type === "assistant") turns++;
+      else if (entry.type === "agent-setting" && entry.agentSetting) agent = entry.agentSetting;
+    } catch {
+    }
   }
-  return { agent, turns, sizeKb: Math.round(fs2.statSync(file).size / 1024) }
+  return { agent, turns, sizeKb: Math.round(fs2.statSync(file).size / 1024) };
 }
 function collectSessionStats(sinceMs, dir) {
   try {
-    return fs2
-      .readdirSync(dir)
-      .filter((f) => f.endsWith('.jsonl'))
-      .map((f) => path2.join(dir, f))
-      .filter((f) => fs2.statSync(f).mtimeMs >= sinceMs)
-      .map(readStat)
-      .sort((a, b) => b.turns - a.turns)
+    return fs2.readdirSync(dir).filter((f) => f.endsWith(".jsonl")).map((f) => path2.join(dir, f)).filter((f) => fs2.statSync(f).mtimeMs >= sinceMs).map(readStat).sort((a, b) => b.turns - a.turns);
   } catch {
-    return []
+    return [];
   }
 }
 function summarize(stats) {
-  const turns = stats.reduce((s, x) => s + x.turns, 0)
-  const kb = stats.reduce((s, x) => s + x.sizeKb, 0)
-  return `\u0441\u0435\u0441\u0441\u0438\u0439 ${stats.length}, \u0445\u043E\u0434\u043E\u0432 ${turns}, \u0432\u0435\u0441 ${kb}K`
+  const turns = stats.reduce((s, x) => s + x.turns, 0);
+  const kb = stats.reduce((s, x) => s + x.sizeKb, 0);
+  return `\u0441\u0435\u0441\u0441\u0438\u0439 ${stats.length}, \u0445\u043E\u0434\u043E\u0432 ${turns}, \u0432\u0435\u0441 ${kb}K`;
 }
 function runawayWarning(stats) {
-  const bad = stats.filter((s) => s.turns >= RUNAWAY_TURNS)
-  if (!bad.length) return null
-  const rows = bad
-    .map((s) => `${s.agent}: ${s.turns} \u0445\u043E\u0434\u043E\u0432, ${s.sizeKb}K`)
-    .join('\n')
+  const bad = stats.filter((s) => s.turns >= RUNAWAY_TURNS);
+  if (!bad.length) return null;
+  const rows = bad.map((s) => `${s.agent}: ${s.turns} \u0445\u043E\u0434\u043E\u0432, ${s.sizeKb}K`).join("\n");
   return `\u0421\u0435\u0441\u0441\u0438\u0439 \u0441 \u0437\u0430\u043B\u0438\u043F\u0430\u043D\u0438\u0435\u043C: ${bad.length} (\u043F\u043E\u0440\u043E\u0433 ${RUNAWAY_TURNS} \u0445\u043E\u0434\u043E\u0432)
-${rows}`
+${rows}`;
 }
 
 // lib/telegram.js
-var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN
-var CHAT_ID = process.env.SEO_LAB_CHAT_ID
-var THREAD_ID = process.env.SEO_LAB_TOPIC_ID ? Number(process.env.SEO_LAB_TOPIC_ID) : void 0
-if (!BOT_TOKEN) throw new Error('BOT_TOKEN not set')
-if (!CHAT_ID) throw new Error('SEO_LAB_CHAT_ID not set')
-var API = `https://api.telegram.org/bot${BOT_TOKEN}`
+var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN;
+var CHAT_ID = process.env.SEO_LAB_CHAT_ID;
+var THREAD_ID = process.env.SEO_LAB_TOPIC_ID ? Number(process.env.SEO_LAB_TOPIC_ID) : void 0;
+if (!BOT_TOKEN) throw new Error("BOT_TOKEN not set");
+if (!CHAT_ID) throw new Error("SEO_LAB_CHAT_ID not set");
+var API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 async function sendMessage(text, extra = {}) {
   const body = {
     chat_id: CHAT_ID,
     text,
-    parse_mode: 'HTML',
+    parse_mode: "HTML",
     disable_web_page_preview: true,
-    ...extra,
-  }
-  if (THREAD_ID) body.message_thread_id = THREAD_ID
+    ...extra
+  };
+  if (THREAD_ID) body.message_thread_id = THREAD_ID;
   const res = await fetch(`${API}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const data = await res.json()
-  if (!data.ok) throw new Error(`Telegram error: ${data.description}`)
-  return data.result.message_id
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(`Telegram error: ${data.description}`);
+  return data.result.message_id;
 }
 
 // lib/alert.ts
-import fs3 from 'fs'
-var FACTORY_DIR = '/home/claude/projects/digital-pub-/scripts/content-factory'
-var LOG_PATH = '/home/claude/projects/digital-pub-/logs/content-factory.log'
-var FLAG_PATH = `${FACTORY_DIR}/data/.alert-sent`
-var FLAG_TTL_MS = 10 * 60 * 1e3
+import fs3 from "fs";
+var FACTORY_DIR = "/home/claude/projects/digital-pub-/scripts/content-factory";
+var LOG_PATH = "/home/claude/projects/digital-pub-/logs/content-factory.log";
+var FLAG_PATH = `${FACTORY_DIR}/data/.alert-sent`;
+var FLAG_TTL_MS = 10 * 60 * 1e3;
 function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function readLogTail(lines = 10, logPath = LOG_PATH) {
   try {
-    const all = fs3.readFileSync(logPath, 'utf-8').split('\n')
-    return all
-      .slice(-lines - 1)
-      .join('\n')
-      .trim()
+    const all = fs3.readFileSync(logPath, "utf-8").split("\n");
+    return all.slice(-lines - 1).join("\n").trim();
   } catch {
-    return ''
+    return "";
   }
 }
 function markAlertSent() {
   try {
-    fs3.writeFileSync(FLAG_PATH, String(Date.now()))
-  } catch {}
+    fs3.writeFileSync(FLAG_PATH, String(Date.now()));
+  } catch {
+  }
 }
 function formatFailure(p, logTail = readLogTail()) {
-  const err = p.error instanceof Error ? p.error.message : String(p.error)
-  const lines = [
-    `\u274C <b>\u041A\u043E\u043D\u0442\u0435\u043D\u0442-\u0437\u0430\u0432\u043E\u0434: \u043F\u0440\u043E\u0433\u043E\u043D \u043D\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D</b>`,
-    '',
-  ]
+  const err = p.error instanceof Error ? p.error.message : String(p.error);
+  const lines = [`\u274C <b>\u041A\u043E\u043D\u0442\u0435\u043D\u0442-\u0437\u0430\u0432\u043E\u0434: \u043F\u0440\u043E\u0433\u043E\u043D \u043D\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D</b>`, ""];
   if (p.topicId != null || p.topicTitle) {
-    const num = p.topicId != null ? `#${p.topicId}` : ''
-    const title = p.topicTitle ? `${num ? ': ' : ''}${escapeHtml(p.topicTitle)}` : ''
-    lines.push(`\u{1F4CC} \u0422\u0435\u043C\u0430 ${num}${title}`.replace(/\s+/g, ' ').trim())
+    const num = p.topicId != null ? `#${p.topicId}` : "";
+    const title = p.topicTitle ? `${num ? ": " : ""}${escapeHtml(p.topicTitle)}` : "";
+    lines.push(`\u{1F4CC} \u0422\u0435\u043C\u0430 ${num}${title}`.replace(/\s+/g, " ").trim());
   }
-  lines.push(
-    `\u2699\uFE0F \u0423\u043F\u0430\u043B\u043E \u043D\u0430: ${escapeHtml(p.stage || '\u0441\u0442\u0430\u0440\u0442, \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0448\u0430\u0433\u0430')}`
-  )
-  lines.push(`\u{1F527} \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A: ${escapeHtml(p.source)}`)
-  if (p.attempt)
-    lines.push(
-      `\u{1F501} \u041F\u043E\u043F\u044B\u0442\u043A\u0430 ${p.attempt.current} \u0438\u0437 ${p.attempt.total}`
-    )
-  lines.push(
-    '',
-    `<b>\u041E\u0448\u0438\u0431\u043A\u0430</b>`,
-    `<pre>${escapeHtml(err.slice(0, 600))}</pre>`
-  )
+  lines.push(`\u2699\uFE0F \u0423\u043F\u0430\u043B\u043E \u043D\u0430: ${escapeHtml(p.stage || "\u0441\u0442\u0430\u0440\u0442, \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0448\u0430\u0433\u0430")}`);
+  lines.push(`\u{1F527} \u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A: ${escapeHtml(p.source)}`);
+  if (p.attempt) lines.push(`\u{1F501} \u041F\u043E\u043F\u044B\u0442\u043A\u0430 ${p.attempt.current} \u0438\u0437 ${p.attempt.total}`);
+  lines.push("", `<b>\u041E\u0448\u0438\u0431\u043A\u0430</b>`, `<pre>${escapeHtml(err.slice(0, 600))}</pre>`);
   if (logTail) {
-    lines.push(
-      `<b>\u0425\u0432\u043E\u0441\u0442 \u043B\u043E\u0433\u0430</b>`,
-      `<pre>${escapeHtml(logTail.slice(-1200))}</pre>`
-    )
+    lines.push(`<b>\u0425\u0432\u043E\u0441\u0442 \u043B\u043E\u0433\u0430</b>`, `<pre>${escapeHtml(logTail.slice(-1200))}</pre>`);
   }
   if (p.topicStaysInQueue) {
-    lines.push(
-      '',
-      `\u2705 \u0422\u0435\u043C\u0430 \u043E\u0441\u0442\u0430\u043B\u0430\u0441\u044C \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 \u2014 \u0437\u0430\u0432\u0442\u0440\u0430 \u0437\u0430\u0432\u043E\u0434 \u0432\u043E\u0437\u044C\u043C\u0451\u0442 \u0435\u0451 \u0436\u0435.`
-    )
+    lines.push("", `\u2705 \u0422\u0435\u043C\u0430 \u043E\u0441\u0442\u0430\u043B\u0430\u0441\u044C \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u0438 \u2014 \u0437\u0430\u0432\u0442\u0440\u0430 \u0437\u0430\u0432\u043E\u0434 \u0432\u043E\u0437\u044C\u043C\u0451\u0442 \u0435\u0451 \u0436\u0435.`);
   }
-  return lines.join('\n')
+  return lines.join("\n");
 }
 async function sendFailureAlert(p) {
-  const text = formatFailure(p)
+  const text = formatFailure(p);
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      await sendMessage(text)
-      markAlertSent()
-      return true
+      await sendMessage(text);
+      markAlertSent();
+      return true;
     } catch (e) {
-      console.error(
-        `[alert] \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/3): ${e.message}`
-      )
-      if (attempt < 3) await new Promise((r) => setTimeout(r, 15e3))
+      console.error(`[alert] \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/3): ${e.message}`);
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 15e3));
     }
   }
-  return false
+  return false;
 }
 
 // lib/tz.ts
-import fs4 from 'fs'
-import path3 from 'path'
-var SEMANTICS_RELATIVE_PATH = path3.join('data', 'topvisor-semantics.json')
-var VOLUMES_FILE = 'semantics-volumes.json'
+import fs4 from "fs";
+import path3 from "path";
+var SEMANTICS_RELATIVE_PATH = path3.join("data", "topvisor-semantics.json");
+var VOLUMES_FILE = "semantics-volumes.json";
 var INTENT_STEMS = new Set(
   [
-    '\u0440\u0435\u0437\u044E\u043C\u0435',
-    '\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438',
-    '\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u044F',
-    '\u0437\u0430\u0440\u043F\u043B\u0430\u0442\u0430',
-    '\u0440\u0430\u0431\u043E\u0442\u0430',
-    '\u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u044F',
-    '\u043F\u043E\u0440\u0442\u0444\u043E\u043B\u0438\u043E',
-    '\u0441\u043E\u0431\u0435\u0441\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u0435',
-    '\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435',
-    '\u043A\u0443\u0440\u0441\u044B',
-    '\u0442\u0435\u0441\u0442\u043E\u0432\u043E\u0435',
-    '\u0437\u0430\u0434\u0430\u043D\u0438\u0435',
-    '\u043D\u0430\u0439\u0442\u0438',
-    '\u043D\u0430\u043D\u044F\u0442\u044C',
-    '\u0441\u0442\u0430\u0442\u044C',
-    '\u043E\u043F\u044B\u0442\u0430',
-    '\u043E\u0431\u0440\u0430\u0437\u0435\u0446',
-    '\u0448\u0430\u0431\u043B\u043E\u043D',
-    '\u043F\u0440\u0438\u043C\u0435\u0440',
+    "\u0440\u0435\u0437\u044E\u043C\u0435",
+    "\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438",
+    "\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u044F",
+    "\u0437\u0430\u0440\u043F\u043B\u0430\u0442\u0430",
+    "\u0440\u0430\u0431\u043E\u0442\u0430",
+    "\u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u044F",
+    "\u043F\u043E\u0440\u0442\u0444\u043E\u043B\u0438\u043E",
+    "\u0441\u043E\u0431\u0435\u0441\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u0435",
+    "\u043E\u0431\u0443\u0447\u0435\u043D\u0438\u0435",
+    "\u043A\u0443\u0440\u0441\u044B",
+    "\u0442\u0435\u0441\u0442\u043E\u0432\u043E\u0435",
+    "\u0437\u0430\u0434\u0430\u043D\u0438\u0435",
+    "\u043D\u0430\u0439\u0442\u0438",
+    "\u043D\u0430\u043D\u044F\u0442\u044C",
+    "\u0441\u0442\u0430\u0442\u044C",
+    "\u043E\u043F\u044B\u0442\u0430",
+    "\u043E\u0431\u0440\u0430\u0437\u0435\u0446",
+    "\u0448\u0430\u0431\u043B\u043E\u043D",
+    "\u043F\u0440\u0438\u043C\u0435\u0440"
   ].map((w) => w.slice(0, 5))
-)
+);
 function loadTopvisorSemantics(file) {
   if (!fs4.existsSync(file)) {
-    console.warn(
-      `[tz] \u0411\u0430\u043D\u043A \u0441\u0435\u043C\u0430\u043D\u0442\u0438\u043A\u0438 \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D: ${file}. STOP-\u043B\u0438\u0441\u0442 \u0431\u0443\u0434\u0435\u0442 \u043F\u0443\u0441\u0442\u044B\u043C.`
-    )
-    return { keywords: [], snapshotDate: '' }
+    console.warn(`[tz] \u0411\u0430\u043D\u043A \u0441\u0435\u043C\u0430\u043D\u0442\u0438\u043A\u0438 \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D: ${file}. STOP-\u043B\u0438\u0441\u0442 \u0431\u0443\u0434\u0435\u0442 \u043F\u0443\u0441\u0442\u044B\u043C.`);
+    return { keywords: [], snapshotDate: "" };
   }
-  const raw = JSON.parse(fs4.readFileSync(file, 'utf-8'))
-  const volumes = loadVolumes(path3.join(path3.dirname(file), VOLUMES_FILE))
+  const raw = JSON.parse(fs4.readFileSync(file, "utf-8"));
+  const volumes = loadVolumes(path3.join(path3.dirname(file), VOLUMES_FILE));
   return {
     keywords: (raw.keywords ?? []).map((k) => ({ ...k, volume: volumes.get(k.keyword) ?? null })),
-    snapshotDate: raw.snapshotDate ?? '',
-  }
+    snapshotDate: raw.snapshotDate ?? ""
+  };
 }
 function loadVolumes(file) {
-  if (!fs4.existsSync(file)) return /* @__PURE__ */ new Map()
-  const raw = JSON.parse(fs4.readFileSync(file, 'utf-8'))
-  const out = /* @__PURE__ */ new Map()
+  if (!fs4.existsSync(file)) return /* @__PURE__ */ new Map();
+  const raw = JSON.parse(fs4.readFileSync(file, "utf-8"));
+  const out = /* @__PURE__ */ new Map();
   for (const [keyword, data] of Object.entries(raw.seeds ?? {})) {
-    if (typeof data.volume === 'number') out.set(keyword, data.volume)
+    if (typeof data.volume === "number") out.set(keyword, data.volume);
   }
-  return out
+  return out;
 }
 function containsMainKeyword(phrase, mainKeyword) {
-  const phraseStems = new Set(stems(phrase))
-  return stems(mainKeyword).every((s) => phraseStems.has(s))
+  const phraseStems = new Set(stems(phrase));
+  return stems(mainKeyword).every((s) => phraseStems.has(s));
 }
-var BRAND_PATTERN = /(диджитал\s*паб|digital\s*pub|d-?pub)/i
+var BRAND_PATTERN = /(диджитал\s*паб|digital\s*pub|d-?pub)/i;
 function isBrandKeyword(keyword) {
-  return BRAND_PATTERN.test(keyword)
+  return BRAND_PATTERN.test(keyword);
 }
 function sharedSubjectStems(a, b) {
-  const bStems = new Set(stems(b))
-  return [...new Set(stems(a).filter((s) => bStems.has(s) && !INTENT_STEMS.has(s)))]
+  const bStems = new Set(stems(b));
+  return [...new Set(stems(a).filter((s) => bStems.has(s) && !INTENT_STEMS.has(s)))];
 }
 function buildTopvisorContext(topicKeyword, topicTitle, semantics) {
-  const subject = `${topicKeyword} ${topicTitle}`
+  const subject = `${topicKeyword} ${topicTitle}`;
   const related = semantics.keywords.filter(
-    (k) =>
-      k.relevantUrl &&
-      !isBrandKeyword(k.keyword) &&
-      sharedSubjectStems(k.keyword, subject).length > 0
-  )
-  const byPosition = [...related].sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+    (k) => k.relevantUrl && !isBrandKeyword(k.keyword) && sharedSubjectStems(k.keyword, subject).length > 0
+  );
+  const byPosition = [...related].sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
   return {
-    pushUp: byPosition.filter((k) => k.position !== null && k.position > 30 && k.position <= 100),
+    pushUp: byPosition.filter(
+      (k) => k.position !== null && k.position > 30 && k.position <= 100
+    ),
     stopList: byPosition,
-    snapshotDate: semantics.snapshotDate,
-  }
+    snapshotDate: semantics.snapshotDate
+  };
 }
-var formatVolume = (volume) =>
-  typeof volume === 'number' ? ` \u2014 ${volume.toLocaleString()}/\u043C\u0435\u0441` : ''
+var formatVolume = (volume) => typeof volume === "number" ? ` \u2014 ${volume.toLocaleString()}/\u043C\u0435\u0441` : "";
 function buildSourceDataBlock(mainKeyword, mainVolume, lsi, tv) {
   const lines = [
-    '\u0418\u0421\u0425\u041E\u0414\u041D\u042B\u0415 \u0414\u0410\u041D\u041D\u042B\u0415 (\u0437\u0430\u043C\u0435\u0440\u044B, \u043D\u0435 \u043E\u0446\u0435\u043D\u043A\u0438)',
-    '',
-    `\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${mainKeyword}"${mainVolume === null ? '' : ` \u2014 ${mainVolume.toLocaleString()}/\u043C\u0435\u0441`}`,
-    `\u041F\u043E\u0440\u043E\u0433 \u043E\u0442\u0441\u0435\u0447\u0435\u043D\u0438\u044F \u0444\u0440\u0430\u0437: ${lsi.floor}/\u043C\u0435\u0441`,
-  ]
+    "\u0418\u0421\u0425\u041E\u0414\u041D\u042B\u0415 \u0414\u0410\u041D\u041D\u042B\u0415 (\u0437\u0430\u043C\u0435\u0440\u044B, \u043D\u0435 \u043E\u0446\u0435\u043D\u043A\u0438)",
+    "",
+    `\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${mainKeyword}"${mainVolume === null ? "" : ` \u2014 ${mainVolume.toLocaleString()}/\u043C\u0435\u0441`}`,
+    `\u041F\u043E\u0440\u043E\u0433 \u043E\u0442\u0441\u0435\u0447\u0435\u043D\u0438\u044F \u0444\u0440\u0430\u0437: ${lsi.floor}/\u043C\u0435\u0441`
+  ];
   if (lsi.tail.length) {
-    lines.push(
-      '',
-      '\u0423\u0442\u043E\u0447\u043D\u044F\u044E\u0449\u0438\u0435 \u0441\u043C\u044B\u0441\u043B\u044B \u0438\u0437 \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442\u0430 (\u0447\u0442\u043E \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u044E\u0442 \u043A \u0433\u043B\u0430\u0432\u043D\u043E\u043C\u0443 \u043A\u043B\u044E\u0447\u0443):'
-    )
+    lines.push("", "\u0423\u0442\u043E\u0447\u043D\u044F\u044E\u0449\u0438\u0435 \u0441\u043C\u044B\u0441\u043B\u044B \u0438\u0437 \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442\u0430 (\u0447\u0442\u043E \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u044E\u0442 \u043A \u0433\u043B\u0430\u0432\u043D\u043E\u043C\u0443 \u043A\u043B\u044E\u0447\u0443):");
     for (const p of lsi.tail) {
-      lines.push(
-        `  - ${modifierWords(p.phrase, mainKeyword)} \u2014 ${p.count.toLocaleString()}/\u043C\u0435\u0441`
-      )
+      lines.push(`  - ${modifierWords(p.phrase, mainKeyword)} \u2014 ${p.count.toLocaleString()}/\u043C\u0435\u0441`);
     }
   }
   if (tv.pushUp.length) {
     lines.push(
-      '',
+      "",
       `\u041D\u0430\u0448\u0438 \u043F\u043E\u0437\u0438\u0446\u0438\u0438 31-100 \u043F\u043E \u0442\u0435\u043C\u0435 (\u0441\u043D\u0438\u043C\u043E\u043A \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440\u0430 ${tv.snapshotDate}) \u2014 \u044D\u0442\u0438 \u043A\u043B\u044E\u0447\u0438`,
-      '\u0434\u043E\u0436\u0438\u043C\u0430\u0435\u0442 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430-\u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446, \u043D\u043E\u0432\u0430\u044F \u0441\u0442\u0430\u0442\u044C\u044F \u043D\u0430 \u043D\u0438\u0445 \u043D\u0435 \u043F\u0440\u0435\u0442\u0435\u043D\u0434\u0443\u0435\u0442:'
-    )
+      "\u0434\u043E\u0436\u0438\u043C\u0430\u0435\u0442 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430-\u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446, \u043D\u043E\u0432\u0430\u044F \u0441\u0442\u0430\u0442\u044C\u044F \u043D\u0430 \u043D\u0438\u0445 \u043D\u0435 \u043F\u0440\u0435\u0442\u0435\u043D\u0434\u0443\u0435\u0442:"
+    );
     for (const k of tv.pushUp) {
       lines.push(
         `  - "${k.keyword}"${formatVolume(k.volume)}, \u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position}, \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${k.relevantUrl}`
-      )
+      );
     }
   }
   if (tv.stopList.length) {
     lines.push(
-      '',
-      '\u0417\u0410\u041D\u042F\u0422\u042B\u0415 \u041A\u041B\u042E\u0427\u0418. \u0417\u0430 \u043A\u0430\u0436\u0434\u044B\u043C \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0430 \u0441\u0432\u043E\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430. \u0421\u0442\u0430\u0432\u0438\u0442\u044C \u0438\u0445 \u0432 title,',
-      'H1 \u0438\u043B\u0438 H2 \u043D\u043E\u0432\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0438 \u043D\u0435\u043B\u044C\u0437\u044F \u2014 \u0434\u0432\u0435 \u043D\u0430\u0448\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0430\u0447\u043D\u0443\u0442 \u043A\u043E\u043D\u043A\u0443\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0437\u0430 \u043E\u0434\u0438\u043D',
-      '\u0437\u0430\u043F\u0440\u043E\u0441, \u0438 \u042F\u043D\u0434\u0435\u043A\u0441 \u0432\u044B\u0431\u0435\u0440\u0435\u0442 \u043E\u0434\u043D\u0443 \u0441\u0430\u043C. \u0412 \u0442\u0435\u043A\u0441\u0442\u0435 \u043D\u0430 \u0442\u0430\u043A\u043E\u0439 \u043A\u043B\u044E\u0447 \u0441\u0442\u0430\u0432\u0438\u0442\u0441\u044F \u0441\u0441\u044B\u043B\u043A\u0430:'
-    )
+      "",
+      "\u0417\u0410\u041D\u042F\u0422\u042B\u0415 \u041A\u041B\u042E\u0427\u0418. \u0417\u0430 \u043A\u0430\u0436\u0434\u044B\u043C \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0430 \u0441\u0432\u043E\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430. \u0421\u0442\u0430\u0432\u0438\u0442\u044C \u0438\u0445 \u0432 title,",
+      "H1 \u0438\u043B\u0438 H2 \u043D\u043E\u0432\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0438 \u043D\u0435\u043B\u044C\u0437\u044F \u2014 \u0434\u0432\u0435 \u043D\u0430\u0448\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0430\u0447\u043D\u0443\u0442 \u043A\u043E\u043D\u043A\u0443\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0437\u0430 \u043E\u0434\u0438\u043D",
+      "\u0437\u0430\u043F\u0440\u043E\u0441, \u0438 \u042F\u043D\u0434\u0435\u043A\u0441 \u0432\u044B\u0431\u0435\u0440\u0435\u0442 \u043E\u0434\u043D\u0443 \u0441\u0430\u043C. \u0412 \u0442\u0435\u043A\u0441\u0442\u0435 \u043D\u0430 \u0442\u0430\u043A\u043E\u0439 \u043A\u043B\u044E\u0447 \u0441\u0442\u0430\u0432\u0438\u0442\u0441\u044F \u0441\u0441\u044B\u043B\u043A\u0430:"
+    );
     for (const k of tv.stopList) {
       lines.push(
-        `  - "${k.keyword}"${formatVolume(k.volume)} \u2192 ${k.relevantUrl}${k.position === null ? '' : ` (\u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position})`}`
-      )
+        `  - "${k.keyword}"${formatVolume(k.volume)} \u2192 ${k.relevantUrl}${k.position === null ? "" : ` (\u043F\u043E\u0437\u0438\u0446\u0438\u044F ${k.position})`}`
+      );
     }
   }
-  return lines.join('\n')
+  return lines.join("\n");
 }
 function renderTechSpec(tz) {
   const lines = [
-    '\u0422\u0415\u0425\u041D\u0418\u0427\u0415\u0421\u041A\u041E\u0415 \u0417\u0410\u0414\u0410\u041D\u0418\u0415 \u041D\u0410 \u0421\u0422\u0410\u0422\u042C\u042E',
-    `\u0421\u043E\u0433\u043B\u0430\u0441\u043E\u0432\u0430\u043D\u043E: ${tz.agreedBy.join(', ')}`,
-    '',
+    "\u0422\u0415\u0425\u041D\u0418\u0427\u0415\u0421\u041A\u041E\u0415 \u0417\u0410\u0414\u0410\u041D\u0418\u0415 \u041D\u0410 \u0421\u0422\u0410\u0422\u042C\u042E",
+    `\u0421\u043E\u0433\u043B\u0430\u0441\u043E\u0432\u0430\u043D\u043E: ${tz.agreedBy.join(", ")}`,
+    "",
     `\u0422\u0435\u043C\u0430: ${tz.title}`,
-    `\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${tz.mainKeyword}"${tz.mainVolume === null ? '' : ` (${tz.mainVolume.toLocaleString()}/\u043C\u0435\u0441)`}`,
+    `\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${tz.mainKeyword}"${tz.mainVolume === null ? "" : ` (${tz.mainVolume.toLocaleString()}/\u043C\u0435\u0441)`}`,
     `\u0410\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u044F: ${tz.audience}`,
     `\u0418\u043D\u0442\u0435\u043D\u0442: ${tz.intent}`,
-    '',
-    'META',
+    "",
+    "META",
     `  title (${tz.metaTitle.length} \u0441\u0438\u043C\u0432): ${tz.metaTitle}`,
     `  description (${tz.metaDesc.length} \u0441\u0438\u043C\u0432): ${tz.metaDesc}`,
-    '',
-    '\u0412\u0425\u041E\u0416\u0414\u0415\u041D\u0418\u042F',
+    "",
+    "\u0412\u0425\u041E\u0416\u0414\u0415\u041D\u0418\u042F",
     `  \u0422\u043E\u0447\u043D\u0430\u044F \u0444\u0440\u0430\u0437\u0430 "${tz.mainKeyword}" \u2014 \u043D\u0435 \u0431\u043E\u043B\u0435\u0435 ${tz.maxMainKeyUses} \u0440\u0430\u0437 \u043D\u0430 \u0432\u0441\u044E \u0441\u0442\u0430\u0442\u044C\u044E.`,
-    '  \u041C\u0435\u0441\u0442\u0430 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0439: title, H1, \u043F\u0435\u0440\u0432\u044B\u0435 60 \u0441\u043B\u043E\u0432, \u043F\u0435\u0440\u0432\u044B\u0439 H2, \u043E\u0434\u0438\u043D \u043E\u0442\u0432\u0435\u0442',
-    '  FAQ, meta description. \u0412\u0441\u0451 \u0441\u0432\u0435\u0440\u0445 \u2014 \u043F\u0435\u0440\u0435\u0441\u043F\u0430\u043C.',
-  ]
+    "  \u041C\u0435\u0441\u0442\u0430 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0445 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0439: title, H1, \u043F\u0435\u0440\u0432\u044B\u0435 60 \u0441\u043B\u043E\u0432, \u043F\u0435\u0440\u0432\u044B\u0439 H2, \u043E\u0434\u0438\u043D \u043E\u0442\u0432\u0435\u0442",
+    "  FAQ, meta description. \u0412\u0441\u0451 \u0441\u0432\u0435\u0440\u0445 \u2014 \u043F\u0435\u0440\u0435\u0441\u043F\u0430\u043C."
+  ];
   if (tz.exactPhrases.length) {
-    lines.push(
-      '',
-      '  \u0422\u043E\u0447\u043D\u044B\u0435 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F (\u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E, \u0441 \u0443\u043A\u0430\u0437\u0430\u043D\u043D\u044B\u043C \u0447\u0438\u0441\u043B\u043E\u043C \u0440\u0430\u0437):'
-    )
-    for (const p of tz.exactPhrases)
-      lines.push(`    - "${p.phrase}" \u2014 ${p.uses} \u0440\u0430\u0437`)
+    lines.push("", "  \u0422\u043E\u0447\u043D\u044B\u0435 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F (\u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E, \u0441 \u0443\u043A\u0430\u0437\u0430\u043D\u043D\u044B\u043C \u0447\u0438\u0441\u043B\u043E\u043C \u0440\u0430\u0437):");
+    for (const p of tz.exactPhrases) lines.push(`    - "${p.phrase}" \u2014 ${p.uses} \u0440\u0430\u0437`);
   }
   if (tz.dilutedPhrases.length) {
     lines.push(
-      '',
-      '  \u0420\u0430\u0437\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0435 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F (\u0441\u043C\u044B\u0441\u043B \u0440\u0430\u0441\u043A\u0440\u044B\u0442\u044C, \u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E\u0441\u0442\u044C \u043D\u0435 \u043D\u0443\u0436\u043D\u0430 \u2014 \u043C\u043E\u0436\u043D\u043E \u043C\u0435\u043D\u044F\u0442\u044C',
-      '  \u043F\u0430\u0434\u0435\u0436, \u043F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043B\u043E\u0432, \u0432\u0441\u0442\u0430\u0432\u043B\u044F\u0442\u044C \u0441\u043B\u043E\u0432\u0430 \u0432\u043D\u0443\u0442\u0440\u044C):'
-    )
-    for (const p of tz.dilutedPhrases) lines.push(`    - ${p}`)
+      "",
+      "  \u0420\u0430\u0437\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0435 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F (\u0441\u043C\u044B\u0441\u043B \u0440\u0430\u0441\u043A\u0440\u044B\u0442\u044C, \u0434\u043E\u0441\u043B\u043E\u0432\u043D\u043E\u0441\u0442\u044C \u043D\u0435 \u043D\u0443\u0436\u043D\u0430 \u2014 \u043C\u043E\u0436\u043D\u043E \u043C\u0435\u043D\u044F\u0442\u044C",
+      "  \u043F\u0430\u0434\u0435\u0436, \u043F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043B\u043E\u0432, \u0432\u0441\u0442\u0430\u0432\u043B\u044F\u0442\u044C \u0441\u043B\u043E\u0432\u0430 \u0432\u043D\u0443\u0442\u0440\u044C):"
+    );
+    for (const p of tz.dilutedPhrases) lines.push(`    - ${p}`);
   }
   if (tz.stopPhrases.length) {
     lines.push(
-      '',
-      'STOP-\u041B\u0418\u0421\u0422. \u042D\u0442\u0438 \u043A\u043B\u044E\u0447\u0438 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u044B \u0437\u0430 \u0434\u0440\u0443\u0433\u0438\u043C\u0438 \u043D\u0430\u0448\u0438\u043C\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430\u043C\u0438. \u0412 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430\u0445',
-      '\u043D\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C; \u043F\u0440\u0438 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0438 \u0432 \u0442\u0435\u043A\u0441\u0442\u0435 \u2014 \u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430:'
-    )
-    for (const p of tz.stopPhrases) lines.push(`  - "${p.phrase}" \u2192 ${p.ownerUrl}`)
+      "",
+      "STOP-\u041B\u0418\u0421\u0422. \u042D\u0442\u0438 \u043A\u043B\u044E\u0447\u0438 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u044B \u0437\u0430 \u0434\u0440\u0443\u0433\u0438\u043C\u0438 \u043D\u0430\u0448\u0438\u043C\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430\u043C\u0438. \u0412 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430\u0445",
+      "\u043D\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C; \u043F\u0440\u0438 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0438 \u0432 \u0442\u0435\u043A\u0441\u0442\u0435 \u2014 \u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430:"
+    );
+    for (const p of tz.stopPhrases) lines.push(`  - "${p.phrase}" \u2192 ${p.ownerUrl}`);
   }
   if (tz.interlinks.length) {
-    lines.push(
-      '',
-      '\u041E\u0411\u042F\u0417\u0410\u0422\u0415\u041B\u042C\u041D\u0410\u042F \u041F\u0415\u0420\u0415\u041B\u0418\u041D\u041A\u041E\u0412\u041A\u0410 (\u043C\u0438\u043D\u0438\u043C\u0443\u043C \u043F\u043E \u043E\u0434\u043D\u043E\u0439 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0430 \u043A\u0430\u0436\u0434\u044B\u0439 \u0430\u0434\u0440\u0435\u0441):'
-    )
-    for (const url of tz.interlinks) lines.push(`  - ${url}`)
+    lines.push("", "\u041E\u0411\u042F\u0417\u0410\u0422\u0415\u041B\u042C\u041D\u0410\u042F \u041F\u0415\u0420\u0415\u041B\u0418\u041D\u041A\u041E\u0412\u041A\u0410 (\u043C\u0438\u043D\u0438\u043C\u0443\u043C \u043F\u043E \u043E\u0434\u043D\u043E\u0439 \u0441\u0441\u044B\u043B\u043A\u0435 \u043D\u0430 \u043A\u0430\u0436\u0434\u044B\u0439 \u0430\u0434\u0440\u0435\u0441):");
+    for (const url of tz.interlinks) lines.push(`  - ${url}`);
   }
   if (tz.h2Requirements.length) {
-    lines.push(
-      '',
-      '\u0421\u0422\u0420\u0423\u041A\u0422\u0423\u0420\u0410 H2 (\u0441\u043C\u044B\u0441\u043B\u044B, \u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0430 \u0443\u0441\u043C\u043E\u0442\u0440\u0435\u043D\u0438\u0435 \u043F\u0438\u0441\u0430\u0442\u0435\u043B\u044F):'
-    )
-    for (const h of tz.h2Requirements) lines.push(`  - ${h}`)
+    lines.push("", "\u0421\u0422\u0420\u0423\u041A\u0422\u0423\u0420\u0410 H2 (\u0441\u043C\u044B\u0441\u043B\u044B, \u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0430 \u0443\u0441\u043C\u043E\u0442\u0440\u0435\u043D\u0438\u0435 \u043F\u0438\u0441\u0430\u0442\u0435\u043B\u044F):");
+    for (const h of tz.h2Requirements) lines.push(`  - ${h}`);
   }
   lines.push(
-    '',
-    '\u041E\u0411\u042A\u0401\u041C',
+    "",
+    "\u041E\u0411\u042A\u0401\u041C",
     `  \u0422\u0435\u043B\u043E \u0441\u0442\u0430\u0442\u044C\u0438: ${tz.wordCountMin}-${tz.wordCountMax} \u0441\u043B\u043E\u0432.`,
     `  \u041A\u0430\u0436\u0434\u044B\u0439 \u043E\u0442\u0432\u0435\u0442 FAQ: \u043D\u0435 \u043C\u0435\u043D\u0435\u0435 ${tz.faqMinWords} \u0441\u043B\u043E\u0432.`
-  )
+  );
   if (tz.factualAnchors.length) {
-    lines.push(
-      '',
-      '\u0424\u0410\u041A\u0422\u0423\u0420\u0410 (\u043E\u0431\u044F\u0437\u0430\u043D\u0430 \u043F\u043E\u043F\u0430\u0441\u0442\u044C \u0432 \u0442\u0435\u043A\u0441\u0442, \u0441 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u0438 \u0434\u0430\u0442\u043E\u0439):'
-    )
-    for (const f of tz.factualAnchors) lines.push(`  - ${f}`)
+    lines.push("", "\u0424\u0410\u041A\u0422\u0423\u0420\u0410 (\u043E\u0431\u044F\u0437\u0430\u043D\u0430 \u043F\u043E\u043F\u0430\u0441\u0442\u044C \u0432 \u0442\u0435\u043A\u0441\u0442, \u0441 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u0438 \u0434\u0430\u0442\u043E\u0439):");
+    for (const f of tz.factualAnchors) lines.push(`  - ${f}`);
   }
   if (tz.antifakeMarkers.length) {
-    lines.push(
-      '',
-      '\u0410\u041D\u0422\u0418\u0424\u0415\u0419\u041A (\u043E\u043F\u0440\u043E\u0432\u0435\u0440\u0433\u043D\u0443\u0442\u044C \u0432 \u0442\u0435\u043B\u0435 \u0441\u0442\u0430\u0442\u044C\u0438):'
-    )
-    for (const m of tz.antifakeMarkers) lines.push(`  - ${m}`)
+    lines.push("", "\u0410\u041D\u0422\u0418\u0424\u0415\u0419\u041A (\u043E\u043F\u0440\u043E\u0432\u0435\u0440\u0433\u043D\u0443\u0442\u044C \u0432 \u0442\u0435\u043B\u0435 \u0441\u0442\u0430\u0442\u044C\u0438):");
+    for (const m of tz.antifakeMarkers) lines.push(`  - ${m}`);
   }
-  return lines.join('\n')
+  return lines.join("\n");
 }
-var OVERSPAM_RULE =
-  '\u041F\u0435\u0440\u0435\u0441\u043F\u0430\u043C \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u043A\u043B\u044E\u0447\u0430'
+var OVERSPAM_RULE = "\u041F\u0435\u0440\u0435\u0441\u043F\u0430\u043C \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u043A\u043B\u044E\u0447\u0430";
 function checkTechSpec(tz, markdown) {
-  const violations = []
-  const lower = markdown.toLowerCase().replace(/ё/g, '\u0435')
+  const violations = [];
+  const lower = markdown.toLowerCase().replace(/ё/g, "\u0435");
   const countOf = (phrase) => {
-    const needle = phrase.toLowerCase().replace(/ё/g, '\u0435')
-    if (!needle) return 0
-    return lower.split(needle).length - 1
-  }
-  const mainUses = countOf(tz.mainKeyword)
+    const needle = phrase.toLowerCase().replace(/ё/g, "\u0435");
+    if (!needle) return 0;
+    return lower.split(needle).length - 1;
+  };
+  const mainUses = countOf(tz.mainKeyword);
   if (mainUses > tz.maxMainKeyUses) {
     violations.push({
       rule: OVERSPAM_RULE,
-      detail: `"${tz.mainKeyword}" \u0432\u0441\u0442\u0440\u0435\u0447\u0430\u0435\u0442\u0441\u044F ${mainUses} \u0440\u0430\u0437 \u043F\u0440\u0438 \u043B\u0438\u043C\u0438\u0442\u0435 ${tz.maxMainKeyUses}`,
-    })
+      detail: `"${tz.mainKeyword}" \u0432\u0441\u0442\u0440\u0435\u0447\u0430\u0435\u0442\u0441\u044F ${mainUses} \u0440\u0430\u0437 \u043F\u0440\u0438 \u043B\u0438\u043C\u0438\u0442\u0435 ${tz.maxMainKeyUses}`
+    });
   }
   for (const p of tz.exactPhrases) {
-    const got = countOf(p.phrase)
+    const got = countOf(p.phrase);
     if (got < p.uses) {
       violations.push({
-        rule: '\u041D\u0435\u0434\u043E\u0431\u043E\u0440 \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F',
-        detail: `"${p.phrase}" \u2014 ${got} \u0438\u0437 ${p.uses}`,
-      })
+        rule: "\u041D\u0435\u0434\u043E\u0431\u043E\u0440 \u0442\u043E\u0447\u043D\u043E\u0433\u043E \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F",
+        detail: `"${p.phrase}" \u2014 ${got} \u0438\u0437 ${p.uses}`
+      });
     }
   }
-  const headings = markdown
-    .split('\n')
-    .filter((l) => /^#{1,3}\s/.test(l))
-    .join('\n')
-    .toLowerCase()
-    .replace(/ё/g, '\u0435')
+  const headings = markdown.split("\n").filter((l) => /^#{1,3}\s/.test(l)).join("\n").toLowerCase().replace(/ё/g, "\u0435");
   for (const p of tz.stopPhrases) {
-    if (headings.includes(p.phrase.toLowerCase().replace(/ё/g, '\u0435'))) {
+    if (headings.includes(p.phrase.toLowerCase().replace(/ё/g, "\u0435"))) {
       violations.push({
-        rule: '\u0417\u0430\u043D\u044F\u0442\u044B\u0439 \u043A\u043B\u044E\u0447 \u0432 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0435',
-        detail: `"${p.phrase}" \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 ${p.ownerUrl}`,
-      })
+        rule: "\u0417\u0430\u043D\u044F\u0442\u044B\u0439 \u043A\u043B\u044E\u0447 \u0432 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0435",
+        detail: `"${p.phrase}" \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 ${p.ownerUrl}`
+      });
     }
   }
   for (const url of tz.interlinks) {
     if (!markdown.includes(url) && !markdown.includes(new URL(url).pathname)) {
-      violations.push({
-        rule: '\u041D\u0435\u0442 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0441\u044B\u043B\u043A\u0438',
-        detail: url,
-      })
+      violations.push({ rule: "\u041D\u0435\u0442 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0441\u044B\u043B\u043A\u0438", detail: url });
     }
   }
-  const words = markdown
-    .replace(/[#*`>[\]()]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean).length
+  const words = markdown.replace(/[#*`>[\]()]/g, " ").split(/\s+/).filter(Boolean).length;
   if (words < tz.wordCountMin) {
     violations.push({
-      rule: '\u041D\u0435\u0434\u043E\u0431\u043E\u0440 \u043E\u0431\u044A\u0451\u043C\u0430',
-      detail: `${words} \u0441\u043B\u043E\u0432 \u043F\u0440\u0438 \u043C\u0438\u043D\u0438\u043C\u0443\u043C\u0435 ${tz.wordCountMin}`,
-    })
+      rule: "\u041D\u0435\u0434\u043E\u0431\u043E\u0440 \u043E\u0431\u044A\u0451\u043C\u0430",
+      detail: `${words} \u0441\u043B\u043E\u0432 \u043F\u0440\u0438 \u043C\u0438\u043D\u0438\u043C\u0443\u043C\u0435 ${tz.wordCountMin}`
+    });
   }
   if (tz.metaTitle.length > 60) {
-    violations.push({
-      rule: '\u0414\u043B\u0438\u043D\u043D\u044B\u0439 title',
-      detail: `${tz.metaTitle.length} \u0441\u0438\u043C\u0432 \u043F\u0440\u0438 \u043B\u0438\u043C\u0438\u0442\u0435 60`,
-    })
+    violations.push({ rule: "\u0414\u043B\u0438\u043D\u043D\u044B\u0439 title", detail: `${tz.metaTitle.length} \u0441\u0438\u043C\u0432 \u043F\u0440\u0438 \u043B\u0438\u043C\u0438\u0442\u0435 60` });
   }
   if (tz.metaDesc.length < 130 || tz.metaDesc.length > 155) {
     violations.push({
-      rule: 'Description \u0432\u043D\u0435 130-155',
-      detail: `${tz.metaDesc.length} \u0441\u0438\u043C\u0432`,
-    })
+      rule: "Description \u0432\u043D\u0435 130-155",
+      detail: `${tz.metaDesc.length} \u0441\u0438\u043C\u0432`
+    });
   }
-  return violations
+  return violations;
 }
 
 // lib/yandex.js
-var YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || ''
-var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || ''
-var YANDEX_WEBMASTER_TOKEN = process.env.YANDEX_WEBMASTER_TOKEN || ''
-var WEBMASTER_USER_ID = process.env.YANDEX_WEBMASTER_USER_ID || '1225208489'
-var WEBMASTER_HOST = process.env.YANDEX_WEBMASTER_HOST || 'https:d-pub.ru:443'
+var YANDEX_SEARCH_API_KEY = process.env.YANDEX_SEARCH_API_KEY || "";
+var YANDEX_FOLDER_ID = process.env.YANDEX_FOLDER_ID || "";
+var YANDEX_WEBMASTER_TOKEN = process.env.YANDEX_WEBMASTER_TOKEN || "";
+var WEBMASTER_USER_ID = process.env.YANDEX_WEBMASTER_USER_ID || "1225208489";
+var WEBMASTER_HOST = process.env.YANDEX_WEBMASTER_HOST || "https:d-pub.ru:443";
 async function fetchWordstatPhrase(keyword, numPhrases = 20) {
   if (!YANDEX_SEARCH_API_KEY || !YANDEX_FOLDER_ID) {
-    console.log(
-      '[yandex] Wordstat: YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E'
-    )
-    return { total: null, nested: [] }
+    console.log("[yandex] Wordstat: YANDEX_SEARCH_API_KEY / YANDEX_FOLDER_ID \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E");
+    return { total: null, nested: [] };
   }
   try {
-    const res = await fetch('https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests', {
-      method: 'POST',
+    const res = await fetch("https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Api-Key ${YANDEX_SEARCH_API_KEY}`,
-        'X-Folder-Id': YANDEX_FOLDER_ID,
+        "X-Folder-Id": YANDEX_FOLDER_ID
       },
-      body: JSON.stringify({ phrase: keyword, num_phrases: numPhrases }),
-    })
+      body: JSON.stringify({ phrase: keyword, num_phrases: numPhrases })
+    });
     if (res.status === 429) {
-      console.warn(
-        `[yandex] Wordstat: \u043A\u0432\u043E\u0442\u0430 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u0430 \u043D\u0430 "${keyword}"`
-      )
-      return { total: null, nested: [] }
+      console.warn(`[yandex] Wordstat: \u043A\u0432\u043E\u0442\u0430 \u0438\u0441\u0447\u0435\u0440\u043F\u0430\u043D\u0430 \u043D\u0430 "${keyword}"`);
+      return { total: null, nested: [] };
     }
-    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`)
-    const data = await res.json()
+    if (!res.ok) throw new Error(`Wordstat HTTP ${res.status}`);
+    const data = await res.json();
     return {
       // results[0].count — частотность вложенной фразы, а не запрошенной,
       // подставлять её вместо totalCount нельзя.
       total: data.totalCount === void 0 ? 0 : Number(data.totalCount),
-      nested: (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) })),
-    }
+      nested: (data.results ?? []).map((r) => ({ phrase: r.phrase, count: Number(r.count) }))
+    };
   } catch (e) {
-    console.warn(
-      `[yandex] Wordstat \u0434\u043B\u044F "${keyword}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:`,
-      e.message
-    )
-    return { total: null, nested: [] }
+    console.warn(`[yandex] Wordstat \u0434\u043B\u044F "${keyword}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D:`, e.message);
+    return { total: null, nested: [] };
   }
 }
 async function fetchWordstatKeywords(keyword, numPhrases = 20) {
-  return (await fetchWordstatPhrase(keyword, numPhrases)).nested
+  return (await fetchWordstatPhrase(keyword, numPhrases)).nested;
 }
 
 // writer.ts
-var FAQ_MIN_WORDS = 120
-var DATA_DIR = path4.join(import.meta.dirname, 'data')
-var LSI_CACHE_FILE = path4.join(DATA_DIR, 'lsi-cache.json')
+var FAQ_MIN_WORDS = 120;
+var DATA_DIR = path4.join(import.meta.dirname, "data");
+var LSI_CACHE_FILE = path4.join(DATA_DIR, "lsi-cache.json");
 var LSI_SOURCES = [
   LSI_CACHE_FILE,
-  path4.join(DATA_DIR, 'topic-pool.json'),
-  path4.join(DATA_DIR, 'semantics-volumes.json'),
-]
-var PROJECT_ROOT = path4.resolve(import.meta.dirname, '..', '..')
-var ARTICLES_DIR = path4.join(PROJECT_ROOT, 'content', 'articles')
-var IMAGES_DIR = path4.join(PROJECT_ROOT, 'public', 'images', 'posts')
-var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-var CODEX_BIN = path4.join(os2.homedir(), '.npm-global', 'bin', 'codex')
-var CODEX_HOME = path4.join(os2.homedir(), '.codex')
-var REFERENCE_IMAGE = path4.join(import.meta.dirname, 'reference.webp')
+  path4.join(DATA_DIR, "topic-pool.json"),
+  path4.join(DATA_DIR, "semantics-volumes.json")
+];
+var PROJECT_ROOT = path4.resolve(import.meta.dirname, "..", "..");
+var ARTICLES_DIR = path4.join(PROJECT_ROOT, "content", "articles");
+var IMAGES_DIR = path4.join(PROJECT_ROOT, "public", "images", "posts");
+var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "https://d-pub.ru";
+var CODEX_BIN = path4.join(os2.homedir(), ".npm-global", "bin", "codex");
+var CODEX_HOME = path4.join(os2.homedir(), ".codex");
+var REFERENCE_IMAGE = path4.join(import.meta.dirname, "reference.webp");
 var PERSPECTIVES = [
-  'face-on front view, character faces the viewer directly',
-  '3/4 front-left angle, character turned slightly away to the left',
-  'side profile from the right, character looks forward',
-  'over-the-shoulder view from mid-height, character seen from waist up',
-  'close-up head-and-shoulders portrait, character fills the frame',
-]
+  "face-on front view, character faces the viewer directly",
+  "3/4 front-left angle, character turned slightly away to the left",
+  "side profile from the right, character looks forward",
+  "over-the-shoulder view from mid-height, character seen from waist up",
+  "close-up head-and-shoulders portrait, character fills the frame"
+];
 var GENDERS = [
-  'young man, male, he/him \u2014 NOT a woman',
-  'young woman, female, she/her \u2014 NOT a man',
-]
+  "young man, male, he/him \u2014 NOT a woman",
+  "young woman, female, she/her \u2014 NOT a man"
+];
 var INDOOR_SETTINGS = [
-  'corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background',
-  'home office desk with warm lamp, bookshelves and plants visible behind',
-  'library nook between tall bookshelves, soft reading lamp, a few books stacked nearby',
-  'small meeting room corner with a whiteboard and sticky notes on the wall',
-  'coworking open space, rows of desks visible in background, industrial lamps above',
-  'home kitchen table with morning light through window, kettle and plants on the sill',
-  'cozy apartment living room, large window with soft daylight, laptop and books on coffee table',
-]
+  "corner table in a cozy coffee shop, warm wooden interior, other blurred customers in the background",
+  "home office desk with warm lamp, bookshelves and plants visible behind",
+  "library nook between tall bookshelves, soft reading lamp, a few books stacked nearby",
+  "small meeting room corner with a whiteboard and sticky notes on the wall",
+  "coworking open space, rows of desks visible in background, industrial lamps above",
+  "home kitchen table with morning light through window, kettle and plants on the sill",
+  "cozy apartment living room, large window with soft daylight, laptop and books on coffee table"
+];
 var OUTDOOR_SETTINGS = [
-  'rooftop terrace at dusk with city lights below, outdoor bistro table with a drink',
-  'park bench under a tree, dappled sunlight, green surroundings with a path behind',
-  'balcony with railing, warm afternoon sky, city view behind the character',
-]
+  "rooftop terrace at dusk with city lights below, outdoor bistro table with a drink",
+  "park bench under a tree, dappled sunlight, green surroundings with a path behind",
+  "balcony with railing, warm afternoon sky, city view behind the character"
+];
 function detectGender(keyword, title, topicId) {
-  const text = (keyword + ' ' + title).toLowerCase()
+  const text = (keyword + " " + title).toLowerCase();
   if (/seo.?специалист|junior seo|middle seo|senior seo|seo.?оптимизатор|seo.?эксперт/.test(text))
-    return 0
-  if (
-    /программист|разработчик|developer|frontend|backend|fullstack|devops|ios-разработчик|android/.test(
-      text
-    )
-  )
-    return 0
-  if (
-    /аналитик|data.?scientist|системный администратор|сисадмин|project.?manager|продакт/.test(text)
-  ) {
-    return topicId % 10 < 7 ? 0 : 1
+    return 0;
+  if (/программист|разработчик|developer|frontend|backend|fullstack|devops|ios-разработчик|android/.test(
+    text
+  ))
+    return 0;
+  if (/аналитик|data.?scientist|системный администратор|сисадмин|project.?manager|продакт/.test(text)) {
+    return topicId % 10 < 7 ? 0 : 1;
   }
-  if (
-    /таргетолог|маркетолог|контент.?стратег|копирайтер|редактор|журналист|дизайнер|ux|ui/.test(text)
-  ) {
-    return topicId % 2
+  if (/таргетолог|маркетолог|контент.?стратег|копирайтер|редактор|журналист|дизайнер|ux|ui/.test(text)) {
+    return topicId % 2;
   }
-  if (/smm|контент.?менеджер/.test(text)) return topicId % 10 < 4 ? 0 : 1
-  if (/hr|рекрутер|психолог/.test(text)) return topicId % 10 < 2 ? 0 : 1
-  return topicId % 2
+  if (/smm|контент.?менеджер/.test(text)) return topicId % 10 < 4 ? 0 : 1;
+  if (/hr|рекрутер|психолог/.test(text)) return topicId % 10 < 2 ? 0 : 1;
+  return topicId % 2;
 }
 function detectSetting(keyword, title, topicId) {
-  const text = (keyword + ' ' + title).toLowerCase()
-  const forcedIndoor = /seo|программист|разработчик|developer|аналитик|data/.test(text)
+  const text = (keyword + " " + title).toLowerCase();
+  const forcedIndoor = /seo|программист|разработчик|developer|аналитик|data/.test(text);
   if (forcedIndoor || topicId % 10 < 7) {
-    return INDOOR_SETTINGS[topicId % INDOOR_SETTINGS.length]
+    return INDOOR_SETTINGS[topicId % INDOOR_SETTINGS.length];
   }
-  return OUTDOOR_SETTINGS[topicId % OUTDOOR_SETTINGS.length]
+  return OUTDOOR_SETTINGS[topicId % OUTDOOR_SETTINGS.length];
 }
 var TRANSLIT = {
-  а: 'a',
-  б: 'b',
-  в: 'v',
-  г: 'g',
-  д: 'd',
-  е: 'e',
-  ё: 'yo',
-  ж: 'zh',
-  з: 'z',
-  и: 'i',
-  й: 'y',
-  к: 'k',
-  л: 'l',
-  м: 'm',
-  н: 'n',
-  о: 'o',
-  п: 'p',
-  р: 'r',
-  с: 's',
-  т: 't',
-  у: 'u',
-  ф: 'f',
-  х: 'kh',
-  ц: 'ts',
-  ч: 'ch',
-  ш: 'sh',
-  щ: 'sch',
-  ъ: '',
-  ы: 'y',
-  ь: '',
-  э: 'e',
-  ю: 'yu',
-  я: 'ya',
-}
+  \u0430: "a",
+  \u0431: "b",
+  \u0432: "v",
+  \u0433: "g",
+  \u0434: "d",
+  \u0435: "e",
+  \u0451: "yo",
+  \u0436: "zh",
+  \u0437: "z",
+  \u0438: "i",
+  \u0439: "y",
+  \u043A: "k",
+  \u043B: "l",
+  \u043C: "m",
+  \u043D: "n",
+  \u043E: "o",
+  \u043F: "p",
+  \u0440: "r",
+  \u0441: "s",
+  \u0442: "t",
+  \u0443: "u",
+  \u0444: "f",
+  \u0445: "kh",
+  \u0446: "ts",
+  \u0447: "ch",
+  \u0448: "sh",
+  \u0449: "sch",
+  \u044A: "",
+  \u044B: "y",
+  \u044C: "",
+  \u044D: "e",
+  \u044E: "yu",
+  \u044F: "ya"
+};
 function toSlug(s) {
-  return s
-    .toLowerCase()
-    .split('')
-    .map((c) => TRANSLIT[c] ?? c)
-    .join('')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
+  return s.toLowerCase().split("").map((c) => TRANSLIT[c] ?? c).join("").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 }
 var OUTLINE_HINTS = {
-  Гайд: '\u041F\u043E\u0448\u0430\u0433\u043E\u0432\u0430\u044F \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0437\u0430\u0447\u0435\u043C \u043D\u0443\u0436\u043D\u043E \u2192 \u043A\u0430\u043A \u0441\u0434\u0435\u043B\u0430\u0442\u044C (\u0448\u0430\u0433\u0438 1-3) \u2192 \u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0435 \u043E\u0448\u0438\u0431\u043A\u0438 \u2192 \u0438\u0442\u043E\u0433 + CTA',
-  Сравнение:
-    '\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u043A\u0440\u0438\u0442\u0435\u0440\u0438\u0438 \u043E\u0446\u0435\u043D\u043A\u0438 \u2192 \u0442\u0430\u0431\u043B\u0438\u0446\u0430 \u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F \u0432\u0430\u0440\u0438\u0430\u043D\u0442\u043E\u0432 \u2192 \u043A\u043E\u043C\u0443 \u0447\u0442\u043E \u043F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u2192 \u0432\u044B\u0432\u043E\u0434 + CTA',
-  Чеклист:
-    '\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0437\u0430\u0447\u0435\u043C \u044D\u0442\u043E\u0442 \u0447\u0435\u043A\u043B\u0438\u0441\u0442 \u2192 \u0431\u043B\u043E\u043A 1 \u2192 \u0431\u043B\u043E\u043A 2 \u2192 \u0431\u043B\u043E\u043A 3 \u2192 \u043A\u0430\u043A \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u2192 CTA',
-  Кейс: '\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u0437\u0430\u0434\u0430\u0447\u0438 \u2192 \u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u2192 \u0440\u0435\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u044F \u2192 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442\u044B \u0441 \u0446\u0438\u0444\u0440\u0430\u043C\u0438 \u2192 \u0432\u044B\u0432\u043E\u0434\u044B + CTA',
-  Конспект:
-    '\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u2192 \u043A\u043B\u044E\u0447\u0435\u0432\u044B\u0435 \u0438\u0434\u0435\u0438 (3-4) \u2192 \u043F\u0440\u0430\u043A\u0442\u0438\u043A\u0430 \u2192 \u0430\u0434\u0430\u043F\u0442\u0430\u0446\u0438\u044F \u0434\u043B\u044F \u0440\u0443\u043D\u0435\u0442\u0430 + CTA',
-}
-var AGENT_TOOLS = 'Read,Skill,Glob,Grep'
+  \u0413\u0430\u0439\u0434: "\u041F\u043E\u0448\u0430\u0433\u043E\u0432\u0430\u044F \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0437\u0430\u0447\u0435\u043C \u043D\u0443\u0436\u043D\u043E \u2192 \u043A\u0430\u043A \u0441\u0434\u0435\u043B\u0430\u0442\u044C (\u0448\u0430\u0433\u0438 1-3) \u2192 \u0442\u0438\u043F\u0438\u0447\u043D\u044B\u0435 \u043E\u0448\u0438\u0431\u043A\u0438 \u2192 \u0438\u0442\u043E\u0433 + CTA",
+  \u0421\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u043A\u0440\u0438\u0442\u0435\u0440\u0438\u0438 \u043E\u0446\u0435\u043D\u043A\u0438 \u2192 \u0442\u0430\u0431\u043B\u0438\u0446\u0430 \u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F \u0432\u0430\u0440\u0438\u0430\u043D\u0442\u043E\u0432 \u2192 \u043A\u043E\u043C\u0443 \u0447\u0442\u043E \u043F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u2192 \u0432\u044B\u0432\u043E\u0434 + CTA",
+  \u0427\u0435\u043A\u043B\u0438\u0441\u0442: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0437\u0430\u0447\u0435\u043C \u044D\u0442\u043E\u0442 \u0447\u0435\u043A\u043B\u0438\u0441\u0442 \u2192 \u0431\u043B\u043E\u043A 1 \u2192 \u0431\u043B\u043E\u043A 2 \u2192 \u0431\u043B\u043E\u043A 3 \u2192 \u043A\u0430\u043A \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u2192 CTA",
+  \u041A\u0435\u0439\u0441: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u0437\u0430\u0434\u0430\u0447\u0438 \u2192 \u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u2192 \u0440\u0435\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u044F \u2192 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442\u044B \u0441 \u0446\u0438\u0444\u0440\u0430\u043C\u0438 \u2192 \u0432\u044B\u0432\u043E\u0434\u044B + CTA",
+  \u041A\u043E\u043D\u0441\u043F\u0435\u043A\u0442: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u2192 \u043A\u043B\u044E\u0447\u0435\u0432\u044B\u0435 \u0438\u0434\u0435\u0438 (3-4) \u2192 \u043F\u0440\u0430\u043A\u0442\u0438\u043A\u0430 \u2192 \u0430\u0434\u0430\u043F\u0442\u0430\u0446\u0438\u044F \u0434\u043B\u044F \u0440\u0443\u043D\u0435\u0442\u0430 + CTA"
+};
+var AGENT_TOOLS = "Read,Skill,Glob,Grep";
 function runClaude(prompt, agent) {
   return new Promise((resolve, reject) => {
-    const args = agent
-      ? ['-p', '--model', FACTORY_MODEL, '--agent', agent, '--allowedTools', AGENT_TOOLS]
-      : ['-p', '--model', FACTORY_MODEL]
-    const child = spawn('claude', args, {
+    const { cmd, args } = buildAgentCommand("", {
+      model: FACTORY_MODEL,
+      agent: agent && supportsAgentProfiles() ? agent : void 0,
+      allowedTools: AGENT_TOOLS,
+      promptViaStdin: true
+    });
+    const child = spawn(cmd, args, {
       env: process.env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
-    child.stdin.write(prompt)
-    child.stdin.end()
-    let out = ''
-    let err = ''
-    child.stdout.on('data', (d) => (out += d.toString()))
-    child.stderr.on('data', (d) => (err += d.toString()))
-    child.on('close', (code) => {
-      if (code === 0) resolve(out.trim())
+      stdio: ["pipe", "pipe", "pipe"]
+    });
+    child.stdin.write(prompt);
+    child.stdin.end();
+    let out = "";
+    let err = "";
+    child.stdout.on("data", (d) => out += d.toString());
+    child.stderr.on("data", (d) => err += d.toString());
+    child.on("close", (code) => {
+      if (code === 0) resolve(out.trim());
       else
         reject(
-          new Error(
-            err.trim() ||
-              out.trim().slice(-500) ||
-              `claude \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0441\u044F \u0441 \u043A\u043E\u0434\u043E\u043C ${code}`
-          )
-        )
-    })
-    child.on('error', reject)
-  })
+          new Error(err.trim() || out.trim().slice(-500) || `claude \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0441\u044F \u0441 \u043A\u043E\u0434\u043E\u043C ${code}`)
+        );
+    });
+    child.on("error", reject);
+  });
 }
-var currentStage = null
-var currentTopic = null
-var baseConsoleLog = console.log.bind(console)
+var currentStage = null;
+var currentTopic = null;
+var baseConsoleLog = console.log.bind(console);
 console.log = (...args) => {
-  if (typeof args[0] === 'string') {
-    const m = args[0].match(/\[writer\]\s+(Шаг[^.…]*)/)
-    if (m) currentStage = m[1].trim()
+  if (typeof args[0] === "string") {
+    const m = args[0].match(/\[writer\]\s+(Шаг[^.…]*)/);
+    if (m) currentStage = m[1].trim();
   }
-  baseConsoleLog(...args)
-}
-var CLAUDE_RETRY_DELAYS_MS = [3e4, 12e4, 3e5]
-var isQuotaExhausted = (message) =>
-  /out of (extra )?usage|usage limit reached|rate limit/i.test(message)
+  baseConsoleLog(...args);
+};
+var CLAUDE_RETRY_DELAYS_MS = [3e4, 12e4, 3e5];
+var isQuotaExhausted = (message) => /out of (extra )?usage|usage limit reached|rate limit/i.test(message);
 async function askClaude(prompt, agent) {
-  const total = CLAUDE_RETRY_DELAYS_MS.length + 1
-  let last
+  const total = CLAUDE_RETRY_DELAYS_MS.length + 1;
+  let last;
   for (let attempt = 1; attempt <= total; attempt++) {
     try {
-      return await runClaude(prompt, agent)
+      return await runClaude(prompt, agent);
     } catch (e) {
-      last = e
-      const message = e.message
-      if (isQuotaExhausted(message)) throw e
-      if (attempt === total) break
-      const wait = CLAUDE_RETRY_DELAYS_MS[attempt - 1]
+      last = e;
+      const message = e.message;
+      if (isQuotaExhausted(message)) throw e;
+      if (attempt === total) break;
+      const wait = CLAUDE_RETRY_DELAYS_MS[attempt - 1];
       console.error(
         `[writer] claude \u0441\u043E\u0440\u0432\u0430\u043B\u0441\u044F (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/${total}): ${message} \u2014 \u043F\u043E\u0432\u0442\u043E\u0440 \u0447\u0435\u0440\u0435\u0437 ${Math.round(wait / 1e3)} \u0441\u0435\u043A`
-      )
-      await new Promise((r) => setTimeout(r, wait))
+      );
+      await new Promise((r) => setTimeout(r, wait));
     }
   }
-  throw last
+  throw last;
 }
 function snapshotGeneratedImages() {
-  const generatedDir = path4.join(CODEX_HOME, 'generated_images')
-  const images = /* @__PURE__ */ new Set()
-  if (!fs5.existsSync(generatedDir)) return images
+  const generatedDir = path4.join(CODEX_HOME, "generated_images");
+  const images = /* @__PURE__ */ new Set();
+  if (!fs5.existsSync(generatedDir)) return images;
   for (const session of fs5.readdirSync(generatedDir)) {
-    const sessionDir = path4.join(generatedDir, session)
+    const sessionDir = path4.join(generatedDir, session);
     try {
       for (const file of fs5.readdirSync(sessionDir)) {
-        if (file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.jpg')) {
-          images.add(path4.join(sessionDir, file))
+        if (file.endsWith(".png") || file.endsWith(".webp") || file.endsWith(".jpg")) {
+          images.add(path4.join(sessionDir, file));
         }
       }
-    } catch {}
+    } catch {
+    }
   }
-  return images
+  return images;
 }
 function findNewImage(before) {
-  const after = snapshotGeneratedImages()
+  const after = snapshotGeneratedImages();
   for (const img of after) {
-    if (!before.has(img)) return img
+    if (!before.has(img)) return img;
   }
-  return null
+  return null;
 }
 function convertToWebP(srcPng, destWebp) {
   const script = `
-    import('${path4.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('${path4.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
-  `
+  `;
   execSync(`node --input-type=module`, {
     input: script,
     cwd: PROJECT_ROOT,
     timeout: 3e4,
-    stdio: ['pipe', 'inherit', 'inherit'],
-  })
+    stdio: ["pipe", "inherit", "inherit"]
+  });
 }
 function convertSketchToWebP(srcPng, destWebp) {
   const script = `
-    import('${path4.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('${path4.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
       .then(m => m.default('${srcPng}').resize({width: 900, withoutEnlargement: true}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
-  `
+  `;
   execSync(`node --input-type=module`, {
     input: script,
     cwd: PROJECT_ROOT,
     timeout: 3e4,
-    stdio: ['pipe', 'inherit', 'inherit'],
-  })
+    stdio: ["pipe", "inherit", "inherit"]
+  });
 }
 async function generateImageWithCodex(imagePrompt, slug, topic) {
   if (!fs5.existsSync(CODEX_BIN)) {
-    console.log(
-      '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438'
-    )
-    return null
+    console.log("[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438");
+    return null;
   }
-  const before = snapshotGeneratedImages()
-  const perspIdx = topic.id % PERSPECTIVES.length
-  const genderIdx = detectGender(topic.keyword, topic.title, topic.id)
-  const perspective = PERSPECTIVES[perspIdx]
-  const gender = GENDERS[genderIdx]
-  const setting = detectSetting(topic.keyword, topic.title, topic.id)
-  const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable \u2014 do NOT change the gender. MANDATORY: include exactly 1 human person prominently in the foreground. CHARACTER ANGLE: ${perspective}. SETTING: ${setting}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. REALISM: candid photo feel \u2014 natural relaxed poses, objects placed as in real life. LAPTOP RULE: the person works at a laptop. The laptop sits naturally on the desk. The screen faces the person (not the camera) and glows softly with indistinct ambient light \u2014 no readable text, no charts, no UI elements, just a warm or cool glow suggesting active use. Think: professional stock photo where the screen is implied but never the focus. FORBIDDEN: any specific content (charts, dashboards, text) on any screen surface, including the outside back of the lid. SCENE CONTEXT (activity and mood only \u2014 gender, setting, and laptop rule already fixed above): ${imagePrompt}. Generate this pixel art image now.`
-  const refArg = fs5.existsSync(REFERENCE_IMAGE) ? ['-i', REFERENCE_IMAGE] : []
-  const runCodex = () =>
-    new Promise((resolve) => {
-      const child = spawn(
-        CODEX_BIN,
-        [
-          'exec',
-          '--dangerously-bypass-approvals-and-sandbox',
-          '--model',
-          'gpt-5.5',
-          fullPrompt,
-          ...refArg,
-        ],
-        {
-          env: { ...process.env, CODEX_HOME },
-          stdio: 'ignore',
-          timeout: 24e4,
-        }
-      )
-      child.on('close', () => resolve())
-      child.on('error', () => resolve())
-    })
-  console.log(
-    '[writer] \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E Codex \u0434\u043B\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438...'
-  )
-  await runCodex()
-  let newImage = findNewImage(before)
+  const before = snapshotGeneratedImages();
+  const perspIdx = topic.id % PERSPECTIVES.length;
+  const genderIdx = detectGender(topic.keyword, topic.title, topic.id);
+  const perspective = PERSPECTIVES[perspIdx];
+  const gender = GENDERS[genderIdx];
+  const setting = detectSetting(topic.keyword, topic.title, topic.id);
+  const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable \u2014 do NOT change the gender. MANDATORY: include exactly 1 human person prominently in the foreground. CHARACTER ANGLE: ${perspective}. SETTING: ${setting}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. REALISM: candid photo feel \u2014 natural relaxed poses, objects placed as in real life. LAPTOP RULE: the person works at a laptop. The laptop sits naturally on the desk. The screen faces the person (not the camera) and glows softly with indistinct ambient light \u2014 no readable text, no charts, no UI elements, just a warm or cool glow suggesting active use. Think: professional stock photo where the screen is implied but never the focus. FORBIDDEN: any specific content (charts, dashboards, text) on any screen surface, including the outside back of the lid. SCENE CONTEXT (activity and mood only \u2014 gender, setting, and laptop rule already fixed above): ${imagePrompt}. Generate this pixel art image now.`;
+  const refArg = fs5.existsSync(REFERENCE_IMAGE) ? ["-i", REFERENCE_IMAGE] : [];
+  const runCodex = () => new Promise((resolve) => {
+    const child = spawn(
+      CODEX_BIN,
+      [
+        "exec",
+        "--dangerously-bypass-approvals-and-sandbox",
+        "--model",
+        "gpt-5.5",
+        fullPrompt,
+        ...refArg
+      ],
+      {
+        env: { ...process.env, CODEX_HOME },
+        stdio: "ignore",
+        timeout: 24e4
+      }
+    );
+    child.on("close", () => resolve());
+    child.on("error", () => resolve());
+  });
+  console.log("[writer] \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E Codex \u0434\u043B\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438...");
+  await runCodex();
+  let newImage = findNewImage(before);
   if (!newImage) {
-    console.log(
-      '[writer] Codex \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435, \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u0430\u044F \u043F\u043E\u043F\u044B\u0442\u043A\u0430...'
-    )
-    await runCodex()
-    newImage = findNewImage(before)
+    console.log("[writer] Codex \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435, \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u0430\u044F \u043F\u043E\u043F\u044B\u0442\u043A\u0430...");
+    await runCodex();
+    newImage = findNewImage(before);
   }
   if (!newImage) {
-    console.log(
-      '[writer] Codex \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B \u043D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 (2 \u043F\u043E\u043F\u044B\u0442\u043A\u0438)'
-    )
-    return null
+    console.log("[writer] Codex \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043B \u043D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 (2 \u043F\u043E\u043F\u044B\u0442\u043A\u0438)");
+    return null;
   }
-  console.log(
-    `[writer] \u041D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: ${newImage}`
-  )
-  fs5.mkdirSync(IMAGES_DIR, { recursive: true })
-  const destWebp = path4.join(IMAGES_DIR, `${slug}.webp`)
+  console.log(`[writer] \u041D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: ${newImage}`);
+  fs5.mkdirSync(IMAGES_DIR, { recursive: true });
+  const destWebp = path4.join(IMAGES_DIR, `${slug}.webp`);
   try {
-    convertToWebP(newImage, destWebp)
-    console.log(`[writer] WebP \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${destWebp}`)
-    return `/images/posts/${slug}.webp`
+    convertToWebP(newImage, destWebp);
+    console.log(`[writer] WebP \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${destWebp}`);
+    return `/images/posts/${slug}.webp`;
   } catch (e) {
-    console.warn(
-      '[writer] \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0430\u0446\u0438\u044F \u0432 WebP \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C, \u043A\u043E\u043F\u0438\u0440\u0443\u044E PNG:',
-      e.message
-    )
-    const destPng = path4.join(IMAGES_DIR, `${slug}.png`)
-    fs5.copyFileSync(newImage, destPng)
-    return `/images/posts/${slug}.png`
+    console.warn("[writer] \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0430\u0446\u0438\u044F \u0432 WebP \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C, \u043A\u043E\u043F\u0438\u0440\u0443\u044E PNG:", e.message);
+    const destPng = path4.join(IMAGES_DIR, `${slug}.png`);
+    fs5.copyFileSync(newImage, destPng);
+    return `/images/posts/${slug}.png`;
   }
 }
 async function generateQuickCharts(topic, slug, h2Structure) {
-  console.log(
-    '[writer] \u0428\u0430\u0433 5\u0431: \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E QuickChart \u0433\u0440\u0430\u0444\u0438\u043A\u0438...'
-  )
-  const h2List =
-    h2Structure.length > 0
-      ? h2Structure.map((h, i) => `${i + 1}. ${h}`).join('\n')
-      : '(\u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430)'
-  let specRaw
+  console.log("[writer] \u0428\u0430\u0433 5\u0431: \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E QuickChart \u0433\u0440\u0430\u0444\u0438\u043A\u0438...");
+  const h2List = h2Structure.length > 0 ? h2Structure.map((h, i) => `${i + 1}. ${h}`).join("\n") : "(\u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430)";
+  let specRaw;
   try {
     specRaw = await askClaude(
-      `\u0422\u044B \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0434\u0430\u043D\u043D\u044B\u0445. \u0414\u043B\u044F \u0441\u0442\u0430\u0442\u044C\u0438 "${topic.title}" (\u043A\u043B\u044E\u0447: "${topic.keyword}", \u0442\u0438\u043F: ${topic.type || '\u0438\u043D\u0444\u043E'}) \u0441\u043E\u0437\u0434\u0430\u0439 1-2 \u0433\u0440\u0430\u0444\u0438\u043A\u0430.
+      `\u0422\u044B \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u0434\u0430\u043D\u043D\u044B\u0445. \u0414\u043B\u044F \u0441\u0442\u0430\u0442\u044C\u0438 "${topic.title}" (\u043A\u043B\u044E\u0447: "${topic.keyword}", \u0442\u0438\u043F: ${topic.type || "\u0438\u043D\u0444\u043E"}) \u0441\u043E\u0437\u0434\u0430\u0439 1-2 \u0433\u0440\u0430\u0444\u0438\u043A\u0430.
 
 \u0421\u0422\u0420\u0423\u041A\u0422\u0423\u0420\u0410 \u0421\u0422\u0410\u0422\u042C\u0418 (H2-\u0440\u0430\u0437\u0434\u0435\u043B\u044B):
 ${h2List}
@@ -1003,184 +899,158 @@ ${h2List}
 - fontFamily "Arial" \u0432 options.font
 - \u041D\u0435 \u0431\u043E\u043B\u0435\u0435 2 \u0434\u0430\u0442\u0430\u0441\u0435\u0442\u043E\u0432
 - \u0424\u043E\u0440\u043C\u0430\u0442 Chart.js v3`,
-      'analyst'
-    )
+      "analyst"
+    );
   } catch (e) {
-    console.warn('[writer] QuickChart: \u043E\u0448\u0438\u0431\u043A\u0430 Claude:', e.message)
-    return []
+    console.warn("[writer] QuickChart: \u043E\u0448\u0438\u0431\u043A\u0430 Claude:", e.message);
+    return [];
   }
-  const specMatch = specRaw.match(/\{[\s\S]*\}/)
+  const specMatch = specRaw.match(/\{[\s\S]*\}/);
   if (!specMatch) {
-    console.log(
-      '[writer] QuickChart: Claude \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E'
-    )
-    return []
+    console.log("[writer] QuickChart: Claude \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E");
+    return [];
   }
-  let spec
+  let spec;
   try {
-    spec = JSON.parse(specMatch[0])
+    spec = JSON.parse(specMatch[0]);
   } catch (e) {
-    console.warn(
-      '[writer] QuickChart: \u043E\u0448\u0438\u0431\u043A\u0430 \u043F\u0430\u0440\u0441\u0438\u043D\u0433\u0430 JSON:',
-      e.message
-    )
-    return []
+    console.warn("[writer] QuickChart: \u043E\u0448\u0438\u0431\u043A\u0430 \u043F\u0430\u0440\u0441\u0438\u043D\u0433\u0430 JSON:", e.message);
+    return [];
   }
-  const results = []
+  const results = [];
   for (let i = 0; i < Math.min(spec.charts?.length ?? 0, 2); i++) {
-    const chart = spec.charts[i]
-    const filename = `${slug}-chart${i + 1}.png`
-    const localPath = path4.join(IMAGES_DIR, filename)
-    const webPath = `/images/posts/${filename}`
+    const chart = spec.charts[i];
+    const filename = `${slug}-chart${i + 1}.png`;
+    const localPath = path4.join(IMAGES_DIR, filename);
+    const webPath = `/images/posts/${filename}`;
     try {
-      const response = await fetch('https://quickchart.io/chart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("https://quickchart.io/chart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           c: chart.config,
           width: 700,
           height: 350,
-          backgroundColor: '#ffffff',
-          devicePixelRatio: 2,
-        }),
-      })
+          backgroundColor: "#ffffff",
+          devicePixelRatio: 2
+        })
+      });
       if (!response.ok) {
-        console.warn(`[writer] QuickChart HTTP ${response.status} \u0434\u043B\u044F chart${i + 1}`)
-        continue
+        console.warn(`[writer] QuickChart HTTP ${response.status} \u0434\u043B\u044F chart${i + 1}`);
+        continue;
       }
-      const buffer = Buffer.from(await response.arrayBuffer())
-      fs5.mkdirSync(IMAGES_DIR, { recursive: true })
-      fs5.writeFileSync(localPath, buffer)
-      console.log(
-        `[writer] QuickChart \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`
-      )
-      results.push({ webPath, alt: chart.alt })
+      const buffer = Buffer.from(await response.arrayBuffer());
+      fs5.mkdirSync(IMAGES_DIR, { recursive: true });
+      fs5.writeFileSync(localPath, buffer);
+      console.log(`[writer] QuickChart \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`);
+      results.push({ webPath, alt: chart.alt });
     } catch (e) {
-      console.warn(
-        `[writer] QuickChart \u043E\u0448\u0438\u0431\u043A\u0430 chart${i + 1}:`,
-        e.message
-      )
+      console.warn(`[writer] QuickChart \u043E\u0448\u0438\u0431\u043A\u0430 chart${i + 1}:`, e.message);
     }
   }
-  return results
+  return results;
 }
 async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structure, markdown) {
   if (!fs5.existsSync(CODEX_BIN)) {
-    console.log(
-      '[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447\u0438'
-    )
-    return []
+    console.log("[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447\u0438");
+    return [];
   }
-  const wordCount = markdown.split(/\s+/).length
-  const sketchCount = wordCount < 1300 ? 1 : wordCount < 1600 ? 2 : 3
-  const contentH2s = h2Structure.slice(1, -1)
-  const runCodex = (prompt) =>
-    new Promise((resolve) => {
-      const child = spawn(
-        CODEX_BIN,
-        ['exec', '--dangerously-bypass-approvals-and-sandbox', '--model', 'gpt-5.5', prompt],
-        {
-          env: { ...process.env, CODEX_HOME },
-          stdio: 'ignore',
-          timeout: 24e4,
-        }
-      )
-      child.on('close', () => resolve())
-      child.on('error', () => resolve())
-    })
-  const results = []
+  const wordCount = markdown.split(/\s+/).length;
+  const sketchCount = wordCount < 1300 ? 1 : wordCount < 1600 ? 2 : 3;
+  const contentH2s = h2Structure.slice(1, -1);
+  const runCodex = (prompt) => new Promise((resolve) => {
+    const child = spawn(
+      CODEX_BIN,
+      ["exec", "--dangerously-bypass-approvals-and-sandbox", "--model", "gpt-5.5", prompt],
+      {
+        env: { ...process.env, CODEX_HOME },
+        stdio: "ignore",
+        timeout: 24e4
+      }
+    );
+    child.on("close", () => resolve());
+    child.on("error", () => resolve());
+  });
+  const results = [];
   for (let i = 0; i < sketchCount; i++) {
-    const sectionIdx = Math.floor((i / sketchCount) * contentH2s.length)
-    const section = contentH2s[sectionIdx] || topic.title
-    const sketchPrompt = `Create a hand-drawn whiteboard sketch illustration. Article: "${topic.title}". Section to illustrate: "${section}". Context and reader pains: ${articleEssence}. Choose ONE approach that fits better: A) MEME \u2014 adapt a popular internet meme format (distracted boyfriend, two buttons, expanding brain, this is fine dog, drake meme, etc.) to this specific section topic. Show a funny, relatable situation readers will instantly recognize. B) SCHEMATIC \u2014 visually explain the key idea of this section with arrows, boxes, diagrams, stick figures. Clear, educational, like a whiteboard explanation. Black ink on pure white only. Rough, imperfect hand-drawn lines. No color, no gradients, no photorealism. Include 2-4 handwritten Russian labels. Keep it punchy and clear.`
-    console.log(
-      `[writer] \u0428\u0430\u0433 5\u0432: \u0421\u043A\u0435\u0442\u0447 ${i + 1}/${sketchCount} \u0434\u043B\u044F \u0440\u0430\u0437\u0434\u0435\u043B\u0430 "${section}"...`
-    )
-    const before = snapshotGeneratedImages()
-    await runCodex(sketchPrompt)
-    const newImage = findNewImage(before)
+    const sectionIdx = Math.floor(i / sketchCount * contentH2s.length);
+    const section = contentH2s[sectionIdx] || topic.title;
+    const sketchPrompt = `Create a hand-drawn whiteboard sketch illustration. Article: "${topic.title}". Section to illustrate: "${section}". Context and reader pains: ${articleEssence}. Choose ONE approach that fits better: A) MEME \u2014 adapt a popular internet meme format (distracted boyfriend, two buttons, expanding brain, this is fine dog, drake meme, etc.) to this specific section topic. Show a funny, relatable situation readers will instantly recognize. B) SCHEMATIC \u2014 visually explain the key idea of this section with arrows, boxes, diagrams, stick figures. Clear, educational, like a whiteboard explanation. Black ink on pure white only. Rough, imperfect hand-drawn lines. No color, no gradients, no photorealism. Include 2-4 handwritten Russian labels. Keep it punchy and clear.`;
+    console.log(`[writer] \u0428\u0430\u0433 5\u0432: \u0421\u043A\u0435\u0442\u0447 ${i + 1}/${sketchCount} \u0434\u043B\u044F \u0440\u0430\u0437\u0434\u0435\u043B\u0430 "${section}"...`);
+    const before = snapshotGeneratedImages();
+    await runCodex(sketchPrompt);
+    const newImage = findNewImage(before);
     if (!newImage) {
-      console.log(
-        `[writer] Codex \u0441\u043A\u0435\u0442\u0447 ${i + 1} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D`
-      )
-      continue
+      console.log(`[writer] Codex \u0441\u043A\u0435\u0442\u0447 ${i + 1} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D`);
+      continue;
     }
-    fs5.mkdirSync(IMAGES_DIR, { recursive: true })
-    const suffix = i === 0 ? '-sketch' : `-sketch${i + 1}`
-    const destWebp = path4.join(IMAGES_DIR, `${slug}${suffix}.webp`)
+    fs5.mkdirSync(IMAGES_DIR, { recursive: true });
+    const suffix = i === 0 ? "-sketch" : `-sketch${i + 1}`;
+    const destWebp = path4.join(IMAGES_DIR, `${slug}${suffix}.webp`);
     try {
-      convertSketchToWebP(newImage, destWebp)
-      const webPath = `/images/posts/${slug}${suffix}.webp`
-      console.log(
-        `[writer] \u0421\u043A\u0435\u0442\u0447 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`
-      )
-      results.push(webPath)
+      convertSketchToWebP(newImage, destWebp);
+      const webPath = `/images/posts/${slug}${suffix}.webp`;
+      console.log(`[writer] \u0421\u043A\u0435\u0442\u0447 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`);
+      results.push(webPath);
     } catch {
-      const destPng = path4.join(IMAGES_DIR, `${slug}${suffix}.png`)
-      fs5.copyFileSync(newImage, destPng)
-      results.push(`/images/posts/${slug}${suffix}.png`)
+      const destPng = path4.join(IMAGES_DIR, `${slug}${suffix}.png`);
+      fs5.copyFileSync(newImage, destPng);
+      results.push(`/images/posts/${slug}${suffix}.png`);
     }
   }
-  return results
+  return results;
 }
 function injectImagesIntoMarkdown(markdown, charts, sketchPaths) {
   const allImages = [
     ...charts,
-    ...sketchPaths.map((p) => ({
-      webPath: p,
-      alt: '\u0418\u043B\u043B\u044E\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u043A \u0442\u0435\u043C\u0435 \u0441\u0442\u0430\u0442\u044C\u0438',
-    })),
-  ]
-  if (allImages.length === 0) return markdown
-  const lines = markdown.split('\n')
-  const h2Indices = []
+    ...sketchPaths.map((p) => ({ webPath: p, alt: "\u0418\u043B\u043B\u044E\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u043A \u0442\u0435\u043C\u0435 \u0441\u0442\u0430\u0442\u044C\u0438" }))
+  ];
+  if (allImages.length === 0) return markdown;
+  const lines = markdown.split("\n");
+  const h2Indices = [];
   lines.forEach((line, idx) => {
-    if (line.startsWith('## ')) h2Indices.push(idx)
-  })
-  let insertionPoints
+    if (line.startsWith("## ")) h2Indices.push(idx);
+  });
+  let insertionPoints;
   if (h2Indices.length >= 2) {
     insertionPoints = allImages.map((_, i) => {
-      const ratio = (i + 1) / (allImages.length + 1)
-      const h2Idx = Math.max(1, Math.round(ratio * (h2Indices.length - 1)))
-      return h2Indices[h2Idx]
-    })
+      const ratio = (i + 1) / (allImages.length + 1);
+      const h2Idx = Math.max(1, Math.round(ratio * (h2Indices.length - 1)));
+      return h2Indices[h2Idx];
+    });
   } else {
-    const step = Math.floor(lines.length / (allImages.length + 1))
-    insertionPoints = allImages.map((_, i) => Math.max(1, step * (i + 1)))
+    const step = Math.floor(lines.length / (allImages.length + 1));
+    insertionPoints = allImages.map((_, i) => Math.max(1, step * (i + 1)));
   }
-  const insertions = allImages
-    .map((img, i) => ({ lineIdx: insertionPoints[i], img }))
-    .sort((a, b) => b.lineIdx - a.lineIdx)
+  const insertions = allImages.map((img, i) => ({ lineIdx: insertionPoints[i], img })).sort((a, b) => b.lineIdx - a.lineIdx);
   for (const { lineIdx, img } of insertions) {
     const tag = `
 <img src="${img.webPath}" alt="${img.alt}" style={{width: '100%', maxWidth: '700px', borderRadius: '8px', margin: '20px 0'}} />
-`
-    lines.splice(lineIdx, 0, tag)
+`;
+    lines.splice(lineIdx, 0, tag);
   }
-  return lines.join('\n')
+  return lines.join("\n");
 }
-var SEMANTICS_FILE = path4.join(import.meta.dirname, SEMANTICS_RELATIVE_PATH)
+var SEMANTICS_FILE = path4.join(import.meta.dirname, SEMANTICS_RELATIVE_PATH);
 function parseJsonObject(raw, who) {
-  const m = raw.match(/\{[\s\S]*\}/)
-  if (!m) throw new Error(`${who} \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON`)
-  return JSON.parse(m[0])
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error(`${who} \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON`);
+  return JSON.parse(m[0]);
 }
 async function buildTechSpec(topic, plan, seoData, selection, wordstatBlock) {
-  console.log(
-    '[writer] \u0428\u0430\u0433 2\u0431: \u0422\u0417 \u043E\u0442 \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430 \u0438 SEO...'
-  )
-  const tv = buildTopvisorContext(topic.keyword, topic.title, loadTopvisorSemantics(SEMANTICS_FILE))
+  console.log("[writer] \u0428\u0430\u0433 2\u0431: \u0422\u0417 \u043E\u0442 \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430 \u0438 SEO...");
+  const tv = buildTopvisorContext(topic.keyword, topic.title, loadTopvisorSemantics(SEMANTICS_FILE));
   console.log(
     `[writer] \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440: \u0437\u0430\u043D\u044F\u0442\u044B\u0445 \u043A\u043B\u044E\u0447\u0435\u0439 \u043F\u043E \u0442\u0435\u043C\u0435 ${tv.stopList.length}, \u0438\u0437 \u043D\u0438\u0445 \u0432 \u0434\u043E\u0436\u0438\u043C\u0435 31-100 \u2014 ${tv.pushUp.length}`
-  )
+  );
   const sourceData = buildSourceDataBlock(
     topic.keyword,
     topic.wordstatVolume ?? null,
     selection,
     tv
-  )
-  const h2List = plan.h2s.map((h, i) => `${i + 1}. ${h.title}`).join('\n')
-  const owners = [...new Set(tv.stopList.map((k) => k.relevantUrl))]
+  );
+  const h2List = plan.h2s.map((h, i) => `${i + 1}. ${h.title}`).join("\n");
+  const owners = [...new Set(tv.stopList.map((k) => k.relevantUrl))];
   const task = `\u0422\u0435\u043C\u0430: "${topic.title}"
 \u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u043A\u043B\u044E\u0447: "${topic.keyword}"
 \u0410\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u044F: ${topic.audience}
@@ -1218,16 +1088,16 @@ ${wordstatBlock}
 - interlinks: \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u0440\u0435\u0441\u0430 \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u0437\u0430\u043D\u044F\u0442\u044B\u0445 \u043A\u043B\u044E\u0447\u0435\u0439 \u0432\u044B\u0448\u0435. \u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0432\u044B\u0434\u0443\u043C\u044B\u0432\u0430\u0439.
 - h2Requirements: \u0441\u043C\u044B\u0441\u043B\u044B, \u0430 \u043D\u0435 \u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0438 \u2014 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 \u043F\u0438\u0448\u0435\u0442 \u043F\u0438\u0441\u0430\u0442\u0435\u043B\u044C.
 - wordCountMin/Max: \u043E\u0442 \u0438\u043D\u0442\u0435\u043D\u0442\u0430 \u0438 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0446\u0438\u0438, \u043A\u043E\u0440\u0438\u0434\u043E\u0440 \u043D\u0435 \u0448\u0438\u0440\u0435 800 \u0441\u043B\u043E\u0432.
-- factualAnchors: \u0442\u043E, \u0447\u0442\u043E \u0434\u0435\u043B\u0430\u0435\u0442 \u0441\u0442\u0430\u0442\u044C\u044E \u043D\u0435\u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437\u0443\u0435\u043C\u043E\u0439 AI-\u043F\u043E\u0438\u0441\u043A\u043E\u043C.`
+- factualAnchors: \u0442\u043E, \u0447\u0442\u043E \u0434\u0435\u043B\u0430\u0435\u0442 \u0441\u0442\u0430\u0442\u044C\u044E \u043D\u0435\u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437\u0443\u0435\u043C\u043E\u0439 AI-\u043F\u043E\u0438\u0441\u043A\u043E\u043C.`;
   const draftRaw = await askClaude(
     `\u0421\u043E\u0441\u0442\u0430\u0432\u044C \u0442\u0435\u0445\u043D\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u0435 \u043D\u0430 SEO-\u0441\u0442\u0430\u0442\u044C\u044E \u0434\u043B\u044F job board d-pub.ru.
 \u0422\u044B \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0448\u044C \u0437\u0430 \u0434\u0430\u043D\u043D\u044B\u0435: \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u044C, \u043A\u043E\u0440\u0438\u0434\u043E\u0440 \u0441\u043F\u0440\u043E\u0441\u0430, \u0440\u0438\u0441\u043A \u043A\u0430\u043D\u043D\u0438\u0431\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u0438 \u0441 \u043D\u0430\u0448\u0438\u043C\u0438
 \u0436\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430\u043C\u0438. \u041E\u043F\u0438\u0440\u0430\u0439\u0441\u044F \u043D\u0430 \u0437\u0430\u043C\u0435\u0440\u044B \u043D\u0438\u0436\u0435, \u043D\u0435 \u043D\u0430 \u043E\u0431\u0449\u0438\u0435 \u0441\u043E\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F.
 
 ${task}`,
-    'analyst'
-  )
-  const draft = parseJsonObject(draftRaw, '\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A')
+    "analyst"
+  );
+  const draft = parseJsonObject(draftRaw, "\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A");
   const agreedRaw = await askClaude(
     `\u041F\u0440\u0438\u043C\u0438 \u0438\u043B\u0438 \u043F\u043E\u043F\u0440\u0430\u0432\u044C \u0442\u0435\u0445\u043D\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u0437\u0430\u0434\u0430\u043D\u0438\u0435 \u043D\u0430 SEO-\u0441\u0442\u0430\u0442\u044C\u044E \u0434\u043B\u044F job board d-pub.ru.
 \u0422\u0417 \u0441\u043E\u0441\u0442\u0430\u0432\u0438\u043B \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u043F\u043E \u0437\u0430\u043C\u0435\u0440\u0430\u043C \u0447\u0430\u0441\u0442\u043E\u0442\u043D\u043E\u0441\u0442\u0438. \u0422\u0432\u043E\u044F \u0437\u043E\u043D\u0430 \u2014 \u043F\u043E\u0438\u0441\u043A\u043E\u0432\u0430\u044F \u0447\u0430\u0441\u0442\u044C: title \u0438
@@ -1247,11 +1117,11 @@ ${task}
   \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0430, \u0438 \u0434\u0432\u0435 \u043D\u0430\u0448\u0438 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B \u043D\u0430\u0447\u043D\u0443\u0442 \u043A\u043E\u043D\u043A\u0443\u0440\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0437\u0430 \u043E\u0434\u0438\u043D \u0437\u0430\u043F\u0440\u043E\u0441;
 - \u043A\u0430\u0436\u0434\u044B\u0439 \u0430\u0434\u0440\u0435\u0441 \u0438\u0437 interlinks \u0432\u0441\u0442\u0440\u0435\u0447\u0430\u0435\u0442\u0441\u044F \u0432 \u0441\u043F\u0438\u0441\u043A\u0435 \u0437\u0430\u043D\u044F\u0442\u044B\u0445 \u043A\u043B\u044E\u0447\u0435\u0439 \u0432\u044B\u0448\u0435;
 - \u0441\u0443\u043C\u043C\u0430\u0440\u043D\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u0442\u043E\u0447\u043D\u044B\u0445 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0439 \u043D\u0435 \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u0435\u0442 12.`,
-    'seo'
-  )
-  const agreed = parseJsonObject(agreedRaw, 'SEO')
-  const stopPhrases = tv.stopList.map((k) => ({ phrase: k.keyword, ownerUrl: k.relevantUrl }))
-  const interlinks = (agreed.interlinks ?? []).filter((u) => owners.includes(u))
+    "seo"
+  );
+  const agreed = parseJsonObject(agreedRaw, "SEO");
+  const stopPhrases = tv.stopList.map((k) => ({ phrase: k.keyword, ownerUrl: k.relevantUrl }));
+  const interlinks = (agreed.interlinks ?? []).filter((u) => owners.includes(u));
   const tz = {
     topicId: topic.id,
     title: topic.title,
@@ -1263,18 +1133,13 @@ ${task}
     metaDesc: agreed.metaDesc || plan.metaDesc,
     maxMainKeyUses: MAX_MAIN_KEY_USES,
     exactPhrases: (agreed.exactPhrases ?? []).filter(
-      (p) =>
-        !stopPhrases.some((s) => s.phrase === p.phrase) &&
-        !containsMainKeyword(p.phrase, topic.keyword)
+      (p) => !stopPhrases.some((s) => s.phrase === p.phrase) && !containsMainKeyword(p.phrase, topic.keyword)
     ),
     dilutedPhrases: [
-      ...(agreed.dilutedPhrases ?? []),
+      ...agreed.dilutedPhrases ?? [],
       // Фраза с главным ключом внутри требует раскрытия смысла, а не дословности —
       // иначе её вхождения складываются с бюджетом главного ключа и дают переспам.
-      ...(agreed.exactPhrases ?? [])
-        .filter((p) => containsMainKeyword(p.phrase, topic.keyword))
-        .map((p) => modifierWords(p.phrase, topic.keyword))
-        .filter(Boolean),
+      ...(agreed.exactPhrases ?? []).filter((p) => containsMainKeyword(p.phrase, topic.keyword)).map((p) => modifierWords(p.phrase, topic.keyword)).filter(Boolean)
     ],
     stopPhrases,
     interlinks,
@@ -1284,64 +1149,57 @@ ${task}
     faqMinWords: FAQ_MIN_WORDS,
     factualAnchors: agreed.factualAnchors ?? [],
     antifakeMarkers: seoData.antifakeMarkers ?? [],
-    agreedBy: ['analyst', 'seo'],
-  }
+    agreedBy: ["analyst", "seo"]
+  };
   console.log(
     `[writer] \u0422\u0417 \u0441\u043E\u0433\u043B\u0430\u0441\u043E\u0432\u0430\u043D\u043E: \u0442\u043E\u0447\u043D\u044B\u0445 \u0444\u0440\u0430\u0437 ${tz.exactPhrases.length}, \u0440\u0430\u0437\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0445 ${tz.dilutedPhrases.length}, \u0441\u0441\u044B\u043B\u043E\u043A ${tz.interlinks.length}, \u043E\u0431\u044A\u0451\u043C ${tz.wordCountMin}-${tz.wordCountMax}`
-  )
-  return tz
+  );
+  return tz;
 }
-var REPAIR_ROUNDS = 6
+var REPAIR_ROUNDS = 6;
 var SpecRejected = class extends Error {
   constructor(violations, rounds) {
     super(
       `\u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0435 \u043F\u0440\u0438\u043D\u044F\u0442\u0430 \u043F\u043E \u0422\u0417 (\u043F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u043B\u0438 ${rounds} \u0440\u0430\u0437):
-` + violations.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join('\n')
-    )
-    this.violations = violations
-    this.rounds = rounds
-    this.name = 'SpecRejected'
+` + violations.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join("\n")
+    );
+    this.violations = violations;
+    this.rounds = rounds;
+    this.name = "SpecRejected";
   }
-  violations
-  rounds
-}
+  violations;
+  rounds;
+};
 async function acceptAgainstSpec(tz, markdown) {
-  console.log(
-    '[writer] \u0428\u0430\u0433 4\u0431: \u041F\u0440\u0438\u0451\u043C\u043A\u0430 \u043F\u043E \u0422\u0417...'
-  )
-  let current = markdown
-  let best = { markdown, violations: checkTechSpec(tz, markdown), round: 0 }
+  console.log("[writer] \u0428\u0430\u0433 4\u0431: \u041F\u0440\u0438\u0451\u043C\u043A\u0430 \u043F\u043E \u0422\u0417...");
+  let current = markdown;
+  let best = { markdown, violations: checkTechSpec(tz, markdown), round: 0 };
   for (let round = 0; round <= REPAIR_ROUNDS; round++) {
-    const violations = round === 0 ? best.violations : checkTechSpec(tz, current)
-    if (violations.length < best.violations.length) best = { markdown: current, violations, round }
+    const violations = round === 0 ? best.violations : checkTechSpec(tz, current);
+    if (violations.length < best.violations.length) best = { markdown: current, violations, round };
     if (violations.length === 0) {
-      console.log(
-        `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round})`
-      )
-      return { markdown: current, rounds: round, unresolved: [] }
+      console.log(`[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round})`);
+      return { markdown: current, rounds: round, unresolved: [] };
     }
     console.log(
-      `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${violations.length} \u2014 ` +
-        violations.map((v) => `${v.rule} (${v.detail})`).join('; ')
-    )
+      `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${violations.length} \u2014 ` + violations.map((v) => `${v.rule} (${v.detail})`).join("; ")
+    );
     if (round === REPAIR_ROUNDS) {
       if (best.violations.some((v) => v.rule === OVERSPAM_RULE)) {
-        throw new SpecRejected(best.violations, round)
+        throw new SpecRejected(best.violations, round);
       }
       console.log(
         `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u044E \u043B\u0443\u0447\u0448\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E \u0441 \u043A\u0440\u0443\u0433\u0430 ${best.round} \u2014 \u043D\u0435\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u0445 \u043F\u0443\u043D\u043A\u0442\u043E\u0432 ${best.violations.length}`
-      )
-      return { markdown: best.markdown, rounds: round, unresolved: best.violations }
+      );
+      return { markdown: best.markdown, rounds: round, unresolved: best.violations };
     }
-    console.log(
-      `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round + 1}/${REPAIR_ROUNDS}...`
-    )
+    console.log(`[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round + 1}/${REPAIR_ROUNDS}...`);
     current = await askClaude(
       `\u041F\u0440\u0438\u0451\u043C\u043A\u0430 \u0441\u0442\u0430\u0442\u044C\u0438 \u0432\u044B\u044F\u0432\u0438\u043B\u0430 \u0440\u0430\u0441\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u0441 \u0422\u0417. \u0418\u0441\u043F\u0440\u0430\u0432\u044C \u0440\u043E\u0432\u043D\u043E \u0438\u0445, \u043D\u0435 \u0442\u0440\u043E\u0433\u0430\u044F \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u043E\u0435:
 \u0441\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043F\u0440\u043E\u0448\u043B\u0430 \u0441\u0442\u0438\u043B\u0435\u0432\u0443\u044E \u0438 SEO-\u043F\u0440\u0430\u0432\u043A\u0443, \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u0442\u044C \u0435\u0451 \u0437\u0430\u043D\u043E\u0432\u043E \u043D\u0435 \u043D\u0443\u0436\u043D\u043E.
 
 \u0420\u0410\u0421\u0425\u041E\u0416\u0414\u0415\u041D\u0418\u042F:
-${violations.map((v) => `- ${v.rule}: ${v.detail}`).join('\n')}
+${violations.map((v) => `- ${v.rule}: ${v.detail}`).join("\n")}
 
 ${renderTechSpec(tz)}
 
@@ -1349,65 +1207,49 @@ ${renderTechSpec(tz)}
 ${current}
 
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0439 Markdown \u0441\u0442\u0430\u0442\u044C\u0438 \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439, \u0431\u0435\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A.`,
-      'writer'
-    )
+      "writer"
+    );
   }
-  return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) }
+  return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) };
 }
 async function generateMdxArticle(topic) {
-  console.log('[writer] \u0428\u0430\u0433 1: Wordstat keyword research...')
-  const cached = lookupPhrases(LSI_SOURCES, topic.keyword)
-  let wordstatRaw = cached?.nested ?? []
+  console.log("[writer] \u0428\u0430\u0433 1: Wordstat keyword research...");
+  const cached = lookupPhrases(LSI_SOURCES, topic.keyword);
+  let wordstatRaw = cached?.nested ?? [];
   if (cached) {
-    console.log(
-      `[writer] \u0424\u0440\u0430\u0437\u044B \u0438\u0437 \u0437\u0430\u043C\u0435\u0440\u043E\u0432 (${cached.source}): ${wordstatRaw.length}`
-    )
+    console.log(`[writer] \u0424\u0440\u0430\u0437\u044B \u0438\u0437 \u0437\u0430\u043C\u0435\u0440\u043E\u0432 (${cached.source}): ${wordstatRaw.length}`);
   } else {
-    wordstatRaw = await fetchWordstatKeywords(topic.keyword)
+    wordstatRaw = await fetchWordstatKeywords(topic.keyword);
     if (wordstatRaw.length === 0) {
-      const STOP = /* @__PURE__ */ new Set([
-        '\u0438\u043B\u0438',
-        '\u0441',
-        '\u0432',
-        '\u043D\u0430',
-        '\u0434\u043B\u044F',
-        '\u043F\u043E',
-        '\u0438\u0437',
-        '\u0438',
-        '\u043A',
-        '\u0437\u0430',
-        '\u0431\u0435\u0437',
-      ])
-      const words = topic.keyword.split(' ').filter((w) => !STOP.has(w.toLowerCase()))
+      const STOP = /* @__PURE__ */ new Set(["\u0438\u043B\u0438", "\u0441", "\u0432", "\u043D\u0430", "\u0434\u043B\u044F", "\u043F\u043E", "\u0438\u0437", "\u0438", "\u043A", "\u0437\u0430", "\u0431\u0435\u0437"]);
+      const words = topic.keyword.split(" ").filter((w) => !STOP.has(w.toLowerCase()));
       const candidates = [
-        words.slice(0, 3).join(' '),
-        words.slice(0, 2).join(' '),
-        words[0],
-      ].filter((c, i, arr) => c && c !== topic.keyword && arr.indexOf(c) === i)
+        words.slice(0, 3).join(" "),
+        words.slice(0, 2).join(" "),
+        words[0]
+      ].filter((c, i, arr) => c && c !== topic.keyword && arr.indexOf(c) === i);
       for (const shortKey of candidates) {
-        console.log(
-          `[writer] Wordstat fallback: \u043F\u0440\u043E\u0431\u0443\u044E "${shortKey}"`
-        )
-        wordstatRaw = await fetchWordstatKeywords(shortKey)
-        if (wordstatRaw.length > 0) break
+        console.log(`[writer] Wordstat fallback: \u043F\u0440\u043E\u0431\u0443\u044E "${shortKey}"`);
+        wordstatRaw = await fetchWordstatKeywords(shortKey);
+        if (wordstatRaw.length > 0) break;
       }
     }
-    savePhrases(LSI_CACHE_FILE, topic.keyword, wordstatRaw)
+    savePhrases(LSI_CACHE_FILE, topic.keyword, wordstatRaw);
   }
   const selection = selectLsiPhrases(
     wordstatRaw.filter((k) => k.count > 0),
     topic.keyword,
     topic.wordstatVolume
-  )
-  const wordstatKeywords = [...selection.anchors, ...selection.tail].map((k) => k.phrase)
-  const wordstatBlock = buildWordstatBlock(selection, topic.keyword, topic.wordstatVolume)
+  );
+  const wordstatKeywords = [...selection.anchors, ...selection.tail].map((k) => k.phrase);
+  const wordstatBlock = buildWordstatBlock(selection, topic.keyword, topic.wordstatVolume);
   if (wordstatKeywords.length > 0) {
     console.log(
       `[writer] Wordstat: \u044F\u043A\u043E\u0440\u0435\u0439 ${selection.anchors.length}, \u0443\u0442\u043E\u0447\u043D\u044F\u044E\u0449\u0438\u0445 ${selection.tail.length}, \u043F\u043E\u0440\u043E\u0433 ${selection.floor}/\u043C\u0435\u0441`
-    )
+    );
   }
-  const forcedSetting = detectSetting(topic.keyword, topic.title, topic.id + 3)
-  console.log('[writer] \u0428\u0430\u0433 1\u0431: SEO-\u0440\u0438\u0441\u0435\u0440\u0447...')
+  const forcedSetting = detectSetting(topic.keyword, topic.title, topic.id + 3);
+  console.log("[writer] \u0428\u0430\u0433 1\u0431: SEO-\u0440\u0438\u0441\u0435\u0440\u0447...");
   const research = await askClaude(
     `\u0422\u044B \u043E\u043F\u044B\u0442\u043D\u044B\u0439 SEO-\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A, \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0448\u044C \u0441 \u042F\u043D\u0434\u0435\u043A\u0441\u043E\u043C \u0438 Google \u043E\u0434\u043D\u043E\u0432\u0440\u0435\u043C\u0435\u043D\u043D\u043E.
 \u0417\u043D\u0430\u0435\u0448\u044C \u042F\u043D\u0434\u0435\u043A\u0441-\u043F\u0430\u0442\u0435\u043D\u0442 RU2824338C2 \u043E 4 BERT-\u043F\u043E\u043B\u044F\u0445 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u0430 (Title / H1+H2+H3 / \u043F\u0435\u0440\u0432\u044B\u0435 60 \u0441\u043B\u043E\u0432 / meta description) \u0438 696 \u0444\u0430\u043A\u0442\u043E\u0440\u043E\u0432 \u0440\u0430\u043D\u0436\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F.
@@ -1440,32 +1282,27 @@ ${wordstatBlock}
 - bm25Context: 5-7 \u0442\u0435\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0445 \u0441\u043B\u043E\u0432, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0434\u043E\u043B\u0436\u043D\u044B \u0441\u0442\u043E\u044F\u0442\u044C \u0432 \u0440\u0430\u0434\u0438\u0443\u0441\u0435 \xB110 \u0441\u043B\u043E\u0432 \u043E\u0442 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u043A\u043B\u044E\u0447\u0430 \u0432 \u0442\u0435\u043A\u0441\u0442\u0435 (BM25TP-\u044F\u043A\u043E\u0440\u044C \u042F\u043D\u0434\u0435\u043A\u0441\u0430). \u042D\u0442\u043E \u0441\u043B\u043E\u0432\u0430 \u0438\u0437 \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0445 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u0441\u043E \u0441\u043C\u0435\u0436\u043D\u044B\u043C\u0438 \u0442\u0435\u043C\u0430\u043C\u0438, \u043D\u0435 \u0438\u0437 \u0433\u043E\u043B\u043E\u0432\u044B.
 - antifakeMarkers: 2-3 \u0440\u0430\u0441\u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0445 \u043C\u0438\u0444\u0430 \u043F\u043E \u0442\u0435\u043C\u0435 \u0441\u0442\u0430\u0442\u044C\u0438 \u0441 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u043C \u043E\u043F\u0440\u043E\u0432\u0435\u0440\u0436\u0435\u043D\u0438\u0435\u043C \u0438 \u0441\u0441\u044B\u043B\u043A\u043E\u0439 \u043D\u0430 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A (hh.ru, SuperJob, \u0420\u043E\u0441\u0441\u0442\u0430\u0442). \u042D\u0442\u043E AIO-resistant \u043A\u043E\u043D\u0442\u0435\u043D\u0442, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 AI-\u043F\u043E\u0438\u0441\u043A\u043E\u0432\u0438\u043A \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0441\u0438\u043D\u0442\u0435\u0437\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0431\u0435\u0437 \u0446\u0438\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F.
 - mandatoryBigrams: 3 \u0442\u043E\u043F-\u0431\u0438\u0433\u0440\u0430\u043C\u043C\u044B \u0438\u0437 \u043F\u043E\u0438\u0441\u043A\u043E\u0432\u044B\u0445 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043F\u043E \u0442\u0435\u043C\u0435 (\u043F\u043E Wordstat), \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u0434\u043E\u043B\u0436\u043D\u044B \u043E\u0440\u0433\u0430\u043D\u0438\u0447\u043D\u043E \u0432\u043E\u0439\u0442\u0438 \u0432 H2-\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 \u0438\u043B\u0438 \u043F\u0435\u0440\u0432\u044B\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F H2-\u0431\u043B\u043E\u043A\u043E\u0432.`,
-    'seo'
-  )
-  const researchMatch = research.match(/\{[\s\S]*\}/)
-  if (!researchMatch)
-    throw new Error(
-      'SEO-\u0440\u0438\u0441\u0435\u0440\u0447 \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON'
-    )
-  const seoData = JSON.parse(researchMatch[0])
-  console.log(
-    '[writer] \u0428\u0430\u0433 2: \u041F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u044B...'
-  )
-  const outlineHint = OUTLINE_HINTS[topic.type] ?? ''
+    "seo"
+  );
+  const researchMatch = research.match(/\{[\s\S]*\}/);
+  if (!researchMatch) throw new Error("SEO-\u0440\u0438\u0441\u0435\u0440\u0447 \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON");
+  const seoData = JSON.parse(researchMatch[0]);
+  console.log("[writer] \u0428\u0430\u0433 2: \u041F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u044B...");
+  const outlineHint = OUTLINE_HINTS[topic.type] ?? "";
   const outline = await askClaude(
     `\u0422\u044B \u043A\u043E\u043D\u0442\u0435\u043D\u0442-\u0441\u0442\u0440\u0430\u0442\u0435\u0433. \u0421\u043E\u0441\u0442\u0430\u0432\u044C \u0434\u0435\u0442\u0430\u043B\u044C\u043D\u044B\u0439 \u043F\u043B\u0430\u043D \u0441\u0442\u0430\u0442\u044C\u0438.
 
 \u0422\u0415\u041C\u0410: ${topic.title}
 \u041A\u041B\u042E\u0427: ${topic.keyword}
 \u0422\u0418\u041F: ${topic.type}
-${outlineHint ? `\u041E\u0411\u042F\u0417\u0410\u0422\u0415\u041B\u042C\u041D\u042B\u0419 \u0428\u0410\u0411\u041B\u041E\u041D \u0414\u041B\u042F \u042D\u0422\u041E\u0413\u041E \u0422\u0418\u041F\u0410: ${outlineHint}` : ''}
+${outlineHint ? `\u041E\u0411\u042F\u0417\u0410\u0422\u0415\u041B\u042C\u041D\u042B\u0419 \u0428\u0410\u0411\u041B\u041E\u041D \u0414\u041B\u042F \u042D\u0422\u041E\u0413\u041E \u0422\u0418\u041F\u0410: ${outlineHint}` : ""}
 \u0418\u041D\u0422\u0415\u041D\u0422: ${seoData.intent}
-LSI-\u0441\u043B\u043E\u0432\u0430: ${seoData.lsi.join(', ')}
-\u0411\u043E\u043B\u0438 \u0430\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u0438: ${seoData.painPoints.join('; ')}
+LSI-\u0441\u043B\u043E\u0432\u0430: ${seoData.lsi.join(", ")}
+\u0411\u043E\u043B\u0438 \u0430\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u0438: ${seoData.painPoints.join("; ")}
 \u0423\u043D\u0438\u043A\u0430\u043B\u044C\u043D\u044B\u0439 \u0443\u0433\u043E\u043B: ${seoData.uniqueAngle}
-\u0427\u0435\u0433\u043E \u043D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0434\u043B\u044F \u0444\u0430\u043A\u0442\u0443\u0440\u043D\u043E\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430: ${(seoData.dataGaps || []).join('; ')}
-${(seoData.mandatoryBigrams || []).length ? `\u041E\u0411\u042F\u0417\u0410\u0422\u0415\u041B\u042C\u041D\u042B\u0415 \u0411\u0418\u0413\u0420\u0410\u041C\u041C\u042B \u0412 H2 (\u0438\u0437 \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0445 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 Wordstat \u2014 \u0432\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 H2 \u0438\u043B\u0438 \u043F\u0435\u0440\u0432\u044B\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u0431\u043B\u043E\u043A\u043E\u0432): ${seoData.mandatoryBigrams.join(', ')}` : ''}
-${(seoData.antifakeMarkers || []).length ? `\u041C\u0418\u0424\u042B \u0414\u041B\u042F \u041E\u041F\u0420\u041E\u0412\u0415\u0420\u0416\u0415\u041D\u0418\u042F (AIO-resistant \u043A\u043E\u043D\u0442\u0435\u043D\u0442 \u2014 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438 \u0432 \u0442\u0435\u043B\u043E \u0441\u0442\u0430\u0442\u044C\u0438): ${seoData.antifakeMarkers.join(' | ')}` : ''}
+\u0427\u0435\u0433\u043E \u043D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0434\u043B\u044F \u0444\u0430\u043A\u0442\u0443\u0440\u043D\u043E\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430: ${(seoData.dataGaps || []).join("; ")}
+${(seoData.mandatoryBigrams || []).length ? `\u041E\u0411\u042F\u0417\u0410\u0422\u0415\u041B\u042C\u041D\u042B\u0415 \u0411\u0418\u0413\u0420\u0410\u041C\u041C\u042B \u0412 H2 (\u0438\u0437 \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0445 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 Wordstat \u2014 \u0432\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 H2 \u0438\u043B\u0438 \u043F\u0435\u0440\u0432\u044B\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u0431\u043B\u043E\u043A\u043E\u0432): ${seoData.mandatoryBigrams.join(", ")}` : ""}
+${(seoData.antifakeMarkers || []).length ? `\u041C\u0418\u0424\u042B \u0414\u041B\u042F \u041E\u041F\u0420\u041E\u0412\u0415\u0420\u0416\u0415\u041D\u0418\u042F (AIO-resistant \u043A\u043E\u043D\u0442\u0435\u043D\u0442 \u2014 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438 \u0432 \u0442\u0435\u043B\u043E \u0441\u0442\u0430\u0442\u044C\u0438): ${seoData.antifakeMarkers.join(" | ")}` : ""}
 
 \u0422\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u044F \u043A \u043F\u043B\u0430\u043D\u0443:
 - 5-7 \u0431\u043B\u043E\u043A\u043E\u0432 H2
@@ -1473,7 +1310,7 @@ ${(seoData.antifakeMarkers || []).length ? `\u041C\u0418\u0424\u042B \u0414\u041
 - \u041A\u0430\u0436\u0434\u044B\u0439 H2 \u0440\u0430\u0441\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u0443\u044E \u0431\u043E\u043B\u044C \u0438\u043B\u0438 \u0432\u043E\u043F\u0440\u043E\u0441 \u0430\u0443\u0434\u0438\u0442\u043E\u0440\u0438\u0438
 - \u041F\u0420\u0415\u0414\u041F\u041E\u0421\u041B\u0415\u0414\u041D\u0418\u0419 H2 \u2014 \u043F\u0440\u0438\u0437\u044B\u0432 \u0441\u043C\u043E\u0442\u0440\u0435\u0442\u044C \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438 \u043D\u0430 \u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431
 - \u041F\u041E\u0421\u041B\u0415\u0414\u041D\u0418\u0419 H2 \u2014 FAQ: 4-8 \u0447\u0430\u0441\u0442\u044B\u0445 \u0432\u043E\u043F\u0440\u043E\u0441\u043E\u0432 \u043F\u043E \u0442\u0435\u043C\u0435 (\u0434\u043B\u044F featured snippets \u0438 AI-\u0446\u0438\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F)
-- \u041D\u0435 \u0434\u0443\u0431\u043B\u0438\u0440\u0443\u0439 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0443 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u043E\u0432: ${seoData.competitorH2s.join('; ')}
+- \u041D\u0435 \u0434\u0443\u0431\u043B\u0438\u0440\u0443\u0439 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0443 \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u043E\u0432: ${seoData.competitorH2s.join("; ")}
 
 \u041F\u0420\u0410\u0412\u0418\u041B\u0410 \u0421\u0422\u0420\u0423\u041A\u0422\u0423\u0420\u042B H2 (\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E):
 - FAN-OUT: \u043A\u0430\u0436\u0434\u044B\u0439 H2 \u0440\u0430\u0441\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0420\u0410\u0417\u041D\u042B\u0419 \u0430\u0441\u043F\u0435\u043A\u0442 \u2014 \u043D\u0435 \u043F\u043E\u0432\u0442\u043E\u0440\u044F\u0439 \u043E\u0434\u0438\u043D \u0443\u0433\u043E\u043B \u0432 \u0434\u0432\u0443\u0445 \u0431\u043B\u043E\u043A\u0430\u0445. \u041E\u0434\u0438\u043D H2 = \u043E\u0434\u0438\u043D \u0438\u043D\u0442\u0435\u043D\u0442 (Query Decomposition)
@@ -1512,58 +1349,35 @@ ${(seoData.antifakeMarkers || []).length ? `\u041C\u0418\u0424\u042B \u0414\u041
   "metaDesc": "SEO \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u0441\u0442\u0440\u043E\u0433\u043E 130-155 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432, \u0440\u0430\u0441\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u043F\u043E\u043B\u044C\u0437\u0443 \u0441\u0442\u0430\u0442\u044C\u0438",
   "slug": "url-slug-latinicej-bez-russkikh-bukv"
 }`,
-    'writer'
-  )
-  const outlineMatch = outline.match(/\{[\s\S]*\}/)
-  if (!outlineMatch)
-    throw new Error(
-      '\u041F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON'
-    )
-  const plan = JSON.parse(outlineMatch[0])
-  const tz = await buildTechSpec(topic, plan, seoData, selection, wordstatBlock)
-  plan.metaTitle = tz.metaTitle
-  plan.metaDesc = tz.metaDesc
-  const tzText = renderTechSpec(tz)
-  console.log(
-    '[writer] \u0428\u0430\u0433 3: \u041F\u0438\u0448\u0443 \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A...'
-  )
-  const planText = plan.h2s
-    .map((h, i) => {
-      const anchors = (h.factualAnchors || []).length
-        ? `
-   \u0424\u0430\u043A\u0442\u0443\u0440\u043D\u044B\u0435 \u044F\u043A\u043E\u0440\u044F (\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438): ${h.factualAnchors.join('; ')}`
-        : ''
-      return `${i + 1}. ${h.title}
-   \u0422\u0435\u0437\u0438\u0441\u044B: ${h.keyPoints.join('; ')}${anchors}`
-    })
-    .join('\n')
-  const dataGapsBlock = (seoData.dataGaps || []).length
-    ? `
-\u0427\u0415\u0413\u041E \u041D\u0415 \u0425\u0412\u0410\u0422\u0410\u0415\u0422 \u0414\u041B\u042F \u0424\u0410\u041A\u0422\u0423\u0420\u041D\u041E\u0413\u041E \u0422\u0415\u041A\u0421\u0422\u0410: ${seoData.dataGaps.join('; ')}
-\u2014 \u041D\u0435 \u043F\u0440\u0438\u0434\u0443\u043C\u044B\u0432\u0430\u0439 \u044D\u0442\u0438 \u0434\u0430\u043D\u043D\u044B\u0435. \u041F\u0438\u0448\u0438 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D \u0438\u043B\u0438 \u0441\u0441\u044B\u043B\u0430\u0439\u0441\u044F \u043D\u0430 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0438.`
-    : ''
-  const successBlock = (seoData.successCriteria || []).length
-    ? `
-\u041A\u0420\u0418\u0422\u0415\u0420\u0418\u0418 \u0423\u0421\u041F\u0415\u0425\u0410 \u042D\u0422\u041E\u0419 \u0421\u0422\u0410\u0422\u042C\u0418: ${seoData.successCriteria.join('; ')}`
-    : ''
+    "writer"
+  );
+  const outlineMatch = outline.match(/\{[\s\S]*\}/);
+  if (!outlineMatch) throw new Error("\u041F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON");
+  const plan = JSON.parse(outlineMatch[0]);
+  const tz = await buildTechSpec(topic, plan, seoData, selection, wordstatBlock);
+  plan.metaTitle = tz.metaTitle;
+  plan.metaDesc = tz.metaDesc;
+  const tzText = renderTechSpec(tz);
+  console.log("[writer] \u0428\u0430\u0433 3: \u041F\u0438\u0448\u0443 \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A...");
+  const planText = plan.h2s.map((h, i) => {
+    const anchors = (h.factualAnchors || []).length ? `
+   \u0424\u0430\u043A\u0442\u0443\u0440\u043D\u044B\u0435 \u044F\u043A\u043E\u0440\u044F (\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438): ${h.factualAnchors.join("; ")}` : "";
+    return `${i + 1}. ${h.title}
+   \u0422\u0435\u0437\u0438\u0441\u044B: ${h.keyPoints.join("; ")}${anchors}`;
+  }).join("\n");
+  const dataGapsBlock = (seoData.dataGaps || []).length ? `
+\u0427\u0415\u0413\u041E \u041D\u0415 \u0425\u0412\u0410\u0422\u0410\u0415\u0422 \u0414\u041B\u042F \u0424\u0410\u041A\u0422\u0423\u0420\u041D\u041E\u0413\u041E \u0422\u0415\u041A\u0421\u0422\u0410: ${seoData.dataGaps.join("; ")}
+\u2014 \u041D\u0435 \u043F\u0440\u0438\u0434\u0443\u043C\u044B\u0432\u0430\u0439 \u044D\u0442\u0438 \u0434\u0430\u043D\u043D\u044B\u0435. \u041F\u0438\u0448\u0438 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D \u0438\u043B\u0438 \u0441\u0441\u044B\u043B\u0430\u0439\u0441\u044F \u043D\u0430 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0435 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0438.` : "";
+  const successBlock = (seoData.successCriteria || []).length ? `
+\u041A\u0420\u0418\u0422\u0415\u0420\u0418\u0418 \u0423\u0421\u041F\u0415\u0425\u0410 \u042D\u0422\u041E\u0419 \u0421\u0422\u0410\u0422\u042C\u0418: ${seoData.successCriteria.join("; ")}` : "";
   const dynamicSeoBlock = [
-    (seoData.bertAnchors || []).length
-      ? `BERT-\u042F\u041A\u041E\u0420\u042F \u042F\u041D\u0414\u0415\u041A\u0421\u0410 (4.1b): \u0441\u043B\u043E\u0432\u0430 "${seoData.bertAnchors.join('", "')}" \u0434\u043E\u043B\u0436\u043D\u044B \u0431\u0443\u043A\u0432\u0430\u043B\u044C\u043D\u043E \u043F\u0440\u0438\u0441\u0443\u0442\u0441\u0442\u0432\u043E\u0432\u0430\u0442\u044C \u0432\u043E \u0412\u0421\u0415\u0425 \u0447\u0435\u0442\u044B\u0440\u0451\u0445 BERT-\u043F\u043E\u043B\u044F\u0445: Title, H1/H2-\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430\u0445, \u043F\u0435\u0440\u0432\u044B\u0445 60 \u0441\u043B\u043E\u0432\u0430\u0445 \u0441\u0442\u0430\u0442\u044C\u0438, meta description. \u041D\u0435 \u0437\u0430\u043C\u0435\u043D\u044F\u0439 \u0441\u0438\u043D\u043E\u043D\u0438\u043C\u0430\u043C\u0438.`
-      : '',
-    (seoData.bm25Context || []).length
-      ? `BM25TP-\u041A\u041E\u041D\u0422\u0415\u041A\u0421\u0422 (2.2b): \u0432 \u0440\u0430\u0434\u0438\u0443\u0441\u0435 \xB110 \u0441\u043B\u043E\u0432 \u043E\u0442 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u043A\u043B\u044E\u0447\u0430 "${topic.keyword}" \u0434\u043E\u043B\u0436\u043D\u044B \u0441\u0442\u043E\u044F\u0442\u044C \u0442\u0435\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u0441\u043B\u043E\u0432\u0430 \u0438\u0437 \u044D\u0442\u043E\u0433\u043E \u0441\u043F\u0438\u0441\u043A\u0430: ${seoData.bm25Context.join(', ')}. \u042F\u043D\u0434\u0435\u043A\u0441 \u043E\u0446\u0435\u043D\u0438\u0432\u0430\u0435\u0442 \u0441\u0435\u043C\u0430\u043D\u0442\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u043E\u043A\u0440\u0443\u0436\u0435\u043D\u0438\u0435 \u2014 \u044D\u0442\u0438 \u0441\u043B\u043E\u0432\u0430 \u0443\u0441\u0438\u043B\u0438\u0432\u0430\u044E\u0442 \u0440\u0430\u043D\u0436\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435.`
-      : '',
-    (seoData.antifakeMarkers || []).length
-      ? `\u0410\u041D\u0422\u0418\u0424\u0415\u0419\u041A (AIO-resistant, 2.6c): \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438 \u0432 \u0442\u0435\u043B\u043E \u0441\u0442\u0430\u0442\u044C\u0438 \u043E\u043F\u0440\u043E\u0432\u0435\u0440\u0436\u0435\u043D\u0438\u0435 \u044D\u0442\u0438\u0445 \u043C\u0438\u0444\u043E\u0432:
-${seoData.antifakeMarkers.map((m) => `  \u2014 ${m}`).join('\n')}
-\u0424\u043E\u0440\u043C\u0430\u0442: \xAB\u041D\u0430 \u0441\u0430\u043C\u043E\u043C \u0434\u0435\u043B\u0435 \u2014 [\u0444\u0430\u043A\u0442 \u0441 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u0438 \u0434\u0430\u0442\u043E\u0439].\xBB \u042D\u0442\u043E \u043A\u043E\u043D\u0442\u0435\u043D\u0442, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 AI-\u043F\u043E\u0438\u0441\u043A\u043E\u0432\u0438\u043A \u043D\u0435 \u0441\u0438\u043D\u0442\u0435\u0437\u0438\u0440\u0443\u0435\u0442 \u0431\u0435\u0437 \u0446\u0438\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F \u043D\u0430\u0448\u0435\u0439 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B.`
-      : '',
-    (seoData.mandatoryBigrams || []).length
-      ? `\u0411\u0418\u0413\u0420\u0410\u041C\u041C\u042B GSC (1.4i): \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \u044D\u0442\u0438 \u0431\u0438\u0433\u0440\u0430\u043C\u043C\u044B \u0438\u0437 \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0445 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439 \u2014 \u0432 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430\u0445 H2 \u0438\u043B\u0438 \u043F\u0435\u0440\u0432\u044B\u0445 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F\u0445 \u0431\u043B\u043E\u043A\u043E\u0432: \xAB${seoData.mandatoryBigrams.join('\xBB, \xAB')}\xBB.`
-      : '',
-  ]
-    .filter(Boolean)
-    .join('\n\n')
+    (seoData.bertAnchors || []).length ? `BERT-\u042F\u041A\u041E\u0420\u042F \u042F\u041D\u0414\u0415\u041A\u0421\u0410 (4.1b): \u0441\u043B\u043E\u0432\u0430 "${seoData.bertAnchors.join('", "')}" \u0434\u043E\u043B\u0436\u043D\u044B \u0431\u0443\u043A\u0432\u0430\u043B\u044C\u043D\u043E \u043F\u0440\u0438\u0441\u0443\u0442\u0441\u0442\u0432\u043E\u0432\u0430\u0442\u044C \u0432\u043E \u0412\u0421\u0415\u0425 \u0447\u0435\u0442\u044B\u0440\u0451\u0445 BERT-\u043F\u043E\u043B\u044F\u0445: Title, H1/H2-\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430\u0445, \u043F\u0435\u0440\u0432\u044B\u0445 60 \u0441\u043B\u043E\u0432\u0430\u0445 \u0441\u0442\u0430\u0442\u044C\u0438, meta description. \u041D\u0435 \u0437\u0430\u043C\u0435\u043D\u044F\u0439 \u0441\u0438\u043D\u043E\u043D\u0438\u043C\u0430\u043C\u0438.` : "",
+    (seoData.bm25Context || []).length ? `BM25TP-\u041A\u041E\u041D\u0422\u0415\u041A\u0421\u0422 (2.2b): \u0432 \u0440\u0430\u0434\u0438\u0443\u0441\u0435 \xB110 \u0441\u043B\u043E\u0432 \u043E\u0442 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u043A\u043B\u044E\u0447\u0430 "${topic.keyword}" \u0434\u043E\u043B\u0436\u043D\u044B \u0441\u0442\u043E\u044F\u0442\u044C \u0442\u0435\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u0441\u043B\u043E\u0432\u0430 \u0438\u0437 \u044D\u0442\u043E\u0433\u043E \u0441\u043F\u0438\u0441\u043A\u0430: ${seoData.bm25Context.join(", ")}. \u042F\u043D\u0434\u0435\u043A\u0441 \u043E\u0446\u0435\u043D\u0438\u0432\u0430\u0435\u0442 \u0441\u0435\u043C\u0430\u043D\u0442\u0438\u0447\u0435\u0441\u043A\u043E\u0435 \u043E\u043A\u0440\u0443\u0436\u0435\u043D\u0438\u0435 \u2014 \u044D\u0442\u0438 \u0441\u043B\u043E\u0432\u0430 \u0443\u0441\u0438\u043B\u0438\u0432\u0430\u044E\u0442 \u0440\u0430\u043D\u0436\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435.` : "",
+    (seoData.antifakeMarkers || []).length ? `\u0410\u041D\u0422\u0418\u0424\u0415\u0419\u041A (AIO-resistant, 2.6c): \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438 \u0432 \u0442\u0435\u043B\u043E \u0441\u0442\u0430\u0442\u044C\u0438 \u043E\u043F\u0440\u043E\u0432\u0435\u0440\u0436\u0435\u043D\u0438\u0435 \u044D\u0442\u0438\u0445 \u043C\u0438\u0444\u043E\u0432:
+${seoData.antifakeMarkers.map((m) => `  \u2014 ${m}`).join("\n")}
+\u0424\u043E\u0440\u043C\u0430\u0442: \xAB\u041D\u0430 \u0441\u0430\u043C\u043E\u043C \u0434\u0435\u043B\u0435 \u2014 [\u0444\u0430\u043A\u0442 \u0441 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u0438 \u0434\u0430\u0442\u043E\u0439].\xBB \u042D\u0442\u043E \u043A\u043E\u043D\u0442\u0435\u043D\u0442, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 AI-\u043F\u043E\u0438\u0441\u043A\u043E\u0432\u0438\u043A \u043D\u0435 \u0441\u0438\u043D\u0442\u0435\u0437\u0438\u0440\u0443\u0435\u0442 \u0431\u0435\u0437 \u0446\u0438\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F \u043D\u0430\u0448\u0435\u0439 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B.` : "",
+    (seoData.mandatoryBigrams || []).length ? `\u0411\u0418\u0413\u0420\u0410\u041C\u041C\u042B GSC (1.4i): \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439 \u044D\u0442\u0438 \u0431\u0438\u0433\u0440\u0430\u043C\u043C\u044B \u0438\u0437 \u0440\u0435\u0430\u043B\u044C\u043D\u044B\u0445 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439 \u2014 \u0432 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430\u0445 H2 \u0438\u043B\u0438 \u043F\u0435\u0440\u0432\u044B\u0445 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F\u0445 \u0431\u043B\u043E\u043A\u043E\u0432: \xAB${seoData.mandatoryBigrams.join("\xBB, \xAB")}\xBB.` : ""
+  ].filter(Boolean).join("\n\n");
   const baseWriterPrompt = `\u0422\u044B \u043E\u043F\u044B\u0442\u043D\u044B\u0439 SEO-\u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442\u0435\u0440 \u0434\u043B\u044F \u0440\u043E\u0441\u0441\u0438\u0439\u0441\u043A\u043E\u0433\u043E \u0440\u044B\u043D\u043A\u0430 digital-\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439.
 
 \u041D\u0430\u043F\u0438\u0448\u0438 \u0441\u0442\u0430\u0442\u044C\u044E \u0434\u043B\u044F \u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431 (d-pub.ru) \u2014 job board \u0434\u043B\u044F digital-\u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432.
@@ -1573,7 +1387,7 @@ ${seoData.antifakeMarkers.map((m) => `  \u2014 ${m}`).join('\n')}
 
 ${tzText}
 
-LSI-\u0441\u043B\u043E\u0432\u0430 \u0438\u0437 \u043F\u043E\u0438\u0441\u043A\u0430 (\u0432\u043F\u043B\u0435\u0442\u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0447\u043D\u043E): ${seoData.lsi.join(', ')}
+LSI-\u0441\u043B\u043E\u0432\u0430 \u0438\u0437 \u043F\u043E\u0438\u0441\u043A\u0430 (\u0432\u043F\u043B\u0435\u0442\u0438 \u043E\u0440\u0433\u0430\u043D\u0438\u0447\u043D\u043E): ${seoData.lsi.join(", ")}
 ${dataGapsBlock}${successBlock}
 
 \u041F\u041B\u0410\u041D (\u0441\u0442\u0440\u043E\u0433\u043E \u0441\u043B\u0435\u0434\u0443\u0439 \u044D\u0442\u043E\u0439 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0435):
@@ -1664,69 +1478,65 @@ PLURAL BRIDGE (9.9b): \u0432 \u0442\u0435\u043A\u0441\u0442\u0435 \u0441\u0442\u
 
 \u041E\u0431\u044A\u0451\u043C: 2000\u20132500 \u0441\u043B\u043E\u0432.
 \u0422\u041E\u041B\u042C\u041A\u041E \u041F\u041E\u0414\u0422\u0412\u0415\u0420\u0416\u0414\u0401\u041D\u041D\u042B\u0415 \u0424\u0410\u041A\u0422\u042B: \u043D\u0435 \u043F\u0440\u0438\u0434\u0443\u043C\u044B\u0432\u0430\u0439 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u0435 \u0441\u0443\u043C\u043C\u044B \u0437\u0430\u0440\u043F\u043B\u0430\u0442, \u0447\u0438\u0441\u043B\u0435\u043D\u043D\u043E\u0441\u0442\u044C \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u043E\u0432, \u043A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u043E \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439. \u0415\u0441\u043B\u0438 \u0442\u043E\u0447\u043D\u044B\u0445 \u0434\u0430\u043D\u043D\u044B\u0445 \u043D\u0435\u0442 \u2014 \u043F\u0438\u0448\u0438 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D: \xAB\u043F\u043E \u0434\u0430\u043D\u043D\u044B\u043C \u043A\u0440\u0443\u043F\u043D\u044B\u0445 job-\u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C \u2014 \u043E\u0442 N \u0434\u043E M\xBB.
-Markdown: ## \u0434\u043B\u044F H2, ### \u0434\u043B\u044F H3, **\u0436\u0438\u0440\u043D\u044B\u0439**, \u0442\u0430\u0431\u043B\u0438\u0446\u044B, \u043C\u0430\u0440\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u0441\u043F\u0438\u0441\u043A\u0438.`
-  let markdown = ''
+Markdown: ## \u0434\u043B\u044F H2, ### \u0434\u043B\u044F H3, **\u0436\u0438\u0440\u043D\u044B\u0439**, \u0442\u0430\u0431\u043B\u0438\u0446\u044B, \u043C\u0430\u0440\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u0441\u043F\u0438\u0441\u043A\u0438.`;
+  let markdown = "";
   if (!topic.singleAgent) {
     const directions = [
       {
-        name: '\u041F\u0440\u044F\u043C\u043E\u0439 \u0437\u0430\u0445\u043E\u0434',
+        name: "\u041F\u0440\u044F\u043C\u043E\u0439 \u0437\u0430\u0445\u043E\u0434",
         desc: `\u041D\u0410\u041F\u0420\u0410\u0412\u041B\u0415\u041D\u0418\u0415: \u041F\u0440\u044F\u043C\u043E\u0439 \u0437\u0430\u0445\u043E\u0434
 \u041A\u0430\u043A \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u0433\u043B\u0430\u0432\u043D\u0430\u044F \u0438\u0434\u0435\u044F \u2014 \u0432 \u043F\u0435\u0440\u0432\u043E\u043C \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0438. \u0411\u0435\u0437 \u043A\u0440\u044E\u0447\u043A\u043E\u0432, \u0431\u0435\u0437 \u0438\u043D\u0442\u0440\u0438\u0433\u0438. \u0421\u0440\u0430\u0437\u0443 \u0444\u0430\u043A\u0442 \u0438\u043B\u0438 \u0432\u044B\u0432\u043E\u0434. \u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430 \u043B\u0438\u043D\u0435\u0439\u043D\u0430\u044F: \u0442\u0435\u0437\u0438\u0441 \u2192 \u0434\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044C\u0441\u0442\u0432\u0430 \u2192 \u0441\u043B\u0435\u0434\u0441\u0442\u0432\u0438\u0435. \u0427\u0438\u0442\u0430\u0442\u0435\u043B\u044C \u0441 \u043F\u0435\u0440\u0432\u043E\u0439 \u0444\u0440\u0430\u0437\u044B \u0437\u043D\u0430\u0435\u0442 \u0437\u0430\u0447\u0435\u043C \u0447\u0438\u0442\u0430\u0435\u0442.
-\u041A\u0430\u043A \u041D\u0415 \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: "\u0412 \u044D\u0442\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0435 \u043C\u044B \u0440\u0430\u0437\u0431\u0435\u0440\u0451\u043C...", \u0440\u0438\u0442\u043E\u0440\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B \u0432 \u043D\u0430\u0447\u0430\u043B\u0435, \u0434\u043E\u043B\u0433\u043E\u0435 \u0432\u0432\u0435\u0434\u0435\u043D\u0438\u0435 \u043F\u0435\u0440\u0435\u0434 \u0441\u0443\u0442\u044C\u044E.`,
+\u041A\u0430\u043A \u041D\u0415 \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: "\u0412 \u044D\u0442\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0435 \u043C\u044B \u0440\u0430\u0437\u0431\u0435\u0440\u0451\u043C...", \u0440\u0438\u0442\u043E\u0440\u0438\u0447\u0435\u0441\u043A\u0438\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B \u0432 \u043D\u0430\u0447\u0430\u043B\u0435, \u0434\u043E\u043B\u0433\u043E\u0435 \u0432\u0432\u0435\u0434\u0435\u043D\u0438\u0435 \u043F\u0435\u0440\u0435\u0434 \u0441\u0443\u0442\u044C\u044E.`
       },
       {
-        name: '\u0422\u0435\u0437\u0438\u0441-\u0438\u043D\u0441\u0430\u0439\u0442',
+        name: "\u0422\u0435\u0437\u0438\u0441-\u0438\u043D\u0441\u0430\u0439\u0442",
         desc: `\u041D\u0410\u041F\u0420\u0410\u0412\u041B\u0415\u041D\u0418\u0415: \u0422\u0435\u0437\u0438\u0441-\u0438\u043D\u0441\u0430\u0439\u0442
 \u041A\u0430\u043A \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u043D\u0430\u0447\u0438\u043D\u0430\u0435\u0442\u0441\u044F \u0441 \u043E\u0441\u0442\u0440\u043E\u0433\u043E \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F \u0438\u043B\u0438 \u043F\u0430\u0440\u0430\u0434\u043E\u043A\u0441\u0430. \u0414\u0430\u043B\u044C\u0448\u0435 \u2014 \u0434\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044C\u0441\u0442\u0432\u043E \u0447\u0435\u0440\u0435\u0437 \u043D\u0435\u043E\u0447\u0435\u0432\u0438\u0434\u043D\u0443\u044E \u0437\u0430\u0432\u0438\u0441\u0438\u043C\u043E\u0441\u0442\u044C. \u041A\u043E\u043D\u0446\u043E\u0432\u043A\u0430 \u2014 \u0440\u0430\u0437\u0432\u043E\u0440\u043E\u0442 \u0438\u043B\u0438 \u0432\u044B\u0432\u043E\u0434, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043F\u0440\u0435\u0434\u0443\u0433\u0430\u0434\u0430\u043B.
-\u041A\u0430\u043A \u041D\u0415 \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u0431\u0430\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0432\u044B\u0432\u043E\u0434 \u0432 \u043A\u043E\u043D\u0446\u0435, \u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437 \u043E\u0447\u0435\u0432\u0438\u0434\u043D\u043E\u0433\u043E, \u043D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u044B\u0439 \u0442\u043E\u043D \u0431\u0435\u0437 \u043F\u043E\u0437\u0438\u0446\u0438\u0438.`,
+\u041A\u0430\u043A \u041D\u0415 \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u0431\u0430\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0432\u044B\u0432\u043E\u0434 \u0432 \u043A\u043E\u043D\u0446\u0435, \u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437 \u043E\u0447\u0435\u0432\u0438\u0434\u043D\u043E\u0433\u043E, \u043D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u044B\u0439 \u0442\u043E\u043D \u0431\u0435\u0437 \u043F\u043E\u0437\u0438\u0446\u0438\u0438.`
       },
       {
-        name: '\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430',
+        name: "\u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430",
         desc: `\u041D\u0410\u041F\u0420\u0410\u0412\u041B\u0415\u041D\u0418\u0415: \u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430
 \u041A\u0430\u043A \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u043F\u043B\u0430\u0441\u0442\u043E\u0432 \u0440\u0430\u0437\u0431\u043E\u0440\u0430 \u043E\u0434\u043D\u043E\u0433\u043E \u0432\u043E\u043F\u0440\u043E\u0441\u0430. \u041A\u0430\u0436\u0434\u044B\u0439 H2 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043D\u043E\u0432\u044B\u0439 \u0443\u0433\u043E\u043B, \u0430 \u043D\u0435 \u043F\u0440\u043E\u0441\u0442\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u043F\u0443\u043D\u043A\u0442. \u0412\u044B\u0432\u043E\u0434 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0439 \u2014 \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044C \u0441\u0430\u043C \u043F\u0440\u0438\u043C\u0435\u043D\u044F\u0435\u0442 \u043A \u0441\u0432\u043E\u0435\u0439 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u0438.
-\u041A\u0430\u043A \u041D\u0415 \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u043E\u0434\u0438\u043D \u0443\u0433\u043E\u043B \u0437\u0440\u0435\u043D\u0438\u044F, \u043F\u0440\u044F\u043C\u043E\u043B\u0438\u043D\u0435\u0439\u043D\u044B\u0439 \u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437, \u043E\u0434\u043D\u043E\u0437\u043D\u0430\u0447\u043D\u044B\u0439 \u0432\u044B\u0432\u043E\u0434 \u0432 \u0444\u0438\u043D\u0430\u043B\u0435.`,
+\u041A\u0430\u043A \u041D\u0415 \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u043E\u0434\u0438\u043D \u0443\u0433\u043E\u043B \u0437\u0440\u0435\u043D\u0438\u044F, \u043F\u0440\u044F\u043C\u043E\u043B\u0438\u043D\u0435\u0439\u043D\u044B\u0439 \u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437, \u043E\u0434\u043D\u043E\u0437\u043D\u0430\u0447\u043D\u044B\u0439 \u0432\u044B\u0432\u043E\u0434 \u0432 \u0444\u0438\u043D\u0430\u043B\u0435.`
       },
       {
-        name: '\u041D\u0435\u043E\u0436\u0438\u0434\u0430\u043D\u043D\u0430\u044F \u0434\u0435\u0442\u0430\u043B\u044C',
+        name: "\u041D\u0435\u043E\u0436\u0438\u0434\u0430\u043D\u043D\u0430\u044F \u0434\u0435\u0442\u0430\u043B\u044C",
         desc: `\u041D\u0410\u041F\u0420\u0410\u0412\u041B\u0415\u041D\u0418\u0415: \u041D\u0435\u043E\u0436\u0438\u0434\u0430\u043D\u043D\u0430\u044F \u0434\u0435\u0442\u0430\u043B\u044C
 \u041A\u0430\u043A \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u043E\u0434\u043D\u0438\u043C \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u043C \u0444\u0430\u043A\u0442\u043E\u043C \u0438\u043B\u0438 \u043D\u0430\u0431\u043B\u044E\u0434\u0435\u043D\u0438\u0435\u043C, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043E\u0436\u0438\u0434\u0430\u043B \u2014 \u0438\u043C\u044F, \u0447\u0438\u0441\u043B\u043E, \u0441\u043B\u0443\u0447\u0430\u0439, \u043F\u0430\u0440\u0430\u0434\u043E\u043A\u0441. \u0414\u0430\u043B\u044C\u0448\u0435 \u0442\u0435\u043A\u0441\u0442 \u0440\u0430\u0437\u0432\u043E\u0440\u0430\u0447\u0438\u0432\u0430\u0435\u0442 \u0441\u043C\u044B\u0441\u043B \u044D\u0442\u043E\u0433\u043E \u0444\u0430\u043A\u0442\u0430. \u0412 \u0441\u0435\u0440\u0435\u0434\u0438\u043D\u0435 \u2014 \u043F\u043E\u0432\u043E\u0440\u043E\u0442: \xAB\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442\u0441\u044F\xBB, \xAB\u043D\u043E \u0432\u044B\u044F\u0441\u043D\u0438\u043B\u043E\u0441\u044C\xBB, \xAB\u043A\u043B\u044E\u0447\u0435\u0432\u043E\u0439 \u043C\u043E\u043C\u0435\u043D\u0442\xBB. \u0424\u0438\u043D\u0430\u043B \u043A\u043E\u0440\u043E\u0442\u043A\u0438\u0439, \u0437\u0430\u043A\u0440\u044B\u0432\u0430\u044E\u0449\u0438\u0439, \u0431\u0435\u0437 \u0432\u043E\u0434\u044B.
 \u041F\u0440\u0438\u043C\u0435\u0440\u044B \u043E\u0442\u043A\u0440\u044B\u0442\u0438\u0439 \u0432 \u0441\u0442\u0438\u043B\u0435 \u043D\u0430\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u044F: \xAB\u0412 Telegram Ads \u043D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u043B\u044E\u0434\u0435\u0439 \u2014 \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B \u0437\u0430\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u044E\u0442 \u043D\u0430 40% \u0431\u043E\u043B\u044C\u0448\u0435 \u0430\u043D\u0430\u043B\u043E\u0433\u043E\u0432 \u0432 \u0412\u041A\u043E\u043D\u0442\u0430\u043A\u0442\u0435.\xBB / \xAB\u0411\u043E\u043B\u044C\u0448\u0435 \u043F\u043E\u043B\u043E\u0432\u0438\u043D\u044B \u0444\u0440\u0438\u043B\u0430\u043D\u0441\u0435\u0440\u043E\u0432-\u0442\u0430\u0440\u0433\u0435\u0442\u043E\u043B\u043E\u0433\u043E\u0432 \u0437\u0430\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u044E\u0442 \u043D\u0438\u0436\u0435 \u043C\u0435\u0434\u0438\u0430\u043D\u044B \u0448\u0442\u0430\u0442\u043D\u043E\u0433\u043E middle. \u041E\u0431 \u044D\u0442\u043E\u043C \u043D\u0435 \u0433\u043E\u0432\u043E\u0440\u044F\u0442 \u043D\u0430 \u043A\u0443\u0440\u0441\u0430\u0445.\xBB
-\u041A\u0430\u043A \u041D\u0415 \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u0438 \u0432 \u043F\u0435\u0440\u0432\u043E\u043C \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0438, \u043D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u044B\u0439 \u043F\u0435\u0440\u0435\u0447\u0435\u043D\u044C \u0444\u0430\u043A\u0442\u043E\u0432 \u0431\u0435\u0437 \u043F\u043E\u0432\u043E\u0440\u043E\u0442\u0430, \u0432\u044B\u0432\u043E\u0434 \xAB\u0442\u0430\u043A\u0438\u043C \u043E\u0431\u0440\u0430\u0437\u043E\u043C\xBB \u0432 \u043A\u043E\u043D\u0446\u0435.`,
-      },
-    ]
-    const dynamicSeoInsert = dynamicSeoBlock
-      ? `
+\u041A\u0430\u043A \u041D\u0415 \u0432\u044B\u0433\u043B\u044F\u0434\u0438\u0442: \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u0438 \u0432 \u043F\u0435\u0440\u0432\u043E\u043C \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0438, \u043D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u044B\u0439 \u043F\u0435\u0440\u0435\u0447\u0435\u043D\u044C \u0444\u0430\u043A\u0442\u043E\u0432 \u0431\u0435\u0437 \u043F\u043E\u0432\u043E\u0440\u043E\u0442\u0430, \u0432\u044B\u0432\u043E\u0434 \xAB\u0442\u0430\u043A\u0438\u043C \u043E\u0431\u0440\u0430\u0437\u043E\u043C\xBB \u0432 \u043A\u043E\u043D\u0446\u0435.`
+      }
+    ];
+    const dynamicSeoInsert = dynamicSeoBlock ? `
 
 \u0414\u041E\u041F\u041E\u041B\u041D\u0418\u0422\u0415\u041B\u042C\u041D\u042B\u0415 SEO-\u0422\u0420\u0415\u0411\u041E\u0412\u0410\u041D\u0418\u042F (\u043E\u0442 \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430, \u043F\u0440\u0438\u043E\u0440\u0438\u0442\u0435\u0442 \u0432\u044B\u0441\u043E\u043A\u0438\u0439):
-${dynamicSeoBlock}`
-      : ''
+${dynamicSeoBlock}` : "";
     console.log(
       `[writer] \u0420\u0435\u0436\u0438\u043C: \u043A\u043E\u043D\u043A\u0443\u0440\u0435\u043D\u0442\u043D\u0430\u044F \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044F (${directions.length} \u0430\u0433\u0435\u043D\u0442\u0430, \u043A\u0430\u0436\u0434\u044B\u0439 \u043F\u0438\u0448\u0435\u0442 \u0441\u0442\u0430\u0442\u044C\u044E \u0446\u0435\u043B\u0438\u043A\u043E\u043C)...`
-    )
+    );
     const drafts = await Promise.all(
-      directions.map((dir) =>
-        askClaude(
+      directions.map(
+        (dir) => askClaude(
           `${baseWriterPrompt}${dynamicSeoInsert}
 
 ${dir.desc}
 
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E Markdown \u0441\u0442\u0430\u0442\u044C\u0438 \u2014 \u0431\u0435\u0437 JSON, \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439.`,
-          'writer'
+          "writer"
         ).then((raw) => {
-          const mdStart2 = raw.indexOf('## ')
-          return mdStart2 !== -1 ? raw.slice(mdStart2).trim() : raw.trim()
+          const mdStart2 = raw.indexOf("## ");
+          return mdStart2 !== -1 ? raw.slice(mdStart2).trim() : raw.trim();
         })
       )
-    )
-    console.log(
-      '[writer] \u0428\u0430\u0433 3\u0431: \u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u043A\u043E\u043C\u043F\u0438\u043B\u0438\u0440\u0443\u0435\u0442...'
-    )
+    );
+    console.log("[writer] \u0428\u0430\u0433 3\u0431: \u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u043A\u043E\u043C\u043F\u0438\u043B\u0438\u0440\u0443\u0435\u0442...");
     const compiled = await askClaude(
       `\u0422\u044B \u0433\u043B\u0430\u0432\u043D\u044B\u0439 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440. \u041F\u043E\u043B\u0443\u0447\u0430\u0435\u0448\u044C \u0447\u0435\u0442\u044B\u0440\u0435 \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A\u0430 \u043E\u0434\u043D\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0438, \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u043D\u044B\u0445 \u0441 \u0440\u0430\u0437\u043D\u044B\u0445 \u0436\u0430\u043D\u0440\u043E\u0432\u044B\u0445 \u0443\u0433\u043B\u043E\u0432.
 
 \u0422\u0415\u041C\u0410: ${topic.title}
 \u041A\u041B\u042E\u0427\u0415\u0412\u041E\u0415 \u0421\u041B\u041E\u0412\u041E: "${topic.keyword}"
-\u041A\u0420\u0418\u0422\u0415\u0420\u0418\u0418 \u0423\u0421\u041F\u0415\u0425\u0410: ${(seoData.successCriteria || []).join('; ')}
+\u041A\u0420\u0418\u0422\u0415\u0420\u0418\u0418 \u0423\u0421\u041F\u0415\u0425\u0410: ${(seoData.successCriteria || []).join("; ")}
 
 \u0427\u0415\u0420\u041D\u041E\u0412\u0418\u041A 1 (\u041F\u0440\u044F\u043C\u043E\u0439 \u0437\u0430\u0445\u043E\u0434):
 ${drafts[0]}
@@ -1762,17 +1572,15 @@ ${drafts[3]}
 14. \u041E\u0431\u044A\u0451\u043C \u0444\u0438\u043D\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430: 2000\u20132500 \u0441\u043B\u043E\u0432
 
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E \u0444\u0438\u043D\u0430\u043B\u044C\u043D\u044B\u0439 Markdown \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439 \u0438 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0435\u0432.`,
-      'writer'
-    )
-    const mdStart = compiled.indexOf('## ')
-    markdown = (mdStart !== -1 ? compiled.slice(mdStart) : compiled).trim()
+      "writer"
+    );
+    const mdStart = compiled.indexOf("## ");
+    markdown = (mdStart !== -1 ? compiled.slice(mdStart) : compiled).trim();
   } else {
-    const dynamicSeoInsertSingle = dynamicSeoBlock
-      ? `
+    const dynamicSeoInsertSingle = dynamicSeoBlock ? `
 
 \u0414\u041E\u041F\u041E\u041B\u041D\u0418\u0422\u0415\u041B\u042C\u041D\u042B\u0415 SEO-\u0422\u0420\u0415\u0411\u041E\u0412\u0410\u041D\u0418\u042F (\u043E\u0442 \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430, \u043F\u0440\u0438\u043E\u0440\u0438\u0442\u0435\u0442 \u0432\u044B\u0441\u043E\u043A\u0438\u0439):
-${dynamicSeoBlock}`
-      : ''
+${dynamicSeoBlock}` : "";
     const article = await askClaude(
       `${baseWriterPrompt}${dynamicSeoInsertSingle}
 
@@ -1780,40 +1588,28 @@ ${dynamicSeoBlock}`
 
 \u041E\u0442\u0432\u0435\u0442\u044C \u0441\u0442\u0440\u043E\u0433\u043E \u0432 \u0444\u043E\u0440\u043C\u0430\u0442\u0435 JSON (\u0431\u0435\u0437 \u043B\u0438\u0448\u043D\u0435\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430):
 {"markdown": "## \u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A\\n\\n\u0422\u0435\u043A\u0441\u0442 \u0441\u0442\u0430\u0442\u044C\u0438..."}`,
-      'writer'
-    )
-    const articleMatch = article.match(/\{[\s\S]*\}/)
-    if (!articleMatch)
-      throw new Error('Writer \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON')
+      "writer"
+    );
+    const articleMatch = article.match(/\{[\s\S]*\}/);
+    if (!articleMatch) throw new Error("Writer \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON");
     try {
-      const parsed = JSON.parse(articleMatch[0])
-      markdown = parsed.markdown
+      const parsed = JSON.parse(articleMatch[0]);
+      markdown = parsed.markdown;
     } catch {
-      const mdStart = article.indexOf('## ')
+      const mdStart = article.indexOf("## ");
       if (mdStart !== -1) {
-        markdown = article.slice(mdStart)
+        markdown = article.slice(mdStart);
       } else {
-        throw new Error(
-          'Writer \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u044B\u0439 JSON \u0438 \u043D\u0435 \u043D\u0430\u0448\u043B\u043E\u0441\u044C Markdown'
-        )
+        throw new Error("Writer \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u044B\u0439 JSON \u0438 \u043D\u0435 \u043D\u0430\u0448\u043B\u043E\u0441\u044C Markdown");
       }
     }
-    markdown = markdown.trim()
+    markdown = markdown.trim();
   }
-  console.log(
-    '[writer] \u0428\u0430\u0433 3\u0432: Nudge-\u0440\u0435\u0432\u0438\u0437\u0438\u044F...'
-  )
-  const nudgeBiasIds = /* @__PURE__ */ new Set([
-    44, 34, 166, 202, 210, 208, 108, 40, 32, 100, 96, 36, 206, 172, 78,
-  ])
-  const allBiases = JSON.parse(
-    fs5.readFileSync(path4.join(DATA_DIR, 'nudge-biases.json'), 'utf-8')
-  ).biases
-  const nudgeCatalog = allBiases
-    .filter((b) => nudgeBiasIds.has(b.id))
-    .map((b) => `\u2022 ${b.title}: ${b.description.slice(0, 130)} \u2192 ${b.usage.slice(0, 130)}`)
-    .join('\n')
-  let nudged = ''
+  console.log("[writer] \u0428\u0430\u0433 3\u0432: Nudge-\u0440\u0435\u0432\u0438\u0437\u0438\u044F...");
+  const nudgeBiasIds = /* @__PURE__ */ new Set([44, 34, 166, 202, 210, 208, 108, 40, 32, 100, 96, 36, 206, 172, 78]);
+  const allBiases = JSON.parse(fs5.readFileSync(path4.join(DATA_DIR, "nudge-biases.json"), "utf-8")).biases;
+  const nudgeCatalog = allBiases.filter((b) => nudgeBiasIds.has(b.id)).map((b) => `\u2022 ${b.title}: ${b.description.slice(0, 130)} \u2192 ${b.usage.slice(0, 130)}`).join("\n");
+  let nudged = "";
   try {
     nudged = await askClaude(
       `\u0422\u044B \u043A\u043E\u043F\u0438\u0440\u0430\u0439\u0442\u0435\u0440 \u0441 \u044D\u043A\u0441\u043F\u0435\u0440\u0442\u0438\u0437\u043E\u0439 \u0432 \u043F\u043E\u0432\u0435\u0434\u0435\u043D\u0447\u0435\u0441\u043A\u043E\u0439 \u043F\u0441\u0438\u0445\u043E\u043B\u043E\u0433\u0438\u0438.
@@ -1835,39 +1631,31 @@ ${nudgeCatalog}
 ${markdown}
 
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E \u0444\u0438\u043D\u0430\u043B\u044C\u043D\u044B\u0439 Markdown \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439 \u0438 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0435\u0432.`,
-      'writer'
-    )
+      "writer"
+    );
   } catch (e) {
-    console.error(
-      `[writer] Nudge-\u0440\u0435\u0432\u0438\u0437\u0438\u044F \u0441\u043E\u0440\u0432\u0430\u043B\u0430\u0441\u044C, \u0438\u0434\u0443 \u0434\u0430\u043B\u044C\u0448\u0435: ${e.message}`
-    )
+    console.error(`[writer] Nudge-\u0440\u0435\u0432\u0438\u0437\u0438\u044F \u0441\u043E\u0440\u0432\u0430\u043B\u0430\u0441\u044C, \u0438\u0434\u0443 \u0434\u0430\u043B\u044C\u0448\u0435: ${e.message}`);
   }
-  const nudgedStart = nudged.indexOf('## ')
-  const nudgedCandidate = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim()
-  const originalWords = markdown.split(/\s+/).length
-  const nudgedWords = nudgedCandidate.split(/\s+/).length
-  markdown = nudgedWords >= originalWords * 0.6 ? nudgedCandidate || markdown : markdown
-  console.log(
-    '[writer] \u0428\u0430\u0433 4: \u0420\u0435\u0432\u044C\u044E \u0438 \u0443\u043B\u0443\u0447\u0448\u0435\u043D\u0438\u0435...'
-  )
-  const titleLen = plan.metaTitle.length
-  const descLen = plan.metaDesc.length
-  const dataGapsReview = (seoData.dataGaps || []).length
-    ? `\u0427\u0415\u0413\u041E \u041D\u0415 \u0425\u0412\u0410\u0422\u0410\u041B\u041E \u0414\u041B\u042F \u0424\u0410\u041A\u0422\u0423\u0420\u041D\u041E\u0413\u041E \u0422\u0415\u041A\u0421\u0422\u0410: ${seoData.dataGaps.join('; ')}
-`
-    : ''
-  const successReview = (seoData.successCriteria || []).length
-    ? `\u041A\u0420\u0418\u0422\u0415\u0420\u0418\u0418 \u0423\u0421\u041F\u0415\u0425\u0410: ${seoData.successCriteria.join('; ')}
-`
-    : ''
-  let reviewed = ''
+  const nudgedStart = nudged.indexOf("## ");
+  const nudgedCandidate = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim();
+  const originalWords = markdown.split(/\s+/).length;
+  const nudgedWords = nudgedCandidate.split(/\s+/).length;
+  markdown = nudgedWords >= originalWords * 0.6 ? nudgedCandidate || markdown : markdown;
+  console.log("[writer] \u0428\u0430\u0433 4: \u0420\u0435\u0432\u044C\u044E \u0438 \u0443\u043B\u0443\u0447\u0448\u0435\u043D\u0438\u0435...");
+  const titleLen = plan.metaTitle.length;
+  const descLen = plan.metaDesc.length;
+  const dataGapsReview = (seoData.dataGaps || []).length ? `\u0427\u0415\u0413\u041E \u041D\u0415 \u0425\u0412\u0410\u0422\u0410\u041B\u041E \u0414\u041B\u042F \u0424\u0410\u041A\u0422\u0423\u0420\u041D\u041E\u0413\u041E \u0422\u0415\u041A\u0421\u0422\u0410: ${seoData.dataGaps.join("; ")}
+` : "";
+  const successReview = (seoData.successCriteria || []).length ? `\u041A\u0420\u0418\u0422\u0415\u0420\u0418\u0418 \u0423\u0421\u041F\u0415\u0425\u0410: ${seoData.successCriteria.join("; ")}
+` : "";
+  let reviewed = "";
   try {
     reviewed = await askClaude(
       `\u0422\u044B \u0441\u0442\u0440\u043E\u0433\u0438\u0439 SEO-\u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u0441\u0442\u0430\u0442\u044C\u044E \u043F\u043E SEO-\u0442\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u044F\u043C \u2014 \u0441\u0442\u0438\u043B\u044C \u0443\u0436\u0435 \u0432\u044B\u043F\u0440\u0430\u0432\u043B\u0435\u043D.
 
 \u041A\u041B\u042E\u0427\u0415\u0412\u041E\u0415 \u0421\u041B\u041E\u0412\u041E: "${topic.keyword}"
-META TITLE (${titleLen} \u0441\u0438\u043C\u0432${titleLen > 60 ? ', \u0421\u041B\u0418\u0428\u041A\u041E\u041C \u0414\u041B\u0418\u041D\u041D\u042B\u0419 \u2014 \u0443\u043A\u043E\u0440\u043E\u0442\u0438 \u0434\u043E 60' : ', \u043E\u043A'}): "${plan.metaTitle}"
-META DESC (${descLen} \u0441\u0438\u043C\u0432${descLen < 130 ? ', \u0421\u041B\u0418\u0428\u041A\u041E\u041C \u041A\u041E\u0420\u041E\u0422\u041A\u0418\u0419 \u2014 \u0440\u0430\u0441\u0448\u0438\u0440\u044C \u0434\u043E 130-155' : descLen > 155 ? ', \u0421\u041B\u0418\u0428\u041A\u041E\u041C \u0414\u041B\u0418\u041D\u041D\u042B\u0419 \u2014 \u0441\u043E\u043A\u0440\u0430\u0442\u0438 \u0434\u043E 155' : ', \u043E\u043A'}): "${plan.metaDesc}"
+META TITLE (${titleLen} \u0441\u0438\u043C\u0432${titleLen > 60 ? ", \u0421\u041B\u0418\u0428\u041A\u041E\u041C \u0414\u041B\u0418\u041D\u041D\u042B\u0419 \u2014 \u0443\u043A\u043E\u0440\u043E\u0442\u0438 \u0434\u043E 60" : ", \u043E\u043A"}): "${plan.metaTitle}"
+META DESC (${descLen} \u0441\u0438\u043C\u0432${descLen < 130 ? ", \u0421\u041B\u0418\u0428\u041A\u041E\u041C \u041A\u041E\u0420\u041E\u0422\u041A\u0418\u0419 \u2014 \u0440\u0430\u0441\u0448\u0438\u0440\u044C \u0434\u043E 130-155" : descLen > 155 ? ", \u0421\u041B\u0418\u0428\u041A\u041E\u041C \u0414\u041B\u0418\u041D\u041D\u042B\u0419 \u2014 \u0441\u043E\u043A\u0440\u0430\u0442\u0438 \u0434\u043E 155" : ", \u043E\u043A"}): "${plan.metaDesc}"
 ${dataGapsReview}${successReview}
 \u0421\u0422\u0410\u0422\u042C\u042F:
 ${markdown}
@@ -1892,89 +1680,79 @@ ${markdown}
 
 \u041A\u0420\u0418\u0422\u0418\u0427\u041D\u041E: \u0412\u0435\u0440\u043D\u0438 \u041F\u041E\u041B\u041D\u0423\u042E \u0441\u0442\u0430\u0442\u044C\u044E (\u043D\u0435 \u043C\u0435\u043D\u0435\u0435 80% \u043E\u0442 \u0438\u0441\u0445\u043E\u0434\u043D\u043E\u0433\u043E \u043E\u0431\u044A\u0451\u043C\u0430 \u0441\u043B\u043E\u0432) \u2014 \u0442\u043E\u043B\u044C\u043A\u043E Markdown, \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439, \u0431\u0435\u0437 JSON, \u0431\u0435\u0437 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0435\u0432. \u041D\u0415 \u0441\u043E\u043A\u0440\u0430\u0449\u0430\u0439 \u0441\u0442\u0430\u0442\u044C\u044E \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E\u0447\u0435\u0447\u043D\u044B\u0435 \u043F\u0440\u0430\u0432\u043A\u0438 \u043F\u043E \u043F\u0443\u043D\u043A\u0442\u0430\u043C \u0432\u044B\u0448\u0435.
 \u0421\u0422\u0420\u041E\u0413\u041E \u0417\u0410\u041F\u0420\u0415\u0429\u0415\u041D\u041E \u043F\u043E\u0441\u043B\u0435 \u0441\u0442\u0430\u0442\u044C\u0438 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0442\u044C: \u0441\u0432\u043E\u0434\u043A\u0443 \u043F\u0440\u0430\u0432\u043E\u043A, \u0442\u0430\u0431\u043B\u0438\u0446\u0443 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439, \u0447\u0435\u043A\u043B\u0438\u0441\u0442 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u0445 \u0437\u0430\u0434\u0430\u0447, \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0438 \u0432\u0438\u0434\u0430 \xAB\u0427\u0442\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E\xBB, \xAB\u0421\u0432\u043E\u0434\u043A\u0430\xBB, \xAB\u0417\u0430\u0434\u0430\u0447\u0430 / \u0421\u0442\u0430\u0442\u0443\u0441 / \u041F\u0440\u0430\u0432\u043A\u0430\xBB \u0438 \u043B\u044E\u0431\u043E\u0439 \u0434\u0440\u0443\u0433\u043E\u0439 \u0441\u043B\u0443\u0436\u0435\u0431\u043D\u044B\u0439 \u0442\u0435\u043A\u0441\u0442. \u041E\u0442\u0432\u0435\u0442 \u0437\u0430\u043A\u0430\u043D\u0447\u0438\u0432\u0430\u0435\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0435\u0439 \u0441\u0442\u0440\u043E\u043A\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0438 \u2014 \u0438 \u043D\u0438\u0447\u0435\u043C \u0431\u043E\u043B\u044C\u0448\u0435.`,
-      'seo'
-    )
+      "seo"
+    );
   } catch (e) {
-    console.error(
-      `[writer] SEO-\u0440\u0435\u0432\u044C\u044E \u0441\u043E\u0440\u0432\u0430\u043B\u043E\u0441\u044C, \u0438\u0434\u0443 \u0441 \u0442\u0435\u043A\u0443\u0449\u0438\u043C \u0442\u0435\u043A\u0441\u0442\u043E\u043C: ${e.message}`
-    )
+    console.error(`[writer] SEO-\u0440\u0435\u0432\u044C\u044E \u0441\u043E\u0440\u0432\u0430\u043B\u043E\u0441\u044C, \u0438\u0434\u0443 \u0441 \u0442\u0435\u043A\u0443\u0449\u0438\u043C \u0442\u0435\u043A\u0441\u0442\u043E\u043C: ${e.message}`);
   }
-  let reviewedCandidate = reviewed.trim().startsWith('##')
-    ? reviewed.trim()
-    : reviewed.indexOf('## ') !== -1
-      ? reviewed.slice(reviewed.indexOf('## ')).trim()
-      : markdown
+  let reviewedCandidate = reviewed.trim().startsWith("##") ? reviewed.trim() : reviewed.indexOf("## ") !== -1 ? reviewed.slice(reviewed.indexOf("## ")).trim() : markdown;
   const auditMarkers = [
-    '**Title tag:**',
-    '**Meta description:**',
-    '**\u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E',
-    '## \u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E',
-    'Title tag:',
-    'Meta description:',
-    '\u0427\u0442\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E',
-    '\u0421\u0432\u043E\u0434\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A',
-    '\u0441\u0432\u043E\u0434\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A',
-    '# \u0417\u0430\u0434\u0430\u0447\u0430',
-    '| \u0417\u0430\u0434\u0430\u0447\u0430 |',
-    '| \u0417\u0430\u0434\u0430\u0447\u0430|',
-    '\u0417\u0430\u0434\u0430\u0447\u0430  \u0421\u0442\u0430\u0442\u0443\u0441',
-    '---\n|',
-  ]
+    "**Title tag:**",
+    "**Meta description:**",
+    "**\u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E",
+    "## \u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E",
+    "Title tag:",
+    "Meta description:",
+    "\u0427\u0442\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E",
+    "\u0421\u0432\u043E\u0434\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A",
+    "\u0441\u0432\u043E\u0434\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A",
+    "# \u0417\u0430\u0434\u0430\u0447\u0430",
+    "| \u0417\u0430\u0434\u0430\u0447\u0430 |",
+    "| \u0417\u0430\u0434\u0430\u0447\u0430|",
+    "\u0417\u0430\u0434\u0430\u0447\u0430  \u0421\u0442\u0430\u0442\u0443\u0441",
+    "---\n|"
+  ];
   for (const marker of auditMarkers) {
-    const idx = reviewedCandidate.indexOf(marker)
-    if (idx !== -1) reviewedCandidate = reviewedCandidate.slice(0, idx).trim()
+    const idx = reviewedCandidate.indexOf(marker);
+    if (idx !== -1) reviewedCandidate = reviewedCandidate.slice(0, idx).trim();
   }
-  const preReviewWords = markdown.split(/\s+/).length
-  const reviewedWords = reviewedCandidate.split(/\s+/).length
-  const reviewedFinal = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
-  const accepted = await acceptAgainstSpec(tz, reviewedFinal)
+  const preReviewWords = markdown.split(/\s+/).length;
+  const reviewedWords = reviewedCandidate.split(/\s+/).length;
+  const reviewedFinal = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown;
+  const accepted = await acceptAgainstSpec(tz, reviewedFinal);
   return {
     markdown: accepted.markdown,
-    specWarning: accepted.unresolved.length
-      ? `\u041F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u043B\u0438 ${accepted.rounds} \u0440\u0430\u0437, \u043D\u0435\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u043C\u0438 \u043E\u0441\u0442\u0430\u043B\u0438\u0441\u044C:
-` + accepted.unresolved.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join('\n')
-      : void 0,
+    specWarning: accepted.unresolved.length ? `\u041F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u043B\u0438 ${accepted.rounds} \u0440\u0430\u0437, \u043D\u0435\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u043C\u0438 \u043E\u0441\u0442\u0430\u043B\u0438\u0441\u044C:
+` + accepted.unresolved.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join("\n") : void 0,
     metaTitle: plan.metaTitle,
     metaDesc: plan.metaDesc,
     slug: toSlug(plan.slug || topic.title),
     tags: Array.isArray(seoData.tags) ? seoData.tags : [],
-    imagePrompt: seoData.imagePrompt || '',
+    imagePrompt: seoData.imagePrompt || "",
     wordstatKeywords,
-    articleEssence: `${seoData.painPoints.slice(0, 2).join('; ')}. ${seoData.uniqueAngle}${(seoData.antifakeMarkers || []).length ? '. \u041C\u0438\u0444\u044B \u0434\u043B\u044F \u043E\u043F\u0440\u043E\u0432\u0435\u0440\u0436\u0435\u043D\u0438\u044F: ' + seoData.antifakeMarkers.slice(0, 2).join('; ') : ''}`,
-  }
+    articleEssence: `${seoData.painPoints.slice(0, 2).join("; ")}. ${seoData.uniqueAngle}${(seoData.antifakeMarkers || []).length ? ". \u041C\u0438\u0444\u044B \u0434\u043B\u044F \u043E\u043F\u0440\u043E\u0432\u0435\u0440\u0436\u0435\u043D\u0438\u044F: " + seoData.antifakeMarkers.slice(0, 2).join("; ") : ""}`
+  };
 }
 function buildArticleSchema(topic, result, publishedAt, articleUrl) {
   const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
+    "@context": "https://schema.org",
+    "@type": "Article",
     headline: result.metaTitle,
     description: result.metaDesc,
     datePublished: publishedAt,
     dateModified: publishedAt,
     author: {
-      '@type': 'Organization',
-      name: '\u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431',
-      url: SITE_URL,
+      "@type": "Organization",
+      name: "\u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431",
+      url: SITE_URL
     },
     publisher: {
-      '@type': 'Organization',
-      name: '\u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431',
-      url: SITE_URL,
+      "@type": "Organization",
+      name: "\u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431",
+      url: SITE_URL
     },
-    mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
-    keywords: [topic.keyword, ...result.tags, ...result.wordstatKeywords.slice(0, 5)].join(', '),
-  }
-  return JSON.stringify(schema)
+    mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
+    keywords: [topic.keyword, ...result.tags, ...result.wordstatKeywords.slice(0, 5)].join(", ")
+  };
+  return JSON.stringify(schema);
 }
 function buildMdxFrontmatter(topic, result, publishedAt, imageUrl) {
-  const tags = result.tags.length ? JSON.stringify(result.tags) : '[]'
-  const imageLine = imageUrl
-    ? `
-imageUrl: "${imageUrl}"`
-    : ''
-  const articleUrl = `${SITE_URL}/articles/${result.slug}`
+  const tags = result.tags.length ? JSON.stringify(result.tags) : "[]";
+  const imageLine = imageUrl ? `
+imageUrl: "${imageUrl}"` : "";
+  const articleUrl = `${SITE_URL}/articles/${result.slug}`;
   const schemaLine = `
-schemaJsonLd: '${buildArticleSchema(topic, result, publishedAt, articleUrl)}'`
+schemaJsonLd: '${buildArticleSchema(topic, result, publishedAt, articleUrl)}'`;
   return `---
 title: "${topic.title.replace(/"/g, '\\"')}"
 slug: "${result.slug}"
@@ -1984,99 +1762,78 @@ metaDescription: "${result.metaDesc.replace(/"/g, '\\"')}"
 publishedAt: "${publishedAt}"
 tags: ${tags}${imageLine}${schemaLine}
 ---
-`
+`;
 }
 function getLatestTopicsFile() {
-  const files = fs5
-    .readdirSync(DATA_DIR)
-    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
-    .sort()
-    .reverse()
-  if (!files.length)
-    throw new Error(
-      '\u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u0443\u0441\u0442\u0438 analyst.js'
-    )
-  return path4.join(DATA_DIR, files[0])
+  const files = fs5.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).sort().reverse();
+  if (!files.length) throw new Error("\u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u0443\u0441\u0442\u0438 analyst.js");
+  return path4.join(DATA_DIR, files[0]);
 }
 function markTopicPublished(topicsFile, topicId) {
-  const dir = path4.dirname(topicsFile)
-  const source = JSON.parse(fs5.readFileSync(topicsFile, 'utf-8'))
-  const target = source.topics.find((t) => t.id === topicId)
+  const dir = path4.dirname(topicsFile);
+  const source = JSON.parse(fs5.readFileSync(topicsFile, "utf-8"));
+  const target = source.topics.find((t) => t.id === topicId);
   if (!target) {
-    console.warn(
-      `[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${path4.basename(topicsFile)}`
-    )
-    return
+    console.warn(`[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${path4.basename(topicsFile)}`);
+    return;
   }
-  const files = fs5
-    .readdirSync(dir)
-    .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
-    .map((f) => path4.join(dir, f))
-  const touched = []
+  const files = fs5.readdirSync(dir).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).map((f) => path4.join(dir, f));
+  const touched = [];
   for (const file of files) {
-    const raw = JSON.parse(fs5.readFileSync(file, 'utf-8'))
-    const hit = raw.topics.find((t) => t.id === topicId && t.title === target.title)
-    if (!hit || hit.published) continue
-    hit.published = true
-    fs5.writeFileSync(file, JSON.stringify(raw, null, 2))
-    touched.push(path4.basename(file))
+    const raw = JSON.parse(fs5.readFileSync(file, "utf-8"));
+    const hit = raw.topics.find((t) => t.id === topicId && t.title === target.title);
+    if (!hit || hit.published) continue;
+    hit.published = true;
+    fs5.writeFileSync(file, JSON.stringify(raw, null, 2));
+    touched.push(path4.basename(file));
   }
-  console.log(
-    `[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043E\u0442\u043C\u0435\u0447\u0435\u043D\u0430 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u043E\u0439 \u0432: ${touched.join(', ')}`
-  )
+  console.log(`[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043E\u0442\u043C\u0435\u0447\u0435\u043D\u0430 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u043E\u0439 \u0432: ${touched.join(", ")}`);
 }
 function gitCommitAndPush(slug, title, hasImage) {
-  const mdxPath = path4.join('content', 'articles', `${slug}.mdx`)
-  execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  const mdxPath = path4.join("content", "articles", `${slug}.mdx`);
+  execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: "inherit" });
   if (hasImage) {
     execSync(`git add public/images/posts/${slug}* 2>/dev/null || true`, {
       cwd: PROJECT_ROOT,
-      shell: '/bin/bash',
-    })
+      shell: "/bin/bash"
+    });
   }
-  const message = `feat: add article "${title}"`
-  execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
-  execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
+  const message = `feat: add article "${title}"`;
+  execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: "inherit" });
+  execSync("git push", { cwd: PROJECT_ROOT, stdio: "inherit" });
 }
 function syncToProduction(slug, hasImage) {
-  const SSH_KEY = path4.join(os2.homedir(), '.ssh', 'github_actions_deploy')
-  const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`
-  const PROD = 'c48127@91.201.52.231:~/d-pub.ru/app'
+  const SSH_KEY = path4.join(os2.homedir(), ".ssh", "github_actions_deploy");
+  const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`;
+  const PROD = "c48127@91.201.52.231:~/d-pub.ru/app";
   execSync(
     `rsync -az -e "ssh ${SSH_OPTS}" content/articles/${slug}.mdx ${PROD}/content/articles/`,
-    { cwd: PROJECT_ROOT, stdio: 'inherit', shell: '/bin/bash' }
-  )
+    { cwd: PROJECT_ROOT, stdio: "inherit", shell: "/bin/bash" }
+  );
   if (hasImage) {
     execSync(
       `rsync -az -e "ssh ${SSH_OPTS}" public/images/posts/${slug}* ${PROD}/public/images/posts/ 2>/dev/null || true`,
-      { cwd: PROJECT_ROOT, stdio: 'inherit', shell: '/bin/bash' }
-    )
+      { cwd: PROJECT_ROOT, stdio: "inherit", shell: "/bin/bash" }
+    );
   }
   execSync(`ssh ${SSH_OPTS} c48127@91.201.52.231 'touch ~/d-pub.ru/reload' || true`, {
-    stdio: 'inherit',
-    shell: '/bin/bash',
-  })
+    stdio: "inherit",
+    shell: "/bin/bash"
+  });
 }
 async function main() {
-  const runStartedAt = Date.now()
-  const topicNum = parseInt(process.argv[2])
+  const runStartedAt = Date.now();
+  const topicNum = parseInt(process.argv[2]);
   if (isNaN(topicNum)) {
-    console.error(
-      '\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: node writer.compiled.js <topicNum>'
-    )
-    process.exit(1)
+    console.error("\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: node writer.compiled.js <topicNum>");
+    process.exit(1);
   }
-  const topicsFile = getLatestTopicsFile()
-  const { topics } = JSON.parse(fs5.readFileSync(topicsFile, 'utf8'))
-  const topic = topics.find((t) => t.id === topicNum)
-  if (!topic)
-    throw new Error(
-      `\u0422\u0435\u043C\u0430 #${topicNum} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${topicsFile}`
-    )
-  currentTopic = { id: topic.id, title: topic.title }
-  console.log(
-    `[writer] \u041F\u0438\u0448\u0443 \u0441\u0442\u0430\u0442\u044C\u044E: "${topic.title}"`
-  )
+  const topicsFile = getLatestTopicsFile();
+  const { topics } = JSON.parse(fs5.readFileSync(topicsFile, "utf8"));
+  const topic = topics.find((t) => t.id === topicNum);
+  if (!topic) throw new Error(`\u0422\u0435\u043C\u0430 #${topicNum} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${topicsFile}`);
+  currentTopic = { id: topic.id, title: topic.title };
+  console.log(`[writer] \u041F\u0438\u0448\u0443 \u0441\u0442\u0430\u0442\u044C\u044E: "${topic.title}"`);
   try {
     await sendMessage(
       `\u270D\uFE0F \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E #${topicNum}:
@@ -2086,116 +1843,78 @@ async function main() {
 \u{1F3A8} hero \u2192 \u{1F4CA} \u0433\u0440\u0430\u0444\u0438\u043A\u0438 \u2192 \u270F\uFE0F \u0441\u043A\u0435\u0442\u0447 \u2192 \u{1F680} \u0434\u0435\u043F\u043B\u043E\u0439
 
 \u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~10 \u043C\u0438\u043D\u0443\u0442...`
-    )
+    );
   } catch (e) {
-    console.error(
-      `[writer] \u0410\u043D\u043E\u043D\u0441 \u0432 Telegram \u043D\u0435 \u0443\u0448\u0451\u043B, \u043F\u0438\u0448\u0443 \u0441\u0442\u0430\u0442\u044C\u044E: ${e.message}`
-    )
+    console.error(`[writer] \u0410\u043D\u043E\u043D\u0441 \u0432 Telegram \u043D\u0435 \u0443\u0448\u0451\u043B, \u043F\u0438\u0448\u0443 \u0441\u0442\u0430\u0442\u044C\u044E: ${e.message}`);
   }
-  const result = await generateMdxArticle(topic)
-  console.log(
-    `[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u0433\u043E\u0442\u043E\u0432\u0430, slug: ${result.slug}`
-  )
-  const mdxPath = path4.join(ARTICLES_DIR, `${result.slug}.mdx`)
+  const result = await generateMdxArticle(topic);
+  console.log(`[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u0433\u043E\u0442\u043E\u0432\u0430, slug: ${result.slug}`);
+  const mdxPath = path4.join(ARTICLES_DIR, `${result.slug}.mdx`);
   if (fs5.existsSync(mdxPath)) {
-    result.slug = `${result.slug}-${Date.now().toString(36)}`
-    console.log(
-      `[writer] Slug \u0441\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D: ${result.slug}`
-    )
+    result.slug = `${result.slug}-${Date.now().toString(36)}`;
+    console.log(`[writer] Slug \u0441\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D: ${result.slug}`);
   }
-  console.log(
-    '[writer] \u0428\u0430\u0433 5: \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F...'
-  )
-  const h2Structure = result.markdown
-    .split('\n')
-    .filter((line) => line.startsWith('## '))
-    .map((line) => line.replace(/^## /, '').trim())
+  console.log("[writer] \u0428\u0430\u0433 5: \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F...");
+  const h2Structure = result.markdown.split("\n").filter((line) => line.startsWith("## ")).map((line) => line.replace(/^## /, "").trim());
   const [imageUrl, charts] = await Promise.all([
-    result.imagePrompt
-      ? generateImageWithCodex(result.imagePrompt, result.slug, topic)
-      : Promise.resolve(null),
-    generateQuickCharts(topic, result.slug, h2Structure),
-  ])
+    result.imagePrompt ? generateImageWithCodex(result.imagePrompt, result.slug, topic) : Promise.resolve(null),
+    generateQuickCharts(topic, result.slug, h2Structure)
+  ]);
   if (imageUrl) {
-    console.log(`[writer] Hero image \u0433\u043E\u0442\u043E\u0432: ${imageUrl}`)
+    console.log(`[writer] Hero image \u0433\u043E\u0442\u043E\u0432: ${imageUrl}`);
   } else {
-    console.log(
-      '[writer] Hero image \u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D'
-    )
+    console.log("[writer] Hero image \u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D");
   }
-  console.log(
-    `[writer] QuickChart: ${charts.length} \u0433\u0440\u0430\u0444\u0438\u043A(\u0430) \u0433\u043E\u0442\u043E\u0432\u043E`
-  )
+  console.log(`[writer] QuickChart: ${charts.length} \u0433\u0440\u0430\u0444\u0438\u043A(\u0430) \u0433\u043E\u0442\u043E\u0432\u043E`);
   const sketchUrls = await generateSketchesWithCodex(
     topic,
     result.slug,
     result.articleEssence,
     h2Structure,
     result.markdown
-  )
+  );
   console.log(
-    `[writer] \u0421\u043A\u0435\u0442\u0447\u0438: ${sketchUrls.length > 0 ? sketchUrls.join(', ') : '\u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u044B'}`
-  )
-  const publishedAt = /* @__PURE__ */ new Date().toISOString().split('T')[0]
-  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
-  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
-  const mdxContent = frontmatter + '\n' + enrichedMarkdown
-  fs5.mkdirSync(ARTICLES_DIR, { recursive: true })
-  fs5.writeFileSync(path4.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
-  console.log(
-    `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
-  )
-  const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrls.length > 0
+    `[writer] \u0421\u043A\u0435\u0442\u0447\u0438: ${sketchUrls.length > 0 ? sketchUrls.join(", ") : "\u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u044B"}`
+  );
+  const publishedAt = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls);
+  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl);
+  const mdxContent = frontmatter + "\n" + enrichedMarkdown;
+  fs5.mkdirSync(ARTICLES_DIR, { recursive: true });
+  fs5.writeFileSync(path4.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent);
+  console.log(`[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`);
+  const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrls.length > 0;
   try {
-    gitCommitAndPush(result.slug, topic.title, hasAnyImage)
-    console.log('[writer] Git push \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713')
+    gitCommitAndPush(result.slug, topic.title, hasAnyImage);
+    console.log("[writer] Git push \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713");
   } catch (e) {
-    console.error('[writer] Git push \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:', e)
+    console.error("[writer] Git push \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:", e);
     await sendMessage(`\u26A0\uFE0F \u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0430\u043F\u0438\u0441\u0430\u043D\u0430, \u043D\u043E git push \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F:
-${e.message}`)
-    process.exit(1)
+${e.message}`);
+    process.exit(1);
   }
-  let syncedToProd = false
+  let syncedToProd = false;
   try {
-    syncToProduction(result.slug, hasAnyImage)
-    syncedToProd = true
-    console.log(
-      '[writer] Rsync \u043D\u0430 \u043F\u0440\u043E\u0434\u0430\u043A\u0448\u043D \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713'
-    )
+    syncToProduction(result.slug, hasAnyImage);
+    syncedToProd = true;
+    console.log("[writer] Rsync \u043D\u0430 \u043F\u0440\u043E\u0434\u0430\u043A\u0448\u043D \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D \u2713");
   } catch (e) {
-    console.error(
-      '[writer] Rsync \u043D\u0430 \u043F\u0440\u043E\u0434\u0430\u043A\u0448\u043D \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F (CI \u0437\u0430\u0434\u0435\u043F\u043B\u043E\u0438\u0442 \u043F\u043E\u0437\u0436\u0435):',
-      e
-    )
+    console.error("[writer] Rsync \u043D\u0430 \u043F\u0440\u043E\u0434\u0430\u043A\u0448\u043D \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F (CI \u0437\u0430\u0434\u0435\u043F\u043B\u043E\u0438\u0442 \u043F\u043E\u0437\u0436\u0435):", e);
   }
-  markTopicPublished(topicsFile, topicNum)
-  const articleUrl = `${SITE_URL}/articles/${result.slug}`
-  const wordstatInfo =
-    result.wordstatKeywords.length > 0
-      ? `
-\u{1F511} Wordstat \u043A\u043B\u044E\u0447\u0435\u0439 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u043E: ${result.wordstatKeywords.length}`
-      : '\n\u{1F511} Wordstat: fallback \u043D\u0430 Claude LSI'
-  const imageStatus = imageUrl ? `\u{1F3A8} Hero: \u2705` : `\u{1F3A8} Hero: \u274C`
-  const chartStatus =
-    charts.length > 0
-      ? `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u2705 ${charts.length} \u0448\u0442.`
-      : `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u274C`
-  const sketchStatus =
-    sketchUrls.length > 0
-      ? `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u2705 ${sketchUrls.length} \u0448\u0442.`
-      : `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u274C`
-  const deployStatus = syncedToProd
-    ? `\u26A1 \u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435, \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0447\u0435\u0440\u0435\u0437 ~30 \u0441\u0435\u043A (ISR)`
-    : `\u23F3 \u0414\u0435\u043F\u043B\u043E\u0439 \u0447\u0435\u0440\u0435\u0437 CI \u0437\u0430\u0439\u043C\u0451\u0442 ~15 \u043C\u0438\u043D\u0443\u0442`
-  const specBlock = result.specWarning
-    ? `
+  markTopicPublished(topicsFile, topicNum);
+  const articleUrl = `${SITE_URL}/articles/${result.slug}`;
+  const wordstatInfo = result.wordstatKeywords.length > 0 ? `
+\u{1F511} Wordstat \u043A\u043B\u044E\u0447\u0435\u0439 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u043E: ${result.wordstatKeywords.length}` : "\n\u{1F511} Wordstat: fallback \u043D\u0430 Claude LSI";
+  const imageStatus = imageUrl ? `\u{1F3A8} Hero: \u2705` : `\u{1F3A8} Hero: \u274C`;
+  const chartStatus = charts.length > 0 ? `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u2705 ${charts.length} \u0448\u0442.` : `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u274C`;
+  const sketchStatus = sketchUrls.length > 0 ? `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u2705 ${sketchUrls.length} \u0448\u0442.` : `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u274C`;
+  const deployStatus = syncedToProd ? `\u26A1 \u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435, \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0447\u0435\u0440\u0435\u0437 ~30 \u0441\u0435\u043A (ISR)` : `\u23F3 \u0414\u0435\u043F\u043B\u043E\u0439 \u0447\u0435\u0440\u0435\u0437 CI \u0437\u0430\u0439\u043C\u0451\u0442 ~15 \u043C\u0438\u043D\u0443\u0442`;
+  const specBlock = result.specWarning ? `
 
 \u26A0\uFE0F <b>\u041F\u0440\u0438\u043D\u044F\u0442\u0430 \u0441 \u043E\u0433\u043E\u0432\u043E\u0440\u043A\u0430\u043C\u0438.</b>
 ${result.specWarning}
-\u041D\u0443\u0436\u043D\u0430 \u0440\u0443\u0447\u043D\u0430\u044F \u0434\u043E\u0440\u0430\u0431\u043E\u0442\u043A\u0430.`
-    : ''
-  const successText =
-    `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>${specBlock}
+\u041D\u0443\u0436\u043D\u0430 \u0440\u0443\u0447\u043D\u0430\u044F \u0434\u043E\u0440\u0430\u0431\u043E\u0442\u043A\u0430.` : "";
+  const successText = `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>${specBlock}
 
 \u{1F4CC} ${topic.title}
 ${wordstatInfo}
@@ -2205,45 +1924,48 @@ ${sketchStatus}
 
 \u{1F517} <a href="${articleUrl}">${articleUrl}</a>
 
-` + deployStatus
-  let notified = false
+` + deployStatus;
+  let notified = false;
   for (let attempt = 1; attempt <= 3 && !notified; attempt++) {
     try {
-      await sendMessage(successText)
-      notified = true
+      await sendMessage(successText);
+      notified = true;
     } catch (e) {
       console.error(
         `[writer] \u041E\u0442\u0431\u043E\u0439\u043D\u0438\u043A \u0432 Telegram \u043D\u0435 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/3): ${e.message}`
-      )
-      if (attempt < 3) await new Promise((r) => setTimeout(r, 3e4))
+      );
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 3e4));
     }
   }
   if (!notified) {
-    console.error(
-      '[writer] \u041E\u0442\u0431\u043E\u0439\u043D\u0438\u043A \u043D\u0435 \u0434\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D, \u043D\u043E \u0441\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430 \u2014 \u0432\u044B\u0445\u043E\u0434\u0438\u043C \u0441 \u043A\u043E\u0434\u043E\u043C 0'
-    )
+    console.error("[writer] \u041E\u0442\u0431\u043E\u0439\u043D\u0438\u043A \u043D\u0435 \u0434\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D, \u043D\u043E \u0441\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430 \u2014 \u0432\u044B\u0445\u043E\u0434\u0438\u043C \u0441 \u043A\u043E\u0434\u043E\u043C 0");
   }
-  const stats = collectSessionStats(runStartedAt, transcriptDir(process.cwd()))
-  console.log(`[writer] \u0420\u0430\u0441\u0445\u043E\u0434: ${summarize(stats)}`)
-  const runaway = runawayWarning(stats)
+  const stats = collectSessionStats(runStartedAt, transcriptDir(process.cwd()));
+  console.log(`[writer] \u0420\u0430\u0441\u0445\u043E\u0434: ${summarize(stats)}`);
+  const runaway = runawayWarning(stats);
   if (runaway) {
-    console.error(`[writer] ${runaway}`)
+    console.error(`[writer] ${runaway}`);
     await sendMessage(`\u26A0\uFE0F <b>\u0417\u0430\u043B\u0438\u043F\u0430\u043D\u0438\u0435 \u0430\u0433\u0435\u043D\u0442\u043E\u0432 \u0432 \u043F\u0440\u043E\u0433\u043E\u043D\u0435 #${topicNum}</b>
 
-${runaway}`).catch(() => {})
+${runaway}`).catch(
+      () => {
+      }
+    );
   }
-  console.log(`[writer] \u0413\u043E\u0442\u043E\u0432\u043E: ${articleUrl}`)
+  console.log(`[writer] \u0413\u043E\u0442\u043E\u0432\u043E: ${articleUrl}`);
 }
 main().catch(async (e) => {
-  console.error('[writer] \u041E\u0448\u0438\u0431\u043A\u0430:', e)
+  console.error("[writer] \u041E\u0448\u0438\u0431\u043A\u0430:", e);
   await sendFailureAlert({
-    source: 'writer',
+    source: "writer",
     stage: currentStage,
     topicId: currentTopic?.id ?? null,
     topicTitle: currentTopic?.title ?? null,
     error: e,
-    topicStaysInQueue: true,
-  })
-  process.exit(1)
-})
-export { SpecRejected }
+    topicStaysInQueue: true
+  });
+  process.exit(1);
+});
+export {
+  SpecRejected
+};

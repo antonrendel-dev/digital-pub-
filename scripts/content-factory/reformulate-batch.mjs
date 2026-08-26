@@ -21,7 +21,11 @@ const inCorridor = (v) => typeof v === 'number' && v >= MIN && v <= MAX
 
 function askClaude(prompt) {
   return new Promise((resolve, reject) => {
-    const child = spawn('claude', ['-p', prompt], { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] })
+    // Имя агента берётся из окружения — см. lib/agent-cli.ts. Здесь .mjs,
+    // поэтому профиль воспроизведён минимально: этот скрипт запускается руками.
+    const cli = process.env.CONTENT_FACTORY_CLI === 'codex' ? 'codex' : 'claude'
+    const args = cli === 'codex' ? ['exec', prompt] : ['-p', prompt]
+    const child = spawn(cli, args, { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] })
     let out = ''
     let err = ''
     child.stdout.on('data', (d) => (out += d.toString()))
