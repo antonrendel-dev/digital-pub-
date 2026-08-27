@@ -9,6 +9,7 @@ import 'dotenv/config'
 import * as fs from 'fs'
 import * as path from 'path'
 
+import { shouldSkipPost } from '../lib/post-filter'
 import { matchTags, TAG_KEYWORDS } from '../lib/tag-matcher'
 
 // Local type — replaces Prisma's generated PostType enum
@@ -215,6 +216,15 @@ async function fetchPagePosts(
     seenIds.add(messageId)
 
     if (!minId || Number(messageId) < Number(minId)) minId = messageId
+
+    // Отсев до скачивания картинки: анонс нашей же статьи вакансией не является,
+    // и качать под него фото через Bot API незачем. minId выше уже обновлён,
+    // иначе пропуск поста сломал бы пагинацию.
+    const verdict = shouldSkipPost(block)
+    if (verdict.skip) {
+      console.log(`    ⏭ Пропущен ${channelUsername}/${messageId}: ${verdict.reason}`)
+      continue
+    }
 
     const hasPhoto =
       /tgme_widget_message_photo_wrap[^>]*style="[^"]*background-image:\s*url\('https?:\/\/cdn/.test(
