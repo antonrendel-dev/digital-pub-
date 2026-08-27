@@ -26,6 +26,7 @@ import {
   LEVEL_SLUGS,
   FORMAT_CHIP_LABELS,
   LEVEL_CHIP_LABELS,
+  getFilterHubLinks,
 } from '@/lib/spec-filter-meta'
 
 export const revalidate = 300
@@ -100,6 +101,7 @@ export default async function CategoryPage({ params }: Props) {
   ])
   const faqItems = getCategoryFaq(category)
   const professions = professionsByListing(`/vacancies/${category}`)
+  const hubLinks = getFilterHubLinks(category)
   const allArticles = getArticles()
   const relatedArticles = getRelatedArticlesForCategory(category, allArticles, 3)
   const relatedSpecCategories = getRelatedSpecCategories(category)
@@ -277,6 +279,41 @@ export default async function CategoryPage({ params }: Props) {
               листинг — транзакционный «вакансии …». Одинаковый тип с обеих
               сторон превратил бы усиление в конкуренцию за один запрос.
             */}
+            {/*
+              Хаб формата или уровня — маршрутизатор, а не ответ.
+
+              До 27.08.2026 на пересечение `/vacancies/{spec}/udalyonka` вела
+              одна ссылка на весь сайт, а хаб стоял в сквозной навигации. Гугл
+              на запросах «профессия + удалёнка» выбирал хаб — он знаком всему
+              сайту, хотя отвечает лишь на половину запроса. Одиннадцать таких
+              запросов дали 1 778 показов и ноль кликов.
+
+              Анкор здесь транзакционный и точный, под сам запрос. Снизу вверх
+              такой же ставить нельзя: одинаковый тип с обеих сторон делает из
+              усиления конкуренцию за один запрос.
+            */}
+            {hubLinks.length > 0 && (
+              <section className="mt-12 pt-8 border-t border-border">
+                <h2 className="text-xl font-bold text-text mb-4">{tag.name} по профессиям</h2>
+                <p className="text-sm text-text-muted mb-4">
+                  Отдельная подборка под каждое направление — с зарплатами и свежими вакансиями
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {hubLinks.map((l) => (
+                    <Link
+                      key={l.spec}
+                      href={l.href}
+                      className="group block no-underline bg-bg-card border border-border rounded-lg px-4 py-3 hover:border-accent transition-colors"
+                    >
+                      <span className="font-medium text-text group-hover:text-accent transition-colors">
+                        {l.label}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {professions.length > 0 && (
               <section className="mt-12 pt-8 border-t border-border">
                 <h2 className="text-xl font-bold text-text mb-4">Профессии в этом направлении</h2>
