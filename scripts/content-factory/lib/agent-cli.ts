@@ -43,6 +43,24 @@ export interface AgentOptions {
 
 type Profile = (prompt: string, opts: AgentOptions) => AgentInvocation
 
+/** Инструменты Claude Code, способные изменить файлы или выполнить команду. */
+const WRITING_TOOLS = ['write', 'edit', 'bash', 'notebookedit']
+
+/**
+ * Во что превращается белый список инструментов на CLI с песочницей.
+ *
+ * Список вида `Read,Skill,Glob,Grep` — это «смотреть можно, трогать нельзя»,
+ * и ровно это выражает read-only. Появится в списке Write, Edit или Bash —
+ * агенту нужна запись, и песочница расширяется до рабочей директории.
+ */
+export function sandboxFor(allowedTools: string): 'read-only' | 'workspace-write' {
+  const tools = allowedTools
+    .toLowerCase()
+    .split(',')
+    .map((t) => t.trim())
+  return tools.some((t) => WRITING_TOOLS.includes(t)) ? 'workspace-write' : 'read-only'
+}
+
 const PROFILES: Record<string, Profile> = {
   claude(prompt, { model, agent, allowedTools, promptViaStdin }) {
     const args = ['-p']
@@ -57,7 +75,7 @@ const PROFILES: Record<string, Profile> = {
     return { cmd: 'claude', args }
   },
 
-  codex(prompt, { model, agent, promptViaStdin }) {
+  codex(prompt, { model, agent, allowedTools, promptViaStdin }) {
     // Роль у Codex задаётся профилем корневой сессии: --profile <name> читает
     // $CODEX_HOME/<name>.config.toml с полем developer_instructions. Это прямой
     // аналог `claude --agent`: инструкции уходят системным слоем, а не
@@ -73,6 +91,14 @@ const PROFILES: Record<string, Profile> = {
     const args = ['exec']
     if (model) args.push('--model', model)
     if (agent) args.push('--profile', agent)
+    // Аналог --allowedTools. У Codex белого списка инструментов нет, но цель
+    // была не в списке: агенту незачем править репозиторий посреди генерации
+    // статьи. Песочница закрывает это надёжнее — запись блокирует система, а
+    // не готовность модели соблюдать ограничение.
+    //
+    // Проверено 28.08.2026: под read-only агент отказывается создавать файл
+    // («ЗАПРЕЩЕНО», файла нет), при этом читает исходники и видит свои скиллы.
+    if (allowedTools) args.push('--sandbox', sandboxFor(allowedTools))
     if (!promptViaStdin) args.push(prompt)
     return { cmd: process.env.CONTENT_FACTORY_CLI_BIN || 'codex', args }
   },

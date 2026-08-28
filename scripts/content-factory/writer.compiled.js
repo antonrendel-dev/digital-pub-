@@ -186,6 +186,14 @@ import { spawnSync } from 'child_process'
 import { existsSync } from 'fs'
 import os from 'os'
 import path2 from 'path'
+var WRITING_TOOLS = ['write', 'edit', 'bash', 'notebookedit']
+function sandboxFor(allowedTools) {
+  const tools = allowedTools
+    .toLowerCase()
+    .split(',')
+    .map((t) => t.trim())
+  return tools.some((t) => WRITING_TOOLS.includes(t)) ? 'workspace-write' : 'read-only'
+}
 var PROFILES = {
   claude(prompt, { model, agent, allowedTools, promptViaStdin }) {
     const args = ['-p']
@@ -197,10 +205,11 @@ var PROFILES = {
     if (!promptViaStdin) args.push(prompt)
     return { cmd: 'claude', args }
   },
-  codex(prompt, { model, agent, promptViaStdin }) {
+  codex(prompt, { model, agent, allowedTools, promptViaStdin }) {
     const args = ['exec']
     if (model) args.push('--model', model)
     if (agent) args.push('--profile', agent)
+    if (allowedTools) args.push('--sandbox', sandboxFor(allowedTools))
     if (!promptViaStdin) args.push(prompt)
     return { cmd: process.env.CONTENT_FACTORY_CLI_BIN || 'codex', args }
   },

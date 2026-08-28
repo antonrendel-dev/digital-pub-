@@ -88,6 +88,30 @@ describe('выбор CLI-агента', () => {
     expect(args[args.indexOf('--profile') + 1]).toBe('analyst')
     expect(args).not.toContain('--agent')
     expect(args).not.toContain('--allowedTools')
+    // Белого списка у Codex нет, но цель списка — «смотреть можно, трогать
+    // нельзя» — выражается песочницей, и надёжнее: запись блокирует система.
+    expect(args).toContain('--sandbox')
+    expect(args[args.indexOf('--sandbox') + 1]).toBe('read-only')
+  })
+
+  it('песочница расширяется, только если агенту правда нужна запись', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { sandboxFor } = require('../../scripts/content-factory/lib/agent-cli')
+    expect(sandboxFor('Read,Skill,Glob,Grep')).toBe('read-only')
+    expect(sandboxFor('Read, Glob')).toBe('read-only')
+    expect(sandboxFor('Read,Write')).toBe('workspace-write')
+    expect(sandboxFor('Read,Bash')).toBe('workspace-write')
+    expect(sandboxFor('Edit')).toBe('workspace-write')
+  })
+
+  it('без белого списка песочница не навязывается', () => {
+    // regen зовёт CLI без ограничений — подсовывать ему read-only молча нельзя.
+    jest.resetModules()
+    process.env.CONTENT_FACTORY_CLI = 'codex'
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('../../scripts/content-factory/lib/agent-cli')
+    const { args } = mod.buildAgentCommand('промпт', { model: 'm' })
+    expect(args).not.toContain('--sandbox')
   })
 
   it('без файла профиля codex честно сообщает, что роль файлом не возьмёт', () => {
