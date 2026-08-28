@@ -15,8 +15,14 @@ import {
   selectLsiPhrases,
 } from './lib/lsi.js'
 import { lookupPhrases, savePhrases } from './lib/lsi-cache.js'
-import { FACTORY_MODEL } from './lib/model.js'
-import { buildAgentCommand, supportsAgentProfiles } from './lib/agent-cli.js'
+import { modelFor } from './lib/model.js'
+import {
+  AGENT_CLI,
+  buildAgentCommand,
+  fallbackCli,
+  isCliLevelFailure,
+  supportsAgentProfiles,
+} from './lib/agent-cli.js'
 import { loadAgentRole, withRole } from './lib/agent-role.js'
 import {
   collectSessionStats,
@@ -246,7 +252,7 @@ type AgentName = 'analyst' | 'seo' | 'writer'
  * @param agent Профиль из ~/.claude/agents. Без него Клод отвечает как есть,
  * без роли и без скиллов — так завод работал до 20.08.2026.
  */
-function runClaude(prompt: string, agent?: AgentName): Promise<string> {
+function runClaudeOnce(prompt: string, agent: AgentName | undefined, cli: string): Promise<string> {
   return new Promise((resolve, reject) => {
     // --allowedTools обязателен: с --agent, но без него скилл не загружается
     // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
@@ -257,7 +263,7 @@ function runClaude(prompt: string, agent?: AgentName): Promise<string> {
     let effectivePrompt = prompt
     let agentFlag: string | undefined
     if (agent) {
-      if (supportsAgentProfiles()) {
+      if (supportsAgentProfiles(cli)) {
         agentFlag = agent
       } else {
         const role = loadAgentRole(agent)
@@ -273,12 +279,16 @@ function runClaude(prompt: string, agent?: AgentName): Promise<string> {
         }
       }
     }
-    const { cmd, args } = buildAgentCommand('', {
-      model: FACTORY_MODEL,
-      agent: agentFlag,
-      allowedTools: AGENT_TOOLS,
-      promptViaStdin: true,
-    })
+    const { cmd, args } = buildAgentCommand(
+      '',
+      {
+        model: modelFor(cli),
+        agent: agentFlag,
+        allowedTools: AGENT_TOOLS,
+        promptViaStdin: true,
+      },
+      cli
+    )
     // Промпт через stdin: аргументом argv длинные промпты (3 черновика) бьются об ARG_MAX → spawn E2BIG
     const child = spawn(cmd, args, {
       env: process.env,
@@ -302,6 +312,33 @@ function runClaude(prompt: string, agent?: AgentName): Promise<string> {
     })
     child.on('error', reject)
   })
+}
+
+/**
+ * Запуск с откатом на второй CLI.
+ *
+ * 28.08.2026 завод встал целиком: в .env стояла модель, которой установленный
+ * codex не знает, и прогон умер на первом же вызове — статья за день не вышла.
+ * Автономность означает, что на отказ уровня CLI завод переезжает на второй
+ * и публикует, а не молчит до утра.
+ *
+ * Откат ровно один и только на ошибках запуска: если модель не справилась
+ * с задачей по существу, второй CLI даст то же самое, а мы потратим второй
+ * прогон и спрячем настоящую причину. Переезд всегда громкий — строкой в лог,
+ * иначе через неделю никто не вспомнит, на чём именно писались статьи.
+ */
+async function runClaude(prompt: string, agent?: AgentName): Promise<string> {
+  try {
+    return await runClaudeOnce(prompt, agent, AGENT_CLI)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    const spare = isCliLevelFailure(message) ? fallbackCli(AGENT_CLI) : null
+    if (!spare) throw e
+    console.log(
+      `    \u26a0 ${AGENT_CLI} не смог запуститься (${message.slice(0, 160)}). Перехожу на ${spare}.`
+    )
+    return await runClaudeOnce(prompt, agent, spare)
+  }
 }
 
 // Последний пройденный шаг и тема прогона — нужны отбойнику, чтобы в сообщении

@@ -14,6 +14,8 @@
  * с реальностью — правится одна строка здесь, а не четыре файла.
  */
 
+import { spawnSync } from 'child_process'
+
 export interface AgentInvocation {
   cmd: string
   args: string[]
@@ -62,24 +64,92 @@ const PROFILES: Record<string, Profile> = {
   },
 }
 
-export const AGENT_CLI = process.env.CONTENT_FACTORY_CLI || 'claude'
+/**
+ * Порядок автовыбора, когда CONTENT_FACTORY_CLI не задан.
+ *
+ * Claude первым не по симпатии, а по функционалу: только у него есть профили
+ * агентов (`--agent`) и белые списки инструментов. У Codex роль приходится
+ * вкладывать в текст промпта — см. lib/agent-role.ts, — и это заведомо слабее.
+ */
+const CLI_PREFERENCE = ['claude', 'codex'] as const
+
+/** Установлен ли бинарник. Дешевле, чем узнать об этом из ENOENT внутри крона. */
+function cliInstalled(name: string): boolean {
+  const bin = name === 'codex' ? process.env.CONTENT_FACTORY_CLI_BIN || 'codex' : name
+  const res = spawnSync('sh', ['-c', `command -v ${bin}`], { stdio: 'ignore' })
+  return res.status === 0
+}
+
+/**
+ * Какой CLI брать.
+ *
+ * Явная настройка выигрывает всегда: если Тони поставил в .env конкретный
+ * профиль, подменять его молча нельзя. Без настройки берём первый
+ * установленный из CLI_PREFERENCE.
+ */
+export function resolveAgentCli(): string {
+  const explicit = process.env.CONTENT_FACTORY_CLI
+  if (explicit) return explicit
+  for (const name of CLI_PREFERENCE) {
+    if (cliInstalled(name)) return name
+  }
+  return 'claude'
+}
+
+export const AGENT_CLI = resolveAgentCli()
+
+/**
+ * Похожа ли ошибка на «этот CLI вообще не может выполнить запуск».
+ *
+ * 28.08.2026 завод встал целиком: в .env стояла модель gpt-5.6-sol, а
+ * установленный codex-cli 0.130.0 ответил 400 «requires a newer version of
+ * Codex». Статья за день не вышла. Автономность означает, что на такой отказ
+ * завод обязан переехать на второй CLI и опубликовать, а не умереть.
+ *
+ * Список намеренно узкий. Отказ по существу задачи — модель не справилась,
+ * упёрлась в лимит — под откат не подпадает: там второй CLI даст то же самое,
+ * а мы потратим второй прогон и скроем настоящую причину.
+ */
+export function isCliLevelFailure(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('requires a newer version') ||
+    m.includes('unknown model') ||
+    m.includes('model not found') ||
+    m.includes('unsupported model') ||
+    m.includes('enoent') ||
+    m.includes('command not found') ||
+    m.includes('not recognized')
+  )
+}
+
+/** Второй CLI на случай отката. null, если запасного нет или он не установлен. */
+export function fallbackCli(current: string): string | null {
+  const other = CLI_PREFERENCE.find((n) => n !== current)
+  if (!other) return null
+  return cliInstalled(other) ? other : null
+}
 
 /**
  * Собирает команду запуска. Неизвестный профиль — сразу ошибка, а не тихий
  * запуск не того бинарника: молчаливая подмена агента однажды уже стоила нам
  * суток работы завода.
  */
-export function buildAgentCommand(prompt: string, opts: AgentOptions = {}): AgentInvocation {
-  const profile = PROFILES[AGENT_CLI]
+export function buildAgentCommand(
+  prompt: string,
+  opts: AgentOptions = {},
+  cli: string = AGENT_CLI
+): AgentInvocation {
+  const profile = PROFILES[cli]
   if (!profile) {
     throw new Error(
-      `Неизвестный CONTENT_FACTORY_CLI=«${AGENT_CLI}». Доступные: ${Object.keys(PROFILES).join(', ')}`
+      `Неизвестный CONTENT_FACTORY_CLI=«${cli}». Доступные: ${Object.keys(PROFILES).join(', ')}`
     )
   }
   return profile(prompt, opts)
 }
 
 /** Поддерживает ли текущий профиль профили агентов и белые списки инструментов. */
-export function supportsAgentProfiles(): boolean {
-  return AGENT_CLI === 'claude'
+export function supportsAgentProfiles(cli: string = AGENT_CLI): boolean {
+  return cli === 'claude'
 }

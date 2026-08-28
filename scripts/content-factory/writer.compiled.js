@@ -166,9 +166,20 @@ function savePhrases(file, keyword, nested, now = /* @__PURE__ */ new Date()) {
 }
 
 // lib/model.ts
-var FACTORY_MODEL = process.env.CONTENT_FACTORY_MODEL || 'claude-opus-5'
+var DEFAULT_MODEL = {
+  claude: 'claude-opus-5',
+  codex: 'gpt-5.5',
+}
+function modelFor(cli) {
+  const explicit = process.env.CONTENT_FACTORY_MODEL
+  const explicitCli = process.env.CONTENT_FACTORY_CLI
+  if (explicit && (!explicitCli || explicitCli === cli)) return explicit
+  return DEFAULT_MODEL[cli] ?? DEFAULT_MODEL.claude
+}
+var FACTORY_MODEL = modelFor(process.env.CONTENT_FACTORY_CLI || 'claude')
 
 // lib/agent-cli.ts
+import { spawnSync } from 'child_process'
 var PROFILES = {
   claude(prompt, { model, agent, allowedTools, promptViaStdin }) {
     const args = ['-p']
@@ -187,18 +198,49 @@ var PROFILES = {
     return { cmd: process.env.CONTENT_FACTORY_CLI_BIN || 'codex', args }
   },
 }
-var AGENT_CLI = process.env.CONTENT_FACTORY_CLI || 'claude'
-function buildAgentCommand(prompt, opts = {}) {
-  const profile = PROFILES[AGENT_CLI]
+var CLI_PREFERENCE = ['claude', 'codex']
+function cliInstalled(name) {
+  const bin = name === 'codex' ? process.env.CONTENT_FACTORY_CLI_BIN || 'codex' : name
+  const res = spawnSync('sh', ['-c', `command -v ${bin}`], { stdio: 'ignore' })
+  return res.status === 0
+}
+function resolveAgentCli() {
+  const explicit = process.env.CONTENT_FACTORY_CLI
+  if (explicit) return explicit
+  for (const name of CLI_PREFERENCE) {
+    if (cliInstalled(name)) return name
+  }
+  return 'claude'
+}
+var AGENT_CLI = resolveAgentCli()
+function isCliLevelFailure(message) {
+  const m = message.toLowerCase()
+  return (
+    m.includes('requires a newer version') ||
+    m.includes('unknown model') ||
+    m.includes('model not found') ||
+    m.includes('unsupported model') ||
+    m.includes('enoent') ||
+    m.includes('command not found') ||
+    m.includes('not recognized')
+  )
+}
+function fallbackCli(current) {
+  const other = CLI_PREFERENCE.find((n) => n !== current)
+  if (!other) return null
+  return cliInstalled(other) ? other : null
+}
+function buildAgentCommand(prompt, opts = {}, cli = AGENT_CLI) {
+  const profile = PROFILES[cli]
   if (!profile) {
     throw new Error(
-      `\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 CONTENT_FACTORY_CLI=\xAB${AGENT_CLI}\xBB. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435: ${Object.keys(PROFILES).join(', ')}`
+      `\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 CONTENT_FACTORY_CLI=\xAB${cli}\xBB. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435: ${Object.keys(PROFILES).join(', ')}`
     )
   }
   return profile(prompt, opts)
 }
-function supportsAgentProfiles() {
-  return AGENT_CLI === 'claude'
+function supportsAgentProfiles(cli = AGENT_CLI) {
+  return cli === 'claude'
 }
 
 // lib/agent-role.ts
@@ -857,12 +899,12 @@ var OUTLINE_HINTS = {
     '\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u2192 \u043A\u043B\u044E\u0447\u0435\u0432\u044B\u0435 \u0438\u0434\u0435\u0438 (3-4) \u2192 \u043F\u0440\u0430\u043A\u0442\u0438\u043A\u0430 \u2192 \u0430\u0434\u0430\u043F\u0442\u0430\u0446\u0438\u044F \u0434\u043B\u044F \u0440\u0443\u043D\u0435\u0442\u0430 + CTA',
 }
 var AGENT_TOOLS = 'Read,Skill,Glob,Grep'
-function runClaude(prompt, agent) {
+function runClaudeOnce(prompt, agent, cli) {
   return new Promise((resolve, reject) => {
     let effectivePrompt = prompt
     let agentFlag
     if (agent) {
-      if (supportsAgentProfiles()) {
+      if (supportsAgentProfiles(cli)) {
         agentFlag = agent
       } else {
         const role = loadAgentRole(agent)
@@ -880,12 +922,16 @@ function runClaude(prompt, agent) {
         }
       }
     }
-    const { cmd, args } = buildAgentCommand('', {
-      model: FACTORY_MODEL,
-      agent: agentFlag,
-      allowedTools: AGENT_TOOLS,
-      promptViaStdin: true,
-    })
+    const { cmd, args } = buildAgentCommand(
+      '',
+      {
+        model: modelFor(cli),
+        agent: agentFlag,
+        allowedTools: AGENT_TOOLS,
+        promptViaStdin: true,
+      },
+      cli
+    )
     const child = spawn(cmd, args, {
       env: process.env,
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -909,6 +955,19 @@ function runClaude(prompt, agent) {
     })
     child.on('error', reject)
   })
+}
+async function runClaude(prompt, agent) {
+  try {
+    return await runClaudeOnce(prompt, agent, AGENT_CLI)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    const spare = isCliLevelFailure(message) ? fallbackCli(AGENT_CLI) : null
+    if (!spare) throw e
+    console.log(
+      `    \u26A0 ${AGENT_CLI} \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C\u0441\u044F (${message.slice(0, 160)}). \u041F\u0435\u0440\u0435\u0445\u043E\u0436\u0443 \u043D\u0430 ${spare}.`
+    )
+    return await runClaudeOnce(prompt, agent, spare)
+  }
 }
 var currentStage = null
 var currentTopic = null
