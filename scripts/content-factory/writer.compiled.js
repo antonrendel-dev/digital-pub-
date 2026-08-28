@@ -1,8 +1,8 @@
 // writer.ts
 import { execSync, spawn } from 'child_process'
 import fs6 from 'fs'
-import os3 from 'os'
-import path5 from 'path'
+import os4 from 'os'
+import path6 from 'path'
 
 // lib/lsi.ts
 var MAX_MAIN_KEY_USES = 6
@@ -168,7 +168,10 @@ function savePhrases(file, keyword, nested, now = /* @__PURE__ */ new Date()) {
 // lib/model.ts
 var DEFAULT_MODEL = {
   claude: 'claude-opus-5',
-  codex: 'gpt-5.5',
+  // Не gpt-5.5: у неё в каталоге моделей multi_agent_version = null, то есть
+  // субагенты и роли недоступны. У gpt-5.6-sol — v2. Заводу это критично:
+  // именно ролью передаётся dpub-content-standard.
+  codex: 'gpt-5.6-sol',
 }
 function modelFor(cli) {
   const explicit = process.env.CONTENT_FACTORY_MODEL
@@ -180,6 +183,9 @@ var FACTORY_MODEL = modelFor(process.env.CONTENT_FACTORY_CLI || 'claude')
 
 // lib/agent-cli.ts
 import { spawnSync } from 'child_process'
+import { existsSync } from 'fs'
+import os from 'os'
+import path2 from 'path'
 var PROFILES = {
   claude(prompt, { model, agent, allowedTools, promptViaStdin }) {
     const args = ['-p']
@@ -191,9 +197,10 @@ var PROFILES = {
     if (!promptViaStdin) args.push(prompt)
     return { cmd: 'claude', args }
   },
-  codex(prompt, { model, promptViaStdin }) {
+  codex(prompt, { model, agent, promptViaStdin }) {
     const args = ['exec']
     if (model) args.push('--model', model)
+    if (agent) args.push('--profile', agent)
     if (!promptViaStdin) args.push(prompt)
     return { cmd: process.env.CONTENT_FACTORY_CLI_BIN || 'codex', args }
   },
@@ -239,15 +246,21 @@ function buildAgentCommand(prompt, opts = {}, cli = AGENT_CLI) {
   }
   return profile(prompt, opts)
 }
-function supportsAgentProfiles(cli = AGENT_CLI) {
-  return cli === 'claude'
+function supportsAgentProfiles(cli = AGENT_CLI, agent) {
+  if (cli === 'claude') return true
+  if (cli === 'codex') {
+    if (!agent) return true
+    const home = process.env.CODEX_HOME || path2.join(os.homedir(), '.codex')
+    return existsSync(path2.join(home, `${agent}.config.toml`))
+  }
+  return false
 }
 
 // lib/agent-role.ts
 import fs2 from 'fs'
-import os from 'os'
-import path2 from 'path'
-var AGENTS_DIR = process.env.CLAUDE_AGENTS_DIR ?? path2.join(os.homedir(), '.claude', 'agents')
+import os2 from 'os'
+import path3 from 'path'
+var AGENTS_DIR = process.env.CLAUDE_AGENTS_DIR ?? path3.join(os2.homedir(), '.claude', 'agents')
 function splitFrontmatter(raw) {
   if (!raw.startsWith('---')) return { front: '', body: raw }
   const end = raw.indexOf('\n---', 3)
@@ -271,7 +284,7 @@ function parseSkills(front) {
   return skills
 }
 function loadAgentRole(agent) {
-  const file = path2.join(AGENTS_DIR, `${agent}.md`)
+  const file = path3.join(AGENTS_DIR, `${agent}.md`)
   if (!fs2.existsSync(file)) return null
   const raw = fs2.readFileSync(file, 'utf8')
   const { front, body } = splitFrontmatter(raw)
@@ -291,11 +304,11 @@ ${prompt}`
 
 // lib/session-stats.ts
 import fs3 from 'fs'
-import os2 from 'os'
-import path3 from 'path'
+import os3 from 'os'
+import path4 from 'path'
 var RUNAWAY_TURNS = 25
-function transcriptDir(cwd, home = os2.homedir()) {
-  return path3.join(home, '.claude', 'projects', cwd.replace(/\//g, '-'))
+function transcriptDir(cwd, home = os3.homedir()) {
+  return path4.join(home, '.claude', 'projects', cwd.replace(/\//g, '-'))
 }
 function readStat(file) {
   let turns = 0
@@ -315,7 +328,7 @@ function collectSessionStats(sinceMs, dir) {
     return fs3
       .readdirSync(dir)
       .filter((f) => f.endsWith('.jsonl'))
-      .map((f) => path3.join(dir, f))
+      .map((f) => path4.join(dir, f))
       .filter((f) => fs3.statSync(f).mtimeMs >= sinceMs)
       .map(readStat)
       .sort((a, b) => b.turns - a.turns)
@@ -446,8 +459,8 @@ async function sendFailureAlert(p) {
 
 // lib/tz.ts
 import fs5 from 'fs'
-import path4 from 'path'
-var SEMANTICS_RELATIVE_PATH = path4.join('data', 'topvisor-semantics.json')
+import path5 from 'path'
+var SEMANTICS_RELATIVE_PATH = path5.join('data', 'topvisor-semantics.json')
 var VOLUMES_FILE = 'semantics-volumes.json'
 var INTENT_STEMS = new Set(
   [
@@ -480,7 +493,7 @@ function loadTopvisorSemantics(file) {
     return { keywords: [], snapshotDate: '' }
   }
   const raw = JSON.parse(fs5.readFileSync(file, 'utf-8'))
-  const volumes = loadVolumes(path4.join(path4.dirname(file), VOLUMES_FILE))
+  const volumes = loadVolumes(path5.join(path5.dirname(file), VOLUMES_FILE))
   return {
     keywords: (raw.keywords ?? []).map((k) => ({ ...k, volume: volumes.get(k.keyword) ?? null })),
     snapshotDate: raw.snapshotDate ?? '',
@@ -772,20 +785,20 @@ async function fetchWordstatKeywords(keyword, numPhrases = 20) {
 
 // writer.ts
 var FAQ_MIN_WORDS = 120
-var DATA_DIR = path5.join(import.meta.dirname, 'data')
-var LSI_CACHE_FILE = path5.join(DATA_DIR, 'lsi-cache.json')
+var DATA_DIR = path6.join(import.meta.dirname, 'data')
+var LSI_CACHE_FILE = path6.join(DATA_DIR, 'lsi-cache.json')
 var LSI_SOURCES = [
   LSI_CACHE_FILE,
-  path5.join(DATA_DIR, 'topic-pool.json'),
-  path5.join(DATA_DIR, 'semantics-volumes.json'),
+  path6.join(DATA_DIR, 'topic-pool.json'),
+  path6.join(DATA_DIR, 'semantics-volumes.json'),
 ]
-var PROJECT_ROOT = path5.resolve(import.meta.dirname, '..', '..')
-var ARTICLES_DIR = path5.join(PROJECT_ROOT, 'content', 'articles')
-var IMAGES_DIR = path5.join(PROJECT_ROOT, 'public', 'images', 'posts')
+var PROJECT_ROOT = path6.resolve(import.meta.dirname, '..', '..')
+var ARTICLES_DIR = path6.join(PROJECT_ROOT, 'content', 'articles')
+var IMAGES_DIR = path6.join(PROJECT_ROOT, 'public', 'images', 'posts')
 var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
-var CODEX_BIN = path5.join(os3.homedir(), '.npm-global', 'bin', 'codex')
-var CODEX_HOME = path5.join(os3.homedir(), '.codex')
-var REFERENCE_IMAGE = path5.join(import.meta.dirname, 'reference.webp')
+var CODEX_BIN = path6.join(os4.homedir(), '.npm-global', 'bin', 'codex')
+var CODEX_HOME = path6.join(os4.homedir(), '.codex')
+var REFERENCE_IMAGE = path6.join(import.meta.dirname, 'reference.webp')
 var PERSPECTIVES = [
   'face-on front view, character faces the viewer directly',
   '3/4 front-left angle, character turned slightly away to the left',
@@ -904,7 +917,7 @@ function runClaudeOnce(prompt, agent, cli) {
     let effectivePrompt = prompt
     let agentFlag
     if (agent) {
-      if (supportsAgentProfiles(cli)) {
+      if (supportsAgentProfiles(cli, agent)) {
         agentFlag = agent
       } else {
         const role = loadAgentRole(agent)
@@ -1003,15 +1016,15 @@ async function askClaude(prompt, agent) {
   throw last
 }
 function snapshotGeneratedImages() {
-  const generatedDir = path5.join(CODEX_HOME, 'generated_images')
+  const generatedDir = path6.join(CODEX_HOME, 'generated_images')
   const images = /* @__PURE__ */ new Set()
   if (!fs6.existsSync(generatedDir)) return images
   for (const session of fs6.readdirSync(generatedDir)) {
-    const sessionDir = path5.join(generatedDir, session)
+    const sessionDir = path6.join(generatedDir, session)
     try {
       for (const file of fs6.readdirSync(sessionDir)) {
         if (file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.jpg')) {
-          images.add(path5.join(sessionDir, file))
+          images.add(path6.join(sessionDir, file))
         }
       }
     } catch {}
@@ -1027,7 +1040,7 @@ function findNewImage(before) {
 }
 function convertToWebP(srcPng, destWebp) {
   const script = `
-    import('${path5.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('${path6.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -1041,7 +1054,7 @@ function convertToWebP(srcPng, destWebp) {
 }
 function convertSketchToWebP(srcPng, destWebp) {
   const script = `
-    import('${path5.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('${path6.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
       .then(m => m.default('${srcPng}').resize({width: 900, withoutEnlargement: true}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -1111,7 +1124,7 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
     `[writer] \u041D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: ${newImage}`
   )
   fs6.mkdirSync(IMAGES_DIR, { recursive: true })
-  const destWebp = path5.join(IMAGES_DIR, `${slug}.webp`)
+  const destWebp = path6.join(IMAGES_DIR, `${slug}.webp`)
   try {
     convertToWebP(newImage, destWebp)
     console.log(`[writer] WebP \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${destWebp}`)
@@ -1121,7 +1134,7 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
       '[writer] \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0430\u0446\u0438\u044F \u0432 WebP \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C, \u043A\u043E\u043F\u0438\u0440\u0443\u044E PNG:',
       e.message
     )
-    const destPng = path5.join(IMAGES_DIR, `${slug}.png`)
+    const destPng = path6.join(IMAGES_DIR, `${slug}.png`)
     fs6.copyFileSync(newImage, destPng)
     return `/images/posts/${slug}.png`
   }
@@ -1192,7 +1205,7 @@ ${h2List}
   for (let i = 0; i < Math.min(spec.charts?.length ?? 0, 2); i++) {
     const chart = spec.charts[i]
     const filename = `${slug}-chart${i + 1}.png`
-    const localPath = path5.join(IMAGES_DIR, filename)
+    const localPath = path6.join(IMAGES_DIR, filename)
     const webPath = `/images/posts/${filename}`
     try {
       const response = await fetch('https://quickchart.io/chart', {
@@ -1269,7 +1282,7 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
     }
     fs6.mkdirSync(IMAGES_DIR, { recursive: true })
     const suffix = i === 0 ? '-sketch' : `-sketch${i + 1}`
-    const destWebp = path5.join(IMAGES_DIR, `${slug}${suffix}.webp`)
+    const destWebp = path6.join(IMAGES_DIR, `${slug}${suffix}.webp`)
     try {
       convertSketchToWebP(newImage, destWebp)
       const webPath = `/images/posts/${slug}${suffix}.webp`
@@ -1278,7 +1291,7 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
       )
       results.push(webPath)
     } catch {
-      const destPng = path5.join(IMAGES_DIR, `${slug}${suffix}.png`)
+      const destPng = path6.join(IMAGES_DIR, `${slug}${suffix}.png`)
       fs6.copyFileSync(newImage, destPng)
       results.push(`/images/posts/${slug}${suffix}.png`)
     }
@@ -1321,7 +1334,7 @@ function injectImagesIntoMarkdown(markdown, charts, sketchPaths) {
   }
   return lines.join('\n')
 }
-var SEMANTICS_FILE = path5.join(import.meta.dirname, SEMANTICS_RELATIVE_PATH)
+var SEMANTICS_FILE = path6.join(import.meta.dirname, SEMANTICS_RELATIVE_PATH)
 function parseJsonObject(raw, who) {
   const m = raw.match(/\{[\s\S]*\}/)
   if (!m) throw new Error(`${who} \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON`)
@@ -1969,7 +1982,7 @@ ${dynamicSeoBlock}`
     44, 34, 166, 202, 210, 208, 108, 40, 32, 100, 96, 36, 206, 172, 78,
   ])
   const allBiases = JSON.parse(
-    fs6.readFileSync(path5.join(DATA_DIR, 'nudge-biases.json'), 'utf-8')
+    fs6.readFileSync(path6.join(DATA_DIR, 'nudge-biases.json'), 'utf-8')
   ).biases
   const nudgeCatalog = allBiases
     .filter((b) => nudgeBiasIds.has(b.id))
@@ -2158,22 +2171,22 @@ function getLatestTopicsFile() {
     throw new Error(
       '\u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u0443\u0441\u0442\u0438 analyst.js'
     )
-  return path5.join(DATA_DIR, files[0])
+  return path6.join(DATA_DIR, files[0])
 }
 function markTopicPublished(topicsFile, topicId) {
-  const dir = path5.dirname(topicsFile)
+  const dir = path6.dirname(topicsFile)
   const source = JSON.parse(fs6.readFileSync(topicsFile, 'utf-8'))
   const target = source.topics.find((t) => t.id === topicId)
   if (!target) {
     console.warn(
-      `[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${path5.basename(topicsFile)}`
+      `[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${path6.basename(topicsFile)}`
     )
     return
   }
   const files = fs6
     .readdirSync(dir)
     .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
-    .map((f) => path5.join(dir, f))
+    .map((f) => path6.join(dir, f))
   const touched = []
   for (const file of files) {
     const raw = JSON.parse(fs6.readFileSync(file, 'utf-8'))
@@ -2181,14 +2194,14 @@ function markTopicPublished(topicsFile, topicId) {
     if (!hit || hit.published) continue
     hit.published = true
     fs6.writeFileSync(file, JSON.stringify(raw, null, 2))
-    touched.push(path5.basename(file))
+    touched.push(path6.basename(file))
   }
   console.log(
     `[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043E\u0442\u043C\u0435\u0447\u0435\u043D\u0430 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u043E\u0439 \u0432: ${touched.join(', ')}`
   )
 }
 function gitCommitAndPush(slug, title, hasImage) {
-  const mdxPath = path5.join('content', 'articles', `${slug}.mdx`)
+  const mdxPath = path6.join('content', 'articles', `${slug}.mdx`)
   execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: 'inherit' })
   if (hasImage) {
     execSync(`git add public/images/posts/${slug}* 2>/dev/null || true`, {
@@ -2201,7 +2214,7 @@ function gitCommitAndPush(slug, title, hasImage) {
   execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
 function syncToProduction(slug, hasImage) {
-  const SSH_KEY = path5.join(os3.homedir(), '.ssh', 'github_actions_deploy')
+  const SSH_KEY = path6.join(os4.homedir(), '.ssh', 'github_actions_deploy')
   const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`
   const PROD = 'c48127@91.201.52.231:~/d-pub.ru/app'
   execSync(
@@ -2258,7 +2271,7 @@ async function main() {
   console.log(
     `[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u0433\u043E\u0442\u043E\u0432\u0430, slug: ${result.slug}`
   )
-  const mdxPath = path5.join(ARTICLES_DIR, `${result.slug}.mdx`)
+  const mdxPath = path6.join(ARTICLES_DIR, `${result.slug}.mdx`)
   if (fs6.existsSync(mdxPath)) {
     result.slug = `${result.slug}-${Date.now().toString(36)}`
     console.log(
@@ -2303,7 +2316,7 @@ async function main() {
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
   fs6.mkdirSync(ARTICLES_DIR, { recursive: true })
-  fs6.writeFileSync(path5.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
+  fs6.writeFileSync(path6.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)
   console.log(
     `[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`
   )

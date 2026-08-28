@@ -263,7 +263,7 @@ function runClaudeOnce(prompt: string, agent: AgentName | undefined, cli: string
     let effectivePrompt = prompt
     let agentFlag: string | undefined
     if (agent) {
-      if (supportsAgentProfiles(cli)) {
+      if (supportsAgentProfiles(cli, agent)) {
         agentFlag = agent
       } else {
         const role = loadAgentRole(agent)

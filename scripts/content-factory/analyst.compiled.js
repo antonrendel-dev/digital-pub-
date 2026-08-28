@@ -1,12 +1,15 @@
 // analyst.ts
 import { spawn } from 'child_process'
 import fs3 from 'fs'
-import path2 from 'path'
+import path3 from 'path'
 
 // lib/model.ts
 var DEFAULT_MODEL = {
   claude: 'claude-opus-5',
-  codex: 'gpt-5.5',
+  // Не gpt-5.5: у неё в каталоге моделей multi_agent_version = null, то есть
+  // субагенты и роли недоступны. У gpt-5.6-sol — v2. Заводу это критично:
+  // именно ролью передаётся dpub-content-standard.
+  codex: 'gpt-5.6-sol',
 }
 function modelFor(cli) {
   const explicit = process.env.CONTENT_FACTORY_MODEL
@@ -18,6 +21,9 @@ var FACTORY_MODEL = modelFor(process.env.CONTENT_FACTORY_CLI || 'claude')
 
 // lib/agent-cli.ts
 import { spawnSync } from 'child_process'
+import { existsSync } from 'fs'
+import os from 'os'
+import path from 'path'
 var PROFILES = {
   claude(prompt, { model, agent, allowedTools, promptViaStdin }) {
     const args = ['-p']
@@ -29,9 +35,10 @@ var PROFILES = {
     if (!promptViaStdin) args.push(prompt)
     return { cmd: 'claude', args }
   },
-  codex(prompt, { model, promptViaStdin }) {
+  codex(prompt, { model, agent, promptViaStdin }) {
     const args = ['exec']
     if (model) args.push('--model', model)
+    if (agent) args.push('--profile', agent)
     if (!promptViaStdin) args.push(prompt)
     return { cmd: process.env.CONTENT_FACTORY_CLI_BIN || 'codex', args }
   },
@@ -77,15 +84,21 @@ function buildAgentCommand(prompt, opts = {}, cli = AGENT_CLI) {
   }
   return profile(prompt, opts)
 }
-function supportsAgentProfiles(cli = AGENT_CLI) {
-  return cli === 'claude'
+function supportsAgentProfiles(cli = AGENT_CLI, agent) {
+  if (cli === 'claude') return true
+  if (cli === 'codex') {
+    if (!agent) return true
+    const home = process.env.CODEX_HOME || path.join(os.homedir(), '.codex')
+    return existsSync(path.join(home, `${agent}.config.toml`))
+  }
+  return false
 }
 
 // lib/agent-role.ts
 import fs from 'fs'
-import os from 'os'
-import path from 'path'
-var AGENTS_DIR = process.env.CLAUDE_AGENTS_DIR ?? path.join(os.homedir(), '.claude', 'agents')
+import os2 from 'os'
+import path2 from 'path'
+var AGENTS_DIR = process.env.CLAUDE_AGENTS_DIR ?? path2.join(os2.homedir(), '.claude', 'agents')
 function splitFrontmatter(raw) {
   if (!raw.startsWith('---')) return { front: '', body: raw }
   const end = raw.indexOf('\n---', 3)
@@ -109,7 +122,7 @@ function parseSkills(front) {
   return skills
 }
 function loadAgentRole(agent) {
-  const file = path.join(AGENTS_DIR, `${agent}.md`)
+  const file = path2.join(AGENTS_DIR, `${agent}.md`)
   if (!fs.existsSync(file)) return null
   const raw = fs.readFileSync(file, 'utf8')
   const { front, body } = splitFrontmatter(raw)
@@ -402,9 +415,9 @@ async function fetchWebmasterOpportunities(topN = 20) {
 }
 
 // analyst.ts
-var DATA_DIR = path2.join(import.meta.dirname, 'data')
-var ARTICLES_DIR = path2.join(import.meta.dirname, '../../content/articles')
-var VOLUMES_FILE = path2.join(DATA_DIR, 'semantics-volumes.json')
+var DATA_DIR = path3.join(import.meta.dirname, 'data')
+var ARTICLES_DIR = path3.join(import.meta.dirname, '../../content/articles')
+var VOLUMES_FILE = path3.join(DATA_DIR, 'semantics-volumes.json')
 var POOL_SIZE = 150
 var TOPICS_REQUESTED = 30
 var TOPICS_FOR_JOBSEEKERS = Math.round(TOPICS_REQUESTED * 0.9)
@@ -414,7 +427,7 @@ function getPublishedArticleTitles() {
     .readdirSync(ARTICLES_DIR)
     .filter((f) => f.endsWith('.mdx'))
     .flatMap((f) => {
-      const raw = fs3.readFileSync(path2.join(ARTICLES_DIR, f), 'utf-8')
+      const raw = fs3.readFileSync(path3.join(ARTICLES_DIR, f), 'utf-8')
       const m = raw.match(/^title:\s*["']?(.+?)["']?\s*$/m)
       return m ? [m[1]] : []
     })
@@ -425,7 +438,7 @@ function getAllPlannedTopics() {
     .readdirSync(DATA_DIR)
     .filter((f) => f.startsWith('topics_') && f.endsWith('.json'))
     .flatMap((f) => {
-      const { topics } = JSON.parse(fs3.readFileSync(path2.join(DATA_DIR, f), 'utf-8'))
+      const { topics } = JSON.parse(fs3.readFileSync(path3.join(DATA_DIR, f), 'utf-8'))
       return topics.map((t) => ({ title: t.title, keyword: t.keyword }))
     })
 }
@@ -435,7 +448,7 @@ function askClaudeOnce(prompt, agent, cli) {
     let effectivePrompt = prompt
     let agentFlag
     if (agent) {
-      if (supportsAgentProfiles(cli)) {
+      if (supportsAgentProfiles(cli, agent)) {
         agentFlag = agent
       } else {
         const role = loadAgentRole(agent)
@@ -733,7 +746,7 @@ function currentQueue() {
   const seen = /* @__PURE__ */ new Set()
   let size = 0
   for (const f of files) {
-    const raw = JSON.parse(fs3.readFileSync(path2.join(DATA_DIR, f), 'utf-8'))
+    const raw = JSON.parse(fs3.readFileSync(path3.join(DATA_DIR, f), 'utf-8'))
     for (const t of raw.topics) {
       const key = `${t.id}|${t.title}`
       if (seen.has(key)) continue
@@ -769,7 +782,7 @@ async function main() {
   const { topics, weak } = await generateTopics()
   fs3.mkdirSync(DATA_DIR, { recursive: true })
   const date = /* @__PURE__ */ new Date().toISOString().split('T')[0]
-  const filePath = path2.join(DATA_DIR, `topics_${date}.json`)
+  const filePath = path3.join(DATA_DIR, `topics_${date}.json`)
   fs3.writeFileSync(filePath, JSON.stringify({ date, topics }, null, 2))
   console.log(`[analyst] \u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: ${filePath}`)
   const dateRu = /* @__PURE__ */ new Date().toLocaleDateString('ru-RU', {

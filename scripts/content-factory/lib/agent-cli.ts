@@ -15,6 +15,9 @@
  */
 
 import { spawnSync } from 'child_process'
+import { existsSync } from 'fs'
+import os from 'os'
+import path from 'path'
 
 export interface AgentInvocation {
   cmd: string
@@ -54,11 +57,22 @@ const PROFILES: Record<string, Profile> = {
     return { cmd: 'claude', args }
   },
 
-  codex(prompt, { model, promptViaStdin }) {
-    // Заготовка. Codex не принимает --agent и --allowedTools — профили агентов
-    // и белые списки инструментов относятся к Claude Code, аналога у него нет.
+  codex(prompt, { model, agent, promptViaStdin }) {
+    // Роль у Codex задаётся профилем корневой сессии: --profile <name> читает
+    // $CODEX_HOME/<name>.config.toml с полем developer_instructions. Это прямой
+    // аналог `claude --agent`: инструкции уходят системным слоем, а не
+    // приклеиваются к промпту. Проверено живьём 28.08.2026 — субагент с
+    // agent_type=writer назвал скилл из карты задач профиля.
+    //
+    // Файлы профилей генерируются из тех же ~/.claude/agents/*.md скриптом
+    // /home/claude/tools/codex-parity/sync-agents.py, чтобы источник правды
+    // остался один.
+    //
+    // --allowedTools аналога не имеет: у Codex разрешения задаются песочницей
+    // и политикой одобрения, а не белым списком инструментов.
     const args = ['exec']
     if (model) args.push('--model', model)
+    if (agent) args.push('--profile', agent)
     if (!promptViaStdin) args.push(prompt)
     return { cmd: process.env.CONTENT_FACTORY_CLI_BIN || 'codex', args }
   },
@@ -149,7 +163,23 @@ export function buildAgentCommand(
   return profile(prompt, opts)
 }
 
-/** Поддерживает ли текущий профиль профили агентов и белые списки инструментов. */
-export function supportsAgentProfiles(cli: string = AGENT_CLI): boolean {
-  return cli === 'claude'
+/**
+ * Умеет ли CLI взять роль файлом, а не текстом в промпте.
+ *
+ * У Claude Code это `--agent <name>` и профиль ~/.claude/agents/<name>.md.
+ * У Codex — `--profile <name>` и $CODEX_HOME/<name>.config.toml; файлы для
+ * него генерируются из тех же профилей Claude, см. sync-agents.py.
+ *
+ * Для Codex проверяем файл на диске: если синхронизация не отработала, честнее
+ * вложить роль в текст промпта (lib/agent-role.ts), чем запустить агента
+ * с флагом на несуществующий профиль и получить сессию без роли.
+ */
+export function supportsAgentProfiles(cli: string = AGENT_CLI, agent?: string): boolean {
+  if (cli === 'claude') return true
+  if (cli === 'codex') {
+    if (!agent) return true
+    const home = process.env.CODEX_HOME || path.join(os.homedir(), '.codex')
+    return existsSync(path.join(home, `${agent}.config.toml`))
+  }
+  return false
 }

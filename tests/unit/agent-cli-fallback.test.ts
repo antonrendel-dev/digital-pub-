@@ -88,10 +88,15 @@ describe('выбор CLI', () => {
     expect(args[0]).toBe('exec')
   })
 
-  it('профили агентов есть только у claude, для любого переданного CLI', () => {
+  it('роль файлом умеют оба CLI, но по-разному', () => {
+    // Claude: --agent + ~/.claude/agents/<name>.md
+    // Codex:  --profile + $CODEX_HOME/<name>.config.toml
+    // Утверждение «у codex профилей нет» держалось на осмотре версии 0.130;
+    // в 0.150.1 они есть, и проверено живым запуском субагента.
     const { supportsAgentProfiles } = reload()
     expect(supportsAgentProfiles('claude')).toBe(true)
-    expect(supportsAgentProfiles('codex')).toBe(false)
+    expect(supportsAgentProfiles('codex')).toBe(true)
+    expect(supportsAgentProfiles('нет-такого')).toBe(false)
   })
 })
 
@@ -111,7 +116,8 @@ describe('модель считается отдельно для каждого
     delete process.env.CONTENT_FACTORY_MODEL
     const { modelFor } = reloadModel()
     expect(modelFor('claude')).toBe('claude-opus-5')
-    expect(modelFor('codex')).toBe('gpt-5.5')
+    // gpt-5.5 не годится: multi_agent_version = null, роли недоступны.
+    expect(modelFor('codex')).toBe('gpt-5.6-sol')
   })
 
   it('модель без указания CLI применяется к текущему', () => {

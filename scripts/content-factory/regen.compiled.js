@@ -7,7 +7,10 @@ import path from 'path'
 // lib/model.ts
 var DEFAULT_MODEL = {
   claude: 'claude-opus-5',
-  codex: 'gpt-5.5',
+  // Не gpt-5.5: у неё в каталоге моделей multi_agent_version = null, то есть
+  // субагенты и роли недоступны. У gpt-5.6-sol — v2. Заводу это критично:
+  // именно ролью передаётся dpub-content-standard.
+  codex: 'gpt-5.6-sol',
 }
 function modelFor(cli) {
   const explicit = process.env.CONTENT_FACTORY_MODEL
@@ -30,9 +33,10 @@ var PROFILES = {
     if (!promptViaStdin) args.push(prompt)
     return { cmd: 'claude', args }
   },
-  codex(prompt, { model, promptViaStdin }) {
+  codex(prompt, { model, agent, promptViaStdin }) {
     const args = ['exec']
     if (model) args.push('--model', model)
+    if (agent) args.push('--profile', agent)
     if (!promptViaStdin) args.push(prompt)
     return { cmd: process.env.CONTENT_FACTORY_CLI_BIN || 'codex', args }
   },

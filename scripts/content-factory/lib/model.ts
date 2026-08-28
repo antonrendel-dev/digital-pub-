@@ -22,7 +22,10 @@
  */
 const DEFAULT_MODEL: Record<string, string> = {
   claude: 'claude-opus-5',
-  codex: 'gpt-5.5',
+  // Не gpt-5.5: у неё в каталоге моделей multi_agent_version = null, то есть
+  // субагенты и роли недоступны. У gpt-5.6-sol — v2. Заводу это критично:
+  // именно ролью передаётся dpub-content-standard.
+  codex: 'gpt-5.6-sol',
 }
 
 /**

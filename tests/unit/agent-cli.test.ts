@@ -1,4 +1,7 @@
-import { buildAgentCommand, supportsAgentProfiles } from '../../scripts/content-factory/lib/agent-cli'
+import {
+  buildAgentCommand,
+  supportsAgentProfiles,
+} from '../../scripts/content-factory/lib/agent-cli'
 
 /**
  * Завод не должен ломаться от смены агента.
@@ -54,8 +57,7 @@ describe('выбор CLI-агента', () => {
     expect(args).not.toContain('очень длинный промпт')
   })
 
-  it('профили агентов доступны только у claude', () => {
-    // У codex нет ни --agent, ни --allowedTools: это механизм Claude Code.
+  it('claude берёт роль файлом', () => {
     expect(supportsAgentProfiles()).toBe(true)
   })
 
@@ -67,7 +69,10 @@ describe('выбор CLI-агента', () => {
     expect(() => mod.buildAgentCommand('x', {})).toThrow(/нет-такого/)
   })
 
-  it('профиль codex собирается и не тащит claude-only флаги', () => {
+  it('codex получает роль через --profile, а не через --agent', () => {
+    // 28.08.2026 выяснено живым прогоном: у codex-cli 0.150.1 роль корневой
+    // сессии задаётся `--profile <name>` и файлом $CODEX_HOME/<name>.config.toml.
+    // Флага --agent у него нет, --allowedTools аналога не имеет.
     jest.resetModules()
     process.env.CONTENT_FACTORY_CLI = 'codex'
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -78,8 +83,22 @@ describe('выбор CLI-агента', () => {
       allowedTools: 'Read',
     })
     expect(cmd).toBe('codex')
+    expect(args[0]).toBe('exec')
+    expect(args).toContain('--profile')
+    expect(args[args.indexOf('--profile') + 1]).toBe('analyst')
     expect(args).not.toContain('--agent')
     expect(args).not.toContain('--allowedTools')
-    expect(args[0]).toBe('exec')
+  })
+
+  it('без файла профиля codex честно сообщает, что роль файлом не возьмёт', () => {
+    // Иначе агент уедет с флагом на несуществующий профиль и молча потеряет
+    // роль — ровно та тихая потеря, ради которой заведён lib/agent-role.ts.
+    jest.resetModules()
+    process.env.CONTENT_FACTORY_CLI = 'codex'
+    process.env.CODEX_HOME = '/tmp/нет-такого-codex-home'
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('../../scripts/content-factory/lib/agent-cli')
+    expect(mod.supportsAgentProfiles('codex', 'analyst')).toBe(false)
+    delete process.env.CODEX_HOME
   })
 })
