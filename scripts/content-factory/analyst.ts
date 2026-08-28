@@ -14,6 +14,7 @@ import fs from 'fs'
 import path from 'path'
 import { FACTORY_MODEL } from './lib/model.js'
 import { buildAgentCommand, supportsAgentProfiles } from './lib/agent-cli.js'
+import { loadAgentRole, withRole } from './lib/agent-role.js'
 import { loadPhrasePool, renderPoolBlock } from './lib/pool.js'
 import { sendMessage } from './lib/telegram.js'
 import {
@@ -90,9 +91,32 @@ function askClaude(prompt: string, agent?: 'analyst' | 'seo'): Promise<string> {
   return new Promise((resolve, reject) => {
     // --allowedTools обязателен: с --agent, но без него скилл не загружается
     // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
+    // Профили есть только у Claude Code. Если их нет, роль не исчезает молча,
+    // а вкладывается в текст промпта — см. lib/agent-role.ts. Скиллы так не
+    // переносятся, поэтому о них пишем в лог: молчаливая потеря стандарта
+    // всплывает только на приёмке, и то не всегда.
+    let effectivePrompt = prompt
+    let agentFlag: string | undefined
+    if (agent) {
+      if (supportsAgentProfiles()) {
+        agentFlag = agent
+      } else {
+        const role = loadAgentRole(agent)
+        if (role) {
+          effectivePrompt = withRole(prompt, role)
+          if (role.skills.length > 0) {
+            console.log(
+              `    \u26a0 ${agent}: роль передана текстом, скиллы не подключены (${role.skills.join(', ')})`
+            )
+          }
+        } else {
+          console.log(`    \u26a0 ${agent}: профиль не найден, агент работает без роли`)
+        }
+      }
+    }
     const { cmd, args } = buildAgentCommand('', {
       model: FACTORY_MODEL,
-      agent: agent && supportsAgentProfiles() ? agent : undefined,
+      agent: agentFlag,
       allowedTools: AGENT_TOOLS,
       promptViaStdin: true,
     })
@@ -101,7 +125,7 @@ function askClaude(prompt: string, agent?: 'analyst' | 'seo'): Promise<string> {
       env: process.env,
       stdio: ['pipe', 'pipe', 'pipe'],
     })
-    child.stdin.write(prompt)
+    child.stdin.write(effectivePrompt)
     child.stdin.end()
     let out = ''
     let err = ''
