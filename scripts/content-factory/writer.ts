@@ -23,7 +23,7 @@ import {
   isCliLevelFailure,
   supportsAgentProfiles,
 } from './lib/agent-cli.js'
-import { loadAgentRole, withRole } from './lib/agent-role.js'
+import { loadAgentRole, stripRoleTag, withRole } from './lib/agent-role.js'
 import {
   collectSessionStats,
   runawayWarning,
@@ -301,7 +301,10 @@ function runClaudeOnce(prompt: string, agent: AgentName | undefined, cli: string
     child.stdout.on('data', (d: Buffer) => (out += d.toString()))
     child.stderr.on('data', (d: Buffer) => (err += d.toString()))
     child.on('close', (code) => {
-      if (code === 0) resolve(out.trim())
+      // Метку роли ([WRITER]/[ANALYST]) профиль печатает в каждом ответе — она
+      // нужна в чате, но не в артефакте. Режем здесь, на общем выходе, а не
+      // на каждом из десятка шагов: новый шаг тогда защищён по умолчанию.
+      if (code === 0) resolve(stripRoleTag(out.trim()))
       // Хвост stdout в тексте ошибки: CLI пишет причину отказа (упёрся в лимит,
       // агент отказался) именно туда, оставляя stderr пустым. Прогон 21.08 из-за
       // этого упал с одним лишь «код 1» и остался без диагноза.
@@ -637,7 +640,9 @@ ${h2List}
       fs.mkdirSync(IMAGES_DIR, { recursive: true })
       fs.writeFileSync(localPath, buffer)
       console.log(`[writer] QuickChart сохранён: ${webPath}`)
-      results.push({ webPath, alt: chart.alt })
+      // Здесь метка сидит внутри поля JSON, а не в начале ответа: так
+      // `[ANALYST]` попал в alt графика статьи про инфлюенс-маркетинг.
+      results.push({ webPath, alt: stripRoleTag(chart.alt) })
     } catch (e) {
       console.warn(`[writer] QuickChart ошибка chart${i + 1}:`, (e as Error).message)
     }
@@ -961,6 +966,20 @@ ${task}
 
 // ─── Приёмка по ТЗ ───────────────────────────────────────────────────────────
 
+/**
+ * Отрезает всё, что модель написала до первой H2.
+ *
+ * Круги правок — единственный шаг, который клал ответ модели в статью как есть.
+ * Остальные шаги режут преамбулу по первой `## `, и на приёмке этого не было:
+ * ярлык роли строкой `[WRITER]` перед текстом уезжал во frontmatter-соседи и
+ * попадал на сайт. 7 статей за август вышли с этой меткой — все ровно те, где
+ * лог показывает круг правок.
+ */
+function stripPreamble(raw: string): string {
+  const start = raw.indexOf('## ')
+  return (start !== -1 ? raw.slice(start) : raw).trim()
+}
+
 // Круг правок — это вызов модели на 2-3 минуты. Потолок не про качество, а про то,
 // чтобы статья успела выйти утром: без него зациклившийся писатель съест всё окно.
 const REPAIR_ROUNDS = 6
@@ -1031,7 +1050,7 @@ ${current}
 
 Верни ТОЛЬКО исправленный Markdown статьи — без пояснений, без списка правок.`,
       'writer'
-    )
+    ).then(stripPreamble)
   }
 
   return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) }

@@ -42,7 +42,11 @@ fs.writeFileSync(path.join(TMP, 'empty.md'), `---\nname: empty\nskills:\n  - x\n
 
 process.env.CLAUDE_AGENTS_DIR = TMP
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { loadAgentRole, withRole } = require('../../scripts/content-factory/lib/agent-role')
+const {
+  loadAgentRole,
+  stripRoleTag,
+  withRole,
+} = require('../../scripts/content-factory/lib/agent-role')
 
 describe('перенос роли агента в текст промпта', () => {
   it('читает тело профиля без frontmatter', () => {
@@ -97,5 +101,58 @@ describe('перенос роли агента в текст промпта', ()
       expect(src).toContain('loadAgentRole')
       expect(src).not.toMatch(/agent: agent && supportsAgentProfiles\(\) \? agent : undefined/)
     }
+  })
+})
+
+describe('метка роли не уезжает в артефакт', () => {
+  /**
+   * Профили велят агенту начинать каждый ответ с [WRITER] / [ANALYST]: в чате
+   * это подпись, в заводе — первая строка статьи. 7 статей за август вышли
+   * на сайт с меткой, восьмая — с [ANALYST] внутри alt графика.
+   */
+  it('срезает метку в начале ответа', () => {
+    expect(stripRoleTag('[WRITER]\n\n## Заголовок')).toBe('## Заголовок')
+    expect(stripRoleTag('[ANALYST] Динамика рынка')).toBe('Динамика рынка')
+  })
+
+  it('не трогает ссылку в середине текста', () => {
+    // `[SMM](/vacancies/smm)` — живая перелинковка в статье про
+    // контент-менеджера. Жадная замена стёрла бы её.
+    const text = 'Смежные пути: [копирайтинг](/vacancies/copywriting), [SMM](/vacancies/smm).'
+    expect(stripRoleTag(text)).toBe(text)
+  })
+
+  it('чужие метки в начале строки остаются нетронутыми', () => {
+    expect(stripRoleTag('[ГОСТ] требования')).toBe('[ГОСТ] требования')
+  })
+
+  it('щит стоит на общем выходе CLI, а не на отдельных шагах', () => {
+    // Ставить срез на каждом из десятка шагов — значит забыть про новый шаг.
+    for (const f of ['writer.ts', 'analyst.ts']) {
+      const src = fs.readFileSync(path.join(process.cwd(), 'scripts', 'content-factory', f), 'utf8')
+      expect(src).toContain('resolve(stripRoleTag(out.trim()))')
+      expect(src).not.toContain('resolve(out.trim())')
+    }
+  })
+
+  it('alt графика чистится отдельно — там метка внутри поля JSON', () => {
+    const src = fs.readFileSync(
+      path.join(process.cwd(), 'scripts', 'content-factory', 'writer.ts'),
+      'utf8'
+    )
+    expect(src).toContain('alt: stripRoleTag(chart.alt)')
+  })
+
+  it('в опубликованных статьях меток нет', () => {
+    const dir = path.join(process.cwd(), 'content', 'articles')
+    const dirty = fs
+      .readdirSync(dir)
+      .filter((f: string) => f.endsWith('.mdx'))
+      .filter((f: string) =>
+        /\[(WRITER|ANALYST|SEO|EDITOR|MARKETER|REVIEWER)\]/.test(
+          fs.readFileSync(path.join(dir, f), 'utf8')
+        )
+      )
+    expect(dirty).toEqual([])
   })
 })

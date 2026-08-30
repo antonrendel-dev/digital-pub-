@@ -148,6 +148,10 @@ ${role.instructions}
 ===== \u0417\u0410\u0414\u0410\u0427\u0410 =====
 ${prompt}`
 }
+var ROLE_TAG_RE = /^\s*\[(?:WRITER|ANALYST|SEO|EDITOR|MARKETER|REVIEWER)\]\s*/
+function stripRoleTag(text) {
+  return text.replace(ROLE_TAG_RE, '')
+}
 
 // lib/pool.ts
 import fs2 from 'fs'
@@ -496,7 +500,7 @@ function askClaudeOnce(prompt, agent, cli) {
     child.stdout.on('data', (d) => (out += d.toString()))
     child.stderr.on('data', (d) => (err += d.toString()))
     child.on('close', (code) => {
-      if (code === 0) resolve(out.trim())
+      if (code === 0) resolve(stripRoleTag(out.trim()))
       else
         reject(
           new Error(

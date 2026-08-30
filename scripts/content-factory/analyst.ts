@@ -20,7 +20,7 @@ import {
   isCliLevelFailure,
   supportsAgentProfiles,
 } from './lib/agent-cli.js'
-import { loadAgentRole, withRole } from './lib/agent-role.js'
+import { loadAgentRole, stripRoleTag, withRole } from './lib/agent-role.js'
 import { loadPhrasePool, renderPoolBlock } from './lib/pool.js'
 import { sendMessage } from './lib/telegram.js'
 import {
@@ -146,7 +146,10 @@ function askClaudeOnce(
     child.stdout.on('data', (d: Buffer) => (out += d.toString()))
     child.stderr.on('data', (d: Buffer) => (err += d.toString()))
     child.on('close', (code) => {
-      if (code === 0) resolve(out.trim())
+      // Метку роли ([WRITER]/[ANALYST]) профиль печатает в каждом ответе — она
+      // нужна в чате, но не в артефакте. Режем здесь, на общем выходе, а не
+      // на каждом из десятка шагов: новый шаг тогда защищён по умолчанию.
+      if (code === 0) resolve(stripRoleTag(out.trim()))
       else reject(new Error(err || `claude завершился с кодом ${code}`))
     })
     child.on('error', reject)
