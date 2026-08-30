@@ -77,10 +77,24 @@ export function collectTopvisor(env) {
       positions[k.name] = pos
     }
 
+    // Целевой URL — наша гипотеза «какая страница должна отвечать». Без неё
+    // расхождение с выдачей увидеть нечем: 30.08.2026 так и выяснилось, что
+    // срезы «спец × удалёнка» проигрывают родительским категориям.
+    const keywords = await topvisorCall(env, 'get/keywords_2/keywords', {
+      project_id: TOPVISOR_PROJECT_ID,
+      fields: ['id', 'name', 'target'],
+      limit: 2000,
+    })
+    const targets = {}
+    for (const k of keywords ?? []) {
+      if (k.target) targets[k.name] = k.target
+    }
+
     const all = Object.values(positions)
     const within = (n) => all.filter((p) => p !== null && p <= n).length
     return {
       checkDate,
+      targets,
       total: all.length,
       top3: within(3),
       top10: within(10),
@@ -108,8 +122,49 @@ export function collectWebmaster(env) {
       shows: q.indicators.TOTAL_SHOWS ?? 0,
       clicks: q.indicators.TOTAL_CLICKS ?? 0,
     }))
+    // Какую страницу Яндекс считает ответом на запрос. Отдаёт только POST
+    // query-analytics/list с text_indicator QUERY — URL приходит в
+    // popular_complementary_indicator. GET search-queries/popular страниц не даёт.
+    const pages = {}
+    try {
+      for (let offset = 0; ; offset += 500) {
+        const res = await fetch(
+          `https://api.webmaster.yandex.net/v4/user/${WEBMASTER_USER_ID}/hosts/${WEBMASTER_HOST}/query-analytics/list`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `OAuth ${env.YANDEX_WEBMASTER_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              offset,
+              limit: 500,
+              device_type_indicator: 'ALL',
+              text_indicator: 'QUERY',
+            }),
+          }
+        )
+        const d = await res.json()
+        const rows = d.text_indicator_to_statistics ?? []
+        for (const row of rows) {
+          const q = row.text_indicator?.value
+          const url = row.popular_complementary_indicator?.value
+          if (!q || !url) continue
+          const shows = (row.statistics ?? [])
+            .filter((x) => x.field === 'IMPRESSIONS')
+            .reduce((a, x) => a + x.value, 0)
+          pages[q] = { url, shows: Math.round(shows) }
+        }
+        if (rows.length < 500 || offset + 500 >= (d.count ?? 0)) break
+      }
+    } catch {
+      // Связки — приятное дополнение, а не основа отчёта: без них аудит
+      // отработает по остальным сигналам, а не свалится целиком.
+    }
+
     return {
       queries,
+      pages,
       totalShows: queries.reduce((s, q) => s + q.shows, 0),
       totalClicks: queries.reduce((s, q) => s + q.clicks, 0),
     }

@@ -3,6 +3,7 @@ const NEAR_TOP = [11, 30];
 const PAGEVIEW_DROP_PCT = 50;
 const PAGEVIEW_FLOOR = 10;
 const ZERO_CLICK_SHOWS = 30;
+const wrongPageDemand = (shows) => Math.min(25, 5 + Math.floor(shows / 10));
 const pos = (v) => typeof v === "number" ? v : 101;
 const known = (v) => typeof v === "number";
 function scoreOf(s, g, r, a) {
@@ -78,6 +79,26 @@ function buildFindings(prev, curr) {
         score: scoreOf(10, 15, 0, 18)
       });
     }
+  }
+  const targets = curr?.topvisor?.ok ? curr.topvisor.data?.targets ?? {} : {};
+  const pages = curr?.webmaster?.ok ? curr.webmaster.data?.pages ?? {} : {};
+  const strip = (u) => u.replace("https://d-pub.ru", "").replace(/\/$/, "") || "/";
+  const norm = (s) => s.toLowerCase().replace(/ё/g, "\u0435").replace(/\s+/g, " ").trim();
+  const factByQuery = new Map(Object.entries(pages).map(([q, v]) => [norm(q), v]));
+  for (const [key, target] of Object.entries(targets)) {
+    const fact = factByQuery.get(norm(key));
+    if (!fact) continue;
+    const want = strip(target);
+    const actual = strip(fact.url);
+    if (want === actual) continue;
+    out.push({
+      type: "wrong-page",
+      key,
+      title: `\xAB${key}\xBB: \u043E\u0442\u0432\u0435\u0447\u0430\u0435\u0442 ${actual}, \u0430 \u0446\u0435\u043B\u044C\u044E \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D\u0430 ${want}`,
+      detail: `\u041F\u043E\u0438\u0441\u043A \u0432\u044B\u0431\u0440\u0430\u043B \u0434\u0440\u0443\u0433\u0443\u044E \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443 \u2014 ${fact.shows} \u043F\u043E\u043A\u0430\u0437\u043E\u0432 \u043D\u0430 ${actual}. \u041B\u0438\u0431\u043E \u0446\u0435\u043B\u0435\u0432\u0430\u044F \u0441\u043B\u0430\u0431\u0435\u0435 \u0441\u0432\u043E\u0435\u0433\u043E \u0436\u0435 \u0441\u043E\u0441\u0435\u0434\u0430 \u0438 \u0435\u0451 \u043D\u0430\u0434\u043E \u0443\u0441\u0438\u043B\u0438\u0432\u0430\u0442\u044C, \u043B\u0438\u0431\u043E \u0446\u0435\u043B\u044C \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D\u0430 \u043D\u0435\u0432\u0435\u0440\u043D\u043E \u0438 \u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043D\u0443\u0436\u043D\u043E \u0440\u0430\u0437\u043C\u0435\u0442\u043A\u0443, \u0430 \u043D\u0435 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443.`,
+      dedupKey: `wrong-page:${key}`,
+      score: scoreOf(wrongPageDemand(fact.shows), 20, 0, 18)
+    });
   }
   return out.sort((a, b) => b.score.total - a.score.total);
 }

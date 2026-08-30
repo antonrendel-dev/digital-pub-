@@ -25,13 +25,35 @@ const PAGEVIEW_FLOOR = 10
 /** Показов много, кликов нет — сниппет или интент мимо. */
 const ZERO_CLICK_SHOWS = 30
 
+/**
+ * Вес находки «отвечает не та страница» растёт с показами.
+ *
+ * Жёсткий порог тут не работает: на молодом домене у половины расхождений
+ * один-два показа, и отсечка в пять штук молча съедала бы их целиком — на
+ * прогоне 30.08.2026 из двух реальных расхождений не прошло ни одного.
+ * Поэтому засчитываем любую известную связку, но дешёвую находку наверх
+ * доски не пускаем: балл спроса растёт от показов и упирается в потолок.
+ */
+const wrongPageDemand = (shows: number): number => Math.min(25, 5 + Math.floor(shows / 10))
+
 export interface Snapshot {
   collectedAt?: string
-  topvisor?: { ok: boolean; data?: { positions?: Record<string, number | null> } }
+  topvisor?: {
+    ok: boolean
+    data?: {
+      positions?: Record<string, number | null>
+      /** Целевой URL ключа — какая страница ДОЛЖНА отвечать. */
+      targets?: Record<string, string>
+    }
+  }
   metrika?: { ok: boolean; data?: { topPages?: Array<{ path: string; pageviews: number }> } }
   webmaster?: {
     ok: boolean
-    data?: { queries?: Array<{ query: string; shows: number; clicks: number }> }
+    data?: {
+      queries?: Array<{ query: string; shows: number; clicks: number }>
+      /** Какую страницу Яндекс считает ответом на запрос. */
+      pages?: Record<string, { url: string; shows: number }>
+    }
   }
 }
 
@@ -44,7 +66,13 @@ export interface Score {
 }
 
 export interface Finding {
-  type: 'left-top10' | 'position-drop' | 'near-top10' | 'pageviews-drop' | 'zero-clicks'
+  type:
+    | 'left-top10'
+    | 'position-drop'
+    | 'near-top10'
+    | 'pageviews-drop'
+    | 'zero-clicks'
+    | 'wrong-page'
   key: string
   title: string
   detail: string
@@ -153,6 +181,34 @@ export function buildFindings(prev: Snapshot, curr: Snapshot): Finding[] {
         score: scoreOf(10, 15, 0, 18),
       })
     }
+  }
+
+  // Отвечает не та страница, что назначена целью. Ровно тот случай, ради
+  // которого целевые URL и проставлялись: без них каннибализацию приходится
+  // разбирать вручную по каждому ключу.
+  const targets = curr?.topvisor?.ok ? (curr.topvisor.data?.targets ?? {}) : {}
+  const pages = curr?.webmaster?.ok ? (curr.webmaster.data?.pages ?? {}) : {}
+  const strip = (u: string) => u.replace('https://d-pub.ru', '').replace(/\/$/, '') || '/'
+  const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim()
+  const factByQuery = new Map(Object.entries(pages).map(([q, v]) => [norm(q), v]))
+
+  for (const [key, target] of Object.entries(targets)) {
+    const fact = factByQuery.get(norm(key))
+    if (!fact) continue
+    const want = strip(target)
+    const actual = strip(fact.url)
+    if (want === actual) continue
+    out.push({
+      type: 'wrong-page',
+      key,
+      title: `«${key}»: отвечает ${actual}, а целью назначена ${want}`,
+      detail:
+        `Поиск выбрал другую страницу — ${fact.shows} показов на ${actual}. ` +
+        `Либо целевая слабее своего же соседа и её надо усиливать, либо цель ` +
+        `назначена неверно и править нужно разметку, а не страницу.`,
+      dedupKey: `wrong-page:${key}`,
+      score: scoreOf(wrongPageDemand(fact.shows), 20, 0, 18),
+    })
   }
 
   return out.sort((a, b) => b.score.total - a.score.total)

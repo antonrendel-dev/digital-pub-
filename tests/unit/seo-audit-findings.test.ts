@@ -131,3 +131,89 @@ describe('порядок и дедупликация', () => {
     expect(filterKnown(f, ['near-top10:a'])).toHaveLength(1)
   })
 })
+
+describe('отвечает не та страница', () => {
+  /**
+   * Целевой URL — гипотеза «какая страница должна отвечать на запрос».
+   * Расхождение с фактом видно только при сопоставлении, и до 30.08.2026
+   * его разбирали вручную по каждому ключу. Проверки держат три вещи:
+   * совпадение молчит, расхождение говорит, а единичный показ не считается
+   * поводом — иначе доска зарастёт шумом.
+   */
+  const withTargets = (
+    targets: Record<string, string>,
+    pages: Record<string, { url: string; shows: number }>
+  ): Snapshot => ({
+    topvisor: { ok: true, data: { positions: {}, targets } },
+    metrika: { ok: true, data: { topPages: [] } },
+    webmaster: { ok: true, data: { queries: [], pages } },
+  })
+
+  it('молчит, когда поиск согласен с целью', () => {
+    const f = buildFindings(
+      withTargets({}, {}),
+      withTargets(
+        { 'smm вакансии': 'https://d-pub.ru/vacancies/smm' },
+        { 'smm вакансии': { url: '/vacancies/smm', shows: 40 } }
+      )
+    )
+    expect(types(f)).toEqual([])
+  })
+
+  it('находит расхождение и называет обе страницы', () => {
+    const f = buildFindings(
+      withTargets({}, {}),
+      withTargets(
+        { 'smm вакансии удалённо': 'https://d-pub.ru/vacancies/smm/udalyonka' },
+        { 'smm вакансии удалённо': { url: '/vacancies/smm', shows: 40 } }
+      )
+    )
+    expect(types(f)).toEqual(['wrong-page'])
+    expect(f[0].title).toContain('/vacancies/smm')
+    expect(f[0].title).toContain('/vacancies/smm/udalyonka')
+    expect(f[0].dedupKey).toBe('wrong-page:smm вакансии удалённо')
+  })
+
+  it('единичный показ не теряется, но и наверх доски не лезет', () => {
+    // Жёсткая отсечка по показам съедала реальные расхождения: на прогоне
+    // 30.08.2026 у обоих найденных было по одному показу. Считаем их, но
+    // дешевле — балл спроса растёт вместе с показами.
+    const cheap = buildFindings(
+      withTargets({}, {}),
+      withTargets(
+        { ключ: 'https://d-pub.ru/vacancies/smm/udalyonka' },
+        { ключ: { url: '/vacancies/smm', shows: 1 } }
+      )
+    )
+    const rich = buildFindings(
+      withTargets({}, {}),
+      withTargets(
+        { ключ: 'https://d-pub.ru/vacancies/smm/udalyonka' },
+        { ключ: { url: '/vacancies/smm', shows: 300 } }
+      )
+    )
+    expect(types(cheap)).toEqual(['wrong-page'])
+    expect(rich[0].score.total).toBeGreaterThan(cheap[0].score.total)
+  })
+
+  it('ё и разный регистр не считаются расхождением', () => {
+    // Вебмастер отдаёт запрос так, как его набрал человек, Топвизор — как
+    // завели мы. «Удалённо» против «удаленно» — один и тот же ключ.
+    const f = buildFindings(
+      withTargets({}, {}),
+      withTargets(
+        { 'SMM вакансии удалённо': 'https://d-pub.ru/vacancies/smm' },
+        { 'smm вакансии удаленно': { url: '/vacancies/smm/', shows: 40 } }
+      )
+    )
+    expect(types(f)).toEqual([])
+  })
+
+  it('без целевых URL находок нет вовсе', () => {
+    const f = buildFindings(
+      withTargets({}, {}),
+      withTargets({}, { 'smm вакансии': { url: '/vacancies/smm', shows: 40 } })
+    )
+    expect(types(f)).toEqual([])
+  })
+})
