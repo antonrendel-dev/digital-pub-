@@ -59,6 +59,11 @@ const nextConfig = {
       { source: '/vacancies/google-analytics', destination: '/tools/google-analytics', permanent: true },
       { source: '/vacancies/photoshop', destination: '/tools/photoshop', permanent: true },
       { source: '/vacancies/vk-ads', destination: '/tools/vk-ads', permanent: true },
+      // WordPress не попал в этот список, когда его собирали, и две страницы
+      // тянули один ключ «wordpress вакансии» (82/мес). Обе стояли за сотней,
+      // при этом /vacancies/wordpress отдавала ноль вакансий: тег не наполнен,
+      // внутренних ссылок на неё нет. Терять на редиректе нечего.
+      { source: '/vacancies/wordpress', destination: '/tools/wordpress', permanent: true },
     ]
   },
   async headers() {

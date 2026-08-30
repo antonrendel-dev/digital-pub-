@@ -69,6 +69,7 @@ const TOOL_REDIRECT_SLUGS = new Set([
   'midjourney',
   'google-analytics',
   'photoshop',
+  'wordpress',
 ])
 
 export default async function sitemap({

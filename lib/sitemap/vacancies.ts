@@ -19,6 +19,7 @@ const TOOL_REDIRECT_SLUGS = new Set([
   'midjourney',
   'google-analytics',
   'photoshop',
+  'wordpress',
 ])
 
 // Пустой ответ при недоступной базе кэшируется и уезжает в поисковик как
