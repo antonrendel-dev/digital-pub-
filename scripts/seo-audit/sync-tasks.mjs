@@ -17,6 +17,10 @@ import { fileURLToPath } from 'node:url'
 import { buildFindings } from './findings.compiled.mjs'
 import {
   MAX_NEW_TASKS_PER_RUN,
+  describeGroup,
+  groupFindings,
+  groupTitle,
+  matchesGroup,
   describeFinding,
   matchesFinding,
   mergeNote,
@@ -86,27 +90,53 @@ export async function syncTasks() {
   const merged = []
   const deferred = []
 
-  for (const f of findings) {
-    const hit = tasks.find((t) => matchesFinding(f, t))
-    if (hit) {
-      // По метке — задача уже наша и про то же самое, второй раз не трогаем.
-      // По тексту — задача заведена руками, дописываем в неё наблюдение.
-      if (matchesFinding(f, hit) === 'text') {
-        await appendToTask(token, hit.id, mergeNote(f, today))
-        hit.description = `${hit.description || ''}${mergeNote(f, today)}`
-        merged.push({ finding: f.title, task: hit.content })
+  // Однотипные находки идут одной задачей: двенадцать карточек «ключ на дожим»
+  // — это одна работа списком, а не двенадцать поводов открыть доску.
+  for (const g of groupFindings(findings)) {
+    // Уже разобранные находки внутри пачки повторно не тащим.
+    const fresh = g.findings.filter((f) => !tasks.some((t) => matchesFinding(f, t) === 'mark'))
+    if (!fresh.length) continue
+
+    // Заведённая руками задача про тот же ключ — дописываем наблюдение в неё.
+    const byText = fresh
+      .map((f) => ({ f, hit: tasks.find((t) => matchesFinding(f, t) === 'text') }))
+      .filter((x) => x.hit)
+    for (const { f, hit } of byText) {
+      await appendToTask(token, hit.id, mergeNote(f, today))
+      hit.description = `${hit.description || ''}${mergeNote(f, today)}`
+      merged.push({ finding: f.title, task: hit.content })
+    }
+    const rest = fresh.filter((f) => !byText.some((x) => x.f === f))
+    if (!rest.length) continue
+
+    // Пачка этого типа уже висит на доске — дописываем в неё, а не плодим вторую.
+    const groupTask = tasks.find((t) => matchesGroup(g.type, t))
+    if (groupTask) {
+      for (const f of rest) {
+        await appendToTask(token, groupTask.id, mergeNote(f, today))
+        groupTask.description = `${groupTask.description || ''}${mergeNote(f, today)}`
+        merged.push({ finding: f.title, task: groupTask.content })
       }
       continue
     }
+
     if (created.length >= MAX_NEW_TASKS_PER_RUN) {
-      deferred.push(f.title)
+      deferred.push(g.title)
       continue
     }
-    const t = await createTask(token, { content: f.title, description: describeFinding(f) })
-    // Свежая задача попадает в тот же список: две находки по одному ключу не
-    // должны породить два тикета внутри одного прогона.
-    tasks.push({ id: t.id, content: f.title, description: describeFinding(f) })
-    created.push(f.title)
+    // Часть находок пачки могла уже разойтись по задачам — заголовок считаем
+    // по тому, что реально попадёт внутрь, иначе «14 ключей» окажется тремя.
+    const payload = {
+      ...g,
+      findings: rest,
+      title: rest.length > 1 ? groupTitle(g.type, rest.length) : rest[0].title,
+    }
+    const description = describeGroup(payload)
+    const t = await createTask(token, { content: payload.title, description })
+    // Свежая задача попадает в тот же список: находки одного типа внутри
+    // прогона должны лечь в неё, а не породить второй тикет.
+    tasks.push({ id: t.id, content: payload.title, description })
+    created.push(payload.title)
   }
 
   const stat = `создано ${created.length}, дописано ${merged.length}, отложено ${deferred.length}`

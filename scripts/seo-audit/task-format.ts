@@ -88,3 +88,105 @@ export function mergeNote(finding: Finding, date: string): string {
     `${DEDUP_PREFIX} ${finding.dedupKey}`,
   ].join('\n')
 }
+
+/**
+ * Сколько находок одного типа собираются в одну задачу.
+ *
+ * Двенадцать карточек «ключ X на 14 — кандидат на дожим» — это не двенадцать
+ * задач, а одна работа: садишься и проходишь список. Порознь они засоряют
+ * доску и каждая по отдельности выглядит мелкой. Две находки объединять смысла
+ * нет — заголовок станет обобщённым, а конкретики в нём убавится.
+ */
+export const MIN_GROUP_SIZE = 3
+
+/** Как называется пачка находок каждого типа. */
+const GROUP_TITLES: Record<Finding['type'], (n: number) => string> = {
+  'left-top10': (n) => `${n} ключей вышли из топ-10 — разобрать пачкой`,
+  'position-drop': (n) => `${n} ключей просели в топ-100 — разобрать пачкой`,
+  'near-top10': (n) => `${n} ключей в шаге от топ-10 — пачка на дожим`,
+  'pageviews-drop': (n) => `Просмотры упали у ${n} страниц — разобрать пачкой`,
+  'zero-clicks': (n) => `${n} запросов с показами и нулём кликов — пачка на сниппеты`,
+  'wrong-page': (n) => `${n} ключей отвечают не той страницей — разобрать пачкой`,
+}
+
+/** Заголовок пачки по типу и числу находок в ней. */
+export function groupTitle(type: Finding['type'], count: number): string {
+  return GROUP_TITLES[type](count)
+}
+
+export interface FindingGroup {
+  /** Тип, общий для всех находок пачки. */
+  type: Finding['type']
+  title: string
+  findings: Finding[]
+  /** Балл пачки — по самой тяжёлой находке: работа не легче своего худшего случая. */
+  score: Finding['score']
+}
+
+/**
+ * Раскладывает находки на пачки и одиночек.
+ *
+ * Порядок внутри сохраняется — находки приходят уже отсортированными по баллу,
+ * так что в начале списка окажется самое дорогое.
+ */
+export function groupFindings(findings: Finding[]): FindingGroup[] {
+  const byType = new Map<Finding['type'], Finding[]>()
+  for (const f of findings) {
+    const list = byType.get(f.type)
+    if (list) list.push(f)
+    else byType.set(f.type, [f])
+  }
+
+  const groups: FindingGroup[] = []
+  for (const [type, list] of byType) {
+    if (list.length >= MIN_GROUP_SIZE) {
+      groups.push({
+        type,
+        title: groupTitle(type, list.length),
+        findings: list,
+        score: list.reduce((a, b) => (b.score.total > a.score.total ? b : a)).score,
+      })
+    } else {
+      for (const f of list) groups.push({ type, title: f.title, findings: [f], score: f.score })
+    }
+  }
+  return groups.sort((a, b) => b.score.total - a.score.total)
+}
+
+/** Метка пачки: по ней находка того же типа дописывается в существующую задачу. */
+export const GROUP_PREFIX = 'SEO-КРОН-ПАЧКА:'
+
+/** Описание пачки: список находок и метка каждой, чтобы дедуп работал по отдельности. */
+export function describeGroup(g: FindingGroup): string {
+  if (g.findings.length === 1) return describeFinding(g.findings[0])
+  const s = g.score
+  return [
+    `БАЛЛ: ${s.total}/100  (спрос ${s.s}/30 · готовность ${s.g}/25 · ` +
+      `разблокировка ${s.r}/25 · автономность ${s.a}/20)`,
+    `Почему: заведено SEO-кроном, пачка однотипных находок — ${g.findings.length} шт., ` +
+      `балл по самой тяжёлой`,
+    '─'.repeat(40),
+    '',
+    g.findings[0].detail,
+    '',
+    `СПИСОК (${g.findings.length}):`,
+    ...g.findings.map((f, i) => `${i + 1}. ${f.title}`),
+    '',
+    `${GROUP_PREFIX} ${g.type}`,
+    ...g.findings.map((f) => `${DEDUP_PREFIX} ${f.dedupKey}`),
+    '(метки нужны крону, чтобы не заводить эти задачи повторно — не удалять)',
+  ].join('\n')
+}
+
+/**
+ * Есть ли уже открытая задача-пачка этого типа.
+ *
+ * Нужна, чтобы находка, появившаяся между прогонами, дописывалась в готовую
+ * пачку, а не рождала тринадцатую карточку рядом с ней.
+ */
+export function matchesGroup(
+  type: Finding['type'],
+  task: { description?: string | null }
+): boolean {
+  return (task.description || '').includes(`${GROUP_PREFIX} ${type}`)
+}
