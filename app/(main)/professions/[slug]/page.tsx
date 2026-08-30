@@ -6,7 +6,7 @@ import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
 import { ogImageUrl } from '@/lib/og'
 import { getPostsByProfession } from '@/lib/posts'
-import { PROFESSIONS, PROFESSIONS_MEASURED_AT, PROFESSION_SLUGS } from '@/lib/professions'
+import { PROFESSIONS, PROFESSIONS_MEASURED_AT } from '@/lib/professions'
 
 const BASE_URL = 'https://d-pub.ru'
 
@@ -21,9 +21,12 @@ const BASE_URL = 'https://d-pub.ru'
  */
 export const revalidate = 300
 
-export function generateStaticParams() {
-  return PROFESSION_SLUGS.map((slug) => ({ slug }))
-}
+// generateStaticParams убран 30.08.2026: одного revalidate мало. Он обновляет
+// страницу через пять минут после первого запроса, но пустой артефакт со
+// сборки уезжает на прод в любом случае и раздаётся всем эти пять минут —
+// включая робота. Без пререндера карточка собирается по первому запросу, уже
+// с живой базой, и «сейчас нет открытых вакансий» неоткуда взяться.
+// Правило сторожит tests/unit/db-routes-prerender.test.ts.
 
 interface Props {
   params: Promise<{ slug: string }>

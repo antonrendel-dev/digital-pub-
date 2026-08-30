@@ -25,7 +25,6 @@ import {
   getSpecFilterDescription,
   getSpecFilterBreadcrumb,
   getSpecNominative,
-  getAllFilterCombinations,
 } from '@/lib/spec-filter-meta'
 import { getSpecFilterSeo } from '@/lib/spec-filter-seo'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
@@ -37,9 +36,11 @@ interface Props {
   params: Promise<{ category: string; slug: string }>
 }
 
-export async function generateStaticParams() {
-  return getAllFilterCombinations()
-}
+// Пререндера здесь быть не должно: слаги статичны (getAllFilterCombinations),
+// а вакансии приходят из Payload, до которого сборка не достучится. Готовый
+// пустой артефакт раздавался всем ещё revalidate секунд после деплоя — тот же
+// механизм, что уронил шарды sitemap и весь раздел /tools.
+// Правило сторожит tests/unit/db-routes-prerender.test.ts.
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category, slug } = await params
