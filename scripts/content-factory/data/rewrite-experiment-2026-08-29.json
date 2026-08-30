@@ -1,0 +1,139 @@
+{
+  "experiment": "Переписка статей по стандарту v6.6 на fable-5: до/после",
+  "checkpoint": "ранний срез (+14 дней)",
+  "plannedFor": "2026-08-29",
+  "captured": "2026-08-30",
+  "captureNote": "снят на день позже плана: 29.08 сессия оборвалась, замер не выполнялся",
+  "period": "2026-08-15..2026-08-29",
+  "pointAPeriod": "2026-07-17..2026-08-13",
+  "source": "GSC search-console API, aggregation byPage",
+  "warning": "Окно 15 дней против 28 у точки А — сравнивать только направление, не абсолют.",
+  "treatment": [
+    {
+      "url": "/articles/rezyume-kopiraytera",
+      "impressions": 1,
+      "clicks": 0,
+      "position": 3,
+      "pointA": {
+        "impressions": 75,
+        "clicks": 0,
+        "position": 19.4
+      }
+    },
+    {
+      "url": "/articles/zarplata-seo-specialista",
+      "impressions": 4,
+      "clicks": 0,
+      "position": 5.5,
+      "pointA": {
+        "impressions": 63,
+        "clicks": 0,
+        "position": 15.4
+      }
+    },
+    {
+      "url": "/articles/rezyume-smm-spetsialista",
+      "impressions": 15,
+      "clicks": 0,
+      "position": 27.3,
+      "pointA": {
+        "impressions": 61,
+        "clicks": 0,
+        "position": 31.7
+      }
+    },
+    {
+      "url": "/articles/zarplata-smm-spetsialista-realnie-dannye-iz-vakansiy",
+      "impressions": 11,
+      "clicks": 0,
+      "position": 8.5,
+      "pointA": {
+        "impressions": 34,
+        "clicks": 0,
+        "position": 21.1
+      }
+    },
+    {
+      "url": "/articles/zarplata-ux-ui-dizajnera",
+      "impressions": 20,
+      "clicks": 0,
+      "position": 31.4,
+      "pointA": {
+        "impressions": 24,
+        "clicks": 0,
+        "position": 18.3
+      }
+    }
+  ],
+  "control": [
+    {
+      "url": "/articles/rezyume-targetologa-shablon-2026",
+      "impressions": 1,
+      "clicks": 0,
+      "position": 8,
+      "pointA": {
+        "impressions": 33,
+        "clicks": 0,
+        "position": 16.9
+      }
+    },
+    {
+      "url": "/articles/zarplata-kopiraytera-2026",
+      "impressions": 1,
+      "clicks": 0,
+      "position": 8,
+      "pointA": {
+        "impressions": 23,
+        "clicks": 0,
+        "position": 11.2
+      }
+    },
+    {
+      "url": "/articles/telegram-kanaly-vakansii-smm",
+      "impressions": 2,
+      "clicks": 0,
+      "position": 9.5,
+      "pointA": {
+        "impressions": 16,
+        "clicks": 0,
+        "position": 15.4
+      }
+    },
+    {
+      "url": "/articles/rezume-marketologa",
+      "impressions": 0,
+      "clicks": 0,
+      "position": null,
+      "pointA": {
+        "impressions": 12,
+        "clicks": 0,
+        "position": 22.5
+      }
+    },
+    {
+      "url": "/articles/vakansii-direktolog-yandex-direct",
+      "impressions": 20,
+      "clicks": 1,
+      "position": 11.9,
+      "pointA": {
+        "impressions": 13,
+        "clicks": 0,
+        "position": 16.7
+      }
+    }
+  ],
+  "totals": {
+    "treatment": {
+      "nowImpressions": 51,
+      "pointAImpressions": 257,
+      "nowClicks": 0,
+      "pointAClicks": 0
+    },
+    "control": {
+      "nowImpressions": 24,
+      "pointAImpressions": 97,
+      "nowClicks": 1,
+      "pointAClicks": 0
+    }
+  }
+}
