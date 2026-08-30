@@ -24,6 +24,7 @@ import {
   supportsAgentProfiles,
 } from './lib/agent-cli.js'
 import { loadAgentRole, stripRoleTag, withRole } from './lib/agent-role.js'
+import { currentRunDir, recordExchange, startRun } from './lib/agent-transcript.js'
 import {
   collectSessionStats,
   runawayWarning,
@@ -377,7 +378,11 @@ async function askClaude(prompt: string, agent?: AgentName): Promise<string> {
 
   for (let attempt = 1; attempt <= total; attempt++) {
     try {
-      return await runClaude(prompt, agent)
+      const answer = await runClaude(prompt, agent)
+      // Стенограмма пишется здесь, а не в runClaude: там на каждый повтор
+      // лёг бы отдельный файл, а интересен ответ, который пошёл в дело.
+      recordExchange(agent ?? 'без-роли', currentStage, prompt, answer)
+      return answer
     } catch (e) {
       last = e
       const message = (e as Error).message
@@ -1814,6 +1819,8 @@ async function main() {
   const topic = topics.find((t) => t.id === topicNum)
   if (!topic) throw new Error(`Тема #${topicNum} не найдена в ${topicsFile}`)
   currentTopic = { id: topic.id, title: topic.title }
+  const runDir = startRun(`${topicNum}-${topic.title}`)
+  if (runDir) console.log(`[writer] Переписка агентов: ${runDir}`)
 
   console.log(`[writer] Пишу статью: "${topic.title}"`)
   // Анонс — не повод отменять публикацию: недоступный Telegram ронял прогон
@@ -1962,6 +1969,8 @@ async function main() {
     )
   }
 
+  const transcriptDirPath = currentRunDir()
+  if (transcriptDirPath) console.log(`[writer] Переписка агентов: ${transcriptDirPath}`)
   console.log(`[writer] Готово: ${articleUrl}`)
 }
 

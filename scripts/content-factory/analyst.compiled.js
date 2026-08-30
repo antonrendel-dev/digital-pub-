@@ -1,7 +1,7 @@
 // analyst.ts
 import { spawn } from "child_process";
-import fs3 from "fs";
-import path3 from "path";
+import fs4 from "fs";
+import path4 from "path";
 
 // lib/model.ts
 var DEFAULT_MODEL = {
@@ -142,8 +142,63 @@ function stripRoleTag(text) {
   return text.replace(ROLE_TAG_RE, "");
 }
 
-// lib/pool.ts
+// lib/agent-transcript.ts
 import fs2 from "fs";
+import path3 from "path";
+var RUNS_ROOT = path3.join(process.cwd(), "logs", "factory-runs");
+var KEEP_DAYS = 30;
+var runDirectory = null;
+var counter = 0;
+function slugify(label) {
+  return label.toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "run";
+}
+function startRun(label) {
+  if (runDirectory) return runDirectory;
+  try {
+    const stamp = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    const dir = path3.join(RUNS_ROOT, `${stamp}-${slugify(label)}`);
+    fs2.mkdirSync(dir, { recursive: true });
+    runDirectory = dir;
+    pruneOldRuns();
+    return dir;
+  } catch {
+    return null;
+  }
+}
+function recordExchange(agent, stage, prompt, answer) {
+  if (!runDirectory) return;
+  try {
+    counter += 1;
+    const name = `${String(counter).padStart(2, "0")}-${agent}-${slugify(stage ?? "\u0431\u0435\u0437-\u0448\u0430\u0433\u0430")}.md`;
+    const body = `# ${agent} \xB7 ${stage ?? "\u0448\u0430\u0433 \u043D\u0435 \u043E\u0442\u043C\u0435\u0447\u0435\u043D"}
+
+_${(/* @__PURE__ */ new Date()).toISOString()}_
+
+## \u041F\u0440\u043E\u043C\u043F\u0442
+
+${prompt}
+
+## \u041E\u0442\u0432\u0435\u0442
+
+${answer}
+`;
+    fs2.writeFileSync(path3.join(runDirectory, name), body, "utf8");
+  } catch {
+  }
+}
+function pruneOldRuns() {
+  try {
+    const edge = Date.now() - KEEP_DAYS * 24 * 60 * 60 * 1e3;
+    for (const entry of fs2.readdirSync(RUNS_ROOT)) {
+      const dir = path3.join(RUNS_ROOT, entry);
+      if (fs2.statSync(dir).mtimeMs < edge) fs2.rmSync(dir, { recursive: true, force: true });
+    }
+  } catch {
+  }
+}
+
+// lib/pool.ts
+import fs3 from "fs";
 
 // lib/topic-gate.ts
 var MIN_WORDSTAT_VOLUME = 300;
@@ -221,11 +276,11 @@ function buildPhrasePool(seeds, exclude = [], limit = 150) {
   return [...pool].map(([phrase, volume]) => ({ phrase, volume })).sort((a, b) => b.volume - a.volume).slice(0, limit);
 }
 function loadPhrasePool(file, exclude = [], limit = 150) {
-  if (!fs2.existsSync(file)) {
+  if (!fs3.existsSync(file)) {
     console.warn(`[pool] \u0417\u0430\u043C\u0435\u0440\u044B \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B: ${file}. \u0410\u043D\u0430\u043B\u0438\u0442\u0438\u043A \u043F\u043E\u0439\u0434\u0451\u0442 \u0431\u0435\u0437 \u043F\u0443\u043B\u0430.`);
     return [];
   }
-  const raw = JSON.parse(fs2.readFileSync(file, "utf-8"));
+  const raw = JSON.parse(fs3.readFileSync(file, "utf-8"));
   return buildPhrasePool(raw.seeds ?? {}, exclude, limit);
 }
 function renderPoolBlock(pool) {
@@ -368,24 +423,24 @@ async function fetchWebmasterOpportunities(topN = 20) {
 }
 
 // analyst.ts
-var DATA_DIR = path3.join(import.meta.dirname, "data");
-var ARTICLES_DIR = path3.join(import.meta.dirname, "../../content/articles");
-var VOLUMES_FILE = path3.join(DATA_DIR, "semantics-volumes.json");
+var DATA_DIR = path4.join(import.meta.dirname, "data");
+var ARTICLES_DIR = path4.join(import.meta.dirname, "../../content/articles");
+var VOLUMES_FILE = path4.join(DATA_DIR, "semantics-volumes.json");
 var POOL_SIZE = 150;
 var TOPICS_REQUESTED = 30;
 var TOPICS_FOR_JOBSEEKERS = Math.round(TOPICS_REQUESTED * 0.9);
 function getPublishedArticleTitles() {
-  if (!fs3.existsSync(ARTICLES_DIR)) return [];
-  return fs3.readdirSync(ARTICLES_DIR).filter((f) => f.endsWith(".mdx")).flatMap((f) => {
-    const raw = fs3.readFileSync(path3.join(ARTICLES_DIR, f), "utf-8");
+  if (!fs4.existsSync(ARTICLES_DIR)) return [];
+  return fs4.readdirSync(ARTICLES_DIR).filter((f) => f.endsWith(".mdx")).flatMap((f) => {
+    const raw = fs4.readFileSync(path4.join(ARTICLES_DIR, f), "utf-8");
     const m = raw.match(/^title:\s*["']?(.+?)["']?\s*$/m);
     return m ? [m[1]] : [];
   });
 }
 function getAllPlannedTopics() {
-  if (!fs3.existsSync(DATA_DIR)) return [];
-  return fs3.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).flatMap((f) => {
-    const { topics } = JSON.parse(fs3.readFileSync(path3.join(DATA_DIR, f), "utf-8"));
+  if (!fs4.existsSync(DATA_DIR)) return [];
+  return fs4.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).flatMap((f) => {
+    const { topics } = JSON.parse(fs4.readFileSync(path4.join(DATA_DIR, f), "utf-8"));
     return topics.map((t) => ({ title: t.title, keyword: t.keyword }));
   });
 }
@@ -440,7 +495,9 @@ function askClaudeOnce(prompt, agent, cli) {
 }
 async function askClaude(prompt, agent) {
   try {
-    return await askClaudeOnce(prompt, agent, AGENT_CLI);
+    const answer = await askClaudeOnce(prompt, agent, AGENT_CLI);
+    recordExchange(agent ?? "\u0431\u0435\u0437-\u0440\u043E\u043B\u0438", null, prompt, answer);
+    return answer;
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     const spare = isCliLevelFailure(message) ? fallbackCli(AGENT_CLI) : null;
@@ -448,7 +505,9 @@ async function askClaude(prompt, agent) {
     console.log(
       `    \u26A0 ${AGENT_CLI} \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C\u0441\u044F (${message.slice(0, 160)}). \u041F\u0435\u0440\u0435\u0445\u043E\u0436\u0443 \u043D\u0430 ${spare}.`
     );
-    return await askClaudeOnce(prompt, agent, spare);
+    const answer = await askClaudeOnce(prompt, agent, spare);
+    recordExchange(agent ?? "\u0431\u0435\u0437-\u0440\u043E\u043B\u0438", `\u0437\u0430\u043F\u0430\u0441\u043D\u043E\u0439 CLI ${spare}`, prompt, answer);
+    return answer;
   }
 }
 var REFORMULATION_ROUNDS = 2;
@@ -635,12 +694,12 @@ function formatTopicsMessage(topics, weak, date) {
 <code>/content_approve 1 3 7</code>`;
 }
 function currentQueue() {
-  if (!fs3.existsSync(DATA_DIR)) return { size: 0, file: null };
-  const files = fs3.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).sort();
+  if (!fs4.existsSync(DATA_DIR)) return { size: 0, file: null };
+  const files = fs4.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).sort();
   const seen = /* @__PURE__ */ new Set();
   let size = 0;
   for (const f of files) {
-    const raw = JSON.parse(fs3.readFileSync(path3.join(DATA_DIR, f), "utf-8"));
+    const raw = JSON.parse(fs4.readFileSync(path4.join(DATA_DIR, f), "utf-8"));
     for (const t of raw.topics) {
       const key = `${t.id}|${t.title}`;
       if (seen.has(key)) continue;
@@ -666,12 +725,14 @@ async function main() {
     return;
   }
   console.log(`[analyst] \u041E\u0447\u0435\u0440\u0435\u0434\u044C ${queue.size}, \u0441\u043E\u0431\u0438\u0440\u0430\u044E \u043D\u043E\u0432\u044B\u0439 \u0431\u0430\u0442\u0447`);
+  const runDir = startRun("\u0442\u0435\u043C\u044B-\u043D\u0430-\u043C\u0435\u0441\u044F\u0446");
+  if (runDir) console.log(`[analyst] \u041F\u0435\u0440\u0435\u043F\u0438\u0441\u043A\u0430 \u0430\u0433\u0435\u043D\u0442\u043E\u0432: ${runDir}`);
   console.log("[analyst] \u0413\u0435\u043D\u0435\u0440\u0438\u0440\u0443\u044E \u0442\u0435\u043C\u044B...");
   const { topics, weak } = await generateTopics();
-  fs3.mkdirSync(DATA_DIR, { recursive: true });
+  fs4.mkdirSync(DATA_DIR, { recursive: true });
   const date = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  const filePath = path3.join(DATA_DIR, `topics_${date}.json`);
-  fs3.writeFileSync(filePath, JSON.stringify({ date, topics }, null, 2));
+  const filePath = path4.join(DATA_DIR, `topics_${date}.json`);
+  fs4.writeFileSync(filePath, JSON.stringify({ date, topics }, null, 2));
   console.log(`[analyst] \u0421\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u043E: ${filePath}`);
   const dateRu = (/* @__PURE__ */ new Date()).toLocaleDateString("ru-RU", {
     day: "numeric",

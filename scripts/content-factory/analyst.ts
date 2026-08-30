@@ -21,6 +21,7 @@ import {
   supportsAgentProfiles,
 } from './lib/agent-cli.js'
 import { loadAgentRole, stripRoleTag, withRole } from './lib/agent-role.js'
+import { recordExchange, startRun } from './lib/agent-transcript.js'
 import { loadPhrasePool, renderPoolBlock } from './lib/pool.js'
 import { sendMessage } from './lib/telegram.js'
 import {
@@ -171,7 +172,9 @@ function askClaudeOnce(
  */
 async function askClaude(prompt: string, agent?: 'analyst' | 'seo'): Promise<string> {
   try {
-    return await askClaudeOnce(prompt, agent, AGENT_CLI)
+    const answer = await askClaudeOnce(prompt, agent, AGENT_CLI)
+    recordExchange(agent ?? 'без-роли', null, prompt, answer)
+    return answer
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     const spare = isCliLevelFailure(message) ? fallbackCli(AGENT_CLI) : null
@@ -179,7 +182,9 @@ async function askClaude(prompt: string, agent?: 'analyst' | 'seo'): Promise<str
     console.log(
       `    \u26a0 ${AGENT_CLI} не смог запуститься (${message.slice(0, 160)}). Перехожу на ${spare}.`
     )
-    return await askClaudeOnce(prompt, agent, spare)
+    const answer = await askClaudeOnce(prompt, agent, spare)
+    recordExchange(agent ?? 'без-роли', `запасной CLI ${spare}`, prompt, answer)
+    return answer
   }
 }
 
@@ -481,6 +486,8 @@ async function main() {
   }
 
   console.log(`[analyst] Очередь ${queue.size}, собираю новый батч`)
+  const runDir = startRun('темы-на-месяц')
+  if (runDir) console.log(`[analyst] Переписка агентов: ${runDir}`)
   console.log('[analyst] Генерирую темы...')
   const { topics, weak } = await generateTopics()
 
