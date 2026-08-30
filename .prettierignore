@@ -1,0 +1,8 @@
+# Бандлы esbuild: генерируются build.sh, редактировать их некому.
+# Форматтер тут только вредил: в репозитории они лежали в prettier-стиле,
+# а сборка выдаёт свой, и каждая пересборка давала 600–1500 строк ложного
+# диффа, за которым не видно правки. esbuild детерминирован — без prettier
+# дифф пересборки равен ровно тому, что изменилось в исходнике.
+scripts/content-factory/*.compiled.js
+scripts/content-factory/lib/telegram.js
+scripts/content-factory/lib/yandex.js

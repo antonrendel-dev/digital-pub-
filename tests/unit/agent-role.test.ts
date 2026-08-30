@@ -41,12 +41,15 @@ fs.writeFileSync(path.join(TMP, 'noskills.md'), `---\nname: noskills\n---\n\nП�
 fs.writeFileSync(path.join(TMP, 'empty.md'), `---\nname: empty\nskills:\n  - x\n---\n\n\n`)
 
 process.env.CLAUDE_AGENTS_DIR = TMP
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+/* eslint-disable @typescript-eslint/no-require-imports */
+// Блочный disable, а не построчный: prettier разбивает длинный require на
+// несколько строк, и `disable-next-line` перестаёт покрывать сам вызов.
 const {
   loadAgentRole,
   stripRoleTag,
   withRole,
 } = require('../../scripts/content-factory/lib/agent-role')
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 describe('перенос роли агента в текст промпта', () => {
   it('читает тело профиля без frontmatter', () => {
@@ -126,13 +129,18 @@ describe('метка роли не уезжает в артефакт', () => {
     expect(stripRoleTag('[ГОСТ] требования')).toBe('[ГОСТ] требования')
   })
 
-  it('щит стоит на общем выходе CLI, а не на отдельных шагах', () => {
-    // Ставить срез на каждом из десятка шагов — значит забыть про новый шаг.
-    for (const f of ['writer.ts', 'analyst.ts']) {
-      const src = fs.readFileSync(path.join(process.cwd(), 'scripts', 'content-factory', f), 'utf8')
-      expect(src).toContain('resolve(stripRoleTag(out.trim()))')
-      expect(src).not.toContain('resolve(out.trim())')
-    }
+  it('щит стоит на каждом выходе CLI в заводе, без исключений', () => {
+    // Ставить срез на отдельных шагах — значит забыть про новый шаг. Проверяем
+    // не список файлов, а весь каталог: модуль, добавленный завтра и читающий
+    // stdout агента, обязан быть защищён, иначе метка вернётся на сайт.
+    const dir = path.join(process.cwd(), 'scripts', 'content-factory')
+    const raw = fs
+      .readdirSync(dir)
+      .filter((f: string) => f.endsWith('.ts'))
+      .filter((f: string) =>
+        fs.readFileSync(path.join(dir, f), 'utf8').includes('resolve(out.trim())')
+      )
+    expect(raw).toEqual([])
   })
 
   it('alt графика чистится отдельно — там метка внутри поля JSON', () => {

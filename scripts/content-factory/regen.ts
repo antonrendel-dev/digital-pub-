@@ -9,6 +9,7 @@ import os from 'os'
 import path from 'path'
 import { FACTORY_MODEL } from './lib/model.js'
 import { buildAgentCommand } from './lib/agent-cli.js'
+import { stripRoleTag } from './lib/agent-role.js'
 
 const SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
 const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '../..')
@@ -71,7 +72,9 @@ function askClaude(prompt: string): Promise<string> {
     let out = ''
     child.stdout.on('data', (d: Buffer) => (out += d.toString()))
     child.on('close', (code) => {
-      if (code === 0) resolve(out.trim())
+      // Профиля здесь нет, но щит стоит на всех выходах CLI без исключений:
+      // модуль, у которого его нет, — это следующая метка в статье.
+      if (code === 0) resolve(stripRoleTag(out.trim()))
       else reject(new Error(`claude завершился с кодом ${code}`))
     })
     child.on('error', reject)
