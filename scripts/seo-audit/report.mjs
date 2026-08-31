@@ -1,5 +1,14 @@
 // Фаза 2: сравнить два последних снапшота, собрать алерты, отрендерить и отправить.
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  PER_GROUP,
+  TOP_POSITION,
+  displayShare,
+  groupArticles,
+  isRead,
+} from './articles.compiled.mjs'
+import { bestPositionByPage } from './lib/sources.mjs'
+import { readArticleLengths } from './lib/articles.mjs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { escapeHtml, sendDocument, sendLongMessage } from './lib/telegram.mjs'
@@ -264,6 +273,77 @@ const fmtDate = (iso) => {
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+/**
+ * Блок про статьи: сколько их в топе, сколько читают и какие пора править.
+ *
+ * Две цифры сверху — то, что растим. Дальше списки по группам: пересечение
+ * позиции и глубины чтения говорит, что именно чинить, а не просто «статья
+ * плохая». В каждую группу берём по три штуки, отсортированные по визитам —
+ * где больше людей, там правка ценнее. Полный список из девяноста строк
+ * никто бы не разобрал.
+ */
+/** Сколько всего статей — знаменатель доли в топ-10. */
+function articleCount() {
+  return readArticleLengths().size
+}
+
+/** Сколько статей держат хотя бы один ключ в топ-10. */
+function countArticlesInTop10(topvisor) {
+  if (!topvisor) return 0
+  const pages = new Set()
+  for (const [path, position] of bestPositionByPage(topvisor)) {
+    if (path.startsWith('/articles/') && position <= TOP_POSITION) pages.add(path)
+  }
+  return pages.size
+}
+
+function renderArticles(articles, totalArticles, articlesInTop10) {
+  if (!articles?.rows?.length) return []
+
+  const { rows, windowDays, minVisits } = articles
+  const groups = groupArticles(rows)
+  const readCount = rows.filter(isRead).length
+  const lines = ['', '<b>📄 Статьи</b>']
+  lines.push(
+    table(
+      ['показатель', 'значение'],
+      [
+        ['в топ-10', `${Math.round((articlesInTop10 / totalArticles) * 100)}% (${articlesInTop10} из ${totalArticles})`],
+        ['читают', `${Math.round((readCount / rows.length) * 100)}% (${readCount} из ${rows.length})`],
+      ]
+    )
+  )
+  lines.push(
+    `<i>Чтение — за ${windowDays} дн., от ${minVisits} визитов: за две недели у статьи набегает 2–3 захода, ` +
+      `и вердикт описывал бы случайных людей. Доля — от времени, нужного на прочтение.</i>`
+  )
+
+  for (const group of groups) {
+    lines.push('', `<b>${group.title} — ${group.action}</b> — ${group.rows.length}`)
+    lines.push(
+      table(
+        ['статья', 'виз', 'проч', 'поз'],
+        group.rows
+          .slice(0, PER_GROUP)
+          .map((r) => [
+            r.slug.slice(0, 34) + (r.leftPage ? ' *' : ''),
+            r.visits,
+            `${displayShare(r.share)}%`,
+            fmtCell(r.position),
+          ])
+      )
+    )
+  }
+
+  if (rows.some((r) => r.leftPage)) {
+    lines.push(
+      '<i>* человек ушёл со статьи дальше по сайту: считается время визита, ' +
+        'а не страницы. Такую долю эталоном не берём.</i>'
+    )
+  }
+  return lines
+}
+
 export function render(current, previous, analysis) {
   const tv = data(current.topvisor)
   const wm = data(current.webmaster)
@@ -384,10 +464,19 @@ export function render(current, previous, analysis) {
     }
   }
 
+  // Статьи идут последним содержательным блоком: они про долгую работу,
+  // а выше — то, что требует реакции сейчас.
+  const art = data(current.articles)
+  if (art) {
+    const totalArticles = articleCount()
+    const inTop10 = countArticlesInTop10(tv)
+    lines.push(...renderArticles(art, totalArticles, inTop10))
+  }
+
   const status = (section, name) => `${name} ${section?.ok ? '✅' : '❌'}`
   lines.push('')
   lines.push(
-    `<i>${status(current.topvisor, 'Топвизор')} · ${status(current.webmaster, 'Вебмастер')} · ${status(current.metrika, 'Метрика')}</i>`
+    `<i>${status(current.topvisor, 'Топвизор')} · ${status(current.webmaster, 'Вебмастер')} · ${status(current.metrika, 'Метрика')}${current.articles ? ' · ' + status(current.articles, 'Статьи') : ''}</i>`
   )
   for (const [section, name] of [
     [current.topvisor, 'Топвизор'],

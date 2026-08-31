@@ -4,7 +4,15 @@
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { collectMetrika, collectTopvisor, collectWebmaster, loadEnv } from './lib/sources.mjs'
+import {
+  bestPositionByPage,
+  collectArticles,
+  collectMetrika,
+  collectTopvisor,
+  collectWebmaster,
+  loadEnv,
+} from './lib/sources.mjs'
+import { readArticleLengths } from './lib/articles.mjs'
 
 const SNAPSHOT_DIR = join(dirname(fileURLToPath(import.meta.url)), 'data', 'snapshots')
 const WINDOW_DAYS = 14
@@ -17,12 +25,22 @@ export async function collect() {
     collectMetrika(env, WINDOW_DAYS),
   ])
 
+  // Статьи собираются после Топвизора: им нужны позиции, чтобы отличить
+  // «читают, но не в топе» от «в топе, но не читают».
+  // Топвизор приезжает обёрнутым в {ok, data} — позиции лежат внутри.
+  const articles = await collectArticles(
+    env,
+    readArticleLengths(),
+    bestPositionByPage(topvisor?.ok ? topvisor.data : null)
+  )
+
   return {
     collectedAt: new Date().toISOString(),
     windowDays: WINDOW_DAYS,
     topvisor,
     webmaster,
     metrika,
+    articles,
   }
 }
 

@@ -183,6 +183,87 @@ async function metrikaReport(env, days, params) {
   return fetchJson(url, { headers: { Authorization: `OAuth ${env.YANDEX_METRIKA_TOKEN}` } })
 }
 
+/**
+ * Статьи: как их читают и где они стоят.
+ *
+ * Два окна намеренно разные. Позиции живут в общем окне отчёта — они меняются
+ * быстро. Чтение считается за девяносто дней: за две недели у статьи набегает
+ * два-три визита, и вердикт «не читают» описывал бы двух случайных людей,
+ * а не статью.
+ *
+ * Глубина чтения — доля от времени, которое нужно на прочтение. Само по себе
+ * время бесполезно: две минуты на статье в пять тысяч знаков и в двадцать
+ * тысяч означают противоположное.
+ */
+const READ_WINDOW_DAYS = 90
+const MIN_VISITS = 5
+/** Знаков в минуту при беглом чтении русского текста средней сложности. */
+const CHARS_PER_MINUTE = 1200
+/** Ниже этого времени читать нечего при любой длине статьи. */
+const NOT_READ_SECONDS = 30
+
+/**
+ * Лучшая позиция каждой статьи: у страницы обычно несколько ключей, и важен
+ * тот, по которому она стоит выше всего, — именно он приводит людей.
+ */
+export function bestPositionByPage(topvisor) {
+  const best = new Map()
+  if (!topvisor?.positions || !topvisor?.targets) return best
+  for (const [keyword, position] of Object.entries(topvisor.positions)) {
+    if (position === null) continue
+    const target = topvisor.targets[keyword]
+    if (!target) continue
+    const path = String(target).replace('https://d-pub.ru', '').replace(/\/$/, '')
+    const current = best.get(path)
+    if (current === undefined || position < current) best.set(path, position)
+  }
+  return best
+}
+
+export function collectArticles(env, articleLengths, articlePositions) {
+  return guard(async () => {
+    const report = await metrikaReport(env, READ_WINDOW_DAYS, {
+      metrics: 'ym:s:visits,ym:s:avgVisitDurationSeconds',
+      dimensions: 'ym:s:startURLPathFull',
+      filters: "ym:s:startURLPathFull=@'/articles/'",
+      limit: '200',
+      sort: '-ym:s:visits',
+    })
+
+    const rows = []
+    for (const row of report.data ?? []) {
+      const slug = String(row.dimensions[0].name).replace('/articles/', '').replace(/\/$/, '')
+      const chars = articleLengths.get(slug)
+      if (!chars) continue
+      const [visits, seconds] = row.metrics
+      if (visits < MIN_VISITS) continue
+
+      const expected = (chars / CHARS_PER_MINUTE) * 60
+      const share = expected > 0 ? seconds / expected : 0
+      const position = articlePositions.get(`/articles/${slug}`) ?? null
+      rows.push({
+        slug,
+        visits,
+        seconds: Math.round(seconds),
+        expectedSeconds: Math.round(expected),
+        share,
+        position,
+        // Доля выше единицы означает, что человек ушёл со статьи дальше по
+        // сайту: считается время визита, а не страницы. Эталоном такое брать
+        // нельзя, поэтому помечаем отдельно.
+        leftPage: share > 1,
+      })
+    }
+
+    return {
+      windowDays: READ_WINDOW_DAYS,
+      minVisits: MIN_VISITS,
+      notReadSeconds: NOT_READ_SECONDS,
+      rows,
+    }
+  })
+}
+
 export function collectMetrika(env, days) {
   return guard(async () => {
     const totals = await metrikaReport(env, days, {
