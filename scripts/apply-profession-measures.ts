@@ -112,7 +112,11 @@ for (const [slug, measure] of Object.entries(snapshot.professions)) {
   // Ищем размер выборки, а не любое число рядом со словом: «в 71% вакансий» —
   // доля, «медиана 80 000 ₽» — деньги, и ни то ни другое не устаревает от
   // пополнения базы. Устаревает счёт вида «из 55 вакансий» и «13 вакансиях».
-  const COUNT_OF_VACANCIES = /(?:из\s+)?(\d{2,4})\s+ваканс[а-яё]*/g
+  // Две формы счёта: «из 55 вакансий» и «13 вакансиях из 55» — во второй
+  // размер выборки стоит уже после слова, и без отдельного шаблона фраза
+  // выглядела бы устаревшей при верных числах.
+  const COUNT_BEFORE = /(?:из\s+)?(\d{2,4})\s+ваканс[а-яё]*/g
+  const COUNT_AFTER = /ваканс[а-яё]*\s+из\s+(\d{2,4})/g
   const sentences = source.slice(block.start, block.end).split(/(?<=[.!?])\s+|\n/)
   for (const line of sentences) {
     const trimmed = line.trimStart()
@@ -123,7 +127,9 @@ for (const [slug, measure] of Object.entries(snapshot.professions)) {
     ) {
       continue
     }
-    const counts = [...line.matchAll(COUNT_OF_VACANCIES)].map((m) => Number(m[1]))
+    const counts = [...line.matchAll(COUNT_BEFORE), ...line.matchAll(COUNT_AFTER)].map((m) =>
+      Number(m[1])
+    )
     if (counts.length && !counts.includes(measure.vacancies)) {
       manual.push(`${slug}: проверить фразу — «${line.trim().slice(0, 90)}»`)
     }
