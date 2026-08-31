@@ -25,7 +25,7 @@ export const TAG_TITLE: Record<string, string> = {
   udalyonka: `Удалённая работа в digital — {N} вакансий`,
   smm: `Вакансии SMM-менеджера — {N}, удалёнка и офис`,
   marketing: `Вакансии маркетолога 2026 — {N} удалённо и офис`,
-  target: `Вакансии таргетолога удалённо — {N}: VK, Директ`,
+  target: `Вакансии таргетолога — {N}: VK, Директ, Telegram`,
   razrabotka: `Вакансии разработчика — {N}: frontend, backend`,
   // «вакансии аналитика» (23 588/мес) в Яндексе — территория hh и SuperJob, у нас
   // по нему >100. Реально страницу кормит инструментальный и нишевый интент:
@@ -57,7 +57,7 @@ export const TAG_TITLE: Record<string, string> = {
   'head-of-seo': `Вакансии Head of SEO — {N} актуальных`,
   videomontazher: `Вакансии видеомонтажёра — {N}, удалённо и офис`,
   // Tool-specific pages
-  figma: `Вакансии Figma — {N} актуальных, удалённо`,
+  figma: `Вакансии Figma — {N}: UI/UX, веб и продукт`,
   canva: `Вакансии Canva — дизайнер и SMM`,
   tilda: `Вакансии Tilda — {N} актуальных`,
   'yandex-direct': `Вакансии директолога — {N}, Яндекс Директ`,
@@ -154,7 +154,7 @@ export const TAG_H1: Record<string, string> = {
   marketing: `Вакансии маркетолога — digital и интернет-маркетинг ${y}`,
   dizajn: `Вакансии дизайнера — UI/UX, графика, веб ${y}`,
   seo: `Вакансии SEO-специалиста — продвижение сайтов ${y}`,
-  target: `Вакансии таргетолога удалённо — Яндекс Директ и ВКонтакте ${y}`,
+  target: `Вакансии таргетолога — Яндекс Директ и ВКонтакте ${y}`,
   razrabotka: `Вакансии разработчика — frontend, backend, fullstack ${y}`,
   analitika: `Вакансии аналитика в digital — веб, продукт, данные ${y}`,
   copywriting: `Вакансии копирайтера — тексты, редактура, контент ${y}`,
