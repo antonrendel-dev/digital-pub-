@@ -29,6 +29,11 @@ jobs:
         with:
           node-version: '22'
 
+      # Полный npm ci ради одного пакета ставить незачем: внутрь бандла едет
+      # только dotenv, всё остальное либо external, либо свой же код.
+      - name: Install bundler input
+        run: npm install dotenv --no-save --legacy-peer-deps
+
       - name: Bundle retag script
         run: |
           npx esbuild scripts/retag-all-posts.ts \
