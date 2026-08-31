@@ -25,7 +25,6 @@ const FILTER_SLUGS = new Set(['udalyonka', 'ofis', 'gibrid', 'junior', 'middle',
 let goneSlugs: Set<string> = new Set()
 let fetchedAt = 0
 let inFlight: Promise<void> | null = null
-let lastError = 'none'
 
 async function refreshGoneSlugs(origin: string): Promise<void> {
   if (Date.now() - fetchedAt < GONE_TTL_MS) return
@@ -37,16 +36,12 @@ async function refreshGoneSlugs(origin: string): Promise<void> {
     const base = process.env.NEXT_PUBLIC_SERVER_URL || origin
     try {
       const res = await fetch(`${base}/api/gone-vacancies`, { cache: 'no-store' })
-      if (!res.ok) {
-        lastError = `http-${res.status}`
-        return
-      }
+      if (!res.ok) return
       const data = (await res.json()) as { slugs?: string[] }
       goneSlugs = new Set(data.slugs ?? [])
       fetchedAt = Date.now()
-      lastError = 'none'
-    } catch (err) {
-      lastError = err instanceof Error ? err.name : 'unknown'
+    } catch {
+      // Список не обновился — работаем с прежним, а на первом запуске с пустым.
     } finally {
       inFlight = null
     }
@@ -60,14 +55,7 @@ export async function middleware(request: NextRequest) {
     const slug = decodeURIComponent(match[1])
     if (FILTER_SLUGS.has(slug)) return withPushHeader(NextResponse.next())
     await refreshGoneSlugs(request.nextUrl.origin)
-    if (!goneSlugs.has(slug)) {
-      // Диагностика: без неё непонятно, дошёл ли запрос до посредника и
-      // добрался ли тот до списка. Заголовок дешёвый и не виден посетителю.
-      const response = NextResponse.next()
-      response.headers.set('X-Gone-Check', `${goneSlugs.size}/${lastError}`)
-      return withPushHeader(response)
-    }
-    {
+    if (goneSlugs.has(slug)) {
       return new NextResponse(
         `<!doctype html><html lang="ru"><head><meta charset="utf-8">` +
           `<meta name="robots" content="noindex, follow">` +
