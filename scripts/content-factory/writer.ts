@@ -31,7 +31,7 @@ import {
   summarize,
   transcriptDir,
 } from './lib/session-stats.js'
-import { sendMessage } from './lib/telegram.js'
+import { announceToChannel, sendMessage } from './lib/telegram.js'
 import { sendFailureAlert } from './lib/alert.js'
 import {
   OVERSPAM_RULE,
@@ -1913,6 +1913,20 @@ async function main() {
   markTopicPublished(topicsFile, topicNum)
 
   const articleUrl = `${SITE_URL}/articles/${result.slug}`
+
+  // Анонс в публичный канал. Отдельно от рабочего уведомления: там сводка для
+  // нас, здесь витрина для читателей. Сбой анонса статью не отменяет — она
+  // уже на сайте, поэтому падать нельзя, но и молчать не станем.
+  let announced: string
+  try {
+    await announceToChannel(articleUrl)
+    announced = '📣 Анонс в канале: ✅'
+    console.log('[writer] Анонс отправлен в канал')
+  } catch (e) {
+    announced = `📣 Анонс в канале: ❌ ${(e as Error).message}`
+    console.error('[writer] Анонс в канал не ушёл:', e)
+  }
+
   const wordstatInfo =
     result.wordstatKeywords.length > 0
       ? `\n🔑 Wordstat ключей использовано: ${result.wordstatKeywords.length}`
@@ -1935,7 +1949,8 @@ async function main() {
     `${wordstatInfo}\n` +
     `${imageStatus}\n` +
     `${chartStatus}\n` +
-    `${sketchStatus}\n\n` +
+    `${sketchStatus}\n` +
+    `${announced}\n\n` +
     `🔗 <a href="${articleUrl}">${articleUrl}</a>\n\n` +
     deployStatus
 

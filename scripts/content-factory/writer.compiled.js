@@ -380,12 +380,33 @@ ${rows}`;
 }
 
 // lib/telegram.js
+var ANNOUNCE_CHANNEL = "@web_vacancy";
+function announceText(url) {
+  return `\u0427\u0438\u0442\u0430\u0439\u0442\u0435 \u043D\u043E\u0432\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E \u043D\u0430 \u043D\u0430\u0448\u0435\u043C \u0441\u0430\u0439\u0442\u0435 \u{1F447}\u{1F3FB}
+${url}`;
+}
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN;
 var CHAT_ID = process.env.SEO_LAB_CHAT_ID;
 var THREAD_ID = process.env.SEO_LAB_TOPIC_ID ? Number(process.env.SEO_LAB_TOPIC_ID) : void 0;
 if (!BOT_TOKEN) throw new Error("BOT_TOKEN not set");
 if (!CHAT_ID) throw new Error("SEO_LAB_CHAT_ID not set");
 var API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+var CHANNEL = process.env.CONTENT_CHANNEL || ANNOUNCE_CHANNEL;
+async function announceToChannel(url) {
+  const text = announceText(url);
+  const res = await fetch(`${API}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: CHANNEL,
+      text,
+      disable_web_page_preview: false
+    })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(`Telegram (\u043A\u0430\u043D\u0430\u043B): ${data.description}`);
+  return data.result.message_id;
+}
 async function sendMessage(text, extra = {}) {
   const body = {
     chat_id: CHAT_ID,
@@ -2108,6 +2129,15 @@ ${e.message}`);
   }
   markTopicPublished(topicsFile, topicNum);
   const articleUrl = `${SITE_URL}/articles/${result.slug}`;
+  let announced;
+  try {
+    await announceToChannel(articleUrl);
+    announced = "\u{1F4E3} \u0410\u043D\u043E\u043D\u0441 \u0432 \u043A\u0430\u043D\u0430\u043B\u0435: \u2705";
+    console.log("[writer] \u0410\u043D\u043E\u043D\u0441 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u0432 \u043A\u0430\u043D\u0430\u043B");
+  } catch (e) {
+    announced = `\u{1F4E3} \u0410\u043D\u043E\u043D\u0441 \u0432 \u043A\u0430\u043D\u0430\u043B\u0435: \u274C ${e.message}`;
+    console.error("[writer] \u0410\u043D\u043E\u043D\u0441 \u0432 \u043A\u0430\u043D\u0430\u043B \u043D\u0435 \u0443\u0448\u0451\u043B:", e);
+  }
   const wordstatInfo = result.wordstatKeywords.length > 0 ? `
 \u{1F511} Wordstat \u043A\u043B\u044E\u0447\u0435\u0439 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u043E: ${result.wordstatKeywords.length}` : "\n\u{1F511} Wordstat: fallback \u043D\u0430 Claude LSI";
   const imageStatus = imageUrl ? `\u{1F3A8} Hero: \u2705` : `\u{1F3A8} Hero: \u274C`;
@@ -2126,6 +2156,7 @@ ${wordstatInfo}
 ${imageStatus}
 ${chartStatus}
 ${sketchStatus}
+${announced}
 
 \u{1F517} <a href="${articleUrl}">${articleUrl}</a>
 

@@ -294,12 +294,14 @@ function renderPoolBlock(pool) {
 }
 
 // lib/telegram.js
+var ANNOUNCE_CHANNEL = "@web_vacancy";
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN || process.env.BOT_TOKEN;
 var CHAT_ID = process.env.SEO_LAB_CHAT_ID;
 var THREAD_ID = process.env.SEO_LAB_TOPIC_ID ? Number(process.env.SEO_LAB_TOPIC_ID) : void 0;
 if (!BOT_TOKEN) throw new Error("BOT_TOKEN not set");
 if (!CHAT_ID) throw new Error("SEO_LAB_CHAT_ID not set");
 var API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+var CHANNEL = process.env.CONTENT_CHANNEL || ANNOUNCE_CHANNEL;
 async function sendMessage(text, extra = {}) {
   const body = {
     chat_id: CHAT_ID,

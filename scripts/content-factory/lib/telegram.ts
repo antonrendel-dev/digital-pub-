@@ -8,6 +8,40 @@ if (!CHAT_ID) throw new Error('SEO_LAB_CHAT_ID not set')
 
 const API = `https://api.telegram.org/bot${BOT_TOKEN}`
 
+import { ANNOUNCE_CHANNEL, announceText } from './announce.js'
+
+/** Канал можно переопределить окружением — удобно для проверки на своём. */
+const CHANNEL = process.env.CONTENT_CHANNEL || ANNOUNCE_CHANNEL
+
+/**
+ * Анонс статьи в канал.
+ *
+ * Превью ссылки намеренно включено: в нём подтягивается обложка и заголовок,
+ * ради них анонс и существует. В рабочем чате наоборот — там превью мешает.
+ *
+ * Ошибка отправки возвращается наружу, а не глотается: решает вызывающий.
+ * Для писателя это некритично — статья к тому моменту уже опубликована.
+ */
+export async function announceToChannel(url: string): Promise<number> {
+  const text = announceText(url)
+  const res = await fetch(`${API}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: CHANNEL,
+      text,
+      disable_web_page_preview: false,
+    }),
+  })
+  const data = (await res.json()) as {
+    ok: boolean
+    result?: { message_id: number }
+    description?: string
+  }
+  if (!data.ok) throw new Error(`Telegram (канал): ${data.description}`)
+  return data.result!.message_id
+}
+
 export async function sendMessage(
   text: string,
   extra: Record<string, unknown> = {}
