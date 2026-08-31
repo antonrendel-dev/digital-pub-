@@ -26,6 +26,12 @@ describe('источник текста статьи', () => {
     expect(page).toMatch(/mdxArticle\?\.imageUrl \?\? payloadImageUrl/)
   })
 
+  it('заголовок и описание тоже берутся из репозитория', () => {
+    // Иначе title придёт из админки, а текст ниже — из git: страница обещает
+    // одно, а рассказывает другое.
+    expect(page).toMatch(/if \(payloadArticle && !mdxForMeta\)/)
+  })
+
   it('версия из репозитория читается до выбора ветки', () => {
     const mdxAt = page.indexOf('const mdxArticle = getArticleBySlug(slug)')
     const branchAt = page.indexOf('if (payloadArticle && payloadArticle.content')

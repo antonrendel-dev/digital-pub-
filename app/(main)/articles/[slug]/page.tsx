@@ -61,13 +61,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
 
   const payloadArticle = await findPayloadArticle(slug)
-  if (payloadArticle) {
+  const mdxForMeta = getArticleBySlug(slug)
+  // Как и с телом статьи, версия из репозитория главнее: иначе заголовок
+  // придёт из админки, а текст ниже — из git, и страница будет обещать одно,
+  // а рассказывать другое.
+  if (payloadArticle && !mdxForMeta) {
     const title = payloadArticle.metaTitle ?? payloadArticle.title
     const description = payloadArticle.metaDescription ?? payloadArticle.description ?? ''
     const url = `https://d-pub.ru/articles/${slug}`
-    // MDX imageUrl takes priority over Payload media (MDX covers are topic-specific pixel art)
-    const mdxArticle = getArticleBySlug(slug)
-    const ogImage = mdxArticle?.imageUrl ?? payloadArticle.image?.url ?? null
+    // Сюда попадаем, только когда версии в репозитории нет, — обложка Payload
+    const ogImage = payloadArticle.image?.url ?? null
     return {
       title,
       description,
