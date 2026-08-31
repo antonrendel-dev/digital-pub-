@@ -2,6 +2,7 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { slugSchema, toFeedPost } from './posts'
+import { trimForFeed } from './postUtils'
 import { isListed } from './vacancy-lifecycle'
 
 /**
@@ -197,7 +198,7 @@ export async function getPostsByTag(tagSlug: string, type?: string) {
       ...(type ? { type: { equals: type } } : {}),
     })
 
-    return (docs as unknown as PayloadPost[]).filter(listedNow).map(toFeedPost)
+    return (docs as unknown as PayloadPost[]).filter(listedNow).map(toFeedPost).map(trimForFeed)
   } catch (err) {
     console.error('[tags] DB error:', err)
     return []
@@ -232,6 +233,7 @@ export async function getPostsByTwoTags(tag1Slug: string, tag2Slug: string) {
       .filter((p) => p.tags?.some((t) => t.id === id2))
       .filter(listedNow)
       .map(toFeedPost)
+      .map(trimForFeed)
   } catch (err) {
     console.error('[tags] getPostsByTwoTags error:', err)
     return []

@@ -3,7 +3,7 @@ import { roleHeadline } from './tag-matcher'
 import { isListed, listedSince } from './vacancy-lifecycle'
 import config from '@payload-config'
 import { z } from 'zod'
-import type { FeedPost } from './postUtils'
+import { trimForFeed, type FeedPost } from './postUtils'
 import { PROFESSION_PREVIEW_LIMIT } from './professions'
 
 export { getPrimaryCategorySlug, type FeedPost } from './postUtils'
@@ -60,7 +60,7 @@ export async function getPublishedPosts(): Promise<FeedPost[]> {
       limit: 100,
       sort: '-createdAt',
     })
-    return (result.docs as unknown as PayloadPost[]).map(toFeedPost)
+    return (result.docs as unknown as PayloadPost[]).map(toFeedPost).map(trimForFeed)
   } catch (err) {
     console.warn('[posts] DB unavailable', err)
     return []
@@ -80,7 +80,7 @@ export async function getPostsByType(type: 'vacancy' | 'resume'): Promise<FeedPo
       limit: 100,
       sort: '-createdAt',
     })
-    return (result.docs as unknown as PayloadPost[]).map(toFeedPost)
+    return (result.docs as unknown as PayloadPost[]).map(toFeedPost).map(trimForFeed)
   } catch (err) {
     console.warn('[posts] DB unavailable', err)
     return []
@@ -122,7 +122,7 @@ export async function getPostsByTypePaginated(
       sort: '-createdAt',
     })
     return {
-      posts: (result.docs as unknown as PayloadPost[]).map(toFeedPost),
+      posts: (result.docs as unknown as PayloadPost[]).map(toFeedPost).map(trimForFeed),
       total: result.totalDocs,
       totalPages: result.totalPages,
     }
@@ -227,7 +227,7 @@ export async function getPostsByProfession(
     })
 
     return {
-      posts: matched.slice(0, limit).map(toFeedPost),
+      posts: matched.slice(0, limit).map(toFeedPost).map(trimForFeed),
       total: matched.length,
       // Упёрлись в потолок сканирования — значит настоящее число больше.
       capped: result.totalDocs > SCAN_LIMIT,
@@ -265,7 +265,7 @@ export async function getPostsByTool(
       sort: '-createdAt',
     })
     return {
-      posts: (result.docs as unknown as PayloadPost[]).map(toFeedPost),
+      posts: (result.docs as unknown as PayloadPost[]).map(toFeedPost).map(trimForFeed),
       total: result.totalDocs,
       totalPages: result.totalPages,
     }

@@ -20,6 +20,28 @@ export interface FeedPost {
   tags: { id: number; name: string; slug: string; tagType: string }[]
 }
 
+/**
+ * Сколько описания оставляем в карточке ленты.
+ *
+ * Карточка показывает две строки, поиск по ленте идёт по заголовку, компании
+ * и описанию. Четырёхсот знаков хватает и на то, и на другое с запасом.
+ */
+export const FEED_DESCRIPTION_LIMIT = 400
+
+/**
+ * Готовит пост к отправке в ленту.
+ *
+ * Лента — клиентский компонент, поэтому весь массив постов сериализуется
+ * в HTML страницы, даже если видно десять карточек. На /vacancies/smm это
+ * давало 1,5 МБ на 417 постов, из которых 913 КБ — данные для гидратации.
+ * Полные тексты вакансий в ленте не нужны никому: их читают на детальной
+ * странице, которая берёт пост отдельным запросом и обрезки не видит.
+ */
+export function trimForFeed(post: FeedPost): FeedPost {
+  if (!post.description || post.description.length <= FEED_DESCRIPTION_LIMIT) return post
+  return { ...post, description: post.description.slice(0, FEED_DESCRIPTION_LIMIT) }
+}
+
 export function getPrimaryCategorySlug(post: FeedPost): string {
   if (!post.tags || post.tags.length === 0) return 'other'
   const specTag = post.tags.find((t) => t.tagType === 'specialization')
