@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `Резюме ${tag.name}-специалистов из Telegram-сообщества. База кандидатов в digital-сфере на Диджитал Паб.`
   const url = `https://d-pub.ru/resumes/tag/${tagSlug}`
 
-  const posts = (await getPostsByTag(tagSlug)).filter((p) => p.type === 'resume')
+  const posts = await getPostsByTag(tagSlug, 'resume')
   const hasResumes = posts.length > 0
 
   return {
@@ -75,7 +75,7 @@ export default async function TagPage({ params }: Props) {
   const tag = await getTagBySlug(tagSlug)
   if (!tag) notFound()
 
-  const posts = (await getPostsByTag(tagSlug)).filter((p) => p.type === 'resume')
+  const posts = await getPostsByTag(tagSlug, 'resume')
   const resumeTags = await getTagsWithCountsByType('resume')
   const faqItems = getResumeTagFaq(tagSlug)
 

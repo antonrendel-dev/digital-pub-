@@ -3,6 +3,10 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { slugSchema, toFeedPost } from './posts'
 
+/** Постранично добираем всю выборку: одного окна не хватает крупным тегам. */
+const LISTING_PAGE_SIZE = 500
+const MAX_LISTING_PAGES = 20
+
 export interface TagWithCount {
   id: number
   name: string
@@ -140,7 +144,29 @@ export async function getTagBySlug(slug: string): Promise<TagDetail | null> {
   }
 }
 
-export async function getPostsByTag(tagSlug: string) {
+/**
+ * Страницы фильтруют выдачу по типу уже после выборки, поэтому тип обязан
+ * попадать в сам запрос: иначе лимит съедают записи чужого типа, и листинг
+ * показывает меньше, чем есть в базе.
+ */
+async function findAllPosts(payload: any, where: Record<string, unknown>) {
+  const docs: unknown[] = []
+  for (let page = 1; page <= MAX_LISTING_PAGES; page++) {
+    const res = await payload.find({
+      collection: 'posts',
+      where,
+      limit: LISTING_PAGE_SIZE,
+      page,
+      sort: '-createdAt',
+      depth: 1,
+    })
+    docs.push(...res.docs)
+    if (!res.hasNextPage) break
+  }
+  return docs
+}
+
+export async function getPostsByTag(tagSlug: string, type?: string) {
   const parsed = slugSchema.safeParse(tagSlug)
   if (!parsed.success) return []
 
@@ -155,18 +181,14 @@ export async function getPostsByTag(tagSlug: string) {
     if (!tagResult.docs.length) return []
     const tagId = (tagResult.docs[0] as any).id
 
-    const posts = await payload.find({
-      collection: 'posts',
-      where: {
-        status: { equals: 'published' },
-        description: { not_equals: null },
-        tags: { in: [tagId] },
-      },
-      limit: 100,
-      sort: '-createdAt',
+    const docs = await findAllPosts(payload, {
+      status: { equals: 'published' },
+      description: { not_equals: null },
+      tags: { in: [tagId] },
+      ...(type ? { type: { equals: type } } : {}),
     })
 
-    return (posts.docs as unknown as PayloadPost[]).map(toFeedPost)
+    return (docs as unknown as PayloadPost[]).map(toFeedPost)
   } catch (err) {
     console.error('[tags] DB error:', err)
     return []
@@ -190,20 +212,14 @@ export async function getPostsByTwoTags(tag1Slug: string, tag2Slug: string) {
     const id2 = (r2.docs[0] as any).id
 
     // Fetch by the first tag, filter in memory by second
-    const posts = await payload.find({
-      collection: 'posts',
-      where: {
-        status: { equals: 'published' },
-        description: { not_equals: null },
-        type: { equals: 'vacancy' },
-        tags: { in: [id1] },
-      },
-      limit: 200,
-      sort: '-createdAt',
-      depth: 1,
+    const docs = await findAllPosts(payload, {
+      status: { equals: 'published' },
+      description: { not_equals: null },
+      type: { equals: 'vacancy' },
+      tags: { in: [id1] },
     })
 
-    return (posts.docs as unknown as PayloadPost[])
+    return (docs as unknown as PayloadPost[])
       .filter((p) => p.tags?.some((t) => t.id === id2))
       .map(toFeedPost)
   } catch (err) {

@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = await getTagBySlug(category)
   if (!tag) return { title: 'Категория не найдена' }
 
-  const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
+  const posts = await getPostsByTag(category, 'vacancy')
   const hasVacancies = posts.length > 0
 
   const seoTitleClean = tag.seoTitle ? stripBrandSuffix(tag.seoTitle) : null
@@ -94,7 +94,7 @@ export default async function CategoryPage({ params }: Props) {
   const tag = await getTagBySlug(category)
   if (!tag) notFound()
 
-  const posts = (await getPostsByTag(category)).filter((p) => p.type === 'vacancy')
+  const posts = await getPostsByTag(category, 'vacancy')
   const [allTags, categoryStats] = await Promise.all([
     getTagsWithCounts(),
     getCategoryStats(category),
