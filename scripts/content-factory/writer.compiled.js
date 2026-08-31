@@ -426,6 +426,32 @@ async function sendMessage(text, extra = {}) {
   return data.result.message_id;
 }
 
+// ../../lib/faq-schema.ts
+var FAQ_HEADING = /^##\s+.*(вопрос|FAQ).*$/im;
+var MIN_FAQ_ITEMS = 2;
+function parseFaq(markdown) {
+  const heading = markdown.match(FAQ_HEADING);
+  if (!heading) return [];
+  const block = markdown.slice(markdown.indexOf(heading[0]) + heading[0].length);
+  const items = [];
+  const re = /###\s+(.+?)\n+([\s\S]+?)(?=\n\s*###|\n\s*##\s|\s*$)/g;
+  let m;
+  while (m = re.exec(block)) {
+    const question = m[1].trim();
+    const answer = m[2].replace(/\*\*(.+?)\*\*/g, "$1").replace(/\[(.+?)\]\([^)]+\)/g, "$1").replace(/\s+/g, " ").trim();
+    if (question && answer && !answer.startsWith("|") && !answer.startsWith("-")) {
+      items.push({ question, answer });
+    }
+  }
+  return items;
+}
+function faqSchemaLine(markdown) {
+  const items = parseFaq(markdown);
+  if (items.length < MIN_FAQ_ITEMS) return "";
+  return `
+faqSchema: '${JSON.stringify(items).replace(/'/g, "''")}'`;
+}
+
 // lib/alert.ts
 import fs5 from "fs";
 var FACTORY_DIR = "/home/claude/projects/digital-pub-/scripts/content-factory";
@@ -1970,13 +1996,14 @@ function buildArticleSchema(topic, result, publishedAt, articleUrl) {
   };
   return JSON.stringify(schema);
 }
-function buildMdxFrontmatter(topic, result, publishedAt, imageUrl) {
+function buildMdxFrontmatter(topic, result, publishedAt, imageUrl, markdown) {
   const tags = result.tags.length ? JSON.stringify(result.tags) : "[]";
   const imageLine = imageUrl ? `
 imageUrl: "${imageUrl}"` : "";
   const articleUrl = `${SITE_URL}/articles/${result.slug}`;
   const schemaLine = `
 schemaJsonLd: '${buildArticleSchema(topic, result, publishedAt, articleUrl)}'`;
+  const faqLine = faqSchemaLine(markdown);
   return `---
 title: "${topic.title.replace(/"/g, '\\"')}"
 slug: "${result.slug}"
@@ -1984,7 +2011,7 @@ description: "${result.metaDesc.replace(/"/g, '\\"')}"
 metaTitle: "${result.metaTitle.replace(/"/g, '\\"')}"
 metaDescription: "${result.metaDesc.replace(/"/g, '\\"')}"
 publishedAt: "${publishedAt}"
-tags: ${tags}${imageLine}${schemaLine}
+tags: ${tags}${imageLine}${faqLine}${schemaLine}
 ---
 `;
 }
@@ -2104,7 +2131,7 @@ async function main() {
   );
   const publishedAt = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
   const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls);
-  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl);
+  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown);
   const mdxContent = frontmatter + "\n" + enrichedMarkdown;
   fs7.mkdirSync(ARTICLES_DIR, { recursive: true });
   fs7.writeFileSync(path7.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent);

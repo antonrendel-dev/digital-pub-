@@ -32,6 +32,7 @@ import {
   transcriptDir,
 } from './lib/session-stats.js'
 import { announceToChannel, sendMessage } from './lib/telegram.js'
+import { faqSchemaLine } from '../../lib/faq-schema'
 import { sendFailureAlert } from './lib/alert.js'
 import {
   OVERSPAM_RULE,
@@ -1693,12 +1694,17 @@ function buildMdxFrontmatter(
   topic: Topic,
   result: ArticleResult,
   publishedAt: string,
-  imageUrl: string | null
+  imageUrl: string | null,
+  markdown: string
 ): string {
   const tags = result.tags.length ? JSON.stringify(result.tags) : '[]'
   const imageLine = imageUrl ? `\nimageUrl: "${imageUrl}"` : ''
   const articleUrl = `${SITE_URL}/articles/${result.slug}`
   const schemaLine = `\nschemaJsonLd: '${buildArticleSchema(topic, result, publishedAt, articleUrl)}'`
+  // Раздел вопросов стандарт требует в каждой статье, но без этой строки
+  // поисковик о нём не знает: до 31.08.2026 разметка была у трёх статей
+  // из восьмидесяти двух, у остальных текст пропадал впустую.
+  const faqLine = faqSchemaLine(markdown)
 
   return `---
 title: "${topic.title.replace(/"/g, '\\"')}"
@@ -1707,7 +1713,7 @@ description: "${result.metaDesc.replace(/"/g, '\\"')}"
 metaTitle: "${result.metaTitle.replace(/"/g, '\\"')}"
 metaDescription: "${result.metaDesc.replace(/"/g, '\\"')}"
 publishedAt: "${publishedAt}"
-tags: ${tags}${imageLine}${schemaLine}
+tags: ${tags}${imageLine}${faqLine}${schemaLine}
 ---
 `
 }
@@ -1883,7 +1889,7 @@ async function main() {
   // Шаг 5г: записываем MDX и деплоим
   const publishedAt = new Date().toISOString().split('T')[0]
   const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
-  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl)
+  const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
 
   fs.mkdirSync(ARTICLES_DIR, { recursive: true })
