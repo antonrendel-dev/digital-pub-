@@ -1,0 +1,64 @@
+# Пересчёт тегов у опубликованных вакансий.
+#
+# Скрипт живёт в scripts/retag-all-posts.ts и умеет --dry-run. На сервере
+# только прод-зависимости, tsx там нет, поэтому скрипт вместе с матчером
+# собирается в CJS тем же esbuild, что и payload-конфиг в основном деплое.
+name: Retag vacancies
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Только показать изменения, ничего не писать'
+        type: boolean
+        default: true
+
+jobs:
+  retag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Bundle retag script
+        run: |
+          npx esbuild scripts/retag-all-posts.ts \
+            --bundle=true \
+            --platform=node \
+            --format=cjs \
+            --external:pg \
+            --external:dotenv \
+            --outfile=retag-all-posts.compiled.js
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload script
+        run: rsync -avz retag-all-posts.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
+
+      - name: Run retag
+        run: |
+          FLAG=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then FLAG="--dry-run"; fi
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/d-pub.ru/app && node retag-all-posts.compiled.js $FLAG
+          "
+
+      - name: Clean up
+        if: always()
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "rm -f ~/d-pub.ru/app/retag-all-posts.compiled.js" || true
