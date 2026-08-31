@@ -20,6 +20,10 @@ export const LEVEL_CHIP_LABELS: Record<string, string> = {
 }
 
 // Имена специализаций в родительном падеже (для "Вакансии КОГО")
+// Менеджмент сужать до проджекта нельзя: «менеджера проектов» — это 7% среза,
+// остальное продажи (22%), SMM (17%), контент (14%). Формулировка обещала то,
+// чего на странице почти нет, и мимо крупного спроса: «удалённая работа
+// менеджером» — 5 395 показов в месяц против 205 у «менеджера проектов».
 const SPEC_GENITIVE: Record<string, string> = {
   smm: 'SMM-менеджера',
   marketing: 'маркетолога',
@@ -31,7 +35,7 @@ const SPEC_GENITIVE: Record<string, string> = {
   copywriting: 'копирайтера',
   content: 'контент-менеджера',
   kreativ: 'арт-директора',
-  menedzher: 'менеджера проектов',
+  menedzher: 'менеджера',
   finansy: 'финансового специалиста',
   'kontekstnaya-reklama': 'контекстолога',
 }
@@ -54,7 +58,7 @@ const SPEC_PROFESSION: Record<string, string> = {
   copywriting: 'Копирайтер',
   content: 'Контент-менеджер',
   kreativ: 'Арт-директор',
-  menedzher: 'Менеджер проектов',
+  menedzher: 'Менеджер',
   finansy: 'Финансовый специалист',
   'kontekstnaya-reklama': 'Контекстолог',
 }
@@ -94,7 +98,7 @@ const SPEC_INSTRUMENTAL: Record<string, string> = {
   copywriting: 'копирайтером',
   content: 'контент-менеджером',
   kreativ: 'арт-директором',
-  menedzher: 'менеджером проектов',
+  menedzher: 'менеджером',
   finansy: 'финансовым специалистом',
   'kontekstnaya-reklama': 'контекстологом',
 }
