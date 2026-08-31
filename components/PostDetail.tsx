@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { botLink } from '@/lib/bot-link'
 import Link from 'next/link'
 import {
   cleanDescription,
@@ -333,7 +334,7 @@ export default function PostDetail({
             <div className="text-sm font-semibold text-text mb-2">Вы работодатель?</div>
             <p className="text-xs text-text-muted mb-3">Разместите вакансию через нашего бота</p>
             <a
-              href="https://t.me/resume_vac_bot"
+              href={botLink('vacancy_card', categorySlug)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-xs px-4 py-2 rounded-full transition no-underline"

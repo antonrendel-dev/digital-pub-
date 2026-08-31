@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { botLink } from '@/lib/bot-link'
 import Image from 'next/image'
 import Link from 'next/link'
 import JsonLd from '@/components/JsonLd'
@@ -76,7 +77,7 @@ export default async function AboutPage() {
     url: BASE_URL,
     description:
       'Агрегатор вакансий и резюме в digital-сфере. Собираем предложения из публичных Telegram-каналов и структурируем по специализациям.',
-    sameAs: ['https://t.me/resume_vac_bot'],
+    sameAs: [botLink('about')],
   }
 
   return (
@@ -192,7 +193,7 @@ export default async function AboutPage() {
                   HR-специалисты и рекрутеры используют Диджитал Паб, чтобы разместить вакансию
                   через наш{' '}
                   <a
-                    href="https://t.me/resume_vac_bot"
+                    href={botLink('about')}
                     className="text-accent underline"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -240,7 +241,7 @@ export default async function AboutPage() {
                   Telegram-боту — публикация занимает несколько минут.
                 </p>
                 <a
-                  href="https://t.me/resume_vac_bot"
+                  href={botLink('about')}
                   className="inline-block mt-4 px-5 py-2.5 bg-accent text-bg-card font-semibold rounded-lg no-underline hover:opacity-90 transition-opacity text-sm"
                   target="_blank"
                   rel="noopener noreferrer"

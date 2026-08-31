@@ -1,6 +1,7 @@
 'use client'
 
 import { reachGoal } from '@/lib/metrika'
+import { botLink } from '@/lib/bot-link'
 
 interface Props {
   children: React.ReactNode
@@ -10,7 +11,7 @@ interface Props {
 export default function FooterResumeLink({ children, className }: Props) {
   return (
     <a
-      href="https://t.me/resume_vac_bot"
+      href={botLink('footer')}
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => reachGoal('resume_submit')}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { botLink } from '@/lib/bot-link'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -157,7 +158,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
 
             {/* Post button - desktop */}
             <a
-              href="https://t.me/resume_vac_bot"
+              href={botLink('nav')}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => reachGoal('resume_submit')}
@@ -250,7 +251,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
             </Link>
             <div className="pt-3 border-t border-border mt-3">
               <a
-                href="https://t.me/resume_vac_bot"
+                href={botLink('nav')}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => reachGoal('resume_submit')}

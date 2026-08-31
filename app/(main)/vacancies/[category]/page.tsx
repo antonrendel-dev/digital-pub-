@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { botLink } from '@/lib/bot-link'
 import { Metadata } from 'next'
 import { ogImageUrl, ruPlural } from '@/lib/og'
 import Link from 'next/link'
@@ -384,7 +385,7 @@ export default async function CategoryPage({ params }: Props) {
                 Разместите вакансию через нашего бота и получите отклики из сообщества
               </p>
               <a
-                href="https://t.me/resume_vac_bot"
+                href={botLink('vacancy_listing', category)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block bg-accent hover:bg-accent-hover text-gray-900 font-semibold text-sm px-4 py-2 rounded-full transition no-underline"

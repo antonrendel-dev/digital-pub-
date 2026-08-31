@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { botLink } from '@/lib/bot-link'
 import Link from 'next/link'
 import PageShell from '@/components/PageShell'
 
@@ -61,7 +62,7 @@ export default function TermsPage() {
           <p>
             Для размещения вакансий и рекламы используйте нашего Telegram-бота:{' '}
             <a
-              href="https://t.me/resume_vac_bot"
+              href={botLink('legal')}
               className="text-accent underline"
               target="_blank"
               rel="noopener noreferrer"

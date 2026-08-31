@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { botLink } from '@/lib/bot-link'
 import Link from 'next/link'
 import PageShell from '@/components/PageShell'
 
@@ -70,7 +71,7 @@ export default function PrivacyPage() {
           <p>
             По вопросам, связанным с обработкой данных, вы можете обратиться через Telegram:{' '}
             <a
-              href="https://t.me/resume_vac_bot"
+              href={botLink('legal')}
               className="text-accent underline"
               target="_blank"
               rel="noopener noreferrer"
