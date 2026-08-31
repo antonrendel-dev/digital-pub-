@@ -129,3 +129,79 @@ describe('доля для показа', () => {
     expect(displayShare(0)).toBe(0)
   })
 })
+
+import { buildFindings, type Snapshot } from '../../scripts/seo-audit/findings'
+import { groupTitle } from '../../scripts/seo-audit/task-format'
+
+const withArticles = (rows: unknown[]): Snapshot =>
+  ({
+    collectedAt: '2026-08-31T00:00:00.000Z',
+    topvisor: { ok: true, data: { positions: {}, targets: {} } },
+    metrika: { ok: true, data: { topPages: [] } },
+    webmaster: { ok: true, data: { queries: [], pages: {} } },
+    articles: { ok: true, data: { rows } },
+  }) as Snapshot
+
+const article = (over: Record<string, unknown> = {}) => ({
+  slug: 'статья',
+  visits: 44,
+  seconds: 10,
+  share: 0.03,
+  position: 6,
+  leftPage: false,
+  ...over,
+})
+
+describe('находки по статьям', () => {
+  it('статья в топе с низким прочтением идёт в задачи', () => {
+    const found = buildFindings(withArticles([]), withArticles([article()]))
+    const f = found.find((x) => x.type === 'article-not-read')
+    expect(f).toBeDefined()
+    expect(f!.title).toContain('не читают')
+    expect(f!.detail).toContain('переписыванием')
+  })
+
+  it('читаемая статья вне топа идёт в задачи с другим указанием', () => {
+    const found = buildFindings(
+      withArticles([]),
+      withArticles([article({ position: null, seconds: 300, share: 0.5 })])
+    )
+    const f = found.find((x) => x.type === 'article-not-ranked')
+    expect(f).toBeDefined()
+    expect(f!.detail).toContain('текст не трогать')
+  })
+
+  it('благополучная статья задачу не создаёт', () => {
+    const found = buildFindings(
+      withArticles([]),
+      withArticles([article({ position: 2, seconds: 400, share: 0.8 })])
+    )
+    expect(found.filter((x) => x.type.startsWith('article-'))).toEqual([])
+  })
+
+  it('статья без трафика не попадает в задачи', () => {
+    // Править то, куда никто не заходит, — гадание вместо работы с фактами.
+    const found = buildFindings(withArticles([]), withArticles([article({ visits: 3 })]))
+    expect(found.filter((x) => x.type.startsWith('article-'))).toEqual([])
+  })
+
+  it('ключ дедупликации не путает две беды одной статьи', () => {
+    const notRead = buildFindings(withArticles([]), withArticles([article()]))[0]
+    const notRanked = buildFindings(
+      withArticles([]),
+      withArticles([article({ position: null, seconds: 300, share: 0.5 })])
+    )[0]
+    expect(notRead.dedupKey).not.toBe(notRanked.dedupKey)
+    expect(notRead.dedupKey).toContain('статья')
+  })
+
+  it('сбой сбора статей не ломает остальные находки', () => {
+    const broken = { ...withArticles([]), articles: { ok: false } } as Snapshot
+    expect(() => buildFindings(broken, broken)).not.toThrow()
+  })
+
+  it('у пачек статей свои заголовки по типу правки', () => {
+    expect(groupTitle('article-not-read', 4)).toContain('переписать текст')
+    expect(groupTitle('article-not-ranked', 6)).toContain('подобрать ключи')
+  })
+})

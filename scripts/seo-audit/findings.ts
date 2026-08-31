@@ -26,6 +26,16 @@ const PAGEVIEW_FLOOR = 10
 const ZERO_CLICK_SHOWS = 30
 
 /**
+ * Статью заводим в задачу, только если она уже собирает людей: править то,
+ * куда никто не заходит, — тратить время на догадки вместо фактов.
+ */
+const ARTICLE_MIN_VISITS = 10
+/** Ниже этой доли прочтения статью не читают, а закрывают. */
+const ARTICLE_READ_SHARE = 0.15
+/** Столько секунд не хватит ни на какую статью. */
+const ARTICLE_MIN_SECONDS = 30
+
+/**
  * Вес находки «отвечает не та страница» растёт с показами.
  *
  * Жёсткий порог тут не работает: на молодом домене у половины расхождений
@@ -55,6 +65,19 @@ export interface Snapshot {
       pages?: Record<string, { url: string; shows: number }>
     }
   }
+  articles?: {
+    ok: boolean
+    data?: {
+      rows?: Array<{
+        slug: string
+        visits: number
+        seconds: number
+        share: number
+        position: number | null
+        leftPage: boolean
+      }>
+    }
+  }
 }
 
 export interface Score {
@@ -73,6 +96,8 @@ export interface Finding {
     | 'pageviews-drop'
     | 'zero-clicks'
     | 'wrong-page'
+    | 'article-not-read'
+    | 'article-not-ranked'
   key: string
   title: string
   detail: string
@@ -143,6 +168,43 @@ export function buildFindings(prev: Snapshot, curr: Snapshot): Finding[] {
           `страницы: объём, вхождения, FAQ, перелинковка. Новая статья только поделит выдачу.`,
         dedupKey: `near-top10:${key}`,
         score: scoreOf(18, 15, 0, 18),
+      })
+    }
+  }
+
+  // Статьи: пересечение позиции и глубины чтения говорит, что чинить.
+  // В задачи идут только те, у кого есть трафик, — иначе доска заполнится
+  // статьями, о которых нечего сказать, кроме «их никто не видел».
+  for (const a of curr?.articles?.ok ? (curr.articles.data?.rows ?? []) : []) {
+    if (a.visits < ARTICLE_MIN_VISITS) continue
+    const read = a.seconds >= ARTICLE_MIN_SECONDS && a.share >= ARTICLE_READ_SHARE
+    const inTop = a.position !== null && a.position <= 10
+    const percent = Math.round(Math.min(a.share, 1) * 100)
+
+    if (inTop && !read) {
+      out.push({
+        type: 'article-not-read',
+        key: a.slug,
+        title: `Статья «${a.slug}» на ${a.position} месте, но её не читают`,
+        detail:
+          `${a.visits} визитов за 90 дней, прочитывают ${percent}% текста. ` +
+          `Позиция есть, значит заголовок работает — проблема в самом тексте: ` +
+          `первый экран не отвечает на запрос, структура не держит или объём ` +
+          `не соответствует обещанию. Правится переписыванием, не ключами.`,
+        dedupKey: `article-not-read:${a.slug}`,
+        score: scoreOf(16, 18, 8, 16),
+      })
+    } else if (!inTop && read) {
+      out.push({
+        type: 'article-not-ranked',
+        key: a.slug,
+        title: `Статью «${a.slug}» читают на ${percent}%, но её нет в топ-10`,
+        detail:
+          `${a.visits} визитов за 90 дней. Текст удерживает — значит написан ` +
+          `хорошо, а не находят его из-за заголовка и ключей. Подобрать ключ ` +
+          `с частотностью от 300 и переписать title под него; текст не трогать.`,
+        dedupKey: `article-not-ranked:${a.slug}`,
+        score: scoreOf(18, 20, 6, 18),
       })
     }
   }
