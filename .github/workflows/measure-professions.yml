@@ -75,20 +75,23 @@ jobs:
         if: always()
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "rm -f ~/d-pub.ru/app/measure-professions.compiled.js" || true
 
+      # Вход объявлен булевым, поэтому в выражениях он булев: сравнение с
+      # 'true' здесь всегда истинно, и на нём боевые шаги однажды отработали
+      # в сухом прогоне. Сравниваем с false и в shell берём строку целиком.
       - name: Apply snapshot
         run: |
           FLAG=""
-          if [ "${{ inputs.dry_run }}" != "true" ]; then FLAG="--write"; fi
+          if [ "${{ inputs.dry_run }}" = "false" ]; then FLAG="--write"; fi
           npx tsx scripts/apply-profession-measures.ts snapshot.json $FLAG | tee apply.log
 
       - name: Verify
-        if: inputs.dry_run != 'true'
+        if: ${{ inputs.dry_run == false }}
         run: |
           npx tsc --noEmit
           npx jest tests/unit/professions.test.ts
 
       - name: Commit
-        if: inputs.dry_run != 'true'
+        if: ${{ inputs.dry_run == false }}
         run: |
           rm -f snapshot.json apply.log measure-professions.compiled.js
           if git diff --quiet lib/professions.ts; then
