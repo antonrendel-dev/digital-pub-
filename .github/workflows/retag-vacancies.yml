@@ -3,6 +3,8 @@
 # Скрипт живёт в scripts/retag-all-posts.ts и умеет --dry-run. На сервере
 # только прод-зависимости, tsx там нет, поэтому скрипт вместе с матчером
 # собирается в CJS тем же esbuild, что и payload-конфиг в основном деплое.
+# Внешним оставлен только pg — он есть на сервере как зависимость Payload;
+# dotenv там отсутствует (devDependency), поэтому уезжает внутрь бандла.
 name: Retag vacancies
 
 on:
@@ -34,7 +36,6 @@ jobs:
             --platform=node \
             --format=cjs \
             --external:pg \
-            --external:dotenv \
             --outfile=retag-all-posts.compiled.js
 
       - name: Setup SSH
