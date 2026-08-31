@@ -1,4 +1,5 @@
 import { getPayload, type Where } from 'payload'
+import { roleHeadline } from './tag-matcher'
 import config from '@payload-config'
 import { z } from 'zod'
 import type { FeedPost } from './postUtils'
@@ -170,7 +171,9 @@ export async function getPostsByProfession(
 ): Promise<{ posts: FeedPost[]; total: number; capped: boolean }> {
   if (queries.length === 0) return { posts: [], total: 0, capped: false }
   // Потолок выборки: берём заведомо больше, чем покажем, чтобы после отсева
-  // осталось из чего выбирать. 300 хватает — самая массовая профессия даёт 126.
+  // осталось из чего выбирать. Считать надо по широкой выборке из базы, а не
+  // по итогу: у видеомонтажёра подстрока находит 151 объявление, из которых
+  // роль в заголовке подтверждают 55.
   const SCAN_LIMIT = 300
   try {
     const payload = await getPayload({ config })
@@ -195,7 +198,11 @@ export async function getPostsByProfession(
     const docs = result.docs as unknown as PayloadPost[]
     const needles = (phrases ?? queries).map((p) => p.toLowerCase())
     const matched = docs.filter((doc) => {
-      const haystack = `${doc.title ?? ''} ${doc.description ?? ''}`.toLowerCase()
+      // Ищем роль там, где она стоит, — в заголовке объявления. По всему телу
+      // подстрока ловит упоминания в требованиях: «монтаж» в вакансии
+      // SMM-менеджера превращал её в вакансию видеомонтажёра и завышал
+      // выборку профессии в 2,7 раза.
+      const haystack = `${doc.title ?? ''} ${roleHeadline(doc.description ?? '')}`.toLowerCase()
       return needles.some((n) => haystack.includes(n))
     })
 
