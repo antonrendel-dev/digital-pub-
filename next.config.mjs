@@ -64,6 +64,16 @@ const nextConfig = {
       // при этом /vacancies/wordpress отдавала ноль вакансий: тег не наполнен,
       // внутренних ссылок на неё нет. Терять на редиректе нечего.
       { source: '/vacancies/wordpress', destination: '/tools/wordpress', permanent: true },
+      // Две статьи отвечали на один интент «работа через телеграм» (241/мес):
+      // одна в MDX, вторая в Payload. Ни одна не получила ни показа за 90 дней —
+      // для дубля закономерно, поисковик не выбирает ни ту, ни другую. Остаётся
+      // та, что в репозитории: длиннее, с 10 разделами против 7, и правится
+      // через git. Вторая уходит в черновики, контент при этом не теряется.
+      {
+        source: '/articles/kak-najti-rabotu-v-digital-cherez-telegram',
+        destination: '/articles/kak-nayti-rabotu-telegram-digital',
+        permanent: true,
+      },
     ]
   },
   async headers() {
