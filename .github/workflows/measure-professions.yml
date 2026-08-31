@@ -1,0 +1,111 @@
+# Пересчёт цифр раздела профессий.
+#
+# Числа на карточках — снимки на дату замера: сколько вакансий нашлось, в
+# скольких назван инструмент, какая вилка зарплат. База живёт, снимки нет, и
+# со временем они расходятся. Раньше это лечилось правками руками.
+#
+# Схема: замер делается на продакшене (только оттуда видно базу), результат
+# возвращается в задание, применяется к lib/professions.ts и уходит коммитом.
+# Редакторские тексты скрипт не трогает — числа, вросшие в предложения,
+# он выносит отдельным списком, их переписывает человек.
+name: Measure professions
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Только показать расхождения, ничего не менять'
+        type: boolean
+        default: true
+# Расписания намеренно нет: снимок меняет цифры, которые видит посетитель, и
+# запускать это без присмотра не стоит. При запуске по cron поле dry_run
+# приходит пустым, то есть прогон молча оказался бы боевым.
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Bundle measure script
+        run: |
+          npx esbuild scripts/measure-professions.ts \
+            --bundle=true \
+            --platform=node \
+            --format=cjs \
+            --external:pg \
+            --outfile=measure-professions.compiled.js
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload measure script
+        run: rsync -avz measure-professions.compiled.js ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/d-pub.ru/app/
+
+      - name: Take snapshot on production
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
+            cd ~/d-pub.ru/app && node measure-professions.compiled.js
+          " > snapshot.json
+          echo "--- снимок ---"
+          head -30 snapshot.json
+
+      - name: Clean up remote script
+        if: always()
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "rm -f ~/d-pub.ru/app/measure-professions.compiled.js" || true
+
+      - name: Apply snapshot
+        run: |
+          FLAG=""
+          if [ "${{ inputs.dry_run }}" != "true" ]; then FLAG="--write"; fi
+          npx tsx scripts/apply-profession-measures.ts snapshot.json $FLAG | tee apply.log
+
+      - name: Verify
+        if: inputs.dry_run != 'true'
+        run: |
+          npx tsc --noEmit
+          npx jest tests/unit/professions.test.ts
+
+      - name: Commit
+        if: inputs.dry_run != 'true'
+        run: |
+          rm -f snapshot.json apply.log measure-professions.compiled.js
+          if git diff --quiet lib/professions.ts; then
+            echo "цифры совпадают с базой — коммитить нечего"
+            exit 0
+          fi
+          # Правки строго в одном файле: скрипт больше ничего не трогает, но
+          # пусть это проверяет задание, а не доверие к скрипту.
+          CHANGED=$(git diff --name-only)
+          if [ "$CHANGED" != "lib/professions.ts" ]; then
+            echo "неожиданные изменения: $CHANGED"
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add lib/professions.ts
+          git commit \
+            -m "chore(professions): пересчёт снимков по базе" \
+            -m "Цифры на карточках — снимки на дату замера, они расходятся с базой по мере её пополнения. Обновлены заданием Measure professions. Числа, вросшие в тексты карточек, скрипт не трогает: их список — в логе задания."
+          git push

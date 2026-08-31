@@ -65,6 +65,12 @@ export interface ProfessionTool {
   count: number
   /** Ссылка на страницу инструмента, если она у нас есть. */
   toolSlug?: string
+  /**
+   * Чем считали count. Без этого поля цифру нельзя перепроверить: она
+   * превращается в число, о происхождении которого известно только автору.
+   * Строка, а не RegExp, — иначе объект нельзя сериализовать в снимок.
+   */
+  pattern: string
 }
 
 export interface ProfessionSalary {
@@ -131,8 +137,8 @@ export const PROFESSIONS: Record<string, Profession> = {
     // публиковать нельзя, она уедет в разметку Occupation как факт.
     salary: null,
     tools: [
-      { name: 'CapCut', count: 13, toolSlug: 'capcut' },
-      { name: 'Premiere Pro', count: 12 },
+      { name: 'CapCut', count: 13, toolSlug: 'capcut', pattern: 'capcut|капкат' },
+      { name: 'Premiere Pro', count: 12, pattern: 'premiere|премьер' },
     ],
     // Не /vacancies/videomontazher: тег объявлен в коде, но записи в БД нет,
     // и URL отдаёт 404 (проверено 25.08.2026). Монтажёры у нас живут в SMM-вакансиях.
@@ -184,8 +190,8 @@ export const PROFESSIONS: Record<string, Profession> = {
     // 20 вакансий, зарплата указана только в 5 — для вилки недостаточно.
     salary: null,
     tools: [
-      { name: 'Figma', count: 4, toolSlug: 'figma' },
-      { name: 'Tilda', count: 3, toolSlug: 'tilda' },
+      { name: 'Figma', count: 4, toolSlug: 'figma', pattern: 'figma|фигм' },
+      { name: 'Tilda', count: 3, toolSlug: 'tilda', pattern: 'tilda|тильд' },
     ],
     relatedListing: { href: '/vacancies/dizajn', label: 'вакансии дизайнера' },
     howToStart: [
@@ -286,7 +292,7 @@ export const PROFESSIONS: Record<string, Profession> = {
       'Аналитика запуска — окупаемость, конверсии, стоимость заявки',
     ],
     salary: { p25: 80000, median: 80000, p75: 180000, sample: 16 },
-    tools: [{ name: 'Съёмка', count: 15 }],
+    tools: [{ name: 'Съёмка', count: 15, pattern: 'съёмк|съемк|снимат|оператор' }],
     relatedListing: { href: '/vacancies/menedzher', label: 'вакансии менеджера' },
     howToStart: [
       'Возьмите один чужой запуск как ассистент — продюсером не становятся с нуля, только изнутри процесса',
@@ -440,7 +446,7 @@ export const PROFESSIONS: Record<string, Profession> = {
     ],
     // Зарплата указана лишь в 8 вакансиях из 39 — для вилки мало.
     salary: null,
-    tools: [{ name: 'Figma', count: 15, toolSlug: 'figma' }],
+    tools: [{ name: 'Figma', count: 15, toolSlug: 'figma', pattern: 'figma|фигм' }],
     relatedListing: { href: '/vacancies/dizajn', label: 'вакансии дизайнера' },
     howToStart: [
       'Сделайте редизайн одного экрана реального приложения и объясните каждое решение',
@@ -498,9 +504,19 @@ export const PROFESSIONS: Record<string, Profession> = {
     // против 85 000 по всей базе. Публиковать вилку не станем, пока выборка мала.
     salary: null,
     tools: [
-      { name: 'Нейросети', count: 6, toolSlug: 'chatgpt' },
-      { name: 'Google Таблицы', count: 5, toolSlug: 'tablicy' },
-      { name: 'Excel', count: 4, toolSlug: 'excel' },
+      {
+        name: 'Нейросети',
+        count: 6,
+        toolSlug: 'chatgpt',
+        pattern: 'нейросет|нейронк|midjourney|chatgpt',
+      },
+      {
+        name: 'Google Таблицы',
+        count: 5,
+        toolSlug: 'tablicy',
+        pattern: 'google\\s?(таблиц|sheets)|гугл\\s?таблиц',
+      },
+      { name: 'Excel', count: 4, toolSlug: 'excel', pattern: 'excel|эксель' },
     ],
     relatedListing: { href: '/vacancies/menedzher', label: 'вакансии менеджера' },
     howToStart: [
