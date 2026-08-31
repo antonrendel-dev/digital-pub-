@@ -1,5 +1,6 @@
 import { getPayload, type Where } from 'payload'
 import { roleHeadline } from './tag-matcher'
+import { isListed, listedSince } from './vacancy-lifecycle'
 import config from '@payload-config'
 import { z } from 'zod'
 import type { FeedPost } from './postUtils'
@@ -164,6 +165,10 @@ export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
  * которых на ней нет, — ровно та ошибка, из-за которой /tools/wordpress
  * показывал 19 «вакансий WordPress-разработчика» при двух настоящих.
  */
+/** Ушедшие объявления в подборку профессии не попадают: их страницы отдают 410. */
+const isListedVacancy = (post: { createdAt: string | Date }) =>
+  !post.createdAt || isListed(post.createdAt)
+
 export async function getPostsByProfession(
   queries: string[],
   limit = PROFESSION_PREVIEW_LIMIT,
@@ -197,7 +202,7 @@ export async function getPostsByProfession(
 
     const docs = result.docs as unknown as PayloadPost[]
     const needles = (phrases ?? queries).map((p) => p.toLowerCase())
-    const matched = docs.filter((doc) => {
+    const matched = docs.filter(isListedVacancy).filter((doc) => {
       // Ищем роль там, где она стоит, — в заголовке объявления. По всему телу
       // подстрока ловит упоминания в требованиях: «монтаж» в вакансии
       // SMM-менеджера превращал её в вакансию видеомонтажёра и завышал
@@ -231,6 +236,10 @@ export async function getPostsByTool(
         and: [
           { status: { equals: 'published' } },
           { type: { equals: 'vacancy' } },
+          // Здесь пагинация считается базой, поэтому отсекать ушедшие в памяти
+          // нельзя: total придёт от базы и разойдётся с показанным. Условие
+          // уходит в сам запрос.
+          { createdAt: { greater_than: listedSince().toISOString() } },
           {
             or: [{ title: { like: query } }, { description: { like: query } }],
           },

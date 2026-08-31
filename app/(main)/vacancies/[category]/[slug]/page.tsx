@@ -29,6 +29,7 @@ import {
 import { getSpecFilterSeo } from '@/lib/spec-filter-seo'
 import { sanitizeSeoHtml } from '@/lib/sanitize'
 import { computeLandingStats, pluralRu } from '@/lib/landing-stats'
+import { isIndexable, vacancyStage } from '@/lib/vacancy-lifecycle'
 
 export const revalidate = 300 // ISR: refresh every 5 minutes
 
@@ -85,7 +86,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: titleBase,
     description: desc,
     alternates: { canonical: canonicalUrl },
-    ...(category === 'other' && { robots: { index: false, follow: true } }),
+    // Объявление старше тридцати дней закрываем от индексации: срок в его
+    // разметке уже истёк, а страница с истёкшим JobPosting в индексе —
+    // нарушение политики Google. Ссылки при этом обходятся дальше.
+    ...((category === 'other' || (!isResume && !isIndexable(post.createdAt))) && {
+      robots: { index: false, follow: true },
+    }),
     openGraph: {
       title: titleBase,
       description: desc,
@@ -387,10 +393,28 @@ export default async function VacancyPage({ params }: Props) {
     ],
   }
 
+  // Разметку вакансии отдаём только пока срок в ней не истёк. Дальше это
+  // не «объявление с прошедшей датой», а объявление, которого для поисковика
+  // нет вовсе: JobPosting снимается целиком, остаются хлебные крошки.
+  // К этому месту тип уже сужен до вакансии — резюме уходит веткой выше.
+  const stage = vacancyStage(post.createdAt)
+
   return (
     <PageShell>
-      <JsonLd data={jobPostingLd} />
+      {stage === 'fresh' && <JsonLd data={jobPostingLd} />}
       <JsonLd data={breadcrumbLd} />
+      {stage === 'stale' && (
+        <div className="max-w-wrap mx-auto px-4 pt-6">
+          <p className="rounded-lg border border-dashed border-border bg-surface px-4 py-3 text-sm text-text-light">
+            Объявлению больше месяца — работодатель мог его уже закрыть. Свежие предложения этой
+            категории собраны на странице{' '}
+            <Link href={`/vacancies/${category}`} className="text-accent underline">
+              {tag?.name ?? 'вакансий'}
+            </Link>
+            .
+          </p>
+        </div>
+      )}
       <PostDetail
         post={post}
         related={related}

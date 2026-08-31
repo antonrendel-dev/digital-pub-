@@ -2,6 +2,15 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { slugSchema, toFeedPost } from './posts'
+import { isListed } from './vacancy-lifecycle'
+
+/**
+ * Объявления старше девяноста дней из выдачи убираем: страница такой вакансии
+ * отдаёт 410, и ссылка из листинга вела бы в никуда. Резюме живут по другим
+ * правилам — их срок не истекает, поэтому фильтр к ним не применяется.
+ */
+const listedNow = (post: { type: 'vacancy' | 'resume'; createdAt: string | Date }) =>
+  post.type !== 'vacancy' || !post.createdAt || isListed(post.createdAt)
 
 /** Постранично добираем всю выборку: одного окна не хватает крупным тегам. */
 const LISTING_PAGE_SIZE = 500
@@ -188,7 +197,7 @@ export async function getPostsByTag(tagSlug: string, type?: string) {
       ...(type ? { type: { equals: type } } : {}),
     })
 
-    return (docs as unknown as PayloadPost[]).map(toFeedPost)
+    return (docs as unknown as PayloadPost[]).filter(listedNow).map(toFeedPost)
   } catch (err) {
     console.error('[tags] DB error:', err)
     return []
@@ -221,6 +230,7 @@ export async function getPostsByTwoTags(tag1Slug: string, tag2Slug: string) {
 
     return (docs as unknown as PayloadPost[])
       .filter((p) => p.tags?.some((t) => t.id === id2))
+      .filter(listedNow)
       .map(toFeedPost)
   } catch (err) {
     console.error('[tags] getPostsByTwoTags error:', err)

@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { getPayload } from 'payload'
+import { isIndexable } from '../vacancy-lifecycle'
 import config from '@payload-config'
 
 const BASE_URL = 'https://d-pub.ru'
@@ -38,6 +39,7 @@ export class SitemapUnavailableError extends Error {
 type PayloadPost = {
   slug: string | null
   type: 'vacancy' | 'resume'
+  createdAt: string | Date
   updatedAt: string | Date
   tags: Array<{ slug: string; tagType: string } | number>
 }
@@ -60,29 +62,33 @@ export async function getVacancySitemapEntries(
       depth: 1,
     })
 
-    return (postsResult.docs as unknown as PayloadPost[])
-      .filter((p) => p.slug && p.type === 'vacancy')
-      .flatMap((p) => {
-        const tags = Array.isArray(p.tags) ? p.tags : []
-        const specTag = tags.find(
-          (t): t is { slug: string; tagType: string } =>
-            typeof t === 'object' &&
-            t !== null &&
-            (t as { tagType: string }).tagType === 'specialization'
-        )
-        const categorySlug = specTag?.slug ?? 'other'
-        if (categorySlug === 'other' || TOOL_REDIRECT_SLUGS.has(categorySlug)) return []
+    return (
+      (postsResult.docs as unknown as PayloadPost[])
+        // Закрытые от индексации в карту не попадают: звать робота на страницу
+        // с noindex бессмысленно, а на отдающую 410 — вредно.
+        .filter((p) => p.slug && p.type === 'vacancy' && isIndexable(p.createdAt))
+        .flatMap((p) => {
+          const tags = Array.isArray(p.tags) ? p.tags : []
+          const specTag = tags.find(
+            (t): t is { slug: string; tagType: string } =>
+              typeof t === 'object' &&
+              t !== null &&
+              (t as { tagType: string }).tagType === 'specialization'
+          )
+          const categorySlug = specTag?.slug ?? 'other'
+          if (categorySlug === 'other' || TOOL_REDIRECT_SLUGS.has(categorySlug)) return []
 
-        const updatedAt = p.updatedAt ? new Date(p.updatedAt) : now
-        return [
-          {
-            url: `${BASE_URL}/vacancies/${categorySlug}/${p.slug}`,
-            lastModified: updatedAt,
-            changeFrequency: 'weekly' as const,
-            priority: 0.5,
-          },
-        ]
-      })
+          const updatedAt = p.updatedAt ? new Date(p.updatedAt) : now
+          return [
+            {
+              url: `${BASE_URL}/vacancies/${categorySlug}/${p.slug}`,
+              lastModified: updatedAt,
+              changeFrequency: 'weekly' as const,
+              priority: 0.5,
+            },
+          ]
+        })
+    )
   } catch (e) {
     console.warn('[sitemap] DB error fetching vacancy posts')
     throw new SitemapUnavailableError(e)
