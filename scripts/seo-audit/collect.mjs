@@ -62,4 +62,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(`  Топвизор:  ${status(snapshot.topvisor)}`)
   console.log(`  Вебмастер: ${status(snapshot.webmaster)}`)
   console.log(`  Метрика:   ${status(snapshot.metrika)}`)
+  console.log(`  Статьи:    ${status(snapshot.articles)}`)
 }
