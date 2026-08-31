@@ -25,19 +25,28 @@ const FILTER_SLUGS = new Set(['udalyonka', 'ofis', 'gibrid', 'junior', 'middle',
 let goneSlugs: Set<string> = new Set()
 let fetchedAt = 0
 let inFlight: Promise<void> | null = null
+let lastError = 'none'
 
 async function refreshGoneSlugs(origin: string): Promise<void> {
   if (Date.now() - fetchedAt < GONE_TTL_MS) return
   if (inFlight) return inFlight
   inFlight = (async () => {
+    // За прокси nextUrl.origin — это внутренний адрес контейнера, и запрос
+    // по нему до приложения не доходит. Берём публичный адрес из окружения,
+    // origin оставляем запасным вариантом для локальной разработки.
+    const base = process.env.NEXT_PUBLIC_SERVER_URL || origin
     try {
-      const res = await fetch(`${origin}/api/gone-vacancies`, { cache: 'no-store' })
-      if (!res.ok) return
+      const res = await fetch(`${base}/api/gone-vacancies`, { cache: 'no-store' })
+      if (!res.ok) {
+        lastError = `http-${res.status}`
+        return
+      }
       const data = (await res.json()) as { slugs?: string[] }
       goneSlugs = new Set(data.slugs ?? [])
       fetchedAt = Date.now()
-    } catch {
-      // Список не обновился — работаем с прежним, а на первом запуске с пустым.
+      lastError = 'none'
+    } catch (err) {
+      lastError = err instanceof Error ? err.name : 'unknown'
     } finally {
       inFlight = null
     }
@@ -55,7 +64,7 @@ export async function middleware(request: NextRequest) {
       // Диагностика: без неё непонятно, дошёл ли запрос до посредника и
       // добрался ли тот до списка. Заголовок дешёвый и не виден посетителю.
       const response = NextResponse.next()
-      response.headers.set('X-Gone-Check', `${goneSlugs.size}`)
+      response.headers.set('X-Gone-Check', `${goneSlugs.size}/${lastError}`)
       return withPushHeader(response)
     }
     {
