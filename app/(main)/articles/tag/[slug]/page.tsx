@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getArticles, mergeAndSortArticles, type MergedArticle } from '@/lib/articles'
-import { tagBySlug } from '@/lib/article-tags'
+import { tagBySlug, NOINDEX_TAG_SLUGS } from '@/lib/article-tags'
 import { ogImageUrl } from '@/lib/og'
 import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
@@ -30,7 +30,9 @@ export async function generateMetadata({
     title: tag.pageTitle,
     description: tag.pageDescription,
     alternates: { canonical: `https://d-pub.ru/articles/tag/${slug}` },
-    ...(!hasArticles && { robots: { index: false, follow: true } }),
+    ...((!hasArticles || NOINDEX_TAG_SLUGS.has(slug)) && {
+      robots: { index: false, follow: true },
+    }),
     openGraph: {
       title: tag.pageTitle,
       description: tag.pageDescription,
