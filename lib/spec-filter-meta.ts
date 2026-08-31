@@ -33,6 +33,7 @@ const SPEC_GENITIVE: Record<string, string> = {
   kreativ: 'арт-директора',
   menedzher: 'менеджера проектов',
   finansy: 'финансового специалиста',
+  'kontekstnaya-reklama': 'контекстолога',
 }
 
 /**
@@ -55,6 +56,7 @@ const SPEC_PROFESSION: Record<string, string> = {
   kreativ: 'Арт-директор',
   menedzher: 'Менеджер проектов',
   finansy: 'Финансовый специалист',
+  'kontekstnaya-reklama': 'Контекстолог',
 }
 
 // Имена специализаций в именительном падеже (для breadcrumb)
@@ -71,6 +73,7 @@ const SPEC_NOMINATIVE: Record<string, string> = {
   kreativ: 'Креатив',
   menedzher: 'Менеджмент',
   finansy: 'Финансы',
+  'kontekstnaya-reklama': 'Контекстная реклама',
 }
 
 /**
@@ -93,6 +96,7 @@ const SPEC_INSTRUMENTAL: Record<string, string> = {
   kreativ: 'арт-директором',
   menedzher: 'менеджером проектов',
   finansy: 'финансовым специалистом',
+  'kontekstnaya-reklama': 'контекстологом',
 }
 
 const FORMAT_LABELS: Record<string, string> = {

@@ -21,6 +21,7 @@ const CATEGORY_TAGS: Record<string, string> = {
   dizajn: 'дизайн',
   marketing: 'маркетинг',
   target: 'таргетированная реклама',
+  'kontekstnaya-reklama': 'контекстная реклама',
   razrabotka: 'разработка',
   analitika: 'аналитика данных',
   copywriting: 'копирайтинг',

@@ -65,10 +65,10 @@ describe('мета страниц «профессия + формат»', () => 
   })
 
   describe('ссылки с хаба вниз, на пересечения', () => {
-    it('хаб удалёнки раздаёт ссылки на все 12 специализаций', () => {
+    it('хаб удалёнки раздаёт ссылки на все 13 специализаций', () => {
       const links = getFilterHubLinks('udalyonka')
       expect(links).toHaveLength(SPEC_SLUGS.length)
-      expect(links).toHaveLength(12)
+      expect(links).toHaveLength(13)
     })
 
     it('анкор точный и транзакционный, под сам запрос', () => {

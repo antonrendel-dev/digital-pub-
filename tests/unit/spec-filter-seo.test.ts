@@ -11,7 +11,7 @@ describe('getSpecFilterSeo (JSON data source)', () => {
     expect(content!.faqItems[0]).toHaveProperty('answer')
   })
 
-  it('returns content for all 72 spec×filter combinations', () => {
+  it('returns content for all 78 spec×filter combinations', () => {
     const filters = [...FORMAT_SLUGS, ...LEVEL_SLUGS]
     for (const spec of SPEC_SLUGS) {
       for (const filter of filters) {
