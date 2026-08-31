@@ -11,8 +11,10 @@
  *   - word-boundary aware (Cyrillic-aware via punctuation/space check)
  *   - one match per tag (no duplicates in result)
  *   - returns tag slugs in TAG_KEYWORDS-iteration order
- *   - SPECIALIZATION tags matched against title only (prevents body mentions
- *     like "аналитика кампаний" from tagging a vacancy as analitika)
+ *   - SPECIALIZATION tags matched against title + the role headline (first
+ *     non-empty, non-hashtag line, cut at the employer preposition) — the title
+ *     alone is just the channel's hashtag, while the whole body would tag every
+ *     passing mention
  *   - FORMAT and LEVEL tags matched against full text
  *   - TOOL tags matched against full text (title + description)
  */
@@ -33,6 +35,7 @@ export const SPEC_TAG_SLUGS = new Set([
   'content',
   'head-of-seo',
   'videomontazher',
+  'hr',
 ])
 
 /**
@@ -131,6 +134,10 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
     'таргет',
     'таргетолог',
     'директ',
+    'директа',
+    'директу',
+    'директе',
+    'директом',
     'директолог',
     'контекстная реклама',
     'яндекс директ',
@@ -165,8 +172,9 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
     'joomla',
   ],
   analitika: ['аналитик', 'аналитика', 'analytics', 'data analyst', 'bi'],
-  finansy: ['финанс', 'бухгалтер', 'экономист'],
-  kreativ: ['креатив', 'креативщик'],
+  finansy: ['финанс', 'финансов', 'финансист', 'бухгалтер', 'экономист', 'бухучет', 'бухучёт'],
+  hr: ['hr', 'эйчар', 'рекрутер', 'рекрутёр', 'рекрутинг', 'ресечер', 'ресёрчер', 'кадровик'],
+  kreativ: ['креатив', 'креативщик', 'creative', 'арт-директор', 'art director', 'артдирект'],
   copywriting: [
     'копирайтер',
     'копирайтинг',
@@ -217,22 +225,75 @@ export const TAG_KEYWORDS: Record<string, string[]> = {
   senior: ['senior', 'сеньор', 'ведущий', 'lead'],
 }
 
+/**
+ * Роль в объявлении стоит первой строкой, после хештегов канала. Заголовок
+ * поста её не даёт: title — это первый хештег («SMM», «CRM», «МЕНЕДЖЕР»),
+ * а не должность, поэтому специализации не находились вовсе.
+ *
+ * Берём только первую непустую строку без хештега и отрезаем всё после
+ * предлога места: в «Менеджер по продажам в SMM-Академию» специализация —
+ * менеджер, а SMM здесь название работодателя. Вторую строку не берём: там
+ * уже описание компании, и «Frontend-разработчик» из агентства с широким
+ * профилем получал бы чужой тег. Весь текст тем более: упоминание роли в
+ * требованиях — не вакансия этой роли, счёт по телу завышает её в разы.
+ */
+const EMPLOYER_PREPOSITION = /\s+(?:в|во|для|при)\s+/i
+
+export function roleHeadline(body: string): string {
+  const firstLine = body
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line.length > 0 && !line.startsWith('#'))
+  return firstLine ? firstLine.split(EMPLOYER_PREPOSITION)[0] : ''
+}
+
 const isBoundary = (ch: string) => /[\s\.,;:!?\-—–()\/\[\]{}«»"'#@\n\r]/.test(ch)
+
+/**
+ * Русское слово в объявлении почти всегда склонено: ищут «дизайнера», а не
+ * «дизайнер». Поэтому после кириллического ключа допускаем короткое окончание
+ * и требуем границу уже за ним. Три буквы — намеренный потолок: «дизайнера»
+ * и «креативный» проходят, «дизайнерский» (другое слово, не должность) нет.
+ * На латинские ключи правило не распространяется, иначе «seotext» стал бы seo.
+ */
+const MAX_INFLECTION = 3
+const isCyrillic = (s: string) => /[а-яё]/i.test(s)
+
+/**
+ * Ключи, которым окончание не разрешено: с ним они превращаются в чужое слово.
+ * «директ» + «ор» — это арт-директор, а не Яндекс.Директ; на этой подстроке
+ * счётчики уже один раз завышали кластер. Падежи Директа заведены отдельными
+ * ключами, чтобы «настройка Директа» не потерялась.
+ */
+const EXACT_KEYWORDS = new Set(['директ'])
 
 function hasKeyword(text: string, keyword: string): boolean {
   const lower = text.toLowerCase()
   const kw = keyword.toLowerCase()
-  const idx = lower.indexOf(kw)
-  if (idx === -1) return false
-  const before = idx > 0 ? lower[idx - 1] : ' '
-  const after = idx + kw.length < lower.length ? lower[idx + kw.length] : ' '
-  return (idx === 0 || isBoundary(before)) && (idx + kw.length >= lower.length || isBoundary(after))
+  const maxTail = isCyrillic(kw) && !EXACT_KEYWORDS.has(kw) ? MAX_INFLECTION : 0
+
+  let idx = lower.indexOf(kw)
+  while (idx !== -1) {
+    const before = idx > 0 ? lower[idx - 1] : ' '
+    if (idx === 0 || isBoundary(before)) {
+      for (let tail = 0; tail <= maxTail; tail++) {
+        const end = idx + kw.length + tail
+        if (end > lower.length) break
+        const inflection = lower.slice(idx + kw.length, end)
+        if (tail > 0 && !isCyrillic(inflection[tail - 1])) break
+        if (end === lower.length || isBoundary(lower[end])) return true
+      }
+    }
+    idx = lower.indexOf(kw, idx + 1)
+  }
+  return false
 }
 
 /**
  * Match title + body against tag keywords.
  *
- * Specialization tags (smm, seo, dizajn, …) are matched against `title` only.
+ * Specialization tags (smm, seo, dizajn, …) are matched against `title` plus the
+ * role headline of the body — see roleHeadline.
  * Format/level tags (udalyonka, junior, …) are matched against the full text.
  * Tool tags (figma, canva, tilda, …) are matched against full text via regex.
  *
@@ -241,10 +302,11 @@ function hasKeyword(text: string, keyword: string): boolean {
  */
 export function matchTags(title: string, body?: string): string[] {
   const fullText = body !== undefined ? `${title} ${body}` : title
+  const roleText = body !== undefined ? `${title} ${roleHeadline(body)}` : title
   const matched: string[] = []
 
   for (const [tagSlug, keywords] of Object.entries(TAG_KEYWORDS)) {
-    const searchIn = SPEC_TAG_SLUGS.has(tagSlug) ? title : fullText
+    const searchIn = SPEC_TAG_SLUGS.has(tagSlug) ? roleText : fullText
     for (const keyword of keywords) {
       if (hasKeyword(searchIn, keyword)) {
         matched.push(tagSlug)
