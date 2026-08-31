@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { FeedPost } from '@/lib/posts'
 import { FILTER_CHIPS } from '@/lib/config'
+import { GOALS, reachGoal } from '@/lib/metrika'
 import JobCard from './JobCard'
 
 const PAGE_SIZE = 10
@@ -40,7 +41,12 @@ export default function Feed({
     setActiveFilters((prev) => {
       const next = new Set(prev)
       if (next.has(tag)) next.delete(tag)
-      else next.add(tag)
+      // Считаем только включение фильтра: снятие — это отказ от выбора,
+      // и складывать его с выбором в одну цель значит смешать разное.
+      else {
+        next.add(tag)
+        reachGoal(GOALS.TAG_FILTER, { tag })
+      }
       return next
     })
     setVisible(PAGE_SIZE)

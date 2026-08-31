@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Navbar from './Navbar'
 import LeftSidebar from './LeftSidebar'
@@ -9,6 +9,7 @@ import TagsSidebar from './TagsSidebar'
 import Feed from './feed/Feed'
 import { FeedPost } from '@/lib/posts'
 import { useTheme } from '@/lib/hooks/useTheme'
+import { GOALS, reachGoal } from '@/lib/metrika'
 
 interface ListingPageProps {
   posts: FeedPost[]
@@ -33,6 +34,17 @@ export default function ListingPage({
 }: ListingPageProps) {
   const { isDark, toggleDark } = useTheme()
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Поиск отмечаем через паузу после последней буквы. Событие на каждое
+  // нажатие превратило бы один запрос в десяток целей и завысило бы счёт
+  // во столько же раз. Короткие обрывки не считаем: «диз» — это ещё не
+  // запрос, а середина слова.
+  useEffect(() => {
+    const query = searchQuery.trim()
+    if (query.length < 3) return
+    const timer = setTimeout(() => reachGoal(GOALS.LISTING_SEARCH, { query, type }), 1200)
+    return () => clearTimeout(timer)
+  }, [searchQuery, type])
 
   const pageTitle =
     type === 'vacancy'

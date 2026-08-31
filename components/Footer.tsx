@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import FooterResumeLink from './FooterResumeLink'
+import SocialLink from './SocialLink'
 
 const DEFAULT_SOCIAL_LINKS = [
   { platform: 'Telegram', url: 'https://t.me/+69rdOEDrfvgyMDMy' },
@@ -146,16 +147,14 @@ export default async function Footer() {
             <div className="text-sm font-semibold text-text-muted mb-3">Мы в соцсетях</div>
             <div className="flex items-center gap-3">
               {socialLinks.map((link) => (
-                <a
+                <SocialLink
                   key={link.platform}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={link.platform}
+                  platform={link.platform}
+                  url={link.url}
                   className={`text-text-light transition-colors ${SOCIAL_HOVER_CLASSES[link.platform] ?? 'hover:text-text'}`}
                 >
                   {SOCIAL_ICONS[link.platform] ?? <span className="text-xs">{link.platform}</span>}
-                </a>
+                </SocialLink>
               ))}
             </div>
           </div>

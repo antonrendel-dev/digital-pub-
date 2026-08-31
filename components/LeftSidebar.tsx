@@ -2,18 +2,18 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { GOALS, reachGoal } from '@/lib/metrika'
 
 interface SubCardProps {
   type: 'tg' | 'mx' | 'vk'
   icon: React.ReactNode
   title: string
-  subscribers: string
   desc: string
   btnColor: string
   url: string
 }
 
-function SubCard({ type, icon, title, subscribers, desc, btnColor, url }: SubCardProps) {
+function SubCard({ type, icon, title, desc, btnColor, url }: SubCardProps) {
   const [subscribed, setSubscribed] = useState(false)
 
   const bgClass = type === 'tg' ? 'bg-bg-sub-tg' : type === 'mx' ? 'bg-bg-sub-mx' : 'bg-bg-sub-vk'
@@ -24,6 +24,7 @@ function SubCard({ type, icon, title, subscribers, desc, btnColor, url }: SubCar
       target="_blank"
       rel="noopener noreferrer"
       className="block no-underline text-inherit"
+      onClick={() => reachGoal(GOALS.SOCIAL_CLICK, { platform: title })}
     >
       <div className={`${bgClass} rounded-lg p-3 hover:opacity-90 transition`}>
         <div className="flex items-center gap-2 mb-1">
@@ -77,21 +78,12 @@ const VkIcon = () => (
 export interface SocialChannel {
   name: string
   url: string
-  subscribers?: string
 }
 
 export const DEFAULT_CHANNELS: SocialChannel[] = [
-  { name: 'Telegram', url: 'https://t.me/+69rdOEDrfvgyMDMy', subscribers: '14 200 подписчиков' },
-  {
-    name: 'Макс',
-    url: 'https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ',
-    subscribers: '6 800 подписчиков',
-  },
-  {
-    name: 'ВКонтакте',
-    url: 'https://vk.com/digital_pub_vacancies',
-    subscribers: '9 300 подписчиков',
-  },
+  { name: 'Telegram', url: 'https://t.me/+69rdOEDrfvgyMDMy' },
+  { name: 'Макс', url: 'https://max.ru/join/TdAOrknpNtm20J92ke2oXJGoKA8OI_nH6GnQ5xtH2TQ' },
+  { name: 'ВКонтакте', url: 'https://vk.com/digital_pub_vacancies' },
 ]
 
 interface LeftSidebarProps {
@@ -130,7 +122,6 @@ export default function LeftSidebar({ stats, channels }: LeftSidebarProps) {
               type={type}
               icon={icon}
               title={name}
-              subscribers={ch.subscribers ?? ''}
               desc={desc}
               btnColor={btnColor}
               url={ch.url}
