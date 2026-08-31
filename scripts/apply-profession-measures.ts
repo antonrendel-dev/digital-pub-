@@ -109,12 +109,22 @@ for (const [slug, measure] of Object.entries(snapshot.professions)) {
   }
 
   // Числа, вросшие в предложения: их меняет человек, иначе ломается фраза.
-  const stale = source
-    .slice(block.start, block.end)
-    .match(/[^\n']*\b\d{2,4}\b[^\n']*ваканс[а-яё]*[^\n']*/g)
-  for (const line of stale ?? []) {
-    if (line.includes('vacanciesAtMeasure') || line.trimStart().startsWith('//')) continue
-    if (!line.includes(String(measure.vacancies))) {
+  // Ищем размер выборки, а не любое число рядом со словом: «в 71% вакансий» —
+  // доля, «медиана 80 000 ₽» — деньги, и ни то ни другое не устаревает от
+  // пополнения базы. Устаревает счёт вида «из 55 вакансий» и «13 вакансиях».
+  const COUNT_OF_VACANCIES = /(?:из\s+)?(\d{2,4})\s+ваканс[а-яё]*/g
+  const sentences = source.slice(block.start, block.end).split(/(?<=[.!?])\s+|\n/)
+  for (const line of sentences) {
+    const trimmed = line.trimStart()
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('*') ||
+      line.includes('vacanciesAtMeasure')
+    ) {
+      continue
+    }
+    const counts = [...line.matchAll(COUNT_OF_VACANCIES)].map((m) => Number(m[1]))
+    if (counts.length && !counts.includes(measure.vacancies)) {
       manual.push(`${slug}: проверить фразу — «${line.trim().slice(0, 90)}»`)
     }
   }
