@@ -21,6 +21,7 @@ const config: Config = {
     '<rootDir>/_files/',
     '<rootDir>/.claude/worktrees/',
   ],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/next-cache.ts'],
   forceExit: true,
 }
 

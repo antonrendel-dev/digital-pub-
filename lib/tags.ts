@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { slugSchema, toFeedPost } from './posts'
@@ -176,7 +177,31 @@ async function findAllPosts(payload: any, where: Record<string, unknown>) {
   return docs
 }
 
-export async function getPostsByTag(tagSlug: string, type?: string) {
+/**
+ * Как долго держим выборку листинга в памяти процесса.
+ *
+ * Столько же, сколько revalidate у самих страниц, — иначе кэш данных и кэш
+ * страницы разъезжаются, и посетитель видит цифру из одного, а список из
+ * другого.
+ */
+const LISTING_CACHE_SECONDS = 300
+
+/**
+ * Листинги строятся по живой базе на каждый запрос: пререндер из CI им не
+ * подходит — базы там нет, и страницы уезжали на прод пустыми (см. комментарий
+ * в app/(main)/tools/[toolSlug]/page.tsx). Плата за это — обход базы
+ * постранично на каждого посетителя: замер 31.08 показал секунду до первого
+ * байта у листингов против трети секунды у статьи.
+ *
+ * Кэшируем не страницу, а выборку. Он живёт в процессе, поэтому пустому
+ * артефакту из сборки взяться по-прежнему неоткуда.
+ */
+export const getPostsByTag = unstable_cache(getPostsByTagUncached, ['posts-by-tag'], {
+  revalidate: LISTING_CACHE_SECONDS,
+  tags: ['posts'],
+})
+
+async function getPostsByTagUncached(tagSlug: string, type?: string) {
   const parsed = slugSchema.safeParse(tagSlug)
   if (!parsed.success) return []
 
