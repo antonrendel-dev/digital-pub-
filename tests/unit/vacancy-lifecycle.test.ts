@@ -69,10 +69,13 @@ describe('область поиска у профессий и инструме�
   )
   const posts = fs.readFileSync(path.join(process.cwd(), 'lib', 'posts.ts'), 'utf8')
 
-  it('страница инструмента ищет по всему тексту', () => {
+  it('страница инструмента ищет по всему тексту — во всех вызовах', () => {
     // Excel и Photoshop стоят в требованиях, а не в должности: сужение до
-    // заголовка обнуляло эти страницы целиком.
-    expect(page).toMatch(/getPostsByProfession\(tool\.queries, 1, tool\.phrases, 'text'\)/)
+    // заголовка обнуляло эти страницы целиком. Вызовов два — счётчик в title
+    // и сама выборка; пропустишь один, и страница разойдётся сама с собой.
+    const calls = [...page.matchAll(/getPostsByProfession\(tool\.queries[^)]*\)/g)].map((m) => m[0])
+    expect(calls.length).toBeGreaterThanOrEqual(2)
+    for (const call of calls) expect(call).toContain("'text'")
   })
 
   it('по умолчанию ищется роль — так работают страницы профессий', () => {

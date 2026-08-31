@@ -965,7 +965,7 @@ export default async function ToolPage({ params }: Props) {
   if (!tool) notFound()
 
   const { posts, total } = tool.queries
-    ? await getPostsByProfession(tool.queries, 20, tool.phrases)
+    ? await getPostsByProfession(tool.queries, 20, tool.phrases, 'text')
     : await getPostsByTool(tool.query)
   const professions = professionsByTool(toolSlug)
 
