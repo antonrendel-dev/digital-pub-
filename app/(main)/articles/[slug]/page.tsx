@@ -157,12 +157,18 @@ export default async function ArticlePage({ params }: Props) {
   // Extract Payload image regardless of whether Payload has content
   const payloadImageUrl: string | null = payloadArticle?.image?.url ?? null
 
-  // MDX article may have imageUrl in frontmatter — use as primary cover image
-  // (Payload media images are often generic; MDX covers are always topic-specific)
-  const mdxArticleForImage = getArticleBySlug(slug)
-  const coverImageUrl: string | null = mdxArticleForImage?.imageUrl ?? payloadImageUrl ?? null
+  // Версия из репозитория: она же решает, чей текст показывать, и даёт обложку —
+  // картинки Payload обычно общие, а обложки в MDX всегда под конкретную тему.
+  const mdxArticle = getArticleBySlug(slug)
+  const coverImageUrl: string | null = mdxArticle?.imageUrl ?? payloadImageUrl ?? null
 
-  if (payloadArticle && payloadArticle.content) {
+  // Версия из репозитория старше по праву: статьи правятся через git, а Payload
+  // держит те, которых в MDX нет вовсе. Пока приоритет был обратный, статья
+  // rezyume-smm-spetsialista отдавала июньскую версию, хотя её переписали
+  // 14.08 по стандарту v6.6 — и три коммита правок на сайт не попали.
+  // Она при этом в treatment-группе эксперимента, то есть замер 13.09 считал
+  // бы результат по неопубликованному тексту.
+  if (payloadArticle && payloadArticle.content && !mdxArticle) {
     const allArticles = getArticles()
     const related = allArticles.slice(0, 3)
     const relatedCategories = getRelatedCategoriesForTitleAndTags(payloadArticle.title)
