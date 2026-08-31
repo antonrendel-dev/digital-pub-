@@ -923,7 +923,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Число вакансий нужно только тем страницам, где оно стоит в title.
   const count = tool.metaTitle.includes('{N}')
     ? (tool.queries
-        ? await getPostsByProfession(tool.queries, 1, tool.phrases)
+        ? // Инструмент ищем во всём тексте: Excel и Photoshop пишут в требованиях,
+          // а не в названии должности — по заголовку такие страницы обнуляются.
+          await getPostsByProfession(tool.queries, 1, tool.phrases, 'text')
         : await getPostsByTool(tool.query)
       ).total
     : 0

@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import {
   vacancyStage,
   vacancyAgeDays,
@@ -57,5 +59,28 @@ describe('что стадия разрешает', () => {
     const stale = daysAgo(45)
     expect(isListed(stale, NOW)).toBe(true)
     expect(isIndexable(stale, NOW)).toBe(false)
+  })
+})
+
+describe('область поиска у профессий и инструментов разная', () => {
+  const page = fs.readFileSync(
+    path.join(process.cwd(), 'app', '(main)', 'tools', '[toolSlug]', 'page.tsx'),
+    'utf8'
+  )
+  const posts = fs.readFileSync(path.join(process.cwd(), 'lib', 'posts.ts'), 'utf8')
+
+  it('страница инструмента ищет по всему тексту', () => {
+    // Excel и Photoshop стоят в требованиях, а не в должности: сужение до
+    // заголовка обнуляло эти страницы целиком.
+    expect(page).toMatch(/getPostsByProfession\(tool\.queries, 1, tool\.phrases, 'text'\)/)
+  })
+
+  it('по умолчанию ищется роль — так работают страницы профессий', () => {
+    expect(posts).toMatch(/scope: MatchScope = 'role'/)
+  })
+
+  it('обе ветки различимы в коде выборки', () => {
+    expect(posts).toMatch(/scope === 'role'/)
+    expect(posts).toMatch(/roleHeadline\(body\)/)
   })
 })

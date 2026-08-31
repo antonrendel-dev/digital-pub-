@@ -169,10 +169,22 @@ export async function getPostBySlug(slug: string): Promise<FeedPost | null> {
 const isListedVacancy = (post: { createdAt: string | Date }) =>
   !post.createdAt || isListed(post.createdAt)
 
+/**
+ * Где искать совпадение.
+ *
+ * 'role' — в заголовке объявления. Так ищут профессию: «монтаж» в требованиях
+ * SMM-менеджера не делает вакансию вакансией видеомонтажёра.
+ * 'text' — во всём тексте. Так ищут инструмент: Excel и Photoshop почти
+ * никогда не стоят в названии должности, их пишут в требованиях, и сужение
+ * до заголовка обнуляет такие страницы.
+ */
+export type MatchScope = 'role' | 'text'
+
 export async function getPostsByProfession(
   queries: string[],
   limit = PROFESSION_PREVIEW_LIMIT,
-  phrases?: string[]
+  phrases?: string[],
+  scope: MatchScope = 'role'
 ): Promise<{ posts: FeedPost[]; total: number; capped: boolean }> {
   if (queries.length === 0) return { posts: [], total: 0, capped: false }
   // Потолок выборки: берём заведомо больше, чем покажем, чтобы после отсева
@@ -207,7 +219,10 @@ export async function getPostsByProfession(
       // подстрока ловит упоминания в требованиях: «монтаж» в вакансии
       // SMM-менеджера превращал её в вакансию видеомонтажёра и завышал
       // выборку профессии в 2,7 раза.
-      const haystack = `${doc.title ?? ''} ${roleHeadline(doc.description ?? '')}`.toLowerCase()
+      const body = doc.description ?? ''
+      const haystack = (
+        scope === 'role' ? `${doc.title ?? ''} ${roleHeadline(body)}` : `${doc.title ?? ''} ${body}`
+      ).toLowerCase()
       return needles.some((n) => haystack.includes(n))
     })
 
