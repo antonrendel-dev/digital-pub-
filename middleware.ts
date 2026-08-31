@@ -51,7 +51,14 @@ export async function middleware(request: NextRequest) {
     const slug = decodeURIComponent(match[1])
     if (FILTER_SLUGS.has(slug)) return withPushHeader(NextResponse.next())
     await refreshGoneSlugs(request.nextUrl.origin)
-    if (goneSlugs.has(slug)) {
+    if (!goneSlugs.has(slug)) {
+      // Диагностика: без неё непонятно, дошёл ли запрос до посредника и
+      // добрался ли тот до списка. Заголовок дешёвый и не виден посетителю.
+      const response = NextResponse.next()
+      response.headers.set('X-Gone-Check', `${goneSlugs.size}`)
+      return withPushHeader(response)
+    }
+    {
       return new NextResponse(
         `<!doctype html><html lang="ru"><head><meta charset="utf-8">` +
           `<meta name="robots" content="noindex, follow">` +
