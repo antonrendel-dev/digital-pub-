@@ -48,7 +48,11 @@ export const TOOL_TAG_SLUGS: Record<string, RegExp> = {
   canva: /canva|канв[аеы]/gi,
   tilda: /\btilda\b|\bтильд[аеы]\b/gi,
   'yandex-direct': /яндекс[\s.]?директ|яндекс\.директ|директолог/gi,
-  tablicy: /google\s+таблиц|гугл\s+таблиц|google\s+sheets|excel|эксель/gi,
+  // Excel отсюда убран 31.08.2026: он ловился и сюда, и в собственный раздел,
+  // из-за чего выборки двух страниц пересекались на четверти объявлений.
+  // Спрос разводит их однозначно — «вакансии excel» 525/мес против «вакансии
+  // google таблицы» 15.
+  tablicy: /google\s+таблиц|гугл\s+таблиц|google\s+sheets/gi,
 }
 
 export const TAG_KEYWORDS: Record<string, string[]> = {
