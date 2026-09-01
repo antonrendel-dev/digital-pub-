@@ -1,0 +1,1141 @@
+[
+  {
+    "slug": "stoimost-uslug-frilansera-digital-2026",
+    "key": "прайс на услуги",
+    "volume": 17220,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_08_no_faq",
+      "l1_12_stale",
+      "l2_07_no_source_date"
+    ],
+    "visits": "2",
+    "imp": "220",
+    "pos": "9"
+  },
+  {
+    "slug": "vakansii-kontent-menedzher-2026",
+    "key": "вакансии контент менеджера",
+    "volume": 1406,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan"
+    ],
+    "visits": "0",
+    "imp": "154",
+    "pos": "7.6"
+  },
+  {
+    "slug": "gde-iskat-rabotu-krome-hh-ru-15-ploshchadok-2026",
+    "key": "где искать работу кроме hh",
+    "volume": 2122,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l3_12_title_h2_mismatch"
+    ],
+    "visits": "1",
+    "imp": "77",
+    "pos": "7.3"
+  },
+  {
+    "slug": "portfolio-kopirajtera-s-nulya",
+    "key": "портфолио текстов",
+    "volume": 588,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "1",
+    "imp": "73",
+    "pos": "23.2"
+  },
+  {
+    "slug": "kak-nayti-rabotu-smm-menedzheru-2026",
+    "key": "вакансии смм",
+    "volume": 4074,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_12_stale",
+      "l3_05_promise_buried"
+    ],
+    "visits": "1",
+    "imp": "70",
+    "pos": "7.8"
+  },
+  {
+    "slug": "zarplaty-digital-marketing-2026",
+    "key": "сколько зарабатывает маркетолог",
+    "volume": 2507,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_02_no_artifact_word", "l1_04_title_long", "l1_06_desc_no_range"],
+    "visits": "7",
+    "imp": "62",
+    "pos": "21.3"
+  },
+  {
+    "slug": "nejroseti-dlya-marketologa-2026",
+    "key": "ии для маркетинга",
+    "volume": 353,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_12_stale",
+      "l3_05_promise_buried"
+    ],
+    "visits": "0",
+    "imp": "51",
+    "pos": "42.6"
+  },
+  {
+    "slug": "zarplata-ux-ui-dizajnera",
+    "key": "зарплата веб дизайнера",
+    "volume": 327,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_02_no_artifact_word", "l1_04_title_long", "l1_08_no_faq"],
+    "visits": "0",
+    "imp": "48",
+    "pos": "22.9"
+  },
+  {
+    "slug": "kontent-meyker-kto-eto-otlichiya-ot-smm-specialista",
+    "key": "контент мейкер",
+    "volume": 5085,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "3",
+    "imp": "39",
+    "pos": "9.3"
+  },
+  {
+    "slug": "zarplata-frontend-razrabotchika-2026",
+    "key": "зарплата разработчика",
+    "volume": 4264,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l3_11_first_link_late"
+    ],
+    "visits": "5",
+    "imp": "36",
+    "pos": "6.3"
+  },
+  {
+    "slug": "vakansii-direktolog-yandex-direct",
+    "key": "директолог",
+    "volume": 4879,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_08_no_faq",
+      "l1_09_orphan"
+    ],
+    "visits": "1",
+    "imp": "34",
+    "pos": "13.7"
+  },
+  {
+    "slug": "zarplata-analitika-dannykh",
+    "key": "зарплата аналитика данных",
+    "volume": 773,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_11_thin",
+      "l3_05_promise_buried",
+      "l3_11_first_link_late"
+    ],
+    "visits": "1",
+    "imp": "34",
+    "pos": "6.9"
+  },
+  {
+    "slug": "telegram-kanaly-vakansii-smm",
+    "key": "каналы с вакансиями",
+    "volume": 1220,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "33",
+    "pos": "17.9"
+  },
+  {
+    "slug": "kak-ocenit-portfolio-dizajnera",
+    "key": "портфолио дизайнера",
+    "volume": 7453,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_04_title_long", "l1_05_desc_len", "l1_06_desc_no_range", "l2_07_no_source_date"],
+    "visits": "0",
+    "imp": "25",
+    "pos": "6.6"
+  },
+  {
+    "slug": "product-manager-kto-eto",
+    "key": "продакт менеджер",
+    "volume": 9204,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_07_no_source_date",
+      "l3_05_promise_buried",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "25",
+    "pos": "64.2"
+  },
+  {
+    "slug": "gde-iskat-rabotu-krome-avito",
+    "key": "где искать работу",
+    "volume": 23053,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l2_05_desc_echoes_title"
+    ],
+    "visits": "0",
+    "imp": "23",
+    "pos": "8.1"
+  },
+  {
+    "slug": "portfolio-marketologa-oshibki",
+    "key": "портфолио маркетолога",
+    "volume": 313,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_10_few_outgoing",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "23",
+    "pos": "19.5"
+  },
+  {
+    "slug": "rezyume-dizajnera",
+    "key": "резюме дизайнера",
+    "volume": 2033,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_06_desc_no_range", "l1_07_few_tables", "l1_11_thin", "l3_11_first_link_late"],
+    "visits": "1",
+    "imp": "23",
+    "pos": "6.9"
+  },
+  {
+    "slug": "vakansii-kopirajter-gde-iskat-rabotu-2026",
+    "key": "вакансии копирайтера",
+    "volume": 4961,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_11_thin",
+      "l3_05_promise_buried"
+    ],
+    "visits": "0",
+    "imp": "22",
+    "pos": "7.6"
+  },
+  {
+    "slug": "smm-vs-targetolog-kogo-nanyat-malomu-biznesu",
+    "key": "кто такой таргетолог",
+    "volume": 636,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_02_no_artifact_word", "l1_04_title_long", "l1_06_desc_no_range", "l1_09_orphan"],
+    "visits": "0",
+    "imp": "21",
+    "pos": "13.1"
+  },
+  {
+    "slug": "razmestit-rezyume-besplatno-gajd-dlya-digital-specialistov",
+    "key": "где разместить резюме",
+    "volume": 593,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_09_orphan",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_05_promise_buried"
+    ],
+    "visits": "0",
+    "imp": "18",
+    "pos": "13.2"
+  },
+  {
+    "slug": "frilans-digital-s-nulja",
+    "key": "фриланс для начинающих",
+    "volume": 3076,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "15",
+    "pos": "9.5"
+  },
+  {
+    "slug": "kak-nayti-rabotu-telegram-digital",
+    "key": "работа в телеграм",
+    "volume": 4215,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_09_orphan",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_05_promise_buried",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "15",
+    "pos": "17.3"
+  },
+  {
+    "slug": "professiya-targetolog",
+    "key": "таргетолог профессия",
+    "volume": 785,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_11_thin"
+    ],
+    "visits": "2",
+    "imp": "13",
+    "pos": "32.6"
+  },
+  {
+    "slug": "professiya-kopirajter-kontent-menedzher",
+    "key": "контент менеджер",
+    "volume": 16624,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_10_few_outgoing",
+      "l3_11_first_link_late"
+    ],
+    "visits": "1",
+    "imp": "12",
+    "pos": "18.1"
+  },
+  {
+    "slug": "rezume-marketologa",
+    "key": "резюме маркетолога",
+    "volume": 489,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_04_title_long", "l1_05_desc_len", "l1_06_desc_no_range", "l1_09_orphan"],
+    "visits": "32",
+    "imp": "12",
+    "pos": "22.5"
+  },
+  {
+    "slug": "kak-nayti-rabotu-marketologu",
+    "key": "вакансии маркетолога",
+    "volume": 7428,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "11",
+    "pos": "15.2"
+  },
+  {
+    "slug": "lichnyy-brend-marketologa",
+    "key": "личный бренд",
+    "volume": 10830,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "10",
+    "pos": "5.9"
+  },
+  {
+    "slug": "menedzher-marketpleysov-bez-opyta-udalenno",
+    "key": "удалённая работа без опыта",
+    "volume": 60084,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_05_desc_echoes_title",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "1",
+    "imp": "10",
+    "pos": "11.5"
+  },
+  {
+    "slug": "skolko-zarabatyvaet-graficheskiy-dizayner",
+    "key": "сколько зарабатывает дизайнер",
+    "volume": 15408,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_11_thin",
+      "l3_11_first_link_late"
+    ],
+    "visits": "5",
+    "imp": "9",
+    "pos": "34.6"
+  },
+  {
+    "slug": "smm-menedzher-bez-opyta",
+    "key": "smm с нуля",
+    "volume": 1017,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_05_desc_len",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "9",
+    "pos": "53.1"
+  },
+  {
+    "slug": "zarplata-dizajnera-2026-uiux-grafika-moshion",
+    "key": "зарплата дизайнера",
+    "volume": 7227,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_11_thin"
+    ],
+    "visits": "4",
+    "imp": "9",
+    "pos": "7.9"
+  },
+  {
+    "slug": "analitik-dannyh-ili-marketolog-analitik",
+    "key": "маркетолог аналитик",
+    "volume": 1250,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_02_no_artifact_word", "l1_04_title_long", "l1_06_desc_no_range", "l1_09_orphan"],
+    "visits": "0",
+    "imp": "8",
+    "pos": "5.6"
+  },
+  {
+    "slug": "chto-takoe-smm-professiya-obyazannosti-zarplata",
+    "key": "smm специалист кто это",
+    "volume": 990,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_11_thin",
+      "l3_11_first_link_late",
+      "l3_12_title_h2_mismatch"
+    ],
+    "visits": "0",
+    "imp": "8",
+    "pos": "57.9"
+  },
+  {
+    "slug": "hr-menedzher-digital-agentstvo-najm",
+    "key": "hr менеджер",
+    "volume": 13772,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_12_stale",
+      "l2_07_no_source_date"
+    ],
+    "visits": "0",
+    "imp": "8",
+    "pos": "36.4"
+  },
+  {
+    "slug": "seo-specialist-2026-navyki-zarplata",
+    "key": "seo специалист",
+    "volume": 3267,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_02_no_artifact_word", "l1_06_desc_no_range", "l1_08_no_faq", "l1_12_stale"],
+    "visits": "1",
+    "imp": "8",
+    "pos": "11.5"
+  },
+  {
+    "slug": "gde-iskat-vakansii-dizajnera-2026",
+    "key": "вакансии дизайнера",
+    "volume": 33199,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_08_no_faq",
+      "l1_12_stale"
+    ],
+    "visits": "22",
+    "imp": "6",
+    "pos": "8.2"
+  },
+  {
+    "slug": "nanyat-dzhuniora-marketologa-ili-senora-startapu",
+    "key": "джуниор мидл сеньор",
+    "volume": 311,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_02_no_artifact_word", "l1_04_title_long", "l1_06_desc_no_range", "l1_09_orphan"],
+    "visits": "0",
+    "imp": "4",
+    "pos": "9"
+  },
+  {
+    "slug": "soprovoditelnoe-pismo-k-rezyume-primer",
+    "key": "как написать сопроводительное письмо",
+    "volume": 3914,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "4",
+    "pos": "10.5"
+  },
+  {
+    "slug": "agregatory-vakansij-digital-sravnenie-ploshhadok",
+    "key": "вакансии не на hh.ru",
+    "volume": 656,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": ["l1_04_title_long", "l1_06_desc_no_range", "l1_07_few_tables", "l1_11_thin"],
+    "visits": "0",
+    "imp": "3",
+    "pos": "7.7"
+  },
+  {
+    "slug": "rezyume-analitika-dannyh-obrazec-shablon-oshibki",
+    "key": "шаблон резюме скачать",
+    "volume": 9914,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "3",
+    "pos": "76.3"
+  },
+  {
+    "slug": "vakansii-razrabotchik-digital",
+    "key": "вакансии разработчика",
+    "volume": 16510,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_11_thin",
+      "l3_05_promise_buried",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "3",
+    "pos": "51.3"
+  },
+  {
+    "slug": "gde-razmeshchat-vakansii-ploshchadki-ceny-2026",
+    "key": "где разместить вакансию",
+    "volume": 1433,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_05_desc_echoes_title",
+      "l3_11_first_link_late"
+    ],
+    "visits": "5",
+    "imp": "2",
+    "pos": "7.5"
+  },
+  {
+    "slug": "kak-napisat-vakansiyu-marketologa",
+    "key": "как написать вакансию",
+    "volume": 5535,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "2",
+    "pos": "4.5"
+  },
+  {
+    "slug": "prodakt-i-prodzhekt-menedzher-vakansii-2026",
+    "key": "проджект менеджер кто это",
+    "volume": 529,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_11_thin",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "2",
+    "pos": "8"
+  },
+  {
+    "slug": "soft-skills-marketologa-cheklst-dlya-hr",
+    "key": "soft skills",
+    "volume": 8954,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "2",
+    "pos": "4"
+  },
+  {
+    "slug": "udalennaya-rabota-digital-specialista-instrumenty-rezhim-dnya",
+    "key": "как работать удаленно",
+    "volume": 7550,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan"
+    ],
+    "visits": "0",
+    "imp": "2",
+    "pos": "35"
+  },
+  {
+    "slug": "vakansii-junior-digital-gajd-dlya-dzhuniora",
+    "key": "как найти работу без опыта",
+    "volume": 2475,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_05_promise_buried"
+    ],
+    "visits": "0",
+    "imp": "2",
+    "pos": "5.5"
+  },
+  {
+    "slug": "voprosy-na-sobesedovanii-marketologa",
+    "key": "вопросы на собеседовании",
+    "volume": 38396,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_10_few_outgoing",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "1",
+    "imp": "2",
+    "pos": "6.5"
+  },
+  {
+    "slug": "gde-nayti-spetsialista-digital",
+    "key": "поиск сотрудников",
+    "volume": 15472,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_08_no_faq",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l1_11_thin",
+      "l2_07_no_source_date"
+    ],
+    "visits": "0",
+    "imp": "1",
+    "pos": "10"
+  },
+  {
+    "slug": "oformlenie-rezyume-pervyy-ekran",
+    "key": "оформление резюме",
+    "volume": 1485,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "1",
+    "pos": "1"
+  },
+  {
+    "slug": "professionalnoe-vygoranie-priznaki",
+    "key": "профессиональное выгорание",
+    "volume": 8979,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_05_desc_echoes_title",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "1",
+    "pos": "67"
+  },
+  {
+    "slug": "professiya-marketolog",
+    "key": "профессия маркетолог",
+    "volume": 3420,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "1",
+    "pos": "10"
+  },
+  {
+    "slug": "biznes-analitik-kto-eto-otlichiya-ot-analitika-dannyh",
+    "key": "бизнес аналитик",
+    "volume": 51910,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_08_no_faq",
+      "l1_09_orphan",
+      "l2_05_desc_echoes_title",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "inflyuens-marketing-zarplaty-i-put-v-professiyu",
+    "key": "инфлюенс-маркетинг",
+    "volume": 1153,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "ispytatelnyj-srok-novaya-rabota-digital-90-dnej",
+    "key": "испытательный срок",
+    "volume": 137486,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_05_promise_buried",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "kak-dogovoritsya-o-povyshenii-zarplaty",
+    "key": "повышение зарплаты",
+    "volume": 139593,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_11_thin",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "kak-stat-analitikom-dannykh-s-nulya",
+    "key": "аналитик данных с нуля",
+    "volume": 1461,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l1_11_thin",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "kak-stat-testirovshchikom",
+    "key": "как стать тестировщиком",
+    "volume": 1129,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_03_no_digit",
+      "l1_04_title_long",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_08_no_faq",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "klyuchevye-navyki-v-rezyume-digital",
+    "key": "ключевые навыки в резюме",
+    "volume": 1229,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_05_desc_echoes_title",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "menedzher-marketpleysov-s-nulya",
+    "key": "менеджер маркетплейсов",
+    "volume": 27052,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_05_desc_echoes_title",
+      "l2_07_no_source_date",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "nejroseti-dlya-dizajnerov-ai-navyki-2026",
+    "key": "нейросети для дизайна",
+    "volume": 5793,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_05_desc_len",
+      "l1_06_desc_no_range",
+      "l1_09_orphan",
+      "l1_10_few_outgoing",
+      "l2_05_desc_echoes_title",
+      "l3_11_first_link_late"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  },
+  {
+    "slug": "professiya-veb-analitik-2026",
+    "key": "веб аналитик",
+    "volume": 2043,
+    "intent": null,
+    "verdict": "ждёт проверки интента",
+    "failed": [
+      "l1_02_no_artifact_word",
+      "l1_04_title_long",
+      "l1_06_desc_no_range",
+      "l1_07_few_tables",
+      "l1_08_no_faq",
+      "l1_12_stale",
+      "l3_05_promise_buried"
+    ],
+    "visits": "0",
+    "imp": "0",
+    "pos": ""
+  }
+]
