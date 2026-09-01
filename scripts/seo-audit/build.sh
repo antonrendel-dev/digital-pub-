@@ -8,7 +8,7 @@
 # findings.ts перебивал бы исходник, и тест падал бы на ESM-бандле.
 set -e
 cd "$(dirname "${BASH_SOURCE[0]}")"
-for m in findings task-format articles; do
+for m in findings task-format articles volume-gate; do
   npx esbuild "$m.ts" --platform=node --format=esm --outfile="$m.compiled.mjs" --log-level=warning
 done
-echo "✓ findings.compiled.mjs  task-format.compiled.mjs  articles.compiled.mjs"
+echo "✓ findings  task-format  articles  volume-gate — .compiled.mjs"

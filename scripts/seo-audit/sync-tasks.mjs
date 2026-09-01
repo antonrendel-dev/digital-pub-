@@ -25,7 +25,9 @@ import {
   matchesFinding,
   mergeNote,
 } from './task-format.compiled.mjs'
+import { MIN_VOLUME, applyVolumeGate, keysToMeasure } from './volume-gate.compiled.mjs'
 import { escapeHtml, sendLongMessage } from './lib/telegram.mjs'
+import { fetchVolumes } from './lib/wordstat.mjs'
 import { appendToTask, createTask, listOpenTasks, loadToken } from './lib/todoist.mjs'
 
 const DIR = dirname(fileURLToPath(import.meta.url))
@@ -40,7 +42,7 @@ export function lastTwoSnapshots(dir = SNAPSHOT_DIR) {
     .map((f) => join(dir, f))
 }
 
-export function renderReport({ created, merged, deferred, from, to }) {
+export function renderReport({ created, merged, deferred, dropped = [], from, to }) {
   const lines = [`🔎 <b>SEO-крон: свёл находки с доской</b>`, `Сравнил ${from} → ${to}`, '']
 
   if (created.length) {
@@ -63,7 +65,18 @@ export function renderReport({ created, merged, deferred, from, to }) {
     lines.push('')
     lines.push('Вернутся на следующем прогоне, если не разберём раньше.')
   }
-  if (!created.length && !merged.length && !deferred.length) {
+  // Отсев по частотности показываем поимённо: иначе «крон ничего не нашёл»
+  // и «крон нашёл, но отбросил» выглядят одинаково, а это разные вещи.
+  if (dropped.length) {
+    lines.push(`🔇 <b>Отсеяно по частотности (порог ${MIN_VOLUME}/мес): ${dropped.length}</b>`)
+    dropped.forEach(({ finding, volume }) =>
+      lines.push(`• ${escapeHtml(finding.key)} — ${volume}/мес`)
+    )
+    lines.push('')
+    lines.push('Позиция по запросу, который не набирают, не значит ничего.')
+    lines.push('')
+  }
+  if (!created.length && !merged.length && !deferred.length && !dropped.length) {
     lines.push('Расхождений с прошлым замером нет.')
   }
   return lines.join('\n')
@@ -77,10 +90,20 @@ export async function syncTasks() {
   }
 
   const [prevPath, currPath] = snaps
-  const findings = buildFindings(
+  const raw = buildFindings(
     JSON.parse(readFileSync(prevPath, 'utf8')),
     JSON.parse(readFileSync(currPath, 'utf8'))
   )
+
+  // Гейт частотности: позиция по запросу, который никто не набирает, не значит
+  // ничего. До 01.09.2026 такие находки шли на доску наравне с настоящими —
+  // из двадцати четырёх ключей трёх пачек настоящими оказались шесть.
+  const volumes = await fetchVolumes(keysToMeasure(raw))
+  const { kept: findings, dropped } = applyVolumeGate(raw, volumes)
+  if (dropped.length) {
+    console.log(`[volume-gate] Отсеяно по частотности: ${dropped.length}`)
+    for (const d of dropped) console.log(`  ${String(d.volume).padStart(5)}/мес  ${d.finding.key}`)
+  }
 
   const token = loadToken()
   const tasks = await listOpenTasks(token)
@@ -142,18 +165,19 @@ export async function syncTasks() {
   const stat = `создано ${created.length}, дописано ${merged.length}, отложено ${deferred.length}`
   console.log(`[sync-tasks] Находок ${findings.length}: ${stat}`)
 
-  if (created.length || merged.length || deferred.length) {
+  if (created.length || merged.length || deferred.length || dropped.length) {
     await sendLongMessage(
       renderReport({
         created,
         merged,
         deferred,
+        dropped,
         from: prevPath.split('/').pop(),
         to: currPath.split('/').pop(),
       })
     )
   }
-  return { created, merged, deferred }
+  return { created, merged, deferred, dropped }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
