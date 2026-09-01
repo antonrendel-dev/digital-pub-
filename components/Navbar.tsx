@@ -5,7 +5,7 @@ import { botLink } from '@/lib/bot-link'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { reachGoal } from '@/lib/metrika'
+import { GOALS, reachGoal } from '@/lib/metrika'
 
 interface NavbarProps {
   onSearch: (query: string) => void
@@ -161,7 +161,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
               href={botLink('nav')}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => reachGoal('resume_submit')}
+              onClick={() => reachGoal(GOALS.RESUME_SUBMIT)}
               className="hidden md:inline-flex items-center px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-sm font-semibold rounded-full transition-colors whitespace-nowrap"
             >
               + Разместить
@@ -254,7 +254,7 @@ export default function Navbar({ onSearch, onDarkToggle, isDark, slogan }: Navba
                 href={botLink('nav')}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => reachGoal('resume_submit')}
+                onClick={() => reachGoal(GOALS.RESUME_SUBMIT)}
                 className="block w-full text-center bg-accent hover:bg-accent-hover text-accent-text font-semibold text-sm py-3 rounded-full transition-colors"
               >
                 + Разместить

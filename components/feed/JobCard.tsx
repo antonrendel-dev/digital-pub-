@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { GOALS, reachGoal } from '@/lib/metrika'
 import {
   cleanDescription,
   formatDate,
@@ -27,6 +28,9 @@ export default function JobCard({ post }: JobCardProps) {
   return (
     <a
       href={href}
+      // Тот же шаг воронки, что у плиточной карточки: открытие объявления
+      // из ленты. Тип пишем в параметр — вакансии и резюме ведут себя по-разному.
+      onClick={() => reachGoal(GOALS.CARD_OPEN, { from: 'feed', type: post.type })}
       className={`block no-underline text-inherit bg-bg-card border border-border rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
         post.type === 'resume' ? 'border-l-4 border-l-blue-400' : ''
       }`}

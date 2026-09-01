@@ -1,6 +1,6 @@
 'use client'
 
-import { reachGoal } from '@/lib/metrika'
+import { GOALS, reachGoal } from '@/lib/metrika'
 
 interface Props {
   href: string
@@ -8,8 +8,8 @@ interface Props {
 
 export default function VacancyApplyButton({ href }: Props) {
   function handleClick() {
-    reachGoal('vacancy_click')
-    reachGoal('telegram_click')
+    reachGoal(GOALS.VACANCY_CLICK)
+    reachGoal(GOALS.TELEGRAM_CLICK)
   }
 
   return (

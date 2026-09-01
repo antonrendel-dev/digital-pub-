@@ -1,5 +1,6 @@
 'use client'
 
+import { GOALS, reachGoal } from '@/lib/metrika'
 import {
   cleanDescription,
   formatDate,
@@ -33,6 +34,10 @@ export default function TileCard({ post }: TileCardProps) {
   return (
     <a
       href={href}
+      // Открытие карточки из листинга — отдельный шаг воронки. Без него путь
+      // «листинг → карточка → отклик» не измеряется: vacancy_click висит
+      // только на кнопке отклика внутри самой карточки.
+      onClick={() => reachGoal(GOALS.CARD_OPEN, { from: 'grid', category: categorySlug })}
       className="bg-bg-card border border-border rounded-xl p-4 block no-underline text-inherit transition-transform duration-200 hover:-translate-y-[3px] hover:shadow-[0_8px_25px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_25px_rgba(0,0,0,0.3)]"
     >
       <div className="flex items-center justify-between mb-2">
