@@ -21,8 +21,26 @@
     "slug": "vakansii-kontent-menedzher-2026",
     "key": "вакансии контент менеджера",
     "volume": 1406,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 1406,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "контент менеджер вакансии",
+          "count": 1406
+        },
+        {
+          "phrase": "вакансия контент менеджер удаленно",
+          "count": 373
+        },
+        {
+          "phrase": "контент менеджер вакансии без опыта",
+          "count": 185
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -39,8 +57,26 @@
     "slug": "gde-iskat-rabotu-krome-hh-ru-15-ploshchadok-2026",
     "key": "где искать работу кроме hh",
     "volume": 2122,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 2122,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "где искать работу кроме hh",
+          "count": 2122
+        },
+        {
+          "phrase": "где искать работу кроме hh и авито",
+          "count": 273
+        },
+        {
+          "phrase": "где искать работу кроме hh 2026",
+          "count": 103
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -73,8 +109,26 @@
     "slug": "kak-nayti-rabotu-smm-menedzheru-2026",
     "key": "вакансии смм",
     "volume": 4074,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 4074,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "смм вакансии",
+          "count": 4074
+        },
+        {
+          "phrase": "смм специалист вакансии",
+          "count": 927
+        },
+        {
+          "phrase": "смм менеджер вакансии",
+          "count": 650
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -92,8 +146,31 @@
     "slug": "zarplaty-digital-marketing-2026",
     "key": "сколько зарабатывает маркетолог",
     "volume": 2507,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 98,
+      "volume": 2507,
+      "foreign": [
+        {
+          "phrase": "сколько в среднем зарабатывает маркетолог",
+          "count": 91
+        }
+      ],
+      "top": [
+        {
+          "phrase": "сколько зарабатывает маркетолог",
+          "count": 2507
+        },
+        {
+          "phrase": "маркетолог сколько зарабатывает в месяц",
+          "count": 318
+        },
+        {
+          "phrase": "сколько зарабатывают маркетологи в россии",
+          "count": 232
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": ["l1_02_no_artifact_word", "l1_04_title_long", "l1_06_desc_no_range"],
     "visits": "7",
     "imp": "62",
@@ -258,8 +335,26 @@
     "slug": "gde-iskat-rabotu-krome-avito",
     "key": "где искать работу",
     "volume": 23053,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 23053,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "где искать работу",
+          "count": 23053
+        },
+        {
+          "phrase": "где искать работу кроме hh",
+          "count": 2122
+        },
+        {
+          "phrase": "где лучше искать работу",
+          "count": 1674
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -296,8 +391,26 @@
     "slug": "rezyume-dizajnera",
     "key": "резюме дизайнера",
     "volume": 2033,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 2033,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "резюме дизайнера",
+          "count": 2033
+        },
+        {
+          "phrase": "резюме графического дизайнера",
+          "count": 426
+        },
+        {
+          "phrase": "пример резюме дизайнера",
+          "count": 263
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": ["l1_06_desc_no_range", "l1_07_few_tables", "l1_11_thin", "l3_11_first_link_late"],
     "visits": "1",
     "imp": "23",
@@ -307,8 +420,26 @@
     "slug": "vakansii-kopirajter-gde-iskat-rabotu-2026",
     "key": "вакансии копирайтера",
     "volume": 4961,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 4961,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "копирайтер вакансии",
+          "count": 4961
+        },
+        {
+          "phrase": "копирайтер удаленно вакансии",
+          "count": 1707
+        },
+        {
+          "phrase": "работа копирайтером вакансии",
+          "count": 1041
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_06_desc_no_range",
@@ -335,8 +466,26 @@
     "slug": "razmestit-rezyume-besplatno-gajd-dlya-digital-specialistov",
     "key": "где разместить резюме",
     "volume": 593,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 593,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "где разместить резюме",
+          "count": 593
+        },
+        {
+          "phrase": "где разместить резюме для работы",
+          "count": 180
+        },
+        {
+          "phrase": "где разместить резюме для поиска",
+          "count": 173
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_03_no_digit",
@@ -378,8 +527,26 @@
     "slug": "kak-nayti-rabotu-telegram-digital",
     "key": "работа в телеграм",
     "volume": 4215,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 4215,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "работа в телеграм",
+          "count": 4215
+        },
+        {
+          "phrase": "работа в телеграм канале",
+          "count": 569
+        },
+        {
+          "phrase": "работа в телеграме",
+          "count": 536
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_03_no_digit",
@@ -436,8 +603,26 @@
     "slug": "rezume-marketologa",
     "key": "резюме маркетолога",
     "volume": 489,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 489,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "маркетолог резюме",
+          "count": 489
+        },
+        {
+          "phrase": "пример резюме маркетолога",
+          "count": 55
+        },
+        {
+          "phrase": "работа маркетолог резюме",
+          "count": 34
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": ["l1_04_title_long", "l1_05_desc_len", "l1_06_desc_no_range", "l1_09_orphan"],
     "visits": "32",
     "imp": "12",
@@ -447,8 +632,26 @@
     "slug": "kak-nayti-rabotu-marketologu",
     "key": "вакансии маркетолога",
     "volume": 7428,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 7428,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "маркетолог вакансии",
+          "count": 7428
+        },
+        {
+          "phrase": "маркетолог вакансии москва",
+          "count": 587
+        },
+        {
+          "phrase": "маркетолог удаленно вакансии",
+          "count": 578
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -485,8 +688,26 @@
     "slug": "menedzher-marketpleysov-bez-opyta-udalenno",
     "key": "удалённая работа без опыта",
     "volume": 60084,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 60084,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "удаленная работа без опыта",
+          "count": 60084
+        },
+        {
+          "phrase": "удаленная работа без опыта вакансии",
+          "count": 23117
+        },
+        {
+          "phrase": "удаленная работа на дому без опыта",
+          "count": 21701
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -504,8 +725,31 @@
     "slug": "skolko-zarabatyvaet-graficheskiy-dizayner",
     "key": "сколько зарабатывает дизайнер",
     "volume": 15408,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 99,
+      "volume": 15408,
+      "foreign": [
+        {
+          "phrase": "сколько в среднем зарабатывают дизайнеры",
+          "count": 480
+        }
+      ],
+      "top": [
+        {
+          "phrase": "сколько зарабатывают дизайнеры",
+          "count": 15408
+        },
+        {
+          "phrase": "сколько заработает дизайнер",
+          "count": 15408
+        },
+        {
+          "phrase": "сколько зарабатывает дизайнер интерьера",
+          "count": 3151
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_06_desc_no_range",
@@ -521,8 +765,26 @@
     "slug": "smm-menedzher-bez-opyta",
     "key": "smm с нуля",
     "volume": 1017,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 1017,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "smm с нуля",
+          "count": 1017
+        },
+        {
+          "phrase": "обучение smm с нуля",
+          "count": 594
+        },
+        {
+          "phrase": "smm специалист с нуля",
+          "count": 505
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_03_no_digit",
@@ -569,8 +831,26 @@
     "slug": "chto-takoe-smm-professiya-obyazannosti-zarplata",
     "key": "smm специалист кто это",
     "volume": 990,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 990,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "smm специалист кто это",
+          "count": 990
+        },
+        {
+          "phrase": "специалист smm кто это и чем занимается",
+          "count": 260
+        },
+        {
+          "phrase": "smm специалист кто это простыми",
+          "count": 63
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_05_desc_len",
@@ -589,8 +869,39 @@
     "slug": "hr-menedzher-digital-agentstvo-najm",
     "key": "hr менеджер",
     "volume": 13772,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 41,
+      "volume": 13772,
+      "foreign": [
+        {
+          "phrase": "hr менеджер это",
+          "count": 3755
+        },
+        {
+          "phrase": "день hr менеджера",
+          "count": 465
+        },
+        {
+          "phrase": "hr менеджер компании",
+          "count": 456
+        }
+      ],
+      "top": [
+        {
+          "phrase": "hr менеджер это",
+          "count": 3755
+        },
+        {
+          "phrase": "hr менеджер вакансии",
+          "count": 1389
+        },
+        {
+          "phrase": "hr менеджер обучение",
+          "count": 729
+        }
+      ]
+    },
+    "verdict": "сомнительный — сверить выдачу",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_03_no_digit",
@@ -610,8 +921,26 @@
     "slug": "seo-specialist-2026-navyki-zarplata",
     "key": "seo специалист",
     "volume": 3267,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 3267,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "seo специалист",
+          "count": 3267
+        },
+        {
+          "phrase": "seo специалист вакансии",
+          "count": 195
+        },
+        {
+          "phrase": "частный seo специалист",
+          "count": 149
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": ["l1_02_no_artifact_word", "l1_06_desc_no_range", "l1_08_no_faq", "l1_12_stale"],
     "visits": "1",
     "imp": "8",
@@ -621,8 +950,26 @@
     "slug": "gde-iskat-vakansii-dizajnera-2026",
     "key": "вакансии дизайнера",
     "volume": 33199,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 33199,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "дизайнер вакансии",
+          "count": 33199
+        },
+        {
+          "phrase": "графический дизайнер вакансии",
+          "count": 6321
+        },
+        {
+          "phrase": "дизайнер удаленно вакансии",
+          "count": 4048
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -696,8 +1043,26 @@
     "slug": "vakansii-razrabotchik-digital",
     "key": "вакансии разработчика",
     "volume": 16510,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 16510,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "разработчик вакансии",
+          "count": 16510
+        },
+        {
+          "phrase": "python разработчик вакансии",
+          "count": 1185
+        },
+        {
+          "phrase": "разработчик 1с вакансии",
+          "count": 1110
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -717,8 +1082,26 @@
     "slug": "gde-razmeshchat-vakansii-ploshchadki-ceny-2026",
     "key": "где разместить вакансию",
     "volume": 1433,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 1433,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "где разместить вакансию",
+          "count": 1433
+        },
+        {
+          "phrase": "где можно разместить вакансию",
+          "count": 498
+        },
+        {
+          "phrase": "где разместить вакансию бесплатно",
+          "count": 487
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_04_title_long",
       "l1_06_desc_no_range",
@@ -775,8 +1158,39 @@
     "slug": "soft-skills-marketologa-cheklst-dlya-hr",
     "key": "soft skills",
     "volume": 8954,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 14,
+      "volume": 8954,
+      "foreign": [
+        {
+          "phrase": "soft skills",
+          "count": 8954
+        },
+        {
+          "phrase": "развитие soft skills",
+          "count": 592
+        },
+        {
+          "phrase": "какие soft skills",
+          "count": 434
+        }
+      ],
+      "top": [
+        {
+          "phrase": "soft skills",
+          "count": 8954
+        },
+        {
+          "phrase": "навыки soft skills",
+          "count": 1024
+        },
+        {
+          "phrase": "развитие soft skills",
+          "count": 592
+        }
+      ]
+    },
+    "verdict": "отклонить: интент чужой",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_03_no_digit",
@@ -837,8 +1251,26 @@
     "slug": "voprosy-na-sobesedovanii-marketologa",
     "key": "вопросы на собеседовании",
     "volume": 38396,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 38396,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "вопросы на собеседовании",
+          "count": 38396
+        },
+        {
+          "phrase": "вопросы заданные на собеседовании",
+          "count": 14975
+        },
+        {
+          "phrase": "какие вопросы задают на собеседовании",
+          "count": 13312
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -937,8 +1369,39 @@
     "slug": "biznes-analitik-kto-eto-otlichiya-ot-analitika-dannyh",
     "key": "бизнес аналитик",
     "volume": 51910,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 11,
+      "volume": 51910,
+      "foreign": [
+        {
+          "phrase": "бизнес аналитик",
+          "count": 51910
+        },
+        {
+          "phrase": "бизнес аналитика",
+          "count": 51910
+        },
+        {
+          "phrase": "экономика бизнес аналитик",
+          "count": 2593
+        }
+      ],
+      "top": [
+        {
+          "phrase": "бизнес аналитик",
+          "count": 51910
+        },
+        {
+          "phrase": "бизнес аналитика",
+          "count": 51910
+        },
+        {
+          "phrase": "бизнес аналитик вакансии",
+          "count": 3137
+        }
+      ]
+    },
+    "verdict": "отклонить: интент чужой",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_03_no_digit",
@@ -1021,8 +1484,26 @@
     "slug": "kak-stat-analitikom-dannykh-s-nulya",
     "key": "аналитик данных с нуля",
     "volume": 1461,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 100,
+      "volume": 1461,
+      "foreign": [],
+      "top": [
+        {
+          "phrase": "аналитик данных с нуля",
+          "count": 1461
+        },
+        {
+          "phrase": "аналитика данных с нуля",
+          "count": 1461
+        },
+        {
+          "phrase": "аналитик данных обучение с нуля",
+          "count": 882
+        }
+      ]
+    },
+    "verdict": "брать",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
@@ -1123,8 +1604,39 @@
     "slug": "professiya-veb-analitik-2026",
     "key": "веб аналитик",
     "volume": 2043,
-    "intent": null,
-    "verdict": "ждёт проверки интента",
+    "intent": {
+      "share": 2,
+      "volume": 2043,
+      "foreign": [
+        {
+          "phrase": "веб аналитик",
+          "count": 2043
+        },
+        {
+          "phrase": "веб аналитика",
+          "count": 2043
+        },
+        {
+          "phrase": "аналитик веб сайтов",
+          "count": 516
+        }
+      ],
+      "top": [
+        {
+          "phrase": "веб аналитик",
+          "count": 2043
+        },
+        {
+          "phrase": "веб аналитика",
+          "count": 2043
+        },
+        {
+          "phrase": "аналитик веб сайтов",
+          "count": 516
+        }
+      ]
+    },
+    "verdict": "отклонить: интент чужой",
     "failed": [
       "l1_02_no_artifact_word",
       "l1_04_title_long",
