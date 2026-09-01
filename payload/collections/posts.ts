@@ -7,7 +7,21 @@ export const Posts: CollectionConfig = {
     plural: 'Вакансии и резюме',
   },
   access: {
-    read: () => true,
+    /**
+     * Чтение закрыто наружу: в этой коллекции лежит весь товар сайта.
+     *
+     * Через встроенный REST Payload её выкачивали целиком за три запроса —
+     * 2309 записей, 20,5 МБ на limit=1000, потолка у limit нет. Вместе
+     * с текстом уходили channelUsername и telegramMessageId, по которым
+     * восстанавливается исходное сообщение в Telegram, а значит и список
+     * каналов-источников — то, чем мы отличаемся от hh.
+     *
+     * Сайт от этого не страдает: страницы читают базу через payload.find,
+     * а Local API проверку доступа не выполняет. Те, кому REST нужен,
+     * авторизуются: админка — кукой, sync-telegram и retag-via-api —
+     * ключом «users API-Key».
+     */
+    read: ({ req }) => !!req.user,
     create: ({ req }) => req.user?.role === 'admin' || req.user?.role === 'sync',
     update: ({ req }) => req.user?.role === 'admin',
     delete: ({ req }) => req.user?.role === 'admin',
