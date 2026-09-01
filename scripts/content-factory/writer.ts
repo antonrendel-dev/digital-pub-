@@ -31,9 +31,10 @@ import {
   summarize,
   transcriptDir,
 } from './lib/session-stats.js'
-import { announceToChannel, sendMessage } from './lib/telegram.js'
+import { announceToChannel, checkChannelAccess, sendMessage } from './lib/telegram.js'
 import { faqSchemaLine } from '../../lib/faq-schema'
 import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
+import { closeTopicSubtask } from './lib/todoist.js'
 import { sendFailureAlert } from './lib/alert.js'
 import {
   OVERSPAM_RULE,
@@ -1815,6 +1816,13 @@ function syncToProduction(slug: string, hasImage: boolean): void {
 
 async function main() {
   const runStartedAt = Date.now()
+
+  // Предполёт: доступ в канал проверяем до прогона, а не на последнем шаге.
+  // Прогон стоит часа работы агентов, анонс — последняя строчка; узнавать
+  // о том, что бота выгнали из канала, в конце этого часа незачем.
+  const channelProblem = await checkChannelAccess()
+  if (channelProblem) console.warn(`[writer] ⚠️ Анонс не пройдёт: ${channelProblem}`)
+
   const topicNum = parseInt(process.argv[2])
   if (isNaN(topicNum)) {
     console.error('Использование: node writer.compiled.js <topicNum>')
@@ -1931,6 +1939,12 @@ async function main() {
   }
 
   markTopicPublished(topicsFile, topicNum)
+
+  // Подзадача батча на доске. Раньше её закрывали руками, и очередь на доске
+  // завышалась на единицу в день: на 01.09.2026 восемь подзадач висели
+  // открытыми при уже опубликованных статьях.
+  const todoistNote = await closeTopicSubtask(topicNum)
+  console.log(`[writer] Todoist: ${todoistNote}`)
 
   const articleUrl = `${SITE_URL}/articles/${result.slug}`
 

@@ -425,6 +425,21 @@ async function sendMessage(text, extra = {}) {
   if (!data.ok) throw new Error(`Telegram error: ${data.description}`);
   return data.result.message_id;
 }
+async function checkChannelAccess() {
+  try {
+    const me = await (await fetch(`${API}/getMe`)).json();
+    if (!me.ok || !me.result) return "\u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0438\u0442\u044C \u0431\u043E\u0442\u0430 (getMe)";
+    const url = `${API}/getChatMember?chat_id=${encodeURIComponent(CHANNEL)}&user_id=${me.result.id}`;
+    const d = await (await fetch(url)).json();
+    if (!d.ok) return `\u043D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A ${CHANNEL}: ${d.description}`;
+    const r = d.result;
+    if (r.status !== "administrator") return `\u0431\u043E\u0442 \u0432 ${CHANNEL} \u0441\u043E \u0441\u0442\u0430\u0442\u0443\u0441\u043E\u043C \xAB${r.status}\xBB, \u043D\u0443\u0436\u0435\u043D \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440`;
+    if (r.can_post_messages === false) return `\u0431\u043E\u0442 \u0432 ${CHANNEL} \u0431\u0435\u0437 \u043F\u0440\u0430\u0432\u0430 \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0438`;
+    return null;
+  } catch (e) {
+    return `\u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u043A\u0430\u043D\u0430\u043B\u0430 \u043D\u0435 \u043F\u0440\u043E\u0448\u043B\u0430: ${e.message}`;
+  }
+}
 
 // ../../lib/faq-schema.ts
 var FAQ_HEADING = /^##\s+.*(вопрос|FAQ).*$/im;
@@ -460,6 +475,58 @@ function stripServiceTail(markdown) {
 }
 function hasServiceText(text) {
   return SERVICE_MARKER.test(text);
+}
+
+// lib/todoist.ts
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+var API2 = "https://api.todoist.com/api/v1";
+var PROJECT_ID = "6grWxWfJVfg6rcwh";
+function loadToken() {
+  if (process.env.TODOIST_API_TOKEN) return process.env.TODOIST_API_TOKEN;
+  try {
+    const settings = JSON.parse(readFileSync(join(homedir(), ".claude", "settings.json"), "utf-8"));
+    return settings?.mcpServers?.todoist?.env?.TODOIST_API_TOKEN ?? null;
+  } catch {
+    return null;
+  }
+}
+async function call(token, path8, method = "GET") {
+  const res = await fetch(API2 + path8, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+  });
+  if (!res.ok) throw new Error(`Todoist HTTP ${res.status} \u043D\u0430 ${path8}`);
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+async function openTasks(token) {
+  const out = [];
+  let cursor = null;
+  do {
+    const q = `/tasks?project_id=${PROJECT_ID}&limit=200${cursor ? `&cursor=${cursor}` : ""}`;
+    const page = await call(token, q);
+    out.push(...page.results);
+    cursor = page.next_cursor;
+  } while (cursor);
+  return out;
+}
+function findByTopicId(tasks, topicId) {
+  const marker = new RegExp(`id \u0442\u0435\u043C\u044B:\\s*${topicId}\\b`);
+  return tasks.find((t) => marker.test(t.description || ""));
+}
+async function closeTopicSubtask(topicId) {
+  const token = loadToken();
+  if (!token) return "\u0442\u043E\u043A\u0435\u043D Todoist \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u043F\u043E\u0434\u0437\u0430\u0434\u0430\u0447\u0430 \u043D\u0435 \u0437\u0430\u043A\u0440\u044B\u0442\u0430";
+  try {
+    const task = findByTopicId(await openTasks(token), topicId);
+    if (!task) return `\u043F\u043E\u0434\u0437\u0430\u0434\u0430\u0447\u0430 \u0442\u0435\u043C\u044B #${topicId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0441\u0440\u0435\u0434\u0438 \u043E\u0442\u043A\u0440\u044B\u0442\u044B\u0445`;
+    await call(token, `/tasks/${task.id}/close`, "POST");
+    return `\u043F\u043E\u0434\u0437\u0430\u0434\u0430\u0447\u0430 \u0437\u0430\u043A\u0440\u044B\u0442\u0430: ${task.content.slice(0, 60)}`;
+  } catch (e) {
+    return `\u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043A\u0440\u044B\u0442\u044C \u043F\u043E\u0434\u0437\u0430\u0434\u0430\u0447\u0443: ${e.message}`;
+  }
 }
 
 // lib/alert.ts
@@ -2084,6 +2151,8 @@ function syncToProduction(slug, hasImage) {
 }
 async function main() {
   const runStartedAt = Date.now();
+  const channelProblem = await checkChannelAccess();
+  if (channelProblem) console.warn(`[writer] \u26A0\uFE0F \u0410\u043D\u043E\u043D\u0441 \u043D\u0435 \u043F\u0440\u043E\u0439\u0434\u0451\u0442: ${channelProblem}`);
   const topicNum = parseInt(process.argv[2]);
   if (isNaN(topicNum)) {
     console.error("\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: node writer.compiled.js <topicNum>");
@@ -2173,6 +2242,8 @@ ${e.message}`);
     console.error("[writer] Rsync \u043D\u0430 \u043F\u0440\u043E\u0434\u0430\u043A\u0448\u043D \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F (CI \u0437\u0430\u0434\u0435\u043F\u043B\u043E\u0438\u0442 \u043F\u043E\u0437\u0436\u0435):", e);
   }
   markTopicPublished(topicsFile, topicNum);
+  const todoistNote = await closeTopicSubtask(topicNum);
+  console.log(`[writer] Todoist: ${todoistNote}`);
   const articleUrl = `${SITE_URL}/articles/${result.slug}`;
   let announced;
   try {

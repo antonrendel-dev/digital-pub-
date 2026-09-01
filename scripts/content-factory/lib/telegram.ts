@@ -82,3 +82,36 @@ export async function editMessage(messageId: number, text: string): Promise<void
     }),
   })
 }
+
+/**
+ * Предполётная проверка доступа в канал.
+ *
+ * 01.09.2026 анонс упал на последнем шаге прогона: бот не был администратором
+ * @web_vacancy. Статья вышла, а анонс пришлось слать руками. Проверка стоит
+ * копейки и делается до того, как потрачен весь прогон.
+ *
+ * Возвращает null, если всё в порядке, иначе — что именно не так.
+ */
+export async function checkChannelAccess(): Promise<string | null> {
+  try {
+    const me = (await (await fetch(`${API}/getMe`)).json()) as {
+      ok: boolean
+      result?: { id: number; username?: string }
+    }
+    if (!me.ok || !me.result) return 'не удалось определить бота (getMe)'
+    const url = `${API}/getChatMember?chat_id=${encodeURIComponent(CHANNEL)}&user_id=${me.result.id}`
+    const d = (await (await fetch(url)).json()) as {
+      ok: boolean
+      description?: string
+      result?: { status: string; can_post_messages?: boolean }
+    }
+    if (!d.ok) return `нет доступа к ${CHANNEL}: ${d.description}`
+    const r = d.result!
+    if (r.status !== 'administrator')
+      return `бот в ${CHANNEL} со статусом «${r.status}», нужен администратор`
+    if (r.can_post_messages === false) return `бот в ${CHANNEL} без права публикации`
+    return null
+  } catch (e) {
+    return `проверка канала не прошла: ${(e as Error).message}`
+  }
+}
