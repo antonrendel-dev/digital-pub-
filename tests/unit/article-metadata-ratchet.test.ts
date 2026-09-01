@@ -24,10 +24,11 @@ const TITLE_LIMIT = 65
 const DESC_MIN = 140
 const DESC_MAX = 175
 
-// Зафиксировано прогоном page-quality от 01.09.2026.
+// Зафиксировано прогоном page-quality от 01.09.2026, опущено после переписки
+// 41 статьи под ключи: длинных title было 70, description вне коридора — 40.
 const DEBT = {
-  titleTooLong: 70,
-  descOutOfRange: 40,
+  titleTooLong: 37,
+  descOutOfRange: 11,
   noFaq: 37,
   descEchoesTitle: 5,
 }
