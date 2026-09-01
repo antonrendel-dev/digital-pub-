@@ -16,7 +16,8 @@ const DIR = path.join(process.cwd(), 'content', 'articles')
 const files = fs.readdirSync(DIR).filter((f) => f.endsWith('.mdx'))
 const read = (f: string) => fs.readFileSync(path.join(DIR, f), 'utf8')
 
-const SERVICE = /Готово для проверки|Использован\w*\s+скилл|Служебное, вне тела|мастер-промпт v\d/i
+const SERVICE =
+  /Готово для проверки|Использован[а-яё]*\s+скилл|Скиллы:\s*`|Служебное, вне тела|мастер-промпт v\d/i
 
 describe('гигиена статей', () => {
   it('статьи вообще нашлись', () => {

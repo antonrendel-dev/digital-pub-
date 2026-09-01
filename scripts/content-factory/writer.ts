@@ -33,6 +33,7 @@ import {
 } from './lib/session-stats.js'
 import { announceToChannel, sendMessage } from './lib/telegram.js'
 import { faqSchemaLine } from '../../lib/faq-schema'
+import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
 import { sendFailureAlert } from './lib/alert.js'
 import {
   OVERSPAM_RULE,
@@ -1888,9 +1889,22 @@ async function main() {
 
   // Шаг 5г: записываем MDX и деплоим
   const publishedAt = new Date().toISOString().split('T')[0]
-  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
+  // Хвост приёмки писателя («Готово для проверки агентом seo», «Использованные
+  // скиллы: …») срезается ДО сборки frontmatter: иначе он попадает и в тело,
+  // и в faqSchema, который строится по этому же тексту.
+  const cleanMarkdown = stripServiceTail(
+    injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
+  )
+  const enrichedMarkdown = cleanMarkdown
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
+
+  if (hasServiceText(mdxContent)) {
+    throw new Error(
+      '[writer] В готовом MDX остался служебный текст приёмки — публикация остановлена. ' +
+        'Проверь lib/strip-service-tail.ts: формулировка хвоста, видимо, новая.'
+    )
+  }
 
   fs.mkdirSync(ARTICLES_DIR, { recursive: true })
   fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)

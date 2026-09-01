@@ -452,6 +452,16 @@ function faqSchemaLine(markdown) {
 faqSchema: '${JSON.stringify(items).replace(/'/g, "''")}'`;
 }
 
+// ../../lib/strip-service-tail.ts
+var SERVICE_TAIL = /\n\s*-{3,}\s*\n+\s*(?:\*\*)?(?:Служебное|Скиллы:|Использован[а-яё]*\s+скилл|Готово для проверки|Мастер-промпт)[\s\S]*$/i;
+var SERVICE_MARKER = /Готово для проверки|Использован[а-яё]*\s+скилл|Служебное, вне тела|мастер-промпт v\d/i;
+function stripServiceTail(markdown) {
+  return markdown.replace(SERVICE_TAIL, "\n").trimEnd() + "\n";
+}
+function hasServiceText(text) {
+  return SERVICE_MARKER.test(text);
+}
+
 // lib/alert.ts
 import fs5 from "fs";
 var FACTORY_DIR = "/home/claude/projects/digital-pub-/scripts/content-factory";
@@ -2130,9 +2140,17 @@ async function main() {
     `[writer] \u0421\u043A\u0435\u0442\u0447\u0438: ${sketchUrls.length > 0 ? sketchUrls.join(", ") : "\u043D\u0435 \u0441\u0433\u0435\u043D\u0435\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u044B"}`
   );
   const publishedAt = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-  const enrichedMarkdown = injectImagesIntoMarkdown(result.markdown, charts, sketchUrls);
+  const cleanMarkdown = stripServiceTail(
+    injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
+  );
+  const enrichedMarkdown = cleanMarkdown;
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown);
   const mdxContent = frontmatter + "\n" + enrichedMarkdown;
+  if (hasServiceText(mdxContent)) {
+    throw new Error(
+      "[writer] \u0412 \u0433\u043E\u0442\u043E\u0432\u043E\u043C MDX \u043E\u0441\u0442\u0430\u043B\u0441\u044F \u0441\u043B\u0443\u0436\u0435\u0431\u043D\u044B\u0439 \u0442\u0435\u043A\u0441\u0442 \u043F\u0440\u0438\u0451\u043C\u043A\u0438 \u2014 \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u044F \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0430. \u041F\u0440\u043E\u0432\u0435\u0440\u044C lib/strip-service-tail.ts: \u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0430 \u0445\u0432\u043E\u0441\u0442\u0430, \u0432\u0438\u0434\u0438\u043C\u043E, \u043D\u043E\u0432\u0430\u044F."
+    );
+  }
   fs7.mkdirSync(ARTICLES_DIR, { recursive: true });
   fs7.writeFileSync(path7.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent);
   console.log(`[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`);
