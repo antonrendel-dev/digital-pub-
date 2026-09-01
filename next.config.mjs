@@ -42,6 +42,13 @@ const nextConfig = {
       },
       // Задача 1: старый Payload URL /post/:slug → главная
       { source: '/post/:slug', destination: '/', permanent: true },
+      // Обрезанный слаг статьи о портфолио: адрес проиндексирован и приводил
+      // людей из поиска на 404 — 4 визита за квартал (Метрика, 90 дней, 01.09.2026).
+      {
+        source: '/articles/portfolio-smm-spetsialista-primery',
+        destination: '/articles/portfolio-smm-spetsialista-primery-kejsov',
+        permanent: true,
+      },
       // Задача 2: /vacancies/other — нет отдельного раздела, редиректим на /vacancies
       { source: '/vacancies/other', destination: '/vacancies', permanent: true },
       { source: '/vacancies/other/', destination: '/vacancies', permanent: true },
