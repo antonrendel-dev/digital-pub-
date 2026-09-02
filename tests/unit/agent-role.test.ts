@@ -99,11 +99,22 @@ describe('перенос роли агента в текст промпта', ()
   it('завод нигде не роняет роль в undefined без замены', () => {
     // Регрессия, ради которой всё писалось: `agent: … ? agent : undefined`
     // в аргументах команды означал тихую потерю роли.
-    for (const f of ['writer.ts', 'analyst.ts']) {
+    // Проверяем те файлы, где команда агенту действительно собирается.
+    // 02.09.2026 плумбинг писателя переехал в lib/ask-agent.ts, и страж,
+    // смотревший в writer.ts, поймал это падением — что и требовалось.
+    for (const f of ['lib/ask-agent.ts', 'analyst.ts']) {
       const src = fs.readFileSync(path.join(process.cwd(), 'scripts', 'content-factory', f), 'utf8')
       expect(src).toContain('loadAgentRole')
       expect(src).not.toMatch(/agent: agent && supportsAgentProfiles\(\) \? agent : undefined/)
     }
+
+    // А писатель обязан ходить через общий модуль, а не завести копию спавна.
+    const writer = fs.readFileSync(
+      path.join(process.cwd(), 'scripts', 'content-factory', 'writer.ts'),
+      'utf8'
+    )
+    expect(writer).toContain("from './lib/ask-agent.js'")
+    expect(writer).not.toContain('spawn(cmd, args')
   })
 })
 

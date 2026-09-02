@@ -12,7 +12,7 @@ npx esbuild lib/telegram.ts lib/yandex.ts \
   --format=esm \
   --outdir=lib
 
-npx esbuild analyst.ts writer.ts publisher.ts content-bot.ts scheduler.ts regen.ts warm-lsi-cache.ts \
+npx esbuild analyst.ts writer.ts boost.ts publisher.ts content-bot.ts scheduler.ts regen.ts warm-lsi-cache.ts \
   --bundle \
   --platform=node \
   --format=esm \
@@ -20,4 +20,4 @@ npx esbuild analyst.ts writer.ts publisher.ts content-bot.ts scheduler.ts regen.
   --outdir=. \
   --out-extension:.js=.compiled.js
 
-echo "✓ lib/telegram  lib/yandex  analyst  writer  publisher  content-bot  scheduler  regen  warm-lsi-cache"
+echo "✓ lib/telegram  lib/yandex  analyst  writer  boost  publisher  content-bot  scheduler  regen  warm-lsi-cache"

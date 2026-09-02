@@ -16,14 +16,7 @@ import {
 } from './lib/lsi.js'
 import { lookupPhrases, savePhrases } from './lib/lsi-cache.js'
 import { modelFor } from './lib/model.js'
-import {
-  AGENT_CLI,
-  buildAgentCommand,
-  fallbackCli,
-  isCliLevelFailure,
-  supportsAgentProfiles,
-} from './lib/agent-cli.js'
-import { loadAgentRole, stripRoleTag, withRole } from './lib/agent-role.js'
+import { askAgent, type AgentName } from './lib/ask-agent.js'
 import { currentRunDir, recordExchange, startRun } from './lib/agent-transcript.js'
 import {
   collectSessionStats,
@@ -259,104 +252,17 @@ const OUTLINE_HINTS: Record<string, string> = {
 // и затевалось: без него агент не читает свой профильный скилл и работает по
 // памяти, расходясь с актуальным стандартом. Список намеренно только на чтение —
 // править файлы репозитория посреди генерации статьи агенту незачем.
-const AGENT_TOOLS = 'Read,Skill,Glob,Grep'
-
-type AgentName = 'analyst' | 'seo' | 'writer'
-
 /**
- * @param agent Профиль из ~/.claude/agents. Без него Клод отвечает как есть,
- * без роли и без скиллов — так завод работал до 20.08.2026.
+ * Спросить агента. Механика запуска, откат на второй CLI и повторы живут в
+ * lib/ask-agent.ts — здесь остаётся только то, что специфично для писателя:
+ * стенограмма с названием шага, на котором задан вопрос.
  */
-function runClaudeOnce(prompt: string, agent: AgentName | undefined, cli: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // --allowedTools обязателен: с --agent, но без него скилл не загружается
-    // и агент честно отвечает «доступ не выдан». Проверено живым прогоном.
-    // Профили есть только у Claude Code. Если их нет, роль не исчезает молча,
-    // а вкладывается в текст промпта — см. lib/agent-role.ts. Скиллы так не
-    // переносятся, поэтому о них пишем в лог: молчаливая потеря стандарта
-    // всплывает только на приёмке, и то не всегда.
-    let effectivePrompt = prompt
-    let agentFlag: string | undefined
-    if (agent) {
-      if (supportsAgentProfiles(cli, agent)) {
-        agentFlag = agent
-      } else {
-        const role = loadAgentRole(agent)
-        if (role) {
-          effectivePrompt = withRole(prompt, role)
-          if (role.skills.length > 0) {
-            console.log(
-              `    \u26a0 ${agent}: роль передана текстом, скиллы не подключены (${role.skills.join(', ')})`
-            )
-          }
-        } else {
-          console.log(`    \u26a0 ${agent}: профиль не найден, агент работает без роли`)
-        }
-      }
-    }
-    const { cmd, args } = buildAgentCommand(
-      '',
-      {
-        model: modelFor(cli),
-        agent: agentFlag,
-        allowedTools: AGENT_TOOLS,
-        promptViaStdin: true,
-      },
-      cli
-    )
-    // Промпт через stdin: аргументом argv длинные промпты (3 черновика) бьются об ARG_MAX → spawn E2BIG
-    const child = spawn(cmd, args, {
-      env: process.env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
-    child.stdin.write(effectivePrompt)
-    child.stdin.end()
-    let out = ''
-    let err = ''
-    child.stdout.on('data', (d: Buffer) => (out += d.toString()))
-    child.stderr.on('data', (d: Buffer) => (err += d.toString()))
-    child.on('close', (code) => {
-      // Метку роли ([WRITER]/[ANALYST]) профиль печатает в каждом ответе — она
-      // нужна в чате, но не в артефакте. Режем здесь, на общем выходе, а не
-      // на каждом из десятка шагов: новый шаг тогда защищён по умолчанию.
-      if (code === 0) resolve(stripRoleTag(out.trim()))
-      // Хвост stdout в тексте ошибки: CLI пишет причину отказа (упёрся в лимит,
-      // агент отказался) именно туда, оставляя stderr пустым. Прогон 21.08 из-за
-      // этого упал с одним лишь «код 1» и остался без диагноза.
-      else
-        reject(
-          new Error(err.trim() || out.trim().slice(-500) || `claude завершился с кодом ${code}`)
-        )
-    })
-    child.on('error', reject)
+async function askClaude(prompt: string, agent?: AgentName): Promise<string> {
+  return askAgent(prompt, {
+    agent,
+    modelFor,
+    record: (role, sentPrompt, answer) => recordExchange(role, currentStage, sentPrompt, answer),
   })
-}
-
-/**
- * Запуск с откатом на второй CLI.
- *
- * 28.08.2026 завод встал целиком: в .env стояла модель, которой установленный
- * codex не знает, и прогон умер на первом же вызове — статья за день не вышла.
- * Автономность означает, что на отказ уровня CLI завод переезжает на второй
- * и публикует, а не молчит до утра.
- *
- * Откат ровно один и только на ошибках запуска: если модель не справилась
- * с задачей по существу, второй CLI даст то же самое, а мы потратим второй
- * прогон и спрячем настоящую причину. Переезд всегда громкий — строкой в лог,
- * иначе через неделю никто не вспомнит, на чём именно писались статьи.
- */
-async function runClaude(prompt: string, agent?: AgentName): Promise<string> {
-  try {
-    return await runClaudeOnce(prompt, agent, AGENT_CLI)
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e)
-    const spare = isCliLevelFailure(message) ? fallbackCli(AGENT_CLI) : null
-    if (!spare) throw e
-    console.log(
-      `    \u26a0 ${AGENT_CLI} не смог запуститься (${message.slice(0, 160)}). Перехожу на ${spare}.`
-    )
-    return await runClaudeOnce(prompt, agent, spare)
-  }
 }
 
 // Последний пройденный шаг и тема прогона — нужны отбойнику, чтобы в сообщении
@@ -373,44 +279,6 @@ console.log = (...args: unknown[]) => {
     if (m) currentStage = m[1].trim()
   }
   baseConsoleLog(...args)
-}
-
-// Повторы с нарастающей паузой. Раньше была одна попытка через полминуты:
-// для разовой осечки CLI этого хватало, ради чего повтор и делался. Для волны
-// перегрузки на стороне API не хватало никогда — 24.08.2026 прогон упал на
-// 529 Overloaded, повторился через 30 секунд, получил тот же 529 и вышел.
-// Перегрузка живёт минуты, а не полминуты, поэтому шаг паузы растёт.
-const CLAUDE_RETRY_DELAYS_MS = [30_000, 120_000, 300_000]
-
-// Исчерпанный лимит за эти паузы не восстановится, и повтор только тянет время.
-const isQuotaExhausted = (message: string): boolean =>
-  /out of (extra )?usage|usage limit reached|rate limit/i.test(message)
-
-async function askClaude(prompt: string, agent?: AgentName): Promise<string> {
-  const total = CLAUDE_RETRY_DELAYS_MS.length + 1
-  let last: unknown
-
-  for (let attempt = 1; attempt <= total; attempt++) {
-    try {
-      const answer = await runClaude(prompt, agent)
-      // Стенограмма пишется здесь, а не в runClaude: там на каждый повтор
-      // лёг бы отдельный файл, а интересен ответ, который пошёл в дело.
-      recordExchange(agent ?? 'без-роли', currentStage, prompt, answer)
-      return answer
-    } catch (e) {
-      last = e
-      const message = (e as Error).message
-      if (isQuotaExhausted(message)) throw e
-      if (attempt === total) break
-      const wait = CLAUDE_RETRY_DELAYS_MS[attempt - 1]
-      console.error(
-        `[writer] claude сорвался (попытка ${attempt}/${total}): ${message} — ` +
-          `повтор через ${Math.round(wait / 1000)} сек`
-      )
-      await new Promise((r) => setTimeout(r, wait))
-    }
-  }
-  throw last
 }
 
 // ─── Codex image generation ──────────────────────────────────────────────────

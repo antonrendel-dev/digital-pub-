@@ -1,5 +1,5 @@
 // writer.ts
-import { execSync, spawn } from "child_process";
+import { execSync, spawn as spawn2 } from "child_process";
 import fs7 from "fs";
 import os4 from "os";
 import path7 from "path";
@@ -156,6 +156,9 @@ function modelFor(cli) {
 }
 var FACTORY_MODEL = modelFor(process.env.CONTENT_FACTORY_CLI || "claude");
 
+// lib/ask-agent.ts
+import { spawn } from "child_process";
+
 // lib/agent-cli.ts
 import { spawnSync } from "child_process";
 import { existsSync } from "fs";
@@ -275,8 +278,97 @@ ${role.instructions}
 ${prompt}`;
 }
 var ROLE_TAG_RE = /^\s*\[(?:WRITER|ANALYST|SEO|EDITOR|MARKETER|REVIEWER)\]\s*/;
-function stripRoleTag(text) {
+function stripRoleTag2(text) {
   return text.replace(ROLE_TAG_RE, "");
+}
+
+// lib/ask-agent.ts
+var AGENT_TOOLS = "Read,Skill,Glob,Grep";
+var CLAUDE_RETRY_DELAYS_MS = [3e4, 12e4, 3e5];
+var isQuotaExhausted = (message) => /out of (extra )?usage|usage limit reached|rate limit/i.test(message);
+function runOnce(prompt, agent, cli, modelFor2) {
+  return new Promise((resolve, reject) => {
+    let effectivePrompt = prompt;
+    let agentFlag;
+    if (agent) {
+      if (supportsAgentProfiles(cli, agent)) {
+        agentFlag = agent;
+      } else {
+        const role = loadAgentRole(agent);
+        if (role) {
+          effectivePrompt = withRole(prompt, role);
+          if (role.skills.length > 0) {
+            console.log(
+              `    \u26A0 ${agent}: \u0440\u043E\u043B\u044C \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u0430 \u0442\u0435\u043A\u0441\u0442\u043E\u043C, \u0441\u043A\u0438\u043B\u043B\u044B \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u044B (${role.skills.join(", ")})`
+            );
+          }
+        } else {
+          console.log(`    \u26A0 ${agent}: \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u0430\u0433\u0435\u043D\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0431\u0435\u0437 \u0440\u043E\u043B\u0438`);
+        }
+      }
+    }
+    const { cmd, args } = buildAgentCommand(
+      "",
+      {
+        model: modelFor2(cli),
+        agent: agentFlag,
+        allowedTools: AGENT_TOOLS,
+        promptViaStdin: true
+      },
+      cli
+    );
+    const child = spawn(cmd, args, { env: process.env, stdio: ["pipe", "pipe", "pipe"] });
+    child.stdin.write(effectivePrompt);
+    child.stdin.end();
+    let out = "";
+    let err = "";
+    child.stdout.on("data", (d) => out += d.toString());
+    child.stderr.on("data", (d) => err += d.toString());
+    child.on("close", (code) => {
+      if (code === 0) resolve(stripRoleTag2(out.trim()));
+      else
+        reject(
+          new Error(err.trim() || out.trim().slice(-500) || `${cmd} \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0441\u044F \u0441 \u043A\u043E\u0434\u043E\u043C ${code}`)
+        );
+    });
+    child.on("error", reject);
+  });
+}
+async function runWithFallback(prompt, agent, modelFor2) {
+  try {
+    return await runOnce(prompt, agent, AGENT_CLI, modelFor2);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    const spare = isCliLevelFailure(message) ? fallbackCli(AGENT_CLI) : null;
+    if (!spare) throw e;
+    console.log(
+      `    \u26A0 ${AGENT_CLI} \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C\u0441\u044F (${message.slice(0, 160)}). \u041F\u0435\u0440\u0435\u0445\u043E\u0436\u0443 \u043D\u0430 ${spare}.`
+    );
+    return await runOnce(prompt, agent, spare, modelFor2);
+  }
+}
+async function askAgent(prompt, opts) {
+  const delays = opts.retryDelaysMs ?? CLAUDE_RETRY_DELAYS_MS;
+  const total = delays.length + 1;
+  let last;
+  for (let attempt = 1; attempt <= total; attempt++) {
+    try {
+      const answer = await runWithFallback(prompt, opts.agent, opts.modelFor);
+      opts.record?.(opts.agent ?? "\u0431\u0435\u0437-\u0440\u043E\u043B\u0438", prompt, answer);
+      return answer;
+    } catch (e) {
+      last = e;
+      const message = e instanceof Error ? e.message : String(e);
+      if (isQuotaExhausted(message)) throw e;
+      if (attempt === total) break;
+      const pause = delays[attempt - 1];
+      console.log(
+        `    \u26A0 \u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/${total} \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C (${message.slice(0, 160)}). \u0416\u0434\u0443 ${Math.round(pause / 1e3)} \u0441.`
+      );
+      await new Promise((r) => setTimeout(r, pause));
+    }
+  }
+  throw last;
 }
 
 // lib/agent-transcript.ts
@@ -1042,70 +1134,12 @@ var OUTLINE_HINTS = {
   \u041A\u0435\u0439\u0441: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u0437\u0430\u0434\u0430\u0447\u0438 \u2192 \u0440\u0435\u0448\u0435\u043D\u0438\u0435 \u2192 \u0440\u0435\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u044F \u2192 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442\u044B \u0441 \u0446\u0438\u0444\u0440\u0430\u043C\u0438 \u2192 \u0432\u044B\u0432\u043E\u0434\u044B + CTA",
   \u041A\u043E\u043D\u0441\u043F\u0435\u043A\u0442: "\u0421\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430: definition block \u2192 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A \u0438 \u043A\u043E\u043D\u0442\u0435\u043A\u0441\u0442 \u2192 \u043A\u043B\u044E\u0447\u0435\u0432\u044B\u0435 \u0438\u0434\u0435\u0438 (3-4) \u2192 \u043F\u0440\u0430\u043A\u0442\u0438\u043A\u0430 \u2192 \u0430\u0434\u0430\u043F\u0442\u0430\u0446\u0438\u044F \u0434\u043B\u044F \u0440\u0443\u043D\u0435\u0442\u0430 + CTA"
 };
-var AGENT_TOOLS = "Read,Skill,Glob,Grep";
-function runClaudeOnce(prompt, agent, cli) {
-  return new Promise((resolve, reject) => {
-    let effectivePrompt = prompt;
-    let agentFlag;
-    if (agent) {
-      if (supportsAgentProfiles(cli, agent)) {
-        agentFlag = agent;
-      } else {
-        const role = loadAgentRole(agent);
-        if (role) {
-          effectivePrompt = withRole(prompt, role);
-          if (role.skills.length > 0) {
-            console.log(
-              `    \u26A0 ${agent}: \u0440\u043E\u043B\u044C \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u0430 \u0442\u0435\u043A\u0441\u0442\u043E\u043C, \u0441\u043A\u0438\u043B\u043B\u044B \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u044B (${role.skills.join(", ")})`
-            );
-          }
-        } else {
-          console.log(`    \u26A0 ${agent}: \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u0430\u0433\u0435\u043D\u0442 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u0431\u0435\u0437 \u0440\u043E\u043B\u0438`);
-        }
-      }
-    }
-    const { cmd, args } = buildAgentCommand(
-      "",
-      {
-        model: modelFor(cli),
-        agent: agentFlag,
-        allowedTools: AGENT_TOOLS,
-        promptViaStdin: true
-      },
-      cli
-    );
-    const child = spawn(cmd, args, {
-      env: process.env,
-      stdio: ["pipe", "pipe", "pipe"]
-    });
-    child.stdin.write(effectivePrompt);
-    child.stdin.end();
-    let out = "";
-    let err = "";
-    child.stdout.on("data", (d) => out += d.toString());
-    child.stderr.on("data", (d) => err += d.toString());
-    child.on("close", (code) => {
-      if (code === 0) resolve(stripRoleTag(out.trim()));
-      else
-        reject(
-          new Error(err.trim() || out.trim().slice(-500) || `claude \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0441\u044F \u0441 \u043A\u043E\u0434\u043E\u043C ${code}`)
-        );
-    });
-    child.on("error", reject);
+async function askClaude(prompt, agent) {
+  return askAgent(prompt, {
+    agent,
+    modelFor,
+    record: (role, sentPrompt, answer) => recordExchange(role, currentStage, sentPrompt, answer)
   });
-}
-async function runClaude(prompt, agent) {
-  try {
-    return await runClaudeOnce(prompt, agent, AGENT_CLI);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    const spare = isCliLevelFailure(message) ? fallbackCli(AGENT_CLI) : null;
-    if (!spare) throw e;
-    console.log(
-      `    \u26A0 ${AGENT_CLI} \u043D\u0435 \u0441\u043C\u043E\u0433 \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C\u0441\u044F (${message.slice(0, 160)}). \u041F\u0435\u0440\u0435\u0445\u043E\u0436\u0443 \u043D\u0430 ${spare}.`
-    );
-    return await runClaudeOnce(prompt, agent, spare);
-  }
 }
 var currentStage = null;
 var currentTopic = null;
@@ -1117,30 +1151,6 @@ console.log = (...args) => {
   }
   baseConsoleLog(...args);
 };
-var CLAUDE_RETRY_DELAYS_MS = [3e4, 12e4, 3e5];
-var isQuotaExhausted = (message) => /out of (extra )?usage|usage limit reached|rate limit/i.test(message);
-async function askClaude(prompt, agent) {
-  const total = CLAUDE_RETRY_DELAYS_MS.length + 1;
-  let last;
-  for (let attempt = 1; attempt <= total; attempt++) {
-    try {
-      const answer = await runClaude(prompt, agent);
-      recordExchange(agent ?? "\u0431\u0435\u0437-\u0440\u043E\u043B\u0438", currentStage, prompt, answer);
-      return answer;
-    } catch (e) {
-      last = e;
-      const message = e.message;
-      if (isQuotaExhausted(message)) throw e;
-      if (attempt === total) break;
-      const wait = CLAUDE_RETRY_DELAYS_MS[attempt - 1];
-      console.error(
-        `[writer] claude \u0441\u043E\u0440\u0432\u0430\u043B\u0441\u044F (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}/${total}): ${message} \u2014 \u043F\u043E\u0432\u0442\u043E\u0440 \u0447\u0435\u0440\u0435\u0437 ${Math.round(wait / 1e3)} \u0441\u0435\u043A`
-      );
-      await new Promise((r) => setTimeout(r, wait));
-    }
-  }
-  throw last;
-}
 function snapshotGeneratedImages() {
   const generatedDir = path7.join(CODEX_HOME, "generated_images");
   const images = /* @__PURE__ */ new Set();
@@ -1207,7 +1217,7 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
   const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable \u2014 do NOT change the gender. MANDATORY: include exactly 1 human person prominently in the foreground. CHARACTER ANGLE: ${perspective}. SETTING: ${setting}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. REALISM: candid photo feel \u2014 natural relaxed poses, objects placed as in real life. LAPTOP RULE: the person works at a laptop. The laptop sits naturally on the desk. The screen faces the person (not the camera) and glows softly with indistinct ambient light \u2014 no readable text, no charts, no UI elements, just a warm or cool glow suggesting active use. Think: professional stock photo where the screen is implied but never the focus. FORBIDDEN: any specific content (charts, dashboards, text) on any screen surface, including the outside back of the lid. SCENE CONTEXT (activity and mood only \u2014 gender, setting, and laptop rule already fixed above): ${imagePrompt}. Generate this pixel art image now.`;
   const refArg = fs7.existsSync(REFERENCE_IMAGE) ? ["-i", REFERENCE_IMAGE] : [];
   const runCodex = () => new Promise((resolve) => {
-    const child = spawn(
+    const child = spawn2(
       CODEX_BIN,
       [
         "exec",
@@ -1346,7 +1356,7 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
   const sketchCount = wordCount < 1300 ? 1 : wordCount < 1600 ? 2 : 3;
   const contentH2s = h2Structure.slice(1, -1);
   const runCodex = (prompt) => new Promise((resolve) => {
-    const child = spawn(
+    const child = spawn2(
       CODEX_BIN,
       ["exec", "--dangerously-bypass-approvals-and-sandbox", "--model", "gpt-5.5", prompt],
       {
