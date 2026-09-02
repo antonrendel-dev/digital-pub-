@@ -28,3 +28,14 @@ if [ $? -ne 0 ]; then
   echo "❌ tsc: типы не сходятся — commit blocked"
   exit 1
 fi
+
+# 3б. Скрипты — отдельным конфигом: основной tsconfig исключает scripts/**,
+# и «tsc чистый» их не покрывал вовсе. 02.09.2026 из-за этого в main ушли
+# два сломанных импорта подряд: boost.ts падал на первом кандидате, writer.ts
+# звал stripRoleTag без импорта. Бандлер оба случая пропустил молча.
+echo "⏳ tsc (scripts)..."
+npx tsc --noEmit -p tsconfig.scripts.json
+if [ $? -ne 0 ]; then
+  echo "❌ tsc(scripts): типы не сходятся — commit blocked"
+  exit 1
+fi

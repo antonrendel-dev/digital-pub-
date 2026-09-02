@@ -7,13 +7,12 @@
     "noEmit": true,
     "module": "esnext",
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    // es2022 — ради top-level await в warm-lsi-cache.ts. Базовый конфиг
+    // держит es2015, и без этого единственный скрипт завода оставался бы
+    // вне гейта, то есть та же дыра, только тише.
+    "target": "es2022"
   },
   "include": ["scripts/content-factory/**/*.ts", "scripts/seo-audit/**/*.ts", "lib/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "scripts/**/*.compiled.js",
-    "scripts/content-factory/dist",
-    "scripts/content-factory/warm-lsi-cache.ts"
-  ]
+  "exclude": ["node_modules", "scripts/**/*.compiled.js", "scripts/content-factory/dist"]
 }

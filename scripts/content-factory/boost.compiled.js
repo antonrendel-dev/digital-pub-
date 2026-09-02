@@ -453,13 +453,7 @@ function hasServiceText(text) {
 }
 
 // boost.ts
-var ARTICLES_DIR = path3.join(
-  path3.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "content",
-  "articles"
-);
+var ARTICLES_DIR = process.env.BOOST_ARTICLES_DIR ?? path3.join(path3.dirname(fileURLToPath(import.meta.url)), "..", "..", "content", "articles");
 function parseLimit(raw) {
   if (raw === void 0) return 3;
   const n = Number(raw);

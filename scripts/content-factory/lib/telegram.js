@@ -67,7 +67,8 @@ async function checkChannelAccess() {
     const d = await (await fetch(url)).json();
     if (!d.ok) return `\u043D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A ${CHANNEL}: ${d.description}`;
     const r = d.result;
-    if (r.status !== "administrator") return `\u0431\u043E\u0442 \u0432 ${CHANNEL} \u0441\u043E \u0441\u0442\u0430\u0442\u0443\u0441\u043E\u043C \xAB${r.status}\xBB, \u043D\u0443\u0436\u0435\u043D \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440`;
+    if (r.status !== "administrator")
+      return `\u0431\u043E\u0442 \u0432 ${CHANNEL} \u0441\u043E \u0441\u0442\u0430\u0442\u0443\u0441\u043E\u043C \xAB${r.status}\xBB, \u043D\u0443\u0436\u0435\u043D \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440`;
     if (r.can_post_messages === false) return `\u0431\u043E\u0442 \u0432 ${CHANNEL} \u0431\u0435\u0437 \u043F\u0440\u0430\u0432\u0430 \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0438`;
     return null;
   } catch (e) {

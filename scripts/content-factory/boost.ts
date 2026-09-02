@@ -41,13 +41,12 @@ import { checkArticleMetadata, normalizeFaqHeading } from '../../lib/article-met
 import { faqSchemaLine } from '../../lib/faq-schema'
 import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
 
-const ARTICLES_DIR = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-  'content',
-  'articles'
-)
+// Каталог статей можно переопределить: страж собирает бандл во временную
+// папку, и путь «два уровня вверх от файла» там указывает в никуда. Заодно это
+// избавляет тест от привязки к живой статье, которую могут переименовать.
+const ARTICLES_DIR =
+  process.env.BOOST_ARTICLES_DIR ??
+  path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'content', 'articles')
 
 interface Args {
   input?: string
