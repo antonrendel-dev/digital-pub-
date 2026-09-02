@@ -27,10 +27,11 @@ const DESC_MAX = 175
 // Зафиксировано прогоном page-quality от 01.09.2026, опущено после переписки
 // 41 статьи под ключи: длинных title было 70, description вне коридора — 40.
 const DEBT = {
-  titleTooLong: 37,
-  descOutOfRange: 11,
-  noFaq: 37,
-  descEchoesTitle: 5,
+  titleTooLong: 0,
+  descOutOfRange: 0,
+  noFaq: 0,
+  descEchoesTitle: 0,
+  descNoSourceOrYear: 0,
 }
 
 interface Front {
@@ -94,6 +95,16 @@ describe('метаданные статей — храповик долга', ()
       return same >= 4
     })
     expect(echo.length).toBeLessThanOrEqual(DEBT.descEchoesTitle)
+  })
+
+  it('в description есть источник или год', () => {
+    // Пункт 7 второго чек-листа: сниппет без даты и источника читается как
+    // пересказ. Правился 02.09.2026 сразу после того, как переписка описаний
+    // сама же и уронила этот показатель с 34 до 61 нарушения.
+    const noSource = articles.filter(
+      (a) => !/(hh\.ru|SuperJob|Вордстат|Метрика|Росстат|Habr|202\d)/i.test(a.description)
+    )
+    expect(noSource.length).toBeLessThanOrEqual(DEBT.descNoSourceOrYear)
   })
 
   it('у каждой статьи есть и title, и description', () => {
