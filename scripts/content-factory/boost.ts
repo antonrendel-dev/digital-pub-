@@ -28,9 +28,13 @@ import { fileURLToPath } from 'url'
 import { askAgent } from './lib/ask-agent.js'
 import { modelFor } from './lib/model.js'
 import {
+  field,
   parseRows,
   selectCandidates,
+  splitMdx,
+  stripPreamble,
   validateRewrite,
+  withUpdatedDate,
   type BoostCandidate,
 } from './lib/boost-plan.js'
 import { checkArticleMetadata, normalizeFaqHeading } from '../../lib/article-metadata-gate'
@@ -158,7 +162,12 @@ async function boostOne(c: BoostCandidate, dryRun: boolean): Promise<string> {
     .replace(/\n{2,}/g, '\n')
     .trim()
   const line = faqSchemaLine(next).replace(/^\n/, '')
-  fs.writeFileSync(file, `---\n${fmWithoutFaq}\n${line}\n---\n${next}`)
+  // Дата изменения обновляется и в поле, и внутри schemaJsonLd: Article-разметка
+  // уходит в прод прямо оттуда, и без этого страница, переписанная сегодня,
+  // сообщала бы поиску старую дату — то есть дожим гасил бы ровно тот сигнал,
+  // ради которого существует.
+  const today = new Date().toISOString().slice(0, 10)
+  fs.writeFileSync(file, `---\n${withUpdatedDate(fmWithoutFaq, today)}\n${line}\n---\n${next}`)
 
   const wBefore = body.split(/\s+/).filter(Boolean).length
   const wAfter = next.split(/\s+/).filter(Boolean).length

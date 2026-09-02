@@ -156,14 +156,64 @@ function modelFor(cli) {
 }
 var FACTORY_MODEL = modelFor(process.env.CONTENT_FACTORY_CLI || "claude");
 
+// lib/agent-role.ts
+import fs2 from "fs";
+import os from "os";
+import path2 from "path";
+var AGENTS_DIR = process.env.CLAUDE_AGENTS_DIR ?? path2.join(os.homedir(), ".claude", "agents");
+function splitFrontmatter(raw) {
+  if (!raw.startsWith("---")) return { front: "", body: raw };
+  const end = raw.indexOf("\n---", 3);
+  if (end === -1) return { front: "", body: raw };
+  return { front: raw.slice(3, end), body: raw.slice(end + 4).trim() };
+}
+function parseSkills(front) {
+  const skills = [];
+  let inSkills = false;
+  for (const line of front.split("\n")) {
+    if (/^skills:\s*$/.test(line)) {
+      inSkills = true;
+      continue;
+    }
+    if (inSkills) {
+      const m = line.match(/^\s+-\s+(.+?)\s*$/);
+      if (m) skills.push(m[1]);
+      else if (line.trim() !== "") break;
+    }
+  }
+  return skills;
+}
+function loadAgentRole(agent) {
+  const file = path2.join(AGENTS_DIR, `${agent}.md`);
+  if (!fs2.existsSync(file)) return null;
+  const raw = fs2.readFileSync(file, "utf8");
+  const { front, body } = splitFrontmatter(raw);
+  if (!body.trim()) return null;
+  return { instructions: body, skills: parseSkills(front) };
+}
+function withRole(prompt, role) {
+  return `\u0422\u044B \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0448\u044C \u0432 \u0440\u043E\u043B\u0438, \u043E\u043F\u0438\u0441\u0430\u043D\u043D\u043E\u0439 \u043D\u0438\u0436\u0435. \u0421\u043B\u0435\u0434\u0443\u0439 \u0435\u0439 \u043D\u0430 \u043F\u0440\u043E\u0442\u044F\u0436\u0435\u043D\u0438\u0438 \u0432\u0441\u0435\u0433\u043E \u043E\u0442\u0432\u0435\u0442\u0430.
+
+===== \u0420\u041E\u041B\u042C =====
+${role.instructions}
+===== \u041A\u041E\u041D\u0415\u0426 \u0420\u041E\u041B\u0418 =====
+
+===== \u0417\u0410\u0414\u0410\u0427\u0410 =====
+${prompt}`;
+}
+var ROLE_TAG_RE = /^\s*\[(?:WRITER|ANALYST|SEO|EDITOR|MARKETER|REVIEWER)\]\s*/;
+function stripRoleTag(text) {
+  return text.replace(ROLE_TAG_RE, "");
+}
+
 // lib/ask-agent.ts
 import { spawn } from "child_process";
 
 // lib/agent-cli.ts
 import { spawnSync } from "child_process";
 import { existsSync } from "fs";
-import os from "os";
-import path2 from "path";
+import os2 from "os";
+import path3 from "path";
 var WRITING_TOOLS = ["write", "edit", "bash", "notebookedit"];
 function sandboxFor(allowedTools) {
   const tools = allowedTools.toLowerCase().split(",").map((t) => t.trim());
@@ -226,60 +276,10 @@ function supportsAgentProfiles(cli = AGENT_CLI, agent) {
   if (cli === "claude") return true;
   if (cli === "codex") {
     if (!agent) return true;
-    const home = process.env.CODEX_HOME || path2.join(os.homedir(), ".codex");
-    return existsSync(path2.join(home, `${agent}.config.toml`));
+    const home = process.env.CODEX_HOME || path3.join(os2.homedir(), ".codex");
+    return existsSync(path3.join(home, `${agent}.config.toml`));
   }
   return false;
-}
-
-// lib/agent-role.ts
-import fs2 from "fs";
-import os2 from "os";
-import path3 from "path";
-var AGENTS_DIR = process.env.CLAUDE_AGENTS_DIR ?? path3.join(os2.homedir(), ".claude", "agents");
-function splitFrontmatter(raw) {
-  if (!raw.startsWith("---")) return { front: "", body: raw };
-  const end = raw.indexOf("\n---", 3);
-  if (end === -1) return { front: "", body: raw };
-  return { front: raw.slice(3, end), body: raw.slice(end + 4).trim() };
-}
-function parseSkills(front) {
-  const skills = [];
-  let inSkills = false;
-  for (const line of front.split("\n")) {
-    if (/^skills:\s*$/.test(line)) {
-      inSkills = true;
-      continue;
-    }
-    if (inSkills) {
-      const m = line.match(/^\s+-\s+(.+?)\s*$/);
-      if (m) skills.push(m[1]);
-      else if (line.trim() !== "") break;
-    }
-  }
-  return skills;
-}
-function loadAgentRole(agent) {
-  const file = path3.join(AGENTS_DIR, `${agent}.md`);
-  if (!fs2.existsSync(file)) return null;
-  const raw = fs2.readFileSync(file, "utf8");
-  const { front, body } = splitFrontmatter(raw);
-  if (!body.trim()) return null;
-  return { instructions: body, skills: parseSkills(front) };
-}
-function withRole(prompt, role) {
-  return `\u0422\u044B \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0448\u044C \u0432 \u0440\u043E\u043B\u0438, \u043E\u043F\u0438\u0441\u0430\u043D\u043D\u043E\u0439 \u043D\u0438\u0436\u0435. \u0421\u043B\u0435\u0434\u0443\u0439 \u0435\u0439 \u043D\u0430 \u043F\u0440\u043E\u0442\u044F\u0436\u0435\u043D\u0438\u0438 \u0432\u0441\u0435\u0433\u043E \u043E\u0442\u0432\u0435\u0442\u0430.
-
-===== \u0420\u041E\u041B\u042C =====
-${role.instructions}
-===== \u041A\u041E\u041D\u0415\u0426 \u0420\u041E\u041B\u0418 =====
-
-===== \u0417\u0410\u0414\u0410\u0427\u0410 =====
-${prompt}`;
-}
-var ROLE_TAG_RE = /^\s*\[(?:WRITER|ANALYST|SEO|EDITOR|MARKETER|REVIEWER)\]\s*/;
-function stripRoleTag2(text) {
-  return text.replace(ROLE_TAG_RE, "");
 }
 
 // lib/ask-agent.ts
@@ -325,7 +325,7 @@ function runOnce(prompt, agent, cli, modelFor2) {
     child.stdout.on("data", (d) => out += d.toString());
     child.stderr.on("data", (d) => err += d.toString());
     child.on("close", (code) => {
-      if (code === 0) resolve(stripRoleTag2(out.trim()));
+      if (code === 0) resolve(stripRoleTag(out.trim()));
       else
         reject(
           new Error(err.trim() || out.trim().slice(-500) || `${cmd} \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0441\u044F \u0441 \u043A\u043E\u0434\u043E\u043C ${code}`)

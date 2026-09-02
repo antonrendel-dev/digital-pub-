@@ -332,6 +332,27 @@ function validateRewrite(before, after, key) {
   }
   return v;
 }
+function bodyStart(answer) {
+  return answer.search(/^## /m);
+}
+function stripPreamble(answer) {
+  const start = bodyStart(answer);
+  return start > 0 ? answer.slice(start) : answer;
+}
+function splitMdx(raw) {
+  const m = raw.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!m) throw new Error("\u0432\u043E \u0433\u043B\u0430\u0432\u0435 \u0444\u0430\u0439\u043B\u0430 \u043D\u0435\u0442 frontmatter");
+  return { frontmatter: m[1], body: raw.slice(m[0].length) };
+}
+function field(frontmatter, name) {
+  return frontmatter.match(new RegExp(`^${name}: "(.*)"$`, "m"))?.[1] ?? "";
+}
+function withUpdatedDate(frontmatter, isoDate) {
+  let next = frontmatter.replace(/^dateModified: ".*"$/m, `dateModified: "${isoDate}"`);
+  if (!/^dateModified:/m.test(next)) next += `
+dateModified: "${isoDate}"`;
+  return next.replace(/("dateModified":")[^"]*(")/g, `$1${isoDate}$2`);
+}
 
 // ../../lib/faq-schema.ts
 var FAQ_HEADING = /^##\s+.*(вопрос|FAQ).*$/im;
@@ -511,8 +532,9 @@ async function boostOne(c, dryRun) {
   }
   const fmWithoutFaq = frontmatter.replace(/^faqSchema: '.*'$/m, "").replace(/\n{2,}/g, "\n").trim();
   const line = faqSchemaLine(next).replace(/^\n/, "");
+  const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   fs2.writeFileSync(file, `---
-${fmWithoutFaq}
+${withUpdatedDate(fmWithoutFaq, today)}
 ${line}
 ---
 ${next}`);

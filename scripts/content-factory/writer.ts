@@ -16,6 +16,7 @@ import {
 } from './lib/lsi.js'
 import { lookupPhrases, savePhrases } from './lib/lsi-cache.js'
 import { modelFor } from './lib/model.js'
+import { stripRoleTag } from './lib/agent-role.js'
 import { askAgent, type AgentName } from './lib/ask-agent.js'
 import { currentRunDir, recordExchange, startRun } from './lib/agent-transcript.js'
 import {

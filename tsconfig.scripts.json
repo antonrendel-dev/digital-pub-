@@ -1,0 +1,19 @@
+{
+  // Основной tsconfig исключает scripts/** — из-за этого «tsc чистый» четыре
+  // круга подряд не покрывал ни завод, ни дожим, и раннер уехал в коммит
+  // с ненайденными импортами (ревью 02.09.2026). Здесь тайпчек именно скриптов.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true
+  },
+  "include": ["scripts/content-factory/**/*.ts", "scripts/seo-audit/**/*.ts", "lib/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "scripts/**/*.compiled.js",
+    "scripts/content-factory/dist",
+    "scripts/content-factory/warm-lsi-cache.ts"
+  ]
+}
