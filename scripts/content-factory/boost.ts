@@ -34,7 +34,7 @@ import {
   type BoostCandidate,
 } from './lib/boost-plan.js'
 import { checkArticleMetadata, normalizeFaqHeading } from '../../lib/article-metadata-gate'
-import { MIN_FAQ_ITEMS, faqSchemaLine, parseFaq } from '../../lib/faq-schema'
+import { faqSchemaLine } from '../../lib/faq-schema'
 import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
 
 const ARTICLES_DIR = path.join(
@@ -53,6 +53,17 @@ interface Args {
   dryRun: boolean
 }
 
+/** Опечатка в --limit раньше давала slice(0, NaN) и «кандидатов нет» с кодом 0. */
+function parseLimit(raw: string | undefined): number {
+  if (raw === undefined) return 3
+  const n = Number(raw)
+  if (!Number.isInteger(n) || n < 1) {
+    console.error(`--limit должен быть целым числом от 1, получено «${raw}»`)
+    process.exit(2)
+  }
+  return n
+}
+
 function parseArgs(argv: string[]): Args {
   const get = (name: string) =>
     argv
@@ -64,23 +75,17 @@ function parseArgs(argv: string[]): Args {
     input: get('input'),
     slug: get('slug'),
     key: get('key'),
-    limit: Number(get('limit') ?? 3),
+    limit: parseLimit(get('limit')),
     dryRun: argv.includes('--dry-run'),
   }
 }
 
-function splitMdx(raw: string): { frontmatter: string; body: string } {
-  const m = raw.match(/^---\n([\s\S]*?)\n---\n/)
-  if (!m) throw new Error('во главе файла нет frontmatter')
-  return { frontmatter: m[1], body: raw.slice(m[0].length) }
-}
-
-function field(frontmatter: string, name: string): string {
-  return frontmatter.match(new RegExp(`^${name}: "(.*)"$`, 'm'))?.[1] ?? ''
-}
-
 function buildPrompt(key: string, position: number, title: string, body: string): string {
-  return `Статья уже стоит на позиции ${position} по ключу «${key}» в Яндексе. Это ближе к топ-10, чем большинство наших страниц, поэтому задача — не переписать её заново, а усилить под этот ключ.
+  // В ручном режиме позиции нет, и врать модели «позиция 0» нельзя.
+  const where = position
+    ? `Статья уже стоит на позиции ${position} по ключу «${key}» в Яндексе. Это ближе к топ-10, чем большинство наших страниц, поэтому задача — не переписать её заново, а усилить под этот ключ.`
+    : `Статью нужно усилить под ключ «${key}», не переписывая заново.`
+  return `${where}
 
 ОБЯЗАТЕЛЬНО применяй скилл dpub-content-standard: правки принимаются по нему.
 
@@ -116,12 +121,11 @@ async function boostOne(c: BoostCandidate, dryRun: boolean): Promise<string> {
     agent: 'writer',
     modelFor,
   })
-  // Модель иногда возвращает текст с преамбулой — режем по первому заголовку.
-  // Хвост приёмки («Title: …», «Meta description: …», «Скиллы: …») срезаем тем
-  // же кодом, что и на публикации: первый боевой прогон 02.09.2026 приклеил его
-  // прямо в тело статьи, и без этого он уехал бы на сайт.
-  const start = answer.indexOf('## ')
-  const next = normalizeFaqHeading(stripServiceTail(start > 0 ? answer.slice(start) : answer))
+  // Преамбулу режем по началу строки, а не по подстроке: «### Что изменено»
+  // содержит «## » внутри, и первый вариант резал по середине решётки.
+  // Хвост приёмки («Title: …», «Скиллы: …») срезаем тем же кодом, что и на
+  // публикации — первый боевой прогон приклеил его прямо в тело статьи.
+  const next = normalizeFaqHeading(stripServiceTail(stripPreamble(answer)))
 
   const problems = validateRewrite(body, next, c.key)
   const meta = checkArticleMetadata({
@@ -130,9 +134,6 @@ async function boostOne(c: BoostCandidate, dryRun: boolean): Promise<string> {
     markdown: next,
   })
   const all = [...problems, ...meta]
-  if (parseFaq(next).length < MIN_FAQ_ITEMS) {
-    all.push({ rule: 'FAQ_MISSING', detail: 'раздел вопросов перестал собираться' })
-  }
   // Если срезалка хвост не узнала, лучше не принять, чем выпустить служебный
   // текст на сайт: формулировки хвоста меняются вместе с профилями агентов.
   if (hasServiceText(next)) {
@@ -169,6 +170,10 @@ async function main() {
 
   let candidates: BoostCandidate[] = []
   if (args.slug && args.key) {
+    if (!/^[a-z0-9-]+$/.test(args.slug)) {
+      console.error(`--slug должен быть слагом статьи, получено «${args.slug}»`)
+      process.exit(2)
+    }
     candidates = [{ slug: args.slug, key: args.key, position: 0, url: `/articles/${args.slug}` }]
   } else if (args.input) {
     const { take, skip } = selectCandidates(parseRows(fs.readFileSync(args.input, 'utf8')))
@@ -189,9 +194,22 @@ async function main() {
     return
   }
 
+  // Осечка модели на одном кандидате не должна снимать остальных: до неё
+  // askAgent тратит четыре попытки и до семи минут пауз, и терять из-за этого
+  // ещё двоих — расточительство.
+  let failed = 0
   for (const c of candidates) {
     console.log(`[boost] ${c.slug}: ключ «${c.key}», позиция ${c.position}`)
-    console.log(`[boost] ${await boostOne(c, args.dryRun)}`)
+    try {
+      console.log(`[boost] ${await boostOne(c, args.dryRun)}`)
+    } catch (e) {
+      failed++
+      console.error(`[boost] ${c.slug}: сорвалось — ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+  if (failed) {
+    console.error(`[boost] сорвалось кандидатов: ${failed} из ${candidates.length}`)
+    process.exitCode = 1
   }
 }
 

@@ -97,17 +97,27 @@ export function parseRows(tsv: string): RawRow[] {
  * сравнение, и первый же боевой прогон 02.09.2026 отклонил нормальную работу
  * модели именно по этой причине.
  *
- * Сравниваем по основам: каждое слово ключа длиннее четырёх букв обрезается до
- * пяти символов, и все они должны встретиться в отрывке. Порядок не проверяем —
+ * Сравниваем по основам, см. stem(). Пять символов оказались слишком коротко —
+ * «резюме контекстолога и менеджмента» проходило как «резюме контент
+ * менеджера» (ревью 02.09.2026). Порядок не проверяем —
  * «зарплата seo специалиста» и «seo специалист: зарплата» одинаково хороши.
  */
+function stem(word: string): string {
+  // Шесть символов режут окончания длинных слов («удалённая» → «удален») и при
+  // этом различают разные корни («контент» против «контекстолога»). Короткие
+  // теряют последнюю букву, иначе «работа» не найдётся в «работу».
+  if (word.length > 6) return word.slice(0, 6)
+  if (word.length > 4) return word.slice(0, word.length - 1)
+  return word
+}
+
 export function containsKey(text: string, key: string): boolean {
   const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/[-–—]/g, ' ')
   const haystack = norm(text)
   return norm(key)
     .split(/\s+/)
     .filter(Boolean)
-    .every((word) => haystack.includes(word.length > 4 ? word.slice(0, 5) : word))
+    .every((word) => haystack.includes(stem(word)))
 }
 
 export interface RewriteViolation {
@@ -148,6 +158,23 @@ export function validateRewrite(before: string, after: string, key: string): Rew
       detail: `заголовков было ${hBefore}, стало ${hAfter} — структура потеряна`,
     })
   }
+  // Картинки и внутренние ссылки объёму не видны: words() режет теги до
+  // подсчёта, поэтому пропажа <img> не меняет ни слов, ни заголовков. Каждая
+  // картинка — отдельный вызов Codex, а ссылки мы ставили руками.
+  const imgs = (s: string) => (s.match(/<img\s/g) ?? []).length
+  const links = (s: string) => (s.match(/\]\(\//g) ?? []).length
+  if (imgs(after) < imgs(before)) {
+    v.push({
+      rule: 'LOST_IMAGES',
+      detail: `картинок было ${imgs(before)}, стало ${imgs(after)}`,
+    })
+  }
+  if (links(after) < links(before)) {
+    v.push({
+      rule: 'LOST_LINKS',
+      detail: `внутренних ссылок было ${links(before)}, стало ${links(after)}`,
+    })
+  }
   // Ключ должен стоять там, где его читает поиск: в заголовке или в первых
   // 60 словах. Просто «встречается в тексте» сигналом не является.
   const firstWords = after.split(/\s+/).slice(0, 60).join(' ')
@@ -159,4 +186,46 @@ export function validateRewrite(before: string, after: string, key: string): Rew
     })
   }
   return v
+}
+
+/**
+ * Где в ответе модели начинается тело статьи.
+ *
+ * Первый заход искал `indexOf('## ')`, и это ловушка: строка «### Что изменено»
+ * содержит «## » со смещением 1, поэтому срез начинался с середины решётки —
+ * преамбула оставалась в тексте, а её H3 повышался до H2. Ищем только начало
+ * строки. -1 означает «заголовков нет вовсе», тело берётся целиком.
+ */
+export function bodyStart(answer: string): number {
+  return answer.search(/^## /m)
+}
+
+export function stripPreamble(answer: string): string {
+  const start = bodyStart(answer)
+  return start > 0 ? answer.slice(start) : answer
+}
+
+/** Frontmatter и тело. Бросает, если файл не похож на статью. */
+export function splitMdx(raw: string): { frontmatter: string; body: string } {
+  const m = raw.match(/^---\n([\s\S]*?)\n---\n/)
+  if (!m) throw new Error('во главе файла нет frontmatter')
+  return { frontmatter: m[1], body: raw.slice(m[0].length) }
+}
+
+export function field(frontmatter: string, name: string): string {
+  return frontmatter.match(new RegExp(`^${name}: "(.*)"$`, 'm'))?.[1] ?? ''
+}
+
+/**
+ * Дата изменения — и в поле, и внутри schemaJsonLd.
+ *
+ * Article-разметка уходит в прод прямо из фронтматтера, поэтому обновить одно
+ * поле мало: страница переписана сегодня, а поисковику сообщается июльская
+ * дата. Дожим существует ради свежести сигнала и гасил бы единственный, что
+ * может выставить сам (ревью 02.09.2026).
+ */
+export function withUpdatedDate(frontmatter: string, isoDate: string): string {
+  let next = frontmatter.replace(/^dateModified: ".*"$/m, `dateModified: "${isoDate}"`)
+  if (!/^dateModified:/m.test(next)) next += `\ndateModified: "${isoDate}"`
+  return next.replace(/("dateModified":")[^"]*(")/g, `$1${isoDate}$2`)
 }

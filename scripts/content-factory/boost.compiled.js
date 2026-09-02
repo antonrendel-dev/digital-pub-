@@ -278,10 +278,15 @@ function parseRows(tsv) {
   }
   return rows;
 }
+function stem(word) {
+  if (word.length > 6) return word.slice(0, 6);
+  if (word.length > 4) return word.slice(0, word.length - 1);
+  return word;
+}
 function containsKey(text, key) {
   const norm = (s) => s.toLowerCase().replace(/ё/g, "\u0435").replace(/[-–—]/g, " ");
   const haystack = norm(text);
-  return norm(key).split(/\s+/).filter(Boolean).every((word) => haystack.includes(word.length > 4 ? word.slice(0, 5) : word));
+  return norm(key).split(/\s+/).filter(Boolean).every((word) => haystack.includes(stem(word)));
 }
 var words = (text) => text.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
 var headings = (text) => (text.match(/^#{2,3}\s+.+$/gm) ?? []).length;
@@ -301,6 +306,20 @@ function validateRewrite(before, after, key) {
     v.push({
       rule: "LOST_HEADINGS",
       detail: `\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u043E\u0432 \u0431\u044B\u043B\u043E ${hBefore}, \u0441\u0442\u0430\u043B\u043E ${hAfter} \u2014 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430 \u043F\u043E\u0442\u0435\u0440\u044F\u043D\u0430`
+    });
+  }
+  const imgs = (s) => (s.match(/<img\s/g) ?? []).length;
+  const links = (s) => (s.match(/\]\(\//g) ?? []).length;
+  if (imgs(after) < imgs(before)) {
+    v.push({
+      rule: "LOST_IMAGES",
+      detail: `\u043A\u0430\u0440\u0442\u0438\u043D\u043E\u043A \u0431\u044B\u043B\u043E ${imgs(before)}, \u0441\u0442\u0430\u043B\u043E ${imgs(after)}`
+    });
+  }
+  if (links(after) < links(before)) {
+    v.push({
+      rule: "LOST_LINKS",
+      detail: `\u0432\u043D\u0443\u0442\u0440\u0435\u043D\u043D\u0438\u0445 \u0441\u0441\u044B\u043B\u043E\u043A \u0431\u044B\u043B\u043E ${links(before)}, \u0441\u0442\u0430\u043B\u043E ${links(after)}`
     });
   }
   const firstWords = after.split(/\s+/).slice(0, 60).join(" ");
@@ -420,26 +439,28 @@ var ARTICLES_DIR = path3.join(
   "content",
   "articles"
 );
+function parseLimit(raw) {
+  if (raw === void 0) return 3;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    console.error(`--limit \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0446\u0435\u043B\u044B\u043C \u0447\u0438\u0441\u043B\u043E\u043C \u043E\u0442 1, \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u043E \xAB${raw}\xBB`);
+    process.exit(2);
+  }
+  return n;
+}
 function parseArgs(argv) {
   const get = (name) => argv.find((a) => a.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
   return {
     input: get("input"),
     slug: get("slug"),
     key: get("key"),
-    limit: Number(get("limit") ?? 3),
+    limit: parseLimit(get("limit")),
     dryRun: argv.includes("--dry-run")
   };
 }
-function splitMdx(raw) {
-  const m = raw.match(/^---\n([\s\S]*?)\n---\n/);
-  if (!m) throw new Error("\u0432\u043E \u0433\u043B\u0430\u0432\u0435 \u0444\u0430\u0439\u043B\u0430 \u043D\u0435\u0442 frontmatter");
-  return { frontmatter: m[1], body: raw.slice(m[0].length) };
-}
-function field(frontmatter, name) {
-  return frontmatter.match(new RegExp(`^${name}: "(.*)"$`, "m"))?.[1] ?? "";
-}
 function buildPrompt(key, position, title, body) {
-  return `\u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u0441\u0442\u043E\u0438\u0442 \u043D\u0430 \u043F\u043E\u0437\u0438\u0446\u0438\u0438 ${position} \u043F\u043E \u043A\u043B\u044E\u0447\u0443 \xAB${key}\xBB \u0432 \u042F\u043D\u0434\u0435\u043A\u0441\u0435. \u042D\u0442\u043E \u0431\u043B\u0438\u0436\u0435 \u043A \u0442\u043E\u043F-10, \u0447\u0435\u043C \u0431\u043E\u043B\u044C\u0448\u0438\u043D\u0441\u0442\u0432\u043E \u043D\u0430\u0448\u0438\u0445 \u0441\u0442\u0440\u0430\u043D\u0438\u0446, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0437\u0430\u0434\u0430\u0447\u0430 \u2014 \u043D\u0435 \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u0430\u0442\u044C \u0435\u0451 \u0437\u0430\u043D\u043E\u0432\u043E, \u0430 \u0443\u0441\u0438\u043B\u0438\u0442\u044C \u043F\u043E\u0434 \u044D\u0442\u043E\u0442 \u043A\u043B\u044E\u0447.
+  const where = position ? `\u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u0441\u0442\u043E\u0438\u0442 \u043D\u0430 \u043F\u043E\u0437\u0438\u0446\u0438\u0438 ${position} \u043F\u043E \u043A\u043B\u044E\u0447\u0443 \xAB${key}\xBB \u0432 \u042F\u043D\u0434\u0435\u043A\u0441\u0435. \u042D\u0442\u043E \u0431\u043B\u0438\u0436\u0435 \u043A \u0442\u043E\u043F-10, \u0447\u0435\u043C \u0431\u043E\u043B\u044C\u0448\u0438\u043D\u0441\u0442\u0432\u043E \u043D\u0430\u0448\u0438\u0445 \u0441\u0442\u0440\u0430\u043D\u0438\u0446, \u043F\u043E\u044D\u0442\u043E\u043C\u0443 \u0437\u0430\u0434\u0430\u0447\u0430 \u2014 \u043D\u0435 \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u0430\u0442\u044C \u0435\u0451 \u0437\u0430\u043D\u043E\u0432\u043E, \u0430 \u0443\u0441\u0438\u043B\u0438\u0442\u044C \u043F\u043E\u0434 \u044D\u0442\u043E\u0442 \u043A\u043B\u044E\u0447.` : `\u0421\u0442\u0430\u0442\u044C\u044E \u043D\u0443\u0436\u043D\u043E \u0443\u0441\u0438\u043B\u0438\u0442\u044C \u043F\u043E\u0434 \u043A\u043B\u044E\u0447 \xAB${key}\xBB, \u043D\u0435 \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u044F \u0437\u0430\u043D\u043E\u0432\u043E.`;
+  return `${where}
 
 \u041E\u0411\u042F\u0417\u0410\u0422\u0415\u041B\u042C\u041D\u041E \u043F\u0440\u0438\u043C\u0435\u043D\u044F\u0439 \u0441\u043A\u0438\u043B\u043B dpub-content-standard: \u043F\u0440\u0430\u0432\u043A\u0438 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u044E\u0442\u0441\u044F \u043F\u043E \u043D\u0435\u043C\u0443.
 
@@ -471,8 +492,7 @@ async function boostOne(c, dryRun) {
     agent: "writer",
     modelFor
   });
-  const start = answer.indexOf("## ");
-  const next = normalizeFaqHeading(stripServiceTail(start > 0 ? answer.slice(start) : answer));
+  const next = normalizeFaqHeading(stripServiceTail(stripPreamble(answer)));
   const problems = validateRewrite(body, next, c.key);
   const meta = checkArticleMetadata({
     metaTitle: field(frontmatter, "metaTitle") || field(frontmatter, "title"),
@@ -480,9 +500,6 @@ async function boostOne(c, dryRun) {
     markdown: next
   });
   const all = [...problems, ...meta];
-  if (parseFaq(next).length < MIN_FAQ_ITEMS) {
-    all.push({ rule: "FAQ_MISSING", detail: "\u0440\u0430\u0437\u0434\u0435\u043B \u0432\u043E\u043F\u0440\u043E\u0441\u043E\u0432 \u043F\u0435\u0440\u0435\u0441\u0442\u0430\u043B \u0441\u043E\u0431\u0438\u0440\u0430\u0442\u044C\u0441\u044F" });
-  }
   if (hasServiceText(next)) {
     all.push({ rule: "SERVICE_TEXT", detail: "\u0432 \u0442\u0435\u043B\u0435 \u043E\u0441\u0442\u0430\u043B\u0441\u044F \u0441\u043B\u0443\u0436\u0435\u0431\u043D\u044B\u0439 \u0445\u0432\u043E\u0441\u0442 \u043F\u0440\u0438\u0451\u043C\u043A\u0438" });
   }
@@ -507,9 +524,11 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   let candidates = [];
   if (args.slug && args.key) {
-    candidates = [
-      { slug: args.slug, key: args.key, position: 0, url: `/articles/${args.slug}` }
-    ];
+    if (!/^[a-z0-9-]+$/.test(args.slug)) {
+      console.error(`--slug \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u0441\u043B\u0430\u0433\u043E\u043C \u0441\u0442\u0430\u0442\u044C\u0438, \u043F\u043E\u043B\u0443\u0447\u0435\u043D\u043E \xAB${args.slug}\xBB`);
+      process.exit(2);
+    }
+    candidates = [{ slug: args.slug, key: args.key, position: 0, url: `/articles/${args.slug}` }];
   } else if (args.input) {
     const { take, skip } = selectCandidates(parseRows(fs2.readFileSync(args.input, "utf8")));
     candidates = take.slice(0, args.limit);
@@ -525,9 +544,19 @@ async function main() {
     console.log("[boost] \u043A\u0430\u043D\u0434\u0438\u0434\u0430\u0442\u043E\u0432 \u043D\u0435\u0442");
     return;
   }
+  let failed = 0;
   for (const c of candidates) {
     console.log(`[boost] ${c.slug}: \u043A\u043B\u044E\u0447 \xAB${c.key}\xBB, \u043F\u043E\u0437\u0438\u0446\u0438\u044F ${c.position}`);
-    console.log(`[boost] ${await boostOne(c, args.dryRun)}`);
+    try {
+      console.log(`[boost] ${await boostOne(c, args.dryRun)}`);
+    } catch (e) {
+      failed++;
+      console.error(`[boost] ${c.slug}: \u0441\u043E\u0440\u0432\u0430\u043B\u043E\u0441\u044C \u2014 ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  if (failed) {
+    console.error(`[boost] \u0441\u043E\u0440\u0432\u0430\u043B\u043E\u0441\u044C \u043A\u0430\u043D\u0434\u0438\u0434\u0430\u0442\u043E\u0432: ${failed} \u0438\u0437 ${candidates.length}`);
+    process.exitCode = 1;
   }
 }
 main().catch((e) => {

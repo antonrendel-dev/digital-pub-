@@ -145,7 +145,14 @@ async function runWithFallback(
   }
 }
 
-/** Спросить агента с повторами. Пустой ответ считается отказом, а не результатом. */
+/**
+ * Спросить агента с повторами.
+ *
+ * Пустого ответа здесь не отбиваем: код возврата 0 при пустом stdout — случай
+ * теоретический, а вводить отбойник в вынесенном коде значит менять поведение
+ * писателя заодно с выносом. Потребители проверяют результат сами: boost видит
+ * пустоту как SHRANK и LOST_HEADINGS.
+ */
 export async function askAgent(prompt: string, opts: AskOptions): Promise<string> {
   const delays = opts.retryDelaysMs ?? CLAUDE_RETRY_DELAYS_MS
   const total = delays.length + 1
