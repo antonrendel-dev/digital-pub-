@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getPostsByProfession, getPostsByTool } from '@/lib/posts'
 import { professionsByTool } from '@/lib/professions'
+import { buildToolLead } from '@/lib/tool-lead'
 import PageShell from '@/components/PageShell'
 import VacancyGrid from '@/components/VacancyGrid'
 import JsonLd from '@/components/JsonLd'
@@ -1124,6 +1125,14 @@ export default async function ToolPage({ params }: Props) {
     ? await getPostsByProfession(tool.queries, 20, tool.phrases, 'text')
     : await getPostsByTool(tool.query)
   const professions = professionsByTool(toolSlug)
+  const lead = buildToolLead(
+    tool.name,
+    total,
+    professions.map(({ profession, count }) => ({
+      nameNominative: profession.nameNominative,
+      count,
+    }))
+  )
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -1167,9 +1176,7 @@ export default async function ToolPage({ params }: Props) {
         </nav>
 
         <h1 className="text-2xl md:text-3xl font-bold text-text mb-2">{tool.h1}</h1>
-        <p className="text-text-muted mb-6">
-          Актуальные вакансии, где требуется {tool.name} — собраны из Telegram-каналов digital-рынка
-        </p>
+        <p className="text-text-muted mb-6">{lead}</p>
 
         <div className="flex items-center gap-3 mb-6">
           <div className="flex items-center gap-1.5 bg-bg-card border border-border rounded-lg px-3 py-2 text-sm">
