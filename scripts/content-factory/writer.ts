@@ -33,6 +33,11 @@ import {
 } from './lib/session-stats.js'
 import { announceToChannel, checkChannelAccess, sendMessage } from './lib/telegram.js'
 import { faqSchemaLine } from '../../lib/faq-schema'
+import {
+  checkArticleMetadata,
+  normalizeFaqHeading,
+  type MetadataViolation,
+} from '../../lib/article-metadata-gate'
 import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
 import { closeTopicSubtask } from './lib/todoist.js'
 import { sendFailureAlert } from './lib/alert.js'
@@ -1690,6 +1695,87 @@ function buildArticleSchema(
   return JSON.stringify(schema)
 }
 
+/**
+ * Приёмка метаданных: те же пять правил, что храповик проверяет на статьях
+ * в репозитории, только ДО публикации.
+ *
+ * Круг правки — это вызов модели на строку-две, а не на статью целиком,
+ * поэтому кругов три, а не шесть: если за три раза уложить title в 65 знаков
+ * не вышло, дело не в удаче.
+ */
+const META_ROUNDS = 3
+
+export class MetadataRejected extends Error {
+  constructor(public readonly violations: MetadataViolation[]) {
+    super(
+      'Метаданные не прошли чек-лист:\n' +
+        violations.map((v) => `• ${v.rule}: ${v.detail}`).join('\n')
+    )
+    this.name = 'MetadataRejected'
+  }
+}
+
+async function acceptMetadata(
+  result: ArticleResult,
+  markdown: string
+): Promise<{ metaTitle: string; metaDesc: string; rounds: number }> {
+  let metaTitle = result.metaTitle
+  let metaDesc = result.metaDesc
+
+  for (let round = 0; round <= META_ROUNDS; round++) {
+    const violations = checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown })
+    if (violations.length === 0) {
+      if (round) console.log(`[writer] Метаданные: приняты ✓ (кругов правок: ${round})`)
+      return { metaTitle, metaDesc, rounds: round }
+    }
+
+    console.log(
+      `[writer] Метаданные: нарушений ${violations.length} — ` +
+        violations.map((v) => `${v.rule} (${v.detail})`).join('; ')
+    )
+
+    // FAQ правится в теле статьи, а не в двух строках frontmatter. Гонять
+    // модель по кругу бессмысленно: пусть падает и зовёт человека.
+    if (violations.some((v) => v.rule === 'FAQ_MISSING') || round === META_ROUNDS) {
+      throw new MetadataRejected(violations)
+    }
+
+    console.log(`[writer] Метаданные: круг правок ${round + 1}/${META_ROUNDS}...`)
+    const raw = await askClaude(
+      `Метаданные статьи не прошли чек-лист. Исправь ровно перечисленное, смысл сохрани.
+
+НАРУШЕНИЯ:
+${violations.map((v) => `- ${v.rule}: ${v.detail}`).join('\n')}
+
+ТЕКУЩИЕ ЗНАЧЕНИЯ:
+metaTitle: "${metaTitle}"
+metaDescription: "${metaDesc}"
+
+ТРЕБОВАНИЯ:
+- к metaTitle сайт дописывает « | Диджитал Паб» — считай длину вместе с этим хвостом
+- metaDescription: 140-175 знаков, с годом или источником данных (hh.ru, SuperJob, Вордстат)
+- metaDescription не должен начинаться теми же четырьмя словами, что metaTitle
+
+Верни ТОЛЬКО JSON вида {"metaTitle": "...", "metaDescription": "..."} — без пояснений.`,
+      'writer'
+    )
+
+    try {
+      const fixed = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1))
+      if (typeof fixed.metaTitle === 'string' && fixed.metaTitle.trim())
+        metaTitle = fixed.metaTitle.trim()
+      if (typeof fixed.metaDescription === 'string' && fixed.metaDescription.trim())
+        metaDesc = fixed.metaDescription.trim()
+    } catch {
+      console.log('[writer] Метаданные: ответ модели не разобран как JSON, круг впустую')
+    }
+  }
+
+  throw new MetadataRejected(
+    checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown })
+  )
+}
+
 // ─── MDX frontmatter builder ─────────────────────────────────────────────────
 
 function buildMdxFrontmatter(
@@ -1903,7 +1989,16 @@ async function main() {
   const cleanMarkdown = stripServiceTail(
     injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
   )
-  const enrichedMarkdown = cleanMarkdown
+  // Раздел вопросов иногда озаглавлен по-своему («Что ещё важно знать…»), и
+  // тогда разметка не собирается вовсе — приводим заголовок к понятному виду.
+  const enrichedMarkdown = normalizeFaqHeading(cleanMarkdown)
+
+  // Приёмка метаданных до записи файла: статья, не прошедшая чек-лист, не
+  // должна попасть на сайт — чинить её наутро руками дороже, чем не выпустить.
+  const meta = await acceptMetadata(result, enrichedMarkdown)
+  result.metaTitle = meta.metaTitle
+  result.metaDesc = meta.metaDesc
+
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
 

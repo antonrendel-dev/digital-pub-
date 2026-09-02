@@ -433,7 +433,8 @@ async function checkChannelAccess() {
     const d = await (await fetch(url)).json();
     if (!d.ok) return `\u043D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A ${CHANNEL}: ${d.description}`;
     const r = d.result;
-    if (r.status !== "administrator") return `\u0431\u043E\u0442 \u0432 ${CHANNEL} \u0441\u043E \u0441\u0442\u0430\u0442\u0443\u0441\u043E\u043C \xAB${r.status}\xBB, \u043D\u0443\u0436\u0435\u043D \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440`;
+    if (r.status !== "administrator")
+      return `\u0431\u043E\u0442 \u0432 ${CHANNEL} \u0441\u043E \u0441\u0442\u0430\u0442\u0443\u0441\u043E\u043C \xAB${r.status}\xBB, \u043D\u0443\u0436\u0435\u043D \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440`;
     if (r.can_post_messages === false) return `\u0431\u043E\u0442 \u0432 ${CHANNEL} \u0431\u0435\u0437 \u043F\u0440\u0430\u0432\u0430 \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0438`;
     return null;
   } catch (e) {
@@ -465,6 +466,67 @@ function faqSchemaLine(markdown) {
   if (items.length < MIN_FAQ_ITEMS) return "";
   return `
 faqSchema: '${JSON.stringify(items).replace(/'/g, "''")}'`;
+}
+
+// ../../lib/article-metadata-gate.ts
+var BRAND_SUFFIX = " | \u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431";
+var TITLE_LIMIT = 65;
+var DESC_MIN = 140;
+var DESC_MAX = 175;
+var SOURCE_OR_YEAR = /(hh\.ru|SuperJob|Вордстат|Метрика|Росстат|Habr|202\d)/i;
+var ECHO_WORDS = 4;
+function normalizeFaqHeading(markdown) {
+  if (parseFaq(markdown).length >= MIN_FAQ_ITEMS) return markdown;
+  const headings = [...markdown.matchAll(/^##\s+(.+)$/gm)];
+  const last = headings[headings.length - 1];
+  if (!last || !last[1].trim().endsWith("?")) return markdown;
+  const tail = markdown.slice(last.index + last[0].length);
+  if ((tail.match(/^###\s+/gm) ?? []).length < MIN_FAQ_ITEMS) return markdown;
+  const replaced = markdown.slice(0, last.index) + "## \u0427\u0430\u0441\u0442\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B" + markdown.slice(last.index + last[0].length);
+  return parseFaq(replaced).length >= MIN_FAQ_ITEMS ? replaced : markdown;
+}
+function echoedWords(title, description) {
+  const t = title.toLowerCase().split(/\s+/).slice(0, ECHO_WORDS);
+  const d = description.toLowerCase().split(/\s+/).slice(0, ECHO_WORDS);
+  let same = 0;
+  while (same < t.length && t[same] === d[same]) same++;
+  return same;
+}
+function checkArticleMetadata(meta) {
+  const violations = [];
+  const titleLen = (meta.metaTitle + BRAND_SUFFIX).length;
+  if (titleLen > TITLE_LIMIT) {
+    violations.push({
+      rule: "TITLE_LIMIT",
+      detail: `${titleLen} \u0437\u043D\u0430\u043A\u043E\u0432 \u0441 \u0431\u0440\u0435\u043D\u0434\u043E\u043C \u043F\u0440\u0438 \u043F\u043E\u0440\u043E\u0433\u0435 ${TITLE_LIMIT} \u2014 \u0443\u043A\u043E\u0440\u043E\u0442\u0438 metaTitle \u043D\u0430 ${titleLen - TITLE_LIMIT}`
+    });
+  }
+  const descLen = meta.metaDescription.length;
+  if (descLen < DESC_MIN || descLen > DESC_MAX) {
+    violations.push({
+      rule: "DESC_RANGE",
+      detail: `${descLen} \u0437\u043D\u0430\u043A\u043E\u0432 \u043F\u0440\u0438 \u043A\u043E\u0440\u0438\u0434\u043E\u0440\u0435 ${DESC_MIN}\u2013${DESC_MAX}`
+    });
+  }
+  if (parseFaq(meta.markdown).length < MIN_FAQ_ITEMS) {
+    violations.push({
+      rule: "FAQ_MISSING",
+      detail: `\u0440\u0430\u0437\u0434\u0435\u043B \u0432\u043E\u043F\u0440\u043E\u0441\u043E\u0432 \u0434\u0430\u0451\u0442 \u043C\u0435\u043D\u044C\u0448\u0435 ${MIN_FAQ_ITEMS} \u043F\u0430\u0440 \xAB\u0432\u043E\u043F\u0440\u043E\u0441 \u2014 \u043E\u0442\u0432\u0435\u0442\xBB, \u0440\u0430\u0437\u043C\u0435\u0442\u043A\u0430 \u043D\u0435 \u0441\u043E\u0431\u0435\u0440\u0451\u0442\u0441\u044F`
+    });
+  }
+  if (!SOURCE_OR_YEAR.test(meta.metaDescription)) {
+    violations.push({
+      rule: "DESC_NO_SOURCE",
+      detail: "\u0432 description \u043D\u0435\u0442 \u043D\u0438 \u0433\u043E\u0434\u0430, \u043D\u0438 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430 \u0434\u0430\u043D\u043D\u044B\u0445"
+    });
+  }
+  if (echoedWords(meta.metaTitle, meta.metaDescription) >= ECHO_WORDS) {
+    violations.push({
+      rule: "DESC_ECHOES_TITLE",
+      detail: `description \u043D\u0430\u0447\u0438\u043D\u0430\u0435\u0442\u0441\u044F \u0442\u0435\u043C\u0438 \u0436\u0435 ${ECHO_WORDS} \u0441\u043B\u043E\u0432\u0430\u043C\u0438, \u0447\u0442\u043E \u0438 title`
+    });
+  }
+  return violations;
 }
 
 // ../../lib/strip-service-tail.ts
@@ -2073,6 +2135,64 @@ function buildArticleSchema(topic, result, publishedAt, articleUrl) {
   };
   return JSON.stringify(schema);
 }
+var META_ROUNDS = 3;
+var MetadataRejected = class extends Error {
+  constructor(violations) {
+    super(
+      "\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435 \u043D\u0435 \u043F\u0440\u043E\u0448\u043B\u0438 \u0447\u0435\u043A-\u043B\u0438\u0441\u0442:\n" + violations.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join("\n")
+    );
+    this.violations = violations;
+    this.name = "MetadataRejected";
+  }
+  violations;
+};
+async function acceptMetadata(result, markdown) {
+  let metaTitle = result.metaTitle;
+  let metaDesc = result.metaDesc;
+  for (let round = 0; round <= META_ROUNDS; round++) {
+    const violations = checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown });
+    if (violations.length === 0) {
+      if (round) console.log(`[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043F\u0440\u0438\u043D\u044F\u0442\u044B \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round})`);
+      return { metaTitle, metaDesc, rounds: round };
+    }
+    console.log(
+      `[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${violations.length} \u2014 ` + violations.map((v) => `${v.rule} (${v.detail})`).join("; ")
+    );
+    if (violations.some((v) => v.rule === "FAQ_MISSING") || round === META_ROUNDS) {
+      throw new MetadataRejected(violations);
+    }
+    console.log(`[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round + 1}/${META_ROUNDS}...`);
+    const raw = await askClaude(
+      `\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435 \u0441\u0442\u0430\u0442\u044C\u0438 \u043D\u0435 \u043F\u0440\u043E\u0448\u043B\u0438 \u0447\u0435\u043A-\u043B\u0438\u0441\u0442. \u0418\u0441\u043F\u0440\u0430\u0432\u044C \u0440\u043E\u0432\u043D\u043E \u043F\u0435\u0440\u0435\u0447\u0438\u0441\u043B\u0435\u043D\u043D\u043E\u0435, \u0441\u043C\u044B\u0441\u043B \u0441\u043E\u0445\u0440\u0430\u043D\u0438.
+
+\u041D\u0410\u0420\u0423\u0428\u0415\u041D\u0418\u042F:
+${violations.map((v) => `- ${v.rule}: ${v.detail}`).join("\n")}
+
+\u0422\u0415\u041A\u0423\u0429\u0418\u0415 \u0417\u041D\u0410\u0427\u0415\u041D\u0418\u042F:
+metaTitle: "${metaTitle}"
+metaDescription: "${metaDesc}"
+
+\u0422\u0420\u0415\u0411\u041E\u0412\u0410\u041D\u0418\u042F:
+- \u043A metaTitle \u0441\u0430\u0439\u0442 \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442 \xAB | \u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431\xBB \u2014 \u0441\u0447\u0438\u0442\u0430\u0439 \u0434\u043B\u0438\u043D\u0443 \u0432\u043C\u0435\u0441\u0442\u0435 \u0441 \u044D\u0442\u0438\u043C \u0445\u0432\u043E\u0441\u0442\u043E\u043C
+- metaDescription: 140-175 \u0437\u043D\u0430\u043A\u043E\u0432, \u0441 \u0433\u043E\u0434\u043E\u043C \u0438\u043B\u0438 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u0434\u0430\u043D\u043D\u044B\u0445 (hh.ru, SuperJob, \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442)
+- metaDescription \u043D\u0435 \u0434\u043E\u043B\u0436\u0435\u043D \u043D\u0430\u0447\u0438\u043D\u0430\u0442\u044C\u0441\u044F \u0442\u0435\u043C\u0438 \u0436\u0435 \u0447\u0435\u0442\u044B\u0440\u044C\u043C\u044F \u0441\u043B\u043E\u0432\u0430\u043C\u0438, \u0447\u0442\u043E metaTitle
+
+\u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E JSON \u0432\u0438\u0434\u0430 {"metaTitle": "...", "metaDescription": "..."} \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439.`,
+      "writer"
+    );
+    try {
+      const fixed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
+      if (typeof fixed.metaTitle === "string" && fixed.metaTitle.trim()) metaTitle = fixed.metaTitle.trim();
+      if (typeof fixed.metaDescription === "string" && fixed.metaDescription.trim())
+        metaDesc = fixed.metaDescription.trim();
+    } catch {
+      console.log("[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438 \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D \u043A\u0430\u043A JSON, \u043A\u0440\u0443\u0433 \u0432\u043F\u0443\u0441\u0442\u0443\u044E");
+    }
+  }
+  throw new MetadataRejected(
+    checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown })
+  );
+}
 function buildMdxFrontmatter(topic, result, publishedAt, imageUrl, markdown) {
   const tags = result.tags.length ? JSON.stringify(result.tags) : "[]";
   const imageLine = imageUrl ? `
@@ -2212,7 +2332,10 @@ async function main() {
   const cleanMarkdown = stripServiceTail(
     injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
   );
-  const enrichedMarkdown = cleanMarkdown;
+  const enrichedMarkdown = normalizeFaqHeading(cleanMarkdown);
+  const meta = await acceptMetadata(result, enrichedMarkdown);
+  result.metaTitle = meta.metaTitle;
+  result.metaDesc = meta.metaDesc;
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown);
   const mdxContent = frontmatter + "\n" + enrichedMarkdown;
   if (hasServiceText(mdxContent)) {
@@ -2321,5 +2444,6 @@ main().catch(async (e) => {
   process.exit(1);
 });
 export {
+  MetadataRejected,
   SpecRejected
 };

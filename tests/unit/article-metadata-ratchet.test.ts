@@ -19,10 +19,9 @@ import path from 'path'
 
 const ARTICLES_DIR = path.join(process.cwd(), 'content', 'articles')
 
-const BRAND_SUFFIX = ' | Диджитал Паб'
-const TITLE_LIMIT = 65
-const DESC_MIN = 140
-const DESC_MAX = 175
+// Пороги живут в lib/article-metadata-gate.ts — там же, откуда их берёт
+// контент-завод. Дублировать числа здесь значит однажды развести их с заводом.
+import { BRAND_SUFFIX, TITLE_LIMIT, DESC_MIN, DESC_MAX } from '../../lib/article-metadata-gate'
 
 // Зафиксировано прогоном page-quality от 01.09.2026, опущено после переписки
 // 41 статьи под ключи: длинных title было 70, description вне коридора — 40.
