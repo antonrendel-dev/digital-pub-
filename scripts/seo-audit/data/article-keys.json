@@ -1,0 +1,512 @@
+{
+  "generatedAt": "2026-09-02",
+  "threshold": 150,
+  "corridor": [300, 2000],
+  "note": "Порог 150 согласован для уже существующих статей; коридор 300–2000 — для новых тем контент-завода. volume=null у двух записей 8588ef4: ключ назван в коммите без частотности.",
+  "articles": {
+    "agregatory-vakansij-digital-sravnenie-ploshhadok": {
+      "key": "вакансии не на hh.ru",
+      "volume": null,
+      "source": "8588ef4",
+      "checkedAt": "2026-09-01"
+    },
+    "analitik-dannyh-ili-marketolog-analitik": {
+      "key": "маркетолог аналитик",
+      "volume": 1282,
+      "source": "wordstat+gsc",
+      "checkedAt": "2026-09-02"
+    },
+    "biznes-analitik-kto-eto-otlichiya-ot-analitika-dannyh": {
+      "key": "бизнес аналитик кто это",
+      "volume": 1130,
+      "source": "wordstat+gsc",
+      "checkedAt": "2026-09-02"
+    },
+    "chto-takoe-smm-professiya-obyazannosti-zarplata": {
+      "key": "smm специалист кто это",
+      "volume": 990,
+      "source": "2b86f4a",
+      "checkedAt": "2026-09-01"
+    },
+    "frilans-digital-s-nulja": {
+      "key": "фриланс для начинающих",
+      "volume": 3076,
+      "source": "5b0eda8",
+      "checkedAt": "2026-09-01"
+    },
+    "frilans-ili-shtat-marketolog": {
+      "key": null,
+      "volume": null,
+      "reason": "«маркетолог фрилансер» 45, «фриланс или штат» 3 — спроса нет",
+      "checkedAt": "2026-09-02"
+    },
+    "gde-iskat-rabotu-krome-avito": {
+      "key": "где искать работу",
+      "volume": 23053,
+      "source": "32400f4",
+      "checkedAt": "2026-09-01"
+    },
+    "gde-iskat-rabotu-krome-hh-ru-15-ploshchadok-2026": {
+      "key": "где искать работу кроме hh",
+      "volume": 2122,
+      "source": "8d3dc23",
+      "checkedAt": "2026-09-01"
+    },
+    "gde-iskat-vakansii-dizajnera-2026": {
+      "key": "вакансии дизайнера",
+      "volume": 33199,
+      "source": "0f55674",
+      "checkedAt": "2026-09-01"
+    },
+    "gde-nayti-spetsialista-digital": {
+      "key": "поиск сотрудников",
+      "volume": null,
+      "source": "8588ef4",
+      "checkedAt": "2026-09-01"
+    },
+    "gde-razmeshchat-vakansii-ploshchadki-ceny-2026": {
+      "key": "где разместить вакансию",
+      "volume": 1433,
+      "source": "2b86f4a",
+      "checkedAt": "2026-09-01"
+    },
+    "hr-menedzher-digital-agentstvo-najm": {
+      "key": "hr менеджер кто это",
+      "volume": 1088,
+      "source": "b58e77d",
+      "checkedAt": "2026-09-01"
+    },
+    "inflyuens-marketing-zarplaty-i-put-v-professiyu": {
+      "key": "работа с блогерами",
+      "volume": 1039,
+      "source": "b0955ef",
+      "checkedAt": "2026-09-01"
+    },
+    "ispytatelnyj-srok-novaya-rabota-digital-90-dnej": {
+      "key": null,
+      "volume": null,
+      "reason": "«как пройти испытательный срок» 1310 — вложенные про увольнение не прошедшего, интент кадрово-юридический",
+      "checkedAt": "2026-09-02"
+    },
+    "junior-seo-spetsialist-bez-opyta": {
+      "key": null,
+      "volume": null,
+      "reason": "«junior seo специалист» 15, «seo специалист без опыта» 11 — спроса нет",
+      "checkedAt": "2026-09-02"
+    },
+    "kak-dogovoritsya-o-povyshenii-zarplaty": {
+      "key": "как попросить повышение",
+      "volume": 567,
+      "source": "b58e77d",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-nanyat-marketologa-gajd-dlya-hr": {
+      "key": null,
+      "volume": null,
+      "reason": "«как найти маркетолога» 93, «поиск маркетолога» 112 — ниже порога 150",
+      "checkedAt": "2026-09-02"
+    },
+    "kak-nanyat-smm-specialista-marketologa-dizajnera-telegram": {
+      "key": "найти смм специалиста",
+      "volume": 213,
+      "source": "1a92014",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-napisat-vakansiyu-marketologa": {
+      "key": "как написать вакансию",
+      "volume": 5535,
+      "source": "cdb8a10",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-nayti-rabotu-marketologu": {
+      "key": "вакансии маркетолога",
+      "volume": 7428,
+      "source": "aca4f95",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-nayti-rabotu-smm-menedzheru-2026": {
+      "key": "вакансии смм",
+      "volume": 4074,
+      "source": "8d3dc23",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-nayti-rabotu-telegram-digital": {
+      "key": "работа в телеграм",
+      "volume": 4215,
+      "source": "aca4f95",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-ocenit-portfolio-dizajnera": {
+      "key": "портфолио дизайнера",
+      "volume": 7453,
+      "source": "32400f4",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-rabotodateli-ishchut-smm-spetsialistov": {
+      "key": "обязанности смм специалиста",
+      "volume": 157,
+      "source": "1a92014",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-stat-analitikom-dannykh-s-nulya": {
+      "key": "аналитик данных с нуля",
+      "volume": 1461,
+      "source": "cdb8a10",
+      "checkedAt": "2026-09-01"
+    },
+    "kak-stat-testirovshchikom": {
+      "key": "профессия тестировщик",
+      "volume": 1520,
+      "source": "b0955ef",
+      "checkedAt": "2026-09-01"
+    },
+    "karera-smm-specialista": {
+      "key": null,
+      "volume": null,
+      "reason": "«смм менеджер кто это» 786 — интент определения, уже закрыт статьёй chto-takoe-smm; каннибализация",
+      "checkedAt": "2026-09-02"
+    },
+    "klyuchevye-navyki-v-rezyume-digital": {
+      "key": "ключевые навыки в резюме",
+      "volume": 1229,
+      "source": "2b86f4a",
+      "checkedAt": "2026-09-01"
+    },
+    "kontent-meyker-kto-eto-otlichiya-ot-smm-specialista": {
+      "key": "контент мейкер",
+      "volume": 5085,
+      "source": "c4461f0",
+      "checkedAt": "2026-09-01"
+    },
+    "lichnyy-brend-marketologa": {
+      "key": "продвижение личного бренда",
+      "volume": 760,
+      "source": "b58e77d",
+      "checkedAt": "2026-09-01"
+    },
+    "menedzher-marketpleysov-bez-opyta-udalenno": {
+      "key": "удалённая работа без опыта",
+      "volume": 60084,
+      "source": "aca4f95",
+      "checkedAt": "2026-09-01"
+    },
+    "menedzher-marketpleysov-s-nulya": {
+      "key": "менеджер маркетплейсов кто это",
+      "volume": 158,
+      "source": "wordstat+gsc",
+      "checkedAt": "2026-09-02"
+    },
+    "nanyat-dzhuniora-marketologa-ili-senora-startapu": {
+      "key": null,
+      "volume": null,
+      "reason": "«джун или сеньор» 17, «нанять джуниора» 2 — спроса нет",
+      "checkedAt": "2026-09-02"
+    },
+    "nejroseti-dlya-dizajnerov-ai-navyki-2026": {
+      "key": "ии для дизайнера",
+      "volume": 1308,
+      "source": "b58e77d",
+      "checkedAt": "2026-09-01"
+    },
+    "nejroseti-dlya-marketologa-2026": {
+      "key": "ии для маркетолога",
+      "volume": 322,
+      "source": "wordstat+gsc",
+      "checkedAt": "2026-09-02"
+    },
+    "oformlenie-rezyume-pervyy-ekran": {
+      "key": "оформление резюме",
+      "volume": 1485,
+      "source": "cdb8a10",
+      "checkedAt": "2026-09-01"
+    },
+    "portfolio-kopirajtera-s-nulya": {
+      "key": "портфолио копирайтера",
+      "volume": 313,
+      "source": "b0955ef",
+      "checkedAt": "2026-09-01"
+    },
+    "portfolio-marketologa-oshibki": {
+      "key": "портфолио маркетолога",
+      "volume": 313,
+      "source": "32400f4",
+      "checkedAt": "2026-09-01"
+    },
+    "portfolio-smm-spetsialista-primery-kejsov": {
+      "key": "смм портфолио",
+      "volume": 470,
+      "source": "b0955ef",
+      "checkedAt": "2026-09-01"
+    },
+    "prodakt-i-prodzhekt-menedzher-vakansii-2026": {
+      "key": "проджект менеджер кто это",
+      "volume": 529,
+      "source": "2b86f4a",
+      "checkedAt": "2026-09-01"
+    },
+    "product-manager-kto-eto": {
+      "key": "продакт менеджер кто это",
+      "volume": 670,
+      "source": "wordstat+gsc",
+      "checkedAt": "2026-09-02"
+    },
+    "produktovyy-marketolog-vs-prodakt-menedzher": {
+      "key": "продуктовый маркетолог",
+      "volume": 1177,
+      "source": "b0955ef",
+      "checkedAt": "2026-09-01"
+    },
+    "professionalnoe-vygoranie-priznaki": {
+      "key": "профессиональное выгорание",
+      "volume": 8979,
+      "source": "0f55674",
+      "checkedAt": "2026-09-01"
+    },
+    "professiya-kopirajter-kontent-menedzher": {
+      "key": "копирайтер кто это",
+      "volume": 1637,
+      "source": "b58e77d",
+      "checkedAt": "2026-09-01"
+    },
+    "professiya-marketolog": {
+      "key": "профессия маркетолог",
+      "volume": 3420,
+      "source": "cdb8a10",
+      "checkedAt": "2026-09-01"
+    },
+    "professiya-targetolog": {
+      "key": "таргетолог профессия",
+      "volume": 785,
+      "source": "aca4f95",
+      "checkedAt": "2026-09-01"
+    },
+    "professiya-veb-analitik-2026": {
+      "key": null,
+      "volume": null,
+      "reason": "«веб аналитик» 2091 — вложенные про сервисы и Яндекс.Метрику, интент инструментальный",
+      "checkedAt": "2026-09-02"
+    },
+    "razmestit-rezyume-besplatno-gajd-dlya-digital-specialistov": {
+      "key": "где разместить резюме",
+      "volume": 593,
+      "source": "5b0eda8",
+      "checkedAt": "2026-09-01"
+    },
+    "rezume-kontent-menedzhera": {
+      "key": null,
+      "volume": null,
+      "reason": "«резюме контент менеджера» 87 — ниже порога; в Google 3 показа",
+      "checkedAt": "2026-09-02"
+    },
+    "rezume-marketologa": {
+      "key": "резюме маркетолога",
+      "volume": 489,
+      "source": "aca4f95",
+      "checkedAt": "2026-09-01"
+    },
+    "rezyume-analitika-dannyh-obrazec-shablon-oshibki": {
+      "key": "резюме аналитика",
+      "volume": 1609,
+      "source": "b0955ef",
+      "checkedAt": "2026-09-01"
+    },
+    "rezyume-dizajnera": {
+      "key": "резюме дизайнера",
+      "volume": 2033,
+      "source": "5b0eda8",
+      "checkedAt": "2026-09-01"
+    },
+    "rezyume-kopiraytera": {
+      "key": "копирайтер резюме",
+      "volume": 150,
+      "source": "1a92014",
+      "checkedAt": "2026-09-01"
+    },
+    "rezyume-smm-spetsialista": {
+      "key": "резюме смм",
+      "volume": 261,
+      "source": "1a92014",
+      "checkedAt": "2026-09-01"
+    },
+    "rezyume-targetologa-shablon-2026": {
+      "key": null,
+      "volume": null,
+      "reason": "«таргетолог резюме» 15 по Вордстату при 81 показе в Google — спрос есть только в Google",
+      "checkedAt": "2026-09-02"
+    },
+    "rilsmeyker-kto-eto": {
+      "key": "рилсмейкер кто это",
+      "volume": 800,
+      "source": "wordstat+gsc",
+      "checkedAt": "2026-09-02"
+    },
+    "seo-specialist-2026-navyki-zarplata": {
+      "key": "seo специалист",
+      "volume": 3267,
+      "source": "cdb8a10",
+      "checkedAt": "2026-09-01"
+    },
+    "skolko-zarabatyvaet-graficheskiy-dizayner": {
+      "key": "сколько зарабатывает дизайнер",
+      "volume": 15408,
+      "source": "aca4f95",
+      "checkedAt": "2026-09-01"
+    },
+    "smm-menedzher-bez-opyta": {
+      "key": "smm с нуля",
+      "volume": 1017,
+      "source": "2b86f4a",
+      "checkedAt": "2026-09-01"
+    },
+    "smm-vs-targetolog-kogo-nanyat-malomu-biznesu": {
+      "key": "кто такой таргетолог",
+      "volume": 636,
+      "source": "5b0eda8",
+      "checkedAt": "2026-09-01"
+    },
+    "soft-skills-marketologa-cheklst-dlya-hr": {
+      "key": null,
+      "volume": null,
+      "reason": "«софт скиллы» 1570 — интент определения и списков, статья про методику проверки на интервью",
+      "checkedAt": "2026-09-02"
+    },
+    "soprovoditelnoe-pismo-k-rezyume-primer": {
+      "key": "сопроводительное письмо к резюме пример",
+      "volume": 4268,
+      "source": "wordstat+gsc",
+      "checkedAt": "2026-09-02"
+    },
+    "stazhirovka-v-digital-pervyj-offer": {
+      "key": "стажировка маркетинг",
+      "volume": 1229,
+      "source": "b58e77d",
+      "checkedAt": "2026-09-01"
+    },
+    "stoimost-uslug-frilansera-digital-2026": {
+      "key": null,
+      "volume": null,
+      "reason": "«сколько стоит фрилансер» 106 — ниже порога",
+      "checkedAt": "2026-09-02"
+    },
+    "telegram-kanaly-vakansii-smm": {
+      "key": "каналы с вакансиями",
+      "volume": 1220,
+      "source": "32400f4",
+      "checkedAt": "2026-09-01"
+    },
+    "testovoe-zadanie-dlya-smm-specialista": {
+      "key": null,
+      "volume": null,
+      "reason": "«тестовое задание для смм» 14 — спроса нет",
+      "checkedAt": "2026-09-02"
+    },
+    "udalennaya-rabota-digital-2026": {
+      "key": null,
+      "volume": null,
+      "reason": "«удаленная работа маркетологом» 271 — вакансионный интент, ключ принадлежит листингу",
+      "checkedAt": "2026-09-02"
+    },
+    "udalennaya-rabota-digital-specialista-instrumenty-rezhim-dnya": {
+      "key": "как работать удаленно",
+      "volume": 7550,
+      "source": "cdb8a10",
+      "checkedAt": "2026-09-01"
+    },
+    "vakansii-direktolog-yandex-direct": {
+      "key": "директолог",
+      "volume": 4879,
+      "source": "c4461f0",
+      "checkedAt": "2026-09-01"
+    },
+    "vakansii-junior-digital-gajd-dlya-dzhuniora": {
+      "key": "как найти работу без опыта",
+      "volume": 2475,
+      "source": "cdb8a10",
+      "checkedAt": "2026-09-01"
+    },
+    "vakansii-kontent-menedzher-2026": {
+      "key": "вакансии контент менеджера",
+      "volume": 1406,
+      "source": "8d3dc23",
+      "checkedAt": "2026-09-01"
+    },
+    "vakansii-kopirajter-gde-iskat-rabotu-2026": {
+      "key": "вакансии копирайтера",
+      "volume": 4961,
+      "source": "5b0eda8",
+      "checkedAt": "2026-09-01"
+    },
+    "vakansii-razrabotchik-digital": {
+      "key": "вакансии разработчика",
+      "volume": 16510,
+      "source": "0f55674",
+      "checkedAt": "2026-09-01"
+    },
+    "voprosy-na-sobesedovanii-marketologa": {
+      "key": "вопросы на собеседовании",
+      "volume": 38396,
+      "source": "0f55674",
+      "checkedAt": "2026-09-01"
+    },
+    "zarplata-analitika-dannykh": {
+      "key": "зарплата аналитика данных",
+      "volume": 773,
+      "source": "c4461f0",
+      "checkedAt": "2026-09-01"
+    },
+    "zarplata-dizajnera-2026-uiux-grafika-moshion": {
+      "key": "зарплата дизайнера",
+      "volume": 7227,
+      "source": "cdb8a10",
+      "checkedAt": "2026-09-01"
+    },
+    "zarplata-frontend-razrabotchika-2026": {
+      "key": "зарплата разработчика",
+      "volume": 4264,
+      "source": "32400f4",
+      "checkedAt": "2026-09-01"
+    },
+    "zarplata-kopiraytera-2026": {
+      "key": "сколько зарабатывает копирайтер",
+      "volume": 288,
+      "source": "1a92014",
+      "checkedAt": "2026-09-01"
+    },
+    "zarplata-produkt-menedzhera": {
+      "key": "зарплата продакт менеджера",
+      "volume": 180,
+      "source": "1a92014",
+      "checkedAt": "2026-09-01"
+    },
+    "zarplata-seo-specialista": {
+      "key": null,
+      "volume": null,
+      "reason": "«зарплата seo специалиста» 38 — ниже порога",
+      "checkedAt": "2026-09-02"
+    },
+    "zarplata-smm-spetsialista-realnie-dannye-iz-vakansiy": {
+      "key": "зарплата смм",
+      "volume": 450,
+      "source": "b0955ef",
+      "checkedAt": "2026-09-01"
+    },
+    "zarplata-targetologa": {
+      "key": null,
+      "volume": null,
+      "reason": "«зарплата таргетолога» 51, «таргетолог зп» 43 — ниже порога",
+      "checkedAt": "2026-09-02"
+    },
+    "zarplata-ux-ui-dizajnera": {
+      "key": "зарплата веб дизайнера",
+      "volume": 327,
+      "source": "c4461f0",
+      "checkedAt": "2026-09-01"
+    },
+    "zarplaty-digital-marketing-2026": {
+      "key": "сколько зарабатывает маркетолог",
+      "volume": 2507,
+      "source": "8d3dc23",
+      "checkedAt": "2026-09-01"
+    }
+  }
+}
