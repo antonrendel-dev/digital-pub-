@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getPostsByTool } from '@/lib/posts'
 import PageShell from '@/components/PageShell'
 import JsonLd from '@/components/JsonLd'
+import HubFaq from '@/components/HubFaq'
 
 export const revalidate = 60
 
@@ -235,6 +236,8 @@ export default async function ToolsHubPage() {
             первого взгляда — без лишней фильтрации.
           </p>
         </div>
+
+        <HubFaq hub="tools" />
       </div>
     </PageShell>
   )

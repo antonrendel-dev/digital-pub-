@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import JsonLd from '@/components/JsonLd'
+import HubFaq from '@/components/HubFaq'
 import PageShell from '@/components/PageShell'
 import { getPostsByProfession } from '@/lib/posts'
 import { PROFESSIONS, PROFESSIONS_MEASURED_AT } from '@/lib/professions'
@@ -133,6 +134,8 @@ export default async function ProfessionsHubPage() {
           раздел, только если по ней есть и спрос в поиске, и живые вакансии: страница-обещание без
           вакансий хуже её отсутствия.
         </p>
+
+        <HubFaq hub="professions" />
       </div>
     </PageShell>
   )

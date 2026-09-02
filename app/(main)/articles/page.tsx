@@ -4,6 +4,7 @@ import config from '@payload-config'
 import { getArticles, mergeAndSortArticles, type MergedArticle } from '@/lib/articles'
 import { PageShellWrapper } from '@/components/PageShellWrapper'
 import JsonLd from '@/components/JsonLd'
+import HubFaq from '@/components/HubFaq'
 import ArticlesGrid from '@/components/ArticlesGrid'
 
 export const revalidate = 300
@@ -112,6 +113,8 @@ export default async function ArticlesPage() {
         ) : (
           <ArticlesGrid articles={allArticles} />
         )}
+
+        <HubFaq hub="articles" />
       </div>
     </PageShellWrapper>
   )

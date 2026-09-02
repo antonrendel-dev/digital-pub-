@@ -2,6 +2,7 @@ import { getPostsByTypePaginated } from '@/lib/posts'
 import { getTagsWithCountsByType, getStats } from '@/lib/tags'
 import ListingPage from '@/components/ListingPage'
 import JsonLd from '@/components/JsonLd'
+import HubFaq from '@/components/HubFaq'
 import type { Metadata } from 'next'
 
 export const revalidate = 300
@@ -118,6 +119,11 @@ export default async function ResumesPage({ searchParams }: Props) {
         total={total}
         seoHtml={page === 1 ? RESUMES_SEO_HTML : undefined}
       />
+      {page === 1 && (
+        <div className="max-w-wrap mx-auto px-4 pb-8">
+          <HubFaq hub="resumes" />
+        </div>
+      )}
     </>
   )
 }
