@@ -4,6 +4,7 @@ import JsonLd from '@/components/JsonLd'
 import { getPublishedPosts } from '@/lib/posts'
 import { getStats, getTagsWithCounts } from '@/lib/tags'
 import { getArticles, formatArticleDate } from '@/lib/articles'
+import { HOME_FAQ as homeFaq } from '@/lib/home-faq'
 
 export const metadata: Metadata = {
   title: { absolute: 'Вакансии digital 2026 — маркетинг, дизайн, SMM, IT | Диджитал Паб' },
@@ -84,7 +85,10 @@ export default async function Page() {
 <li><strong>Бесплатно</strong> — полный доступ к базе вакансий и резюме без регистрации и ограничений.</li>
 </ul>
 
-<p>Читайте наши <a href="/articles">статьи</a> о карьере в digital — обзоры зарплат, советы по составлению резюме и гайды по поиску работы для маркетологов, дизайнеров и аналитиков.</p>`
+<p>Читайте наши <a href="/articles">статьи</a> о карьере в digital — обзоры зарплат, советы по составлению резюме и гайды по поиску работы для маркетологов, дизайнеров и аналитиков.</p>
+
+<h2>Частые вопросы</h2>
+${homeFaq.map(({ q, a }) => `<h3>${q}</h3>\n<p>${a}</p>`).join('\n')}`
 
   const webPageLd = {
     '@context': 'https://schema.org',
@@ -162,10 +166,21 @@ export default async function Page() {
     ],
   }
 
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: homeFaq.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  }
+
   return (
     <>
       <JsonLd data={webPageLd} />
       <JsonLd data={itemListLd} />
+      <JsonLd data={faqLd} />
       <HomePage posts={posts} stats={stats} articles={articles} tags={tags} seoHtml={seoHtml} />
     </>
   )
