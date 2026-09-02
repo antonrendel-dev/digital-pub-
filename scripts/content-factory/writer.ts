@@ -34,6 +34,12 @@ import {
 import { announceToChannel, checkChannelAccess, sendMessage } from './lib/telegram.js'
 import { faqSchemaLine } from '../../lib/faq-schema'
 import {
+  BRAND_SUFFIX,
+  DESC_MAX,
+  DESC_MIN,
+  ECHO_WORDS,
+  SOURCE_NAMES,
+  TITLE_LIMIT,
   checkArticleMetadata,
   normalizeFaqHeading,
   type MetadataViolation,
@@ -1752,9 +1758,9 @@ metaTitle: "${metaTitle}"
 metaDescription: "${metaDesc}"
 
 ТРЕБОВАНИЯ:
-- к metaTitle сайт дописывает « | Диджитал Паб» — считай длину вместе с этим хвостом
-- metaDescription: 140-175 знаков, с годом или источником данных (hh.ru, SuperJob, Вордстат)
-- metaDescription не должен начинаться теми же четырьмя словами, что metaTitle
+- к metaTitle сайт дописывает «${BRAND_SUFFIX}» — считай длину вместе с этим хвостом, всего не больше ${TITLE_LIMIT} знаков
+- metaDescription: ${DESC_MIN}-${DESC_MAX} знаков, с годом или источником данных (${SOURCE_NAMES.join(', ')})
+- metaDescription не должен начинаться теми же ${ECHO_WORDS} словами, что metaTitle
 
 Верни ТОЛЬКО JSON вида {"metaTitle": "...", "metaDescription": "..."} — без пояснений.`,
       'writer'
@@ -1771,6 +1777,8 @@ metaDescription: "${metaDesc}"
     }
   }
 
+  // До сюда цикл не доходит: на последнем круге бросок происходит внутри.
+  /* c8 ignore next */
   throw new MetadataRejected(
     checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown })
   )
@@ -1939,6 +1947,15 @@ async function main() {
 
   // Шаги 1-4: генерация статьи
   const result = await generateMdxArticle(topic)
+
+  // Приёмка метаданных ДО генерации ассетов. Раньше она стояла после hero,
+  // графиков и скетчей: отказ выбрасывал в мусор всю их работу и оставлял
+  // несвязанные картинки в public/images/posts. Ни картинки, ни графики на
+  // metaTitle, metaDescription и наличие раздела вопросов не влияют, поэтому
+  // проверять их можно сразу (ревью 02.09.2026).
+  const meta = await acceptMetadata(result, normalizeFaqHeading(stripServiceTail(result.markdown)))
+  result.metaTitle = meta.metaTitle
+  result.metaDesc = meta.metaDesc
   console.log(`[writer] Статья готова, slug: ${result.slug}`)
 
   // Проверяем что slug не занят
@@ -1992,12 +2009,6 @@ async function main() {
   // Раздел вопросов иногда озаглавлен по-своему («Что ещё важно знать…»), и
   // тогда разметка не собирается вовсе — приводим заголовок к понятному виду.
   const enrichedMarkdown = normalizeFaqHeading(cleanMarkdown)
-
-  // Приёмка метаданных до записи файла: статья, не прошедшая чек-лист, не
-  // должна попасть на сайт — чинить её наутро руками дороже, чем не выпустить.
-  const meta = await acceptMetadata(result, enrichedMarkdown)
-  result.metaTitle = meta.metaTitle
-  result.metaDesc = meta.metaDesc
 
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown

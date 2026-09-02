@@ -25,6 +25,15 @@ export interface LeadProfession {
   count: number
 }
 
+/**
+ * Строчная первая буква — но не у аббревиатур: сплошной toLowerCase превращал
+ * «UX/UI-дизайнер» в «ux/ui-дизайнер» прямо в первых 60 словах страницы, то
+ * есть портил и орфографию, и вхождение ключа (ревью 02.09.2026).
+ */
+function lowerFirst(name: string): string {
+  return /^\p{Lu}\p{Lu}/u.test(name) ? name : name.charAt(0).toLowerCase() + name.slice(1)
+}
+
 export function buildToolLead(name: string, total: number, professions: LeadProfession[]): string {
   const plural =
     total % 10 === 1 && total % 100 !== 11
@@ -42,8 +51,12 @@ export function buildToolLead(name: string, total: number, professions: LeadProf
   const top = professions.filter((p) => p.count > 0).slice(0, 2)
   if (!top.length) return head
 
-  const who = top.map((p) => `${p.nameNominative.toLowerCase()} — ${p.count}`).join(', ')
-  const tail = ` Чаще всего навык просят там, где ищут: ${who}.`
+  // Числа профессий в лид не идут намеренно. `total` — живой запрос к базе,
+  // а count в lib/professions.ts — снимок, который обновляет отдельный
+  // workflow. В одном предложении они разъезжаются до арифметически
+  // невозможного: «3 вакансии … UX/UI-дизайнер — 15» (ревью 02.09.2026).
+  const who = top.map((p) => lowerFirst(p.nameNominative)).join(' и ')
+  const tail = ` Чаще всего навык просят там, где ищут ${who}.`
   const full = head + tail
 
   // Лид, вылезший за экран, отодвигает ленту вакансий — тогда лучше короткий.

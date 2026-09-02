@@ -21,7 +21,15 @@ const ARTICLES_DIR = path.join(process.cwd(), 'content', 'articles')
 
 // Пороги живут в lib/article-metadata-gate.ts — там же, откуда их берёт
 // контент-завод. Дублировать числа здесь значит однажды развести их с заводом.
-import { BRAND_SUFFIX, TITLE_LIMIT, DESC_MIN, DESC_MAX } from '../../lib/article-metadata-gate'
+import {
+  BRAND_SUFFIX,
+  TITLE_LIMIT,
+  DESC_MIN,
+  DESC_MAX,
+  ECHO_WORDS,
+  SOURCE_OR_YEAR,
+  echoedWords,
+} from '../../lib/article-metadata-gate'
 
 // Зафиксировано прогоном page-quality от 01.09.2026, опущено после переписки
 // 41 статьи под ключи: длинных title было 70, description вне коридора — 40.
@@ -86,13 +94,7 @@ describe('метаданные статей — храповик долга', ()
   it('description не пересказывает title первыми же словами', () => {
     // Пункт 5 второго чек-листа. Совпадение первых четырёх слов — уже пересказ.
     // Пять статей так делают, это тоже долг под храповиком.
-    const echo = articles.filter((a) => {
-      const t = a.title.toLowerCase().split(/\s+/).slice(0, 4)
-      const d = a.description.toLowerCase().split(/\s+/).slice(0, 4)
-      let same = 0
-      while (same < t.length && t[same] === d[same]) same++
-      return same >= 4
-    })
+    const echo = articles.filter((a) => echoedWords(a.title, a.description) >= ECHO_WORDS)
     expect(echo.length).toBeLessThanOrEqual(DEBT.descEchoesTitle)
   })
 
@@ -100,9 +102,7 @@ describe('метаданные статей — храповик долга', ()
     // Пункт 7 второго чек-листа: сниппет без даты и источника читается как
     // пересказ. Правился 02.09.2026 сразу после того, как переписка описаний
     // сама же и уронила этот показатель с 34 до 61 нарушения.
-    const noSource = articles.filter(
-      (a) => !/(hh\.ru|SuperJob|Вордстат|Метрика|Росстат|Habr|202\d)/i.test(a.description)
-    )
+    const noSource = articles.filter((a) => !SOURCE_OR_YEAR.test(a.description))
     expect(noSource.length).toBeLessThanOrEqual(DEBT.descNoSourceOrYear)
   })
 

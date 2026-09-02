@@ -22,10 +22,14 @@ export const DESC_MIN = 140
 export const DESC_MAX = 175
 
 /** Сниппет без даты и источника читается как пересказ — пункт 7 чек-листа. */
-const SOURCE_OR_YEAR = /(hh\.ru|SuperJob|Вордстат|Метрика|Росстат|Habr|202\d)/i
+export const SOURCE_OR_YEAR = /(hh\.ru|SuperJob|Вордстат|Метрика|Росстат|Habr|202\d)/i
 
 /** Совпадение первых четырёх слов title и description — уже пересказ. */
-const ECHO_WORDS = 4
+export const ECHO_WORDS = 4
+
+/** Источники, которые засчитываются как атрибуция. Держим списком: он нужен и
+ *  проверке, и промпту круга правок в заводе — врозь они однажды разъедутся. */
+export const SOURCE_NAMES = ['hh.ru', 'SuperJob', 'Вордстат', 'Метрика', 'Росстат', 'Habr'] as const
 
 /**
  * Привести заголовок раздела вопросов к тому виду, который понимает парсер.
@@ -36,7 +40,15 @@ const ECHO_WORDS = 4
  *
  * Правило намеренно узкое: трогаем только последний H2, который заканчивается
  * вопросительным знаком и под которым лежат минимум две пары «### вопрос —
- * ответ». Любой другой заголовок остаётся как написан.
+ * ответ», причём сами H3 обязаны быть вопросами. Любой другой заголовок
+ * остаётся как написан.
+ *
+ * Требование вопросительного знака у H3 добавлено 02.09.2026 по ревью: без
+ * него функция переименовывала «## Сколько зарабатывает продуктовый
+ * маркетолог?» с грейдами «### Джуниор / ### Мидл» в «## Частые вопросы» —
+ * вырезала ключевой H2 и уводила грейды в faqSchema как вопросы. Проверка на
+ * живых статьях: из 306 H3 внутри FAQ-секций вопросительным знаком кончаются
+ * 303, так что правило не ломает ни одного реального раздела.
  */
 export function normalizeFaqHeading(markdown: string): string {
   if (parseFaq(markdown).length >= MIN_FAQ_ITEMS) return markdown
@@ -46,7 +58,8 @@ export function normalizeFaqHeading(markdown: string): string {
   if (!last || !last[1].trim().endsWith('?')) return markdown
 
   const tail = markdown.slice(last.index! + last[0].length)
-  if ((tail.match(/^###\s+/gm) ?? []).length < MIN_FAQ_ITEMS) return markdown
+  const questions = (tail.match(/^###\s+.+$/gm) ?? []).filter((h) => h.trim().endsWith('?'))
+  if (questions.length < MIN_FAQ_ITEMS) return markdown
 
   const replaced =
     markdown.slice(0, last.index!) +
@@ -67,7 +80,7 @@ export interface ArticleMetadata {
   markdown: string
 }
 
-function echoedWords(title: string, description: string): number {
+export function echoedWords(title: string, description: string): number {
   const t = title.toLowerCase().split(/\s+/).slice(0, ECHO_WORDS)
   const d = description.toLowerCase().split(/\s+/).slice(0, ECHO_WORDS)
   let same = 0

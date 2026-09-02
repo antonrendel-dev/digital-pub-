@@ -475,13 +475,15 @@ var DESC_MIN = 140;
 var DESC_MAX = 175;
 var SOURCE_OR_YEAR = /(hh\.ru|SuperJob|Вордстат|Метрика|Росстат|Habr|202\d)/i;
 var ECHO_WORDS = 4;
+var SOURCE_NAMES = ["hh.ru", "SuperJob", "\u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442", "\u041C\u0435\u0442\u0440\u0438\u043A\u0430", "\u0420\u043E\u0441\u0441\u0442\u0430\u0442", "Habr"];
 function normalizeFaqHeading(markdown) {
   if (parseFaq(markdown).length >= MIN_FAQ_ITEMS) return markdown;
   const headings = [...markdown.matchAll(/^##\s+(.+)$/gm)];
   const last = headings[headings.length - 1];
   if (!last || !last[1].trim().endsWith("?")) return markdown;
   const tail = markdown.slice(last.index + last[0].length);
-  if ((tail.match(/^###\s+/gm) ?? []).length < MIN_FAQ_ITEMS) return markdown;
+  const questions = (tail.match(/^###\s+.+$/gm) ?? []).filter((h) => h.trim().endsWith("?"));
+  if (questions.length < MIN_FAQ_ITEMS) return markdown;
   const replaced = markdown.slice(0, last.index) + "## \u0427\u0430\u0441\u0442\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B" + markdown.slice(last.index + last[0].length);
   return parseFaq(replaced).length >= MIN_FAQ_ITEMS ? replaced : markdown;
 }
@@ -2173,25 +2175,24 @@ metaTitle: "${metaTitle}"
 metaDescription: "${metaDesc}"
 
 \u0422\u0420\u0415\u0411\u041E\u0412\u0410\u041D\u0418\u042F:
-- \u043A metaTitle \u0441\u0430\u0439\u0442 \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442 \xAB | \u0414\u0438\u0434\u0436\u0438\u0442\u0430\u043B \u041F\u0430\u0431\xBB \u2014 \u0441\u0447\u0438\u0442\u0430\u0439 \u0434\u043B\u0438\u043D\u0443 \u0432\u043C\u0435\u0441\u0442\u0435 \u0441 \u044D\u0442\u0438\u043C \u0445\u0432\u043E\u0441\u0442\u043E\u043C
-- metaDescription: 140-175 \u0437\u043D\u0430\u043A\u043E\u0432, \u0441 \u0433\u043E\u0434\u043E\u043C \u0438\u043B\u0438 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u0434\u0430\u043D\u043D\u044B\u0445 (hh.ru, SuperJob, \u0412\u043E\u0440\u0434\u0441\u0442\u0430\u0442)
-- metaDescription \u043D\u0435 \u0434\u043E\u043B\u0436\u0435\u043D \u043D\u0430\u0447\u0438\u043D\u0430\u0442\u044C\u0441\u044F \u0442\u0435\u043C\u0438 \u0436\u0435 \u0447\u0435\u0442\u044B\u0440\u044C\u043C\u044F \u0441\u043B\u043E\u0432\u0430\u043C\u0438, \u0447\u0442\u043E metaTitle
+- \u043A metaTitle \u0441\u0430\u0439\u0442 \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u0435\u0442 \xAB${BRAND_SUFFIX}\xBB \u2014 \u0441\u0447\u0438\u0442\u0430\u0439 \u0434\u043B\u0438\u043D\u0443 \u0432\u043C\u0435\u0441\u0442\u0435 \u0441 \u044D\u0442\u0438\u043C \u0445\u0432\u043E\u0441\u0442\u043E\u043C, \u0432\u0441\u0435\u0433\u043E \u043D\u0435 \u0431\u043E\u043B\u044C\u0448\u0435 ${TITLE_LIMIT} \u0437\u043D\u0430\u043A\u043E\u0432
+- metaDescription: ${DESC_MIN}-${DESC_MAX} \u0437\u043D\u0430\u043A\u043E\u0432, \u0441 \u0433\u043E\u0434\u043E\u043C \u0438\u043B\u0438 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u0434\u0430\u043D\u043D\u044B\u0445 (${SOURCE_NAMES.join(", ")})
+- metaDescription \u043D\u0435 \u0434\u043E\u043B\u0436\u0435\u043D \u043D\u0430\u0447\u0438\u043D\u0430\u0442\u044C\u0441\u044F \u0442\u0435\u043C\u0438 \u0436\u0435 ${ECHO_WORDS} \u0441\u043B\u043E\u0432\u0430\u043C\u0438, \u0447\u0442\u043E metaTitle
 
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E JSON \u0432\u0438\u0434\u0430 {"metaTitle": "...", "metaDescription": "..."} \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439.`,
       "writer"
     );
     try {
       const fixed = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1));
-      if (typeof fixed.metaTitle === "string" && fixed.metaTitle.trim()) metaTitle = fixed.metaTitle.trim();
+      if (typeof fixed.metaTitle === "string" && fixed.metaTitle.trim())
+        metaTitle = fixed.metaTitle.trim();
       if (typeof fixed.metaDescription === "string" && fixed.metaDescription.trim())
         metaDesc = fixed.metaDescription.trim();
     } catch {
       console.log("[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438 \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D \u043A\u0430\u043A JSON, \u043A\u0440\u0443\u0433 \u0432\u043F\u0443\u0441\u0442\u0443\u044E");
     }
   }
-  throw new MetadataRejected(
-    checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown })
-  );
+  throw new MetadataRejected(checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown }));
 }
 function buildMdxFrontmatter(topic, result, publishedAt, imageUrl, markdown) {
   const tags = result.tags.length ? JSON.stringify(result.tags) : "[]";
@@ -2300,6 +2301,9 @@ async function main() {
     console.error(`[writer] \u0410\u043D\u043E\u043D\u0441 \u0432 Telegram \u043D\u0435 \u0443\u0448\u0451\u043B, \u043F\u0438\u0448\u0443 \u0441\u0442\u0430\u0442\u044C\u044E: ${e.message}`);
   }
   const result = await generateMdxArticle(topic);
+  const meta = await acceptMetadata(result, normalizeFaqHeading(stripServiceTail(result.markdown)));
+  result.metaTitle = meta.metaTitle;
+  result.metaDesc = meta.metaDesc;
   console.log(`[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u0433\u043E\u0442\u043E\u0432\u0430, slug: ${result.slug}`);
   const mdxPath = path7.join(ARTICLES_DIR, `${result.slug}.mdx`);
   if (fs7.existsSync(mdxPath)) {
@@ -2333,9 +2337,6 @@ async function main() {
     injectImagesIntoMarkdown(result.markdown, charts, sketchUrls)
   );
   const enrichedMarkdown = normalizeFaqHeading(cleanMarkdown);
-  const meta = await acceptMetadata(result, enrichedMarkdown);
-  result.metaTitle = meta.metaTitle;
-  result.metaDesc = meta.metaDesc;
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown);
   const mdxContent = frontmatter + "\n" + enrichedMarkdown;
   if (hasServiceText(mdxContent)) {
