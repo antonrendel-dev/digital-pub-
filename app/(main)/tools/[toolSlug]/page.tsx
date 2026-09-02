@@ -1187,10 +1187,7 @@ export default async function ToolPage({ params }: Props) {
   const lead = buildToolLead(
     tool.name,
     total,
-    professions.map(({ profession, count }) => ({
-      nameNominative: profession.nameNominative,
-      count,
-    }))
+    professions.map(({ profession, count }) => ({ name: profession.name, count }))
   )
 
   const breadcrumbLd = {

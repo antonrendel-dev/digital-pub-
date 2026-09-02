@@ -21,17 +21,9 @@ export const LEAD_MAX_CHARS = 450
 export const LEAD_MAX_WORDS = 60
 
 export interface LeadProfession {
-  nameNominative: string
+  /** Склонённая строчная форма из lib/professions.ts: «UX/UI-дизайнера», «видеомонтажёра». */
+  name: string
   count: number
-}
-
-/**
- * Строчная первая буква — но не у аббревиатур: сплошной toLowerCase превращал
- * «UX/UI-дизайнер» в «ux/ui-дизайнер» прямо в первых 60 словах страницы, то
- * есть портил и орфографию, и вхождение ключа (ревью 02.09.2026).
- */
-function lowerFirst(name: string): string {
-  return /^\p{Lu}\p{Lu}/u.test(name) ? name : name.charAt(0).toLowerCase() + name.slice(1)
 }
 
 export function buildToolLead(name: string, total: number, professions: LeadProfession[]): string {
@@ -55,7 +47,10 @@ export function buildToolLead(name: string, total: number, professions: LeadProf
   // а count в lib/professions.ts — снимок, который обновляет отдельный
   // workflow. В одном предложении они разъезжаются до арифметически
   // невозможного: «3 вакансии … UX/UI-дизайнер — 15» (ревью 02.09.2026).
-  const who = top.map((p) => lowerFirst(p.nameNominative)).join(' и ')
+  // Берём именно склонённую форму name, а не nameNominative: «ищут» требует
+  // винительного падежа, и нужная форма уже лежит в данных рядом. Ревью
+  // 02.09.2026 поймало «где ищут UX/UI-дизайнер» в первых 60 словах страницы.
+  const who = top.map((p) => p.name).join(' и ')
   const tail = ` Чаще всего навык просят там, где ищут ${who}.`
   const full = head + tail
 

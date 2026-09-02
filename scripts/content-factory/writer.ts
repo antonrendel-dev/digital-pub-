@@ -32,7 +32,7 @@ import {
   transcriptDir,
 } from './lib/session-stats.js'
 import { announceToChannel, checkChannelAccess, sendMessage } from './lib/telegram.js'
-import { faqSchemaLine } from '../../lib/faq-schema'
+import { MIN_FAQ_ITEMS, faqSchemaLine, parseFaq } from '../../lib/faq-schema'
 import {
   BRAND_SUFFIX,
   DESC_MAX,
@@ -2012,6 +2012,21 @@ async function main() {
 
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown)
   const mdxContent = frontmatter + '\n' + enrichedMarkdown
+
+  // Гейт метаданных теперь стоит раньше и смотрит статью ДО вставки картинок.
+  // Совпадение вердиктов держится на том, что injectImagesIntoMarkdown добавляет
+  // только строки <img> и не трогает заголовки. Закрепляем это проверкой, а не
+  // верой в соседнюю функцию: проверенное и записанное должны совпадать.
+  if (parseFaq(enrichedMarkdown).length < MIN_FAQ_ITEMS) {
+    throw new MetadataRejected([
+      {
+        rule: 'FAQ_MISSING',
+        detail:
+          'после вставки картинок раздел вопросов перестал собираться — ' +
+          'проверь injectImagesIntoMarkdown, гейт смотрел статью до этого шага',
+      },
+    ])
+  }
 
   if (hasServiceText(mdxContent)) {
     throw new Error(

@@ -2192,7 +2192,9 @@ metaDescription: "${metaDesc}"
       console.log("[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043E\u0442\u0432\u0435\u0442 \u043C\u043E\u0434\u0435\u043B\u0438 \u043D\u0435 \u0440\u0430\u0437\u043E\u0431\u0440\u0430\u043D \u043A\u0430\u043A JSON, \u043A\u0440\u0443\u0433 \u0432\u043F\u0443\u0441\u0442\u0443\u044E");
     }
   }
-  throw new MetadataRejected(checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown }));
+  throw new MetadataRejected(
+    checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown })
+  );
 }
 function buildMdxFrontmatter(topic, result, publishedAt, imageUrl, markdown) {
   const tags = result.tags.length ? JSON.stringify(result.tags) : "[]";
@@ -2339,6 +2341,14 @@ async function main() {
   const enrichedMarkdown = normalizeFaqHeading(cleanMarkdown);
   const frontmatter = buildMdxFrontmatter(topic, result, publishedAt, imageUrl, enrichedMarkdown);
   const mdxContent = frontmatter + "\n" + enrichedMarkdown;
+  if (parseFaq(enrichedMarkdown).length < MIN_FAQ_ITEMS) {
+    throw new MetadataRejected([
+      {
+        rule: "FAQ_MISSING",
+        detail: "\u043F\u043E\u0441\u043B\u0435 \u0432\u0441\u0442\u0430\u0432\u043A\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043E\u043A \u0440\u0430\u0437\u0434\u0435\u043B \u0432\u043E\u043F\u0440\u043E\u0441\u043E\u0432 \u043F\u0435\u0440\u0435\u0441\u0442\u0430\u043B \u0441\u043E\u0431\u0438\u0440\u0430\u0442\u044C\u0441\u044F \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u044C injectImagesIntoMarkdown, \u0433\u0435\u0439\u0442 \u0441\u043C\u043E\u0442\u0440\u0435\u043B \u0441\u0442\u0430\u0442\u044C\u044E \u0434\u043E \u044D\u0442\u043E\u0433\u043E \u0448\u0430\u0433\u0430"
+      }
+    ]);
+  }
   if (hasServiceText(mdxContent)) {
     throw new Error(
       "[writer] \u0412 \u0433\u043E\u0442\u043E\u0432\u043E\u043C MDX \u043E\u0441\u0442\u0430\u043B\u0441\u044F \u0441\u043B\u0443\u0436\u0435\u0431\u043D\u044B\u0439 \u0442\u0435\u043A\u0441\u0442 \u043F\u0440\u0438\u0451\u043C\u043A\u0438 \u2014 \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u044F \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0430. \u041F\u0440\u043E\u0432\u0435\u0440\u044C lib/strip-service-tail.ts: \u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0430 \u0445\u0432\u043E\u0441\u0442\u0430, \u0432\u0438\u0434\u0438\u043C\u043E, \u043D\u043E\u0432\u0430\u044F."

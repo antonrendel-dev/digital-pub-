@@ -9,6 +9,10 @@
 # следит, бесполезен ровно в тот момент, когда нужен.
 set -u
 
+# Настоящий перевод строки. В двойных кавычках bash \n — это два символа,
+# и они уезжали в Телеграм литералом; ровно тот же дефект был у %0A до этого.
+NL=$'\n'
+
 # Журнал передаётся аргументом: дата в пути менялась руками каждую ночь, и
 # 02.09.2026 сторож сутки следил за журналом позапрошлого прогона.
 JOURNAL="${1:-/home/claude/projects/digital-pub-/logs/night-$(date +%F).md}"
@@ -50,7 +54,7 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
   if [ ! -f "$JOURNAL" ]; then
     waited=$(( ( $(date +%s) - started ) / 60 ))
     if [ "$waited" -ge "$STALL_MIN" ] && [ $(( ( $(date +%s) - last_alert ) / 60 )) -ge "$REPEAT_MIN" ]; then
-      if say "⏰ <b>Ночной прогон не начался</b>\nЖурнал ${JOURNAL} не создан за ${waited} мин."; then
+      if say "⏰ <b>Ночной прогон не начался</b>${NL}Журнал ${JOURNAL} не создан за ${waited} мин."; then
         echo "$(date '+%F %T') тревога: журнал не появился за ${waited} мин" >> "$LOG"
         last_alert=$(date +%s)
       fi
@@ -61,7 +65,7 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
   now=$(date +%s)
   if [ "$quiet" -ge "$STALL_MIN" ] && [ $(( (now - last_alert) / 60 )) -ge "$REPEAT_MIN" ]; then
     tail=$(grep -v '^|' "$JOURNAL" | grep -v '^#' | grep -v '^$' | tail -1)
-    if say "⏰ <b>Ночной прогон встал</b>\nЖурнал молчит ${quiet} мин.\nПоследняя запись: ${tail}"; then
+    if say "⏰ <b>Ночной прогон встал</b>${NL}Журнал молчит ${quiet} мин.${NL}Последняя запись: ${tail}"; then
       echo "$(date '+%F %T') тревога: молчание ${quiet} мин" >> "$LOG"
       last_alert=$now
     fi
