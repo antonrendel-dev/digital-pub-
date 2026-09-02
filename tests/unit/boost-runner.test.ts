@@ -145,9 +145,14 @@ describe('закоммиченные бандлы завода', () => {
     )
   }, 120_000)
 
-  it.each(['boost', 'writer'])('%s.compiled.js собран из текущего исходника', (name) => {
-    const fresh = fs.readFileSync(path.join(outdir, `${name}.compiled.js`), 'utf8')
-    const committed = fs.readFileSync(path.join(FACTORY, `${name}.compiled.js`), 'utf8')
-    expect(fresh).toBe(committed)
-  })
+  // Сверяем все восемь: сборка уже оплачена beforeAll, а на сервере крутятся
+  // они все — scheduler и analyst каждую ночь.
+  it.each(ENTRIES.map((e) => e.replace(/\.ts$/, '')))(
+    '%s.compiled.js собран из текущего исходника',
+    (name) => {
+      const fresh = fs.readFileSync(path.join(outdir, `${name}.compiled.js`), 'utf8')
+      const committed = fs.readFileSync(path.join(FACTORY, `${name}.compiled.js`), 'utf8')
+      expect(fresh).toBe(committed)
+    }
+  )
 })
