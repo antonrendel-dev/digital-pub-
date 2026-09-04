@@ -332,13 +332,6 @@ function validateRewrite(before, after, key) {
   }
   return v;
 }
-function bodyStart(answer) {
-  return answer.search(/^## /m);
-}
-function stripPreamble(answer) {
-  const start = bodyStart(answer);
-  return start > 0 ? answer.slice(start) : answer;
-}
 function splitMdx(raw) {
   const m = raw.match(/^---\n([\s\S]*?)\n---\n/);
   if (!m) throw new Error("\u0432\u043E \u0433\u043B\u0430\u0432\u0435 \u0444\u0430\u0439\u043B\u0430 \u043D\u0435\u0442 frontmatter");
@@ -352,6 +345,129 @@ function withUpdatedDate(frontmatter, isoDate) {
   if (!/^dateModified:/m.test(next)) next += `
 dateModified: "${isoDate}"`;
   return next.replace(/("dateModified":")[^"]*(")/g, `$1${isoDate}$2`);
+}
+
+// ../../lib/strip-service-tail.ts
+var SERVICE_TAIL = /\n\s*-{3,}\s*(?:(?:\*\*)?(?:Служебное|Скиллы:|Использован[а-яё]*\s+скилл|Готово для проверки|Мастер-промпт)|\*\*(?:Title|Meta description):)[\s\S]*$/i;
+var SERVICE_MARKER = /Готово для проверки|Использован[а-яё]*\s+скилл|Скиллы:\s*`|Служебное, вне тела|мастер-промпт v\d|^\s*\*\*(?:Title|Meta description):/im;
+function stripServiceTail(markdown) {
+  return markdown.replace(SERVICE_TAIL, "\n").trimEnd() + "\n";
+}
+function hasServiceText(text) {
+  return SERVICE_MARKER.test(text);
+}
+
+// lib/article-body.ts
+var LEAD_MAX_WORDS = 250;
+var META_LABEL = /^\s*(?:\*\*)?\s*(?:Title|Meta\s*title|Meta\s*description|Description|H1|Title\s*tag|Заголовок(?:\s*H1)?|Мета-?(?:описание|заголовок))(?:\s*\([^)]*\))?\s*(?:tag)?\s*(?:\*\*)?\s*:\s*(?:\*\*)?\s*(.*)$/i;
+var STRUCTURAL_LINE = /^\s*(?:#{1,6}\s|-{3,}\s*$|```|\{|\[[A-Z]+\]\s*$|[-*•]\s|\d{1,2}[.)]\s+(?=[A-ZА-ЯЁ*_\[`«"]))/;
+var CHATTER_COLON = /:\s*$/;
+var REPORT_WORD = /^\s*(?:ниже|готово|финальн[а-яё]*|итогов[а-яё]*|обновл[а-яё]*|обновил[а-яё]*|исправл[а-яё]*|исправил[а-яё]*|переписа[лн][а-яё]*|применил[а-яё]*|внёс|внес|добавил[а-яё]*|сохранил[а-яё]*|учёл|учел|статья\s+(?:готова|ниже))(?=[\s,.:—-]|$)/i;
+var REPORT_SUBJECT = /стать[а-яё]*|текст|верси[а-яё]*|правк|пункт|техник|изменен/i;
+var FIRST_PERSON_REPORT = /^\s*я\s+(?:применил|внёс|внес|добавил|исправил|переписал|обновил|сохранил|учёл|учел)/i;
+var REPORT_OBJECT = /правк|пункт|техник|верси/i;
+var REPORT_ACTION = /внесен|применен|обновлен|исправлен|стать[а-яё]*|текст/i;
+function isChatter(line) {
+  if (CHATTER_COLON.test(line) || FIRST_PERSON_REPORT.test(line)) return true;
+  const noDigits = !/\d/.test(line);
+  if (REPORT_WORD.test(line)) {
+    return REPORT_SUBJECT.test(line) || wordCount(line) <= 3 && noDigits;
+  }
+  return noDigits && REPORT_OBJECT.test(line) && REPORT_ACTION.test(line);
+}
+function bodyStart(raw) {
+  return raw.search(/^## /m);
+}
+function wordCount(text) {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+function normalize(text) {
+  return text.toLowerCase().replace(/[*_`#>]/g, "").replace(/\s+/g, " ").trim();
+}
+function dropFrontmatter(preamble) {
+  return preamble.replace(/(?:^|\n)\s*---\s*\n(?:[\w-]+:.*\n)+---\s*(?=\n|$)/, "\n");
+}
+function splitLead(preamble) {
+  const lines = dropFrontmatter(preamble).split("\n");
+  const kept = [];
+  const filtered = [];
+  let swallowNextValue = false;
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\s+$/, "");
+    if (!line.trim()) {
+      kept.push("");
+      swallowNextValue = false;
+      continue;
+    }
+    if (swallowNextValue) {
+      swallowNextValue = false;
+      filtered.push(line.trim());
+      continue;
+    }
+    const meta = line.match(META_LABEL);
+    if (meta) {
+      if (!meta[1].trim()) swallowNextValue = true;
+      continue;
+    }
+    if (/^\s*#\s/.test(line)) continue;
+    if (STRUCTURAL_LINE.test(line) || isChatter(line)) {
+      filtered.push(line.trim());
+      continue;
+    }
+    kept.push(line);
+  }
+  const lead = kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return { lead, filtered };
+}
+function extractArticleBody(raw) {
+  const text = stripRoleTag(raw ?? "").replace(/\r\n/g, "\n");
+  const start = bodyStart(text);
+  if (start === -1) {
+    const body2 = text.trim();
+    return { lead: "", body: body2, markdown: body2, filtered: [] };
+  }
+  const preamble = text.slice(0, start);
+  let body = text.slice(start).trim();
+  if (/^\s*```/m.test(preamble)) body = body.replace(/\n```\s*$/, "").trim();
+  const { lead, filtered } = splitLead(preamble);
+  if (!lead) return { lead: "", body, markdown: body, filtered };
+  if (hasServiceText(lead)) {
+    return { lead: "", body, markdown: body, dropped: "service-text", filtered };
+  }
+  if (wordCount(lead) > LEAD_MAX_WORDS) {
+    return { lead: "", body, markdown: body, dropped: "too-long", filtered };
+  }
+  return { lead, body, markdown: `${lead}
+
+${body}`, filtered };
+}
+function keepLead(raw, stage, previous) {
+  const parsed = extractArticleBody(raw);
+  if (parsed.dropped) {
+    console.warn(
+      `[writer] ${stage}: \u043B\u0438\u0434 \u043E\u0442\u0431\u0440\u043E\u0448\u0435\u043D (${parsed.dropped === "service-text" ? "\u0441\u043B\u0443\u0436\u0435\u0431\u043D\u044B\u0439 \u0442\u0435\u043A\u0441\u0442" : `\u0434\u043B\u0438\u043D\u043D\u0435\u0435 ${LEAD_MAX_WORDS} \u0441\u043B\u043E\u0432`})`
+    );
+  }
+  if (parsed.filtered.length > 0) {
+    console.warn(
+      `[writer] ${stage}: \u0438\u0437 \u043F\u0440\u0435\u0430\u043C\u0431\u0443\u043B\u044B \u0441\u043D\u044F\u0442\u043E ${parsed.filtered.length} \u0441\u0442\u0440.: ${parsed.filtered.map((l) => `\xAB${l.slice(0, 60)}\xBB`).join(", ")}`
+    );
+  }
+  if (!parsed.lead && parsed.body && previous) {
+    const before = extractArticleBody(previous).lead;
+    if (before) {
+      const firstSentence = normalize(before.split(/(?<=[.!?…])\s/)[0] ?? before);
+      if (firstSentence && normalize(parsed.body).includes(firstSentence)) {
+        console.warn(`[writer] ${stage}: \u043A\u0440\u044E\u0447\u043E\u043A \u0443\u0448\u0451\u043B \u0432 \u043F\u0435\u0440\u0432\u044B\u0439 \u0440\u0430\u0437\u0434\u0435\u043B \u2014 \u0441\u0432\u0435\u0440\u0445\u0443 \u043D\u0435 \u0434\u0443\u0431\u043B\u0438\u0440\u0443\u044E`);
+        return parsed.markdown;
+      }
+      console.warn(`[writer] ${stage}: \u0441\u0442\u0430\u0434\u0438\u044F \u0432\u0435\u0440\u043D\u0443\u043B\u0430 \u0442\u0435\u043A\u0441\u0442 \u0431\u0435\u0437 \u043B\u0438\u0434\u0430 \u2014 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u044E \u043B\u0438\u0434 \u0432\u0445\u043E\u0434\u0430`);
+      return `${before}
+
+${parsed.body}`;
+    }
+  }
+  return parsed.markdown;
 }
 
 // ../../lib/faq-schema.ts
@@ -442,16 +558,6 @@ function checkArticleMetadata(meta) {
   return violations;
 }
 
-// ../../lib/strip-service-tail.ts
-var SERVICE_TAIL = /\n\s*-{3,}\s*(?:(?:\*\*)?(?:Служебное|Скиллы:|Использован[а-яё]*\s+скилл|Готово для проверки|Мастер-промпт)|\*\*(?:Title|Meta description):)[\s\S]*$/i;
-var SERVICE_MARKER = /Готово для проверки|Использован[а-яё]*\s+скилл|Скиллы:\s*`|Служебное, вне тела|мастер-промпт v\d|^\s*\*\*(?:Title|Meta description):/im;
-function stripServiceTail(markdown) {
-  return markdown.replace(SERVICE_TAIL, "\n").trimEnd() + "\n";
-}
-function hasServiceText(text) {
-  return SERVICE_MARKER.test(text);
-}
-
 // boost.ts
 var ARTICLES_DIR = process.env.BOOST_ARTICLES_DIR ?? path3.join(path3.dirname(fileURLToPath(import.meta.url)), "..", "..", "content", "articles");
 function parseLimit(raw) {
@@ -507,7 +613,7 @@ async function boostOne(c, dryRun) {
     agent: "writer",
     modelFor
   });
-  const next = normalizeFaqHeading(stripServiceTail(stripPreamble(answer)));
+  const next = normalizeFaqHeading(stripServiceTail(keepLead(answer, "\u0434\u043E\u0436\u0438\u043C")));
   const problems = validateRewrite(body, next, c.key);
   const meta = checkArticleMetadata({
     metaTitle: field(frontmatter, "metaTitle") || field(frontmatter, "title"),

@@ -206,6 +206,129 @@ function stripRoleTag(text) {
   return text.replace(ROLE_TAG_RE, "");
 }
 
+// ../../lib/strip-service-tail.ts
+var SERVICE_TAIL = /\n\s*-{3,}\s*(?:(?:\*\*)?(?:Служебное|Скиллы:|Использован[а-яё]*\s+скилл|Готово для проверки|Мастер-промпт)|\*\*(?:Title|Meta description):)[\s\S]*$/i;
+var SERVICE_MARKER = /Готово для проверки|Использован[а-яё]*\s+скилл|Скиллы:\s*`|Служебное, вне тела|мастер-промпт v\d|^\s*\*\*(?:Title|Meta description):/im;
+function stripServiceTail(markdown) {
+  return markdown.replace(SERVICE_TAIL, "\n").trimEnd() + "\n";
+}
+function hasServiceText(text) {
+  return SERVICE_MARKER.test(text);
+}
+
+// lib/article-body.ts
+var LEAD_MAX_WORDS = 250;
+var META_LABEL = /^\s*(?:\*\*)?\s*(?:Title|Meta\s*title|Meta\s*description|Description|H1|Title\s*tag|Заголовок(?:\s*H1)?|Мета-?(?:описание|заголовок))(?:\s*\([^)]*\))?\s*(?:tag)?\s*(?:\*\*)?\s*:\s*(?:\*\*)?\s*(.*)$/i;
+var STRUCTURAL_LINE = /^\s*(?:#{1,6}\s|-{3,}\s*$|```|\{|\[[A-Z]+\]\s*$|[-*•]\s|\d{1,2}[.)]\s+(?=[A-ZА-ЯЁ*_\[`«"]))/;
+var CHATTER_COLON = /:\s*$/;
+var REPORT_WORD = /^\s*(?:ниже|готово|финальн[а-яё]*|итогов[а-яё]*|обновл[а-яё]*|обновил[а-яё]*|исправл[а-яё]*|исправил[а-яё]*|переписа[лн][а-яё]*|применил[а-яё]*|внёс|внес|добавил[а-яё]*|сохранил[а-яё]*|учёл|учел|статья\s+(?:готова|ниже))(?=[\s,.:—-]|$)/i;
+var REPORT_SUBJECT = /стать[а-яё]*|текст|верси[а-яё]*|правк|пункт|техник|изменен/i;
+var FIRST_PERSON_REPORT = /^\s*я\s+(?:применил|внёс|внес|добавил|исправил|переписал|обновил|сохранил|учёл|учел)/i;
+var REPORT_OBJECT = /правк|пункт|техник|верси/i;
+var REPORT_ACTION = /внесен|применен|обновлен|исправлен|стать[а-яё]*|текст/i;
+function isChatter(line) {
+  if (CHATTER_COLON.test(line) || FIRST_PERSON_REPORT.test(line)) return true;
+  const noDigits = !/\d/.test(line);
+  if (REPORT_WORD.test(line)) {
+    return REPORT_SUBJECT.test(line) || wordCount(line) <= 3 && noDigits;
+  }
+  return noDigits && REPORT_OBJECT.test(line) && REPORT_ACTION.test(line);
+}
+function bodyStart(raw) {
+  return raw.search(/^## /m);
+}
+function wordCount(text) {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+function normalize(text) {
+  return text.toLowerCase().replace(/[*_`#>]/g, "").replace(/\s+/g, " ").trim();
+}
+function dropFrontmatter(preamble) {
+  return preamble.replace(/(?:^|\n)\s*---\s*\n(?:[\w-]+:.*\n)+---\s*(?=\n|$)/, "\n");
+}
+function splitLead(preamble) {
+  const lines = dropFrontmatter(preamble).split("\n");
+  const kept = [];
+  const filtered = [];
+  let swallowNextValue = false;
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\s+$/, "");
+    if (!line.trim()) {
+      kept.push("");
+      swallowNextValue = false;
+      continue;
+    }
+    if (swallowNextValue) {
+      swallowNextValue = false;
+      filtered.push(line.trim());
+      continue;
+    }
+    const meta = line.match(META_LABEL);
+    if (meta) {
+      if (!meta[1].trim()) swallowNextValue = true;
+      continue;
+    }
+    if (/^\s*#\s/.test(line)) continue;
+    if (STRUCTURAL_LINE.test(line) || isChatter(line)) {
+      filtered.push(line.trim());
+      continue;
+    }
+    kept.push(line);
+  }
+  const lead = kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return { lead, filtered };
+}
+function extractArticleBody(raw) {
+  const text = stripRoleTag(raw ?? "").replace(/\r\n/g, "\n");
+  const start = bodyStart(text);
+  if (start === -1) {
+    const body2 = text.trim();
+    return { lead: "", body: body2, markdown: body2, filtered: [] };
+  }
+  const preamble = text.slice(0, start);
+  let body = text.slice(start).trim();
+  if (/^\s*```/m.test(preamble)) body = body.replace(/\n```\s*$/, "").trim();
+  const { lead, filtered } = splitLead(preamble);
+  if (!lead) return { lead: "", body, markdown: body, filtered };
+  if (hasServiceText(lead)) {
+    return { lead: "", body, markdown: body, dropped: "service-text", filtered };
+  }
+  if (wordCount(lead) > LEAD_MAX_WORDS) {
+    return { lead: "", body, markdown: body, dropped: "too-long", filtered };
+  }
+  return { lead, body, markdown: `${lead}
+
+${body}`, filtered };
+}
+function keepLead(raw, stage, previous) {
+  const parsed = extractArticleBody(raw);
+  if (parsed.dropped) {
+    console.warn(
+      `[writer] ${stage}: \u043B\u0438\u0434 \u043E\u0442\u0431\u0440\u043E\u0448\u0435\u043D (${parsed.dropped === "service-text" ? "\u0441\u043B\u0443\u0436\u0435\u0431\u043D\u044B\u0439 \u0442\u0435\u043A\u0441\u0442" : `\u0434\u043B\u0438\u043D\u043D\u0435\u0435 ${LEAD_MAX_WORDS} \u0441\u043B\u043E\u0432`})`
+    );
+  }
+  if (parsed.filtered.length > 0) {
+    console.warn(
+      `[writer] ${stage}: \u0438\u0437 \u043F\u0440\u0435\u0430\u043C\u0431\u0443\u043B\u044B \u0441\u043D\u044F\u0442\u043E ${parsed.filtered.length} \u0441\u0442\u0440.: ${parsed.filtered.map((l) => `\xAB${l.slice(0, 60)}\xBB`).join(", ")}`
+    );
+  }
+  if (!parsed.lead && parsed.body && previous) {
+    const before = extractArticleBody(previous).lead;
+    if (before) {
+      const firstSentence = normalize(before.split(/(?<=[.!?…])\s/)[0] ?? before);
+      if (firstSentence && normalize(parsed.body).includes(firstSentence)) {
+        console.warn(`[writer] ${stage}: \u043A\u0440\u044E\u0447\u043E\u043A \u0443\u0448\u0451\u043B \u0432 \u043F\u0435\u0440\u0432\u044B\u0439 \u0440\u0430\u0437\u0434\u0435\u043B \u2014 \u0441\u0432\u0435\u0440\u0445\u0443 \u043D\u0435 \u0434\u0443\u0431\u043B\u0438\u0440\u0443\u044E`);
+        return parsed.markdown;
+      }
+      console.warn(`[writer] ${stage}: \u0441\u0442\u0430\u0434\u0438\u044F \u0432\u0435\u0440\u043D\u0443\u043B\u0430 \u0442\u0435\u043A\u0441\u0442 \u0431\u0435\u0437 \u043B\u0438\u0434\u0430 \u2014 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u044E \u043B\u0438\u0434 \u0432\u0445\u043E\u0434\u0430`);
+      return `${before}
+
+${parsed.body}`;
+    }
+  }
+  return parsed.markdown;
+}
+
 // lib/ask-agent.ts
 import { spawn } from "child_process";
 
@@ -640,16 +763,6 @@ function checkArticleMetadata(meta) {
     });
   }
   return violations;
-}
-
-// ../../lib/strip-service-tail.ts
-var SERVICE_TAIL = /\n\s*-{3,}\s*(?:(?:\*\*)?(?:Служебное|Скиллы:|Использован[а-яё]*\s+скилл|Готово для проверки|Мастер-промпт)|\*\*(?:Title|Meta description):)[\s\S]*$/i;
-var SERVICE_MARKER = /Готово для проверки|Использован[а-яё]*\s+скилл|Скиллы:\s*`|Служебное, вне тела|мастер-промпт v\d|^\s*\*\*(?:Title|Meta description):/im;
-function stripServiceTail(markdown) {
-  return markdown.replace(SERVICE_TAIL, "\n").trimEnd() + "\n";
-}
-function hasServiceText(text) {
-  return SERVICE_MARKER.test(text);
 }
 
 // lib/todoist.ts
@@ -1371,8 +1484,8 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
     console.log("[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447\u0438");
     return [];
   }
-  const wordCount = markdown.split(/\s+/).length;
-  const sketchCount = wordCount < 1300 ? 1 : wordCount < 1600 ? 2 : 3;
+  const wordCount2 = markdown.split(/\s+/).length;
+  const sketchCount = wordCount2 < 1300 ? 1 : wordCount2 < 1600 ? 2 : 3;
   const contentH2s = h2Structure.slice(1, -1);
   const runCodex = (prompt) => new Promise((resolve) => {
     const child = spawn2(
@@ -1572,10 +1685,6 @@ ${task}
   );
   return tz;
 }
-function stripPreamble(raw) {
-  const start = raw.indexOf("## ");
-  return (start !== -1 ? raw.slice(start) : raw).trim();
-}
 var REPAIR_ROUNDS = 6;
 var SpecRejected = class extends Error {
   constructor(violations, rounds) {
@@ -1628,7 +1737,7 @@ ${current}
 
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0439 Markdown \u0441\u0442\u0430\u0442\u044C\u0438 \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439, \u0431\u0435\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A.`,
       "writer"
-    ).then(stripPreamble);
+    ).then((raw) => keepLead(raw, "\u043F\u0440\u0438\u0451\u043C\u043A\u0430", current));
   }
   return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) };
 }
@@ -1815,7 +1924,7 @@ ${planText}
 
 \u041F\u0420\u0410\u0412\u0418\u041B\u0410 \u041D\u0410\u041F\u0418\u0421\u0410\u041D\u0418\u042F (\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E, \u043C\u0430\u0441\u0442\u0435\u0440-\u043F\u0440\u043E\u043C\u043F\u0442 v6.6):
 
-\u041A\u0420\u042E\u0427\u041E\u041A (\u043E\u0442\u043A\u0440\u044B\u0442\u0438\u0435 \u0441\u0442\u0430\u0442\u044C\u0438): \u043F\u0435\u0440\u0432\u044B\u0435 2\u20133 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u2014 \u043D\u0435 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u0438, \u0430 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u0430\u044F \u0442\u043E\u0447\u043A\u0430 \u0432\u0445\u043E\u0434\u0430: \u0447\u0438\u0441\u043B\u043E, \u0444\u0430\u043A\u0442, \u043D\u0430\u0431\u043B\u044E\u0434\u0435\u043D\u0438\u0435, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u0443\u0434\u0438\u0432\u043B\u044F\u0435\u0442 \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044F. \u041A\u043B\u044E\u0447\u0435\u0432\u043E\u0435 \u0441\u043B\u043E\u0432\u043E "${topic.keyword}" \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u0432 \u043F\u0435\u0440\u0432\u044B\u0445 60 \u0441\u043B\u043E\u0432\u0430\u0445 \u0431\u0443\u043A\u0432\u0430\u043B\u044C\u043D\u043E \u2014 \u043D\u043E \u043D\u0435 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432 \u043F\u0435\u0440\u0432\u043E\u043C \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0438.
+\u041A\u0420\u042E\u0427\u041E\u041A (\u043E\u0442\u043A\u0440\u044B\u0442\u0438\u0435 \u0441\u0442\u0430\u0442\u044C\u0438): \u043F\u0435\u0440\u0432\u044B\u0435 2\u20133 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u2014 \u043D\u0435 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u0438, \u0430 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u0430\u044F \u0442\u043E\u0447\u043A\u0430 \u0432\u0445\u043E\u0434\u0430: \u0447\u0438\u0441\u043B\u043E, \u0444\u0430\u043A\u0442, \u043D\u0430\u0431\u043B\u044E\u0434\u0435\u043D\u0438\u0435, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u0443\u0434\u0438\u0432\u043B\u044F\u0435\u0442 \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044F. \u041A\u043B\u044E\u0447\u0435\u0432\u043E\u0435 \u0441\u043B\u043E\u0432\u043E "${topic.keyword}" \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u0432 \u043F\u0435\u0440\u0432\u044B\u0445 60 \u0441\u043B\u043E\u0432\u0430\u0445 \u0431\u0443\u043A\u0432\u0430\u043B\u044C\u043D\u043E \u2014 \u043D\u043E \u043D\u0435 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0432 \u043F\u0435\u0440\u0432\u043E\u043C \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0438. \u041A\u0440\u044E\u0447\u043E\u043A \u0441\u0442\u043E\u0438\u0442 \u0441\u0440\u0430\u0437\u0443 \u043F\u043E\u0441\u043B\u0435 H1 \u0438 \u0414\u041E \u043F\u0435\u0440\u0432\u043E\u0433\u043E H2, \u0431\u0435\u0437 \u0441\u0432\u043E\u0435\u0433\u043E \u043F\u043E\u0434\u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430 \u2014 \u044D\u0442\u043E \u0430\u0431\u0437\u0430\u0446, \u0430 \u043D\u0435 \u0440\u0430\u0437\u0434\u0435\u043B.
 
   \u041F\u0440\u0438\u043C\u0435\u0440\u044B \u043A\u0430\u043A \u041D\u0410\u0414\u041E:
   \u2014 \xAB\u0412 Telegram Ads \u043D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u043B\u044E\u0434\u0435\u0439. \u0421\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442\u044B \u043F\u043E \u043F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0435 \u0437\u0430\u0440\u0430\u0431\u0430\u0442\u044B\u0432\u0430\u044E\u0442 \u043D\u0430 20\u201340% \u0431\u043E\u043B\u044C\u0448\u0435 \u0430\u043D\u0430\u043B\u043E\u0433\u043E\u0432 \u0442\u043E\u0433\u043E \u0436\u0435 \u0433\u0440\u0435\u0439\u0434\u0430 \u0432\u043E \u0412\u041A\u043E\u043D\u0442\u0430\u043A\u0442\u0435 \u2014 \u0440\u044B\u043D\u043E\u043A \u043D\u0435 \u0443\u0441\u043F\u0435\u043B \u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u0438\u0442\u044C \u043A\u0430\u0434\u0440\u044B.\xBB
@@ -1944,10 +2053,7 @@ ${dir.desc}
 
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E Markdown \u0441\u0442\u0430\u0442\u044C\u0438 \u2014 \u0431\u0435\u0437 JSON, \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439.`,
           "writer"
-        ).then((raw) => {
-          const mdStart2 = raw.indexOf("## ");
-          return mdStart2 !== -1 ? raw.slice(mdStart2).trim() : raw.trim();
-        })
+        ).then((raw) => keepLead(raw, "\u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A"))
       )
     );
     console.log("[writer] \u0428\u0430\u0433 3\u0431: \u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440 \u043A\u043E\u043C\u043F\u0438\u043B\u0438\u0440\u0443\u0435\u0442...");
@@ -1980,7 +2086,7 @@ ${drafts[3]}
    \u2014 \u0431\u0435\u0437 \u043E\u0446\u0435\u043D\u043E\u0447\u043D\u044B\u0445 \u0441\u043B\u043E\u0432 \u0431\u0435\u0437 \u0434\u043E\u043A\u0430\u0437\u0430\u0442\u0435\u043B\u044C\u0441\u0442\u0432 (\u043B\u0443\u0447\u0448\u0438\u0439, \u044D\u0444\u0444\u0435\u043A\u0442\u0438\u0432\u043D\u044B\u0439, \u0443\u043D\u0438\u043A\u0430\u043B\u044C\u043D\u044B\u0439)
    \u2014 \u043A\u0430\u0436\u0434\u044B\u0439 \u0430\u0431\u0437\u0430\u0446 \u2014 \u043E\u0434\u043D\u0430 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u0430\u044F \u043C\u044B\u0441\u043B\u044C
    \u2014 \u0440\u0435\u0436\u044C \u0432\u043E\u0434\u0443, \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439 \u0444\u0430\u043A\u0442\u0443\u0440\u0443 \u0432\u0437\u0430\u043C\u0435\u043D
-5. \u041A\u0420\u042E\u0427\u041E\u041A: \u043F\u0435\u0440\u0432\u044B\u0435 2\u20133 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u0444\u0438\u043D\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430 \u2014 \u044D\u0442\u043E \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u0430\u044F \u0442\u043E\u0447\u043A\u0430 \u0432\u0445\u043E\u0434\u0430 (\u0447\u0438\u0441\u043B\u043E, \u0444\u0430\u043A\u0442, \u043D\u0430\u0431\u043B\u044E\u0434\u0435\u043D\u0438\u0435), \u0430 \u041D\u0415 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u0438. \u041F\u0440\u043E\u0432\u0435\u0440\u044C: \u0435\u0441\u043B\u0438 \u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u2014 \xABX \u2014 \u044D\u0442\u043E \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442 \u043F\u043E Y\xBB, \u043F\u0435\u0440\u0435\u043F\u0438\u0448\u0438. \u0425\u043E\u0440\u043E\u0448\u0438\u0439 \u043A\u0440\u044E\u0447\u043E\u043A: \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044C \u0445\u043E\u0447\u0435\u0442 \u0447\u0438\u0442\u0430\u0442\u044C \u0434\u0430\u043B\u044C\u0448\u0435, \u0430 \u043D\u0435 \u043F\u0440\u043E\u0441\u0442\u043E \u043F\u043E\u043D\u044F\u043B \u0442\u0435\u043C\u0443.
+5. \u041A\u0420\u042E\u0427\u041E\u041A: \u043F\u0435\u0440\u0432\u044B\u0435 2\u20133 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u0444\u0438\u043D\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430 \u2014 \u044D\u0442\u043E \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u0430\u044F \u0442\u043E\u0447\u043A\u0430 \u0432\u0445\u043E\u0434\u0430 (\u0447\u0438\u0441\u043B\u043E, \u0444\u0430\u043A\u0442, \u043D\u0430\u0431\u043B\u044E\u0434\u0435\u043D\u0438\u0435), \u0430 \u041D\u0415 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0435\u0441\u0441\u0438\u0438. \u041A\u0440\u044E\u0447\u043E\u043A \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u043C \u0430\u0431\u0437\u0430\u0446\u0435\u043C \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E H2 \u2014 \u043D\u0435 \u043F\u0435\u0440\u0435\u043D\u043E\u0441\u0438 \u0435\u0433\u043E \u0432\u043D\u0443\u0442\u0440\u044C \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0440\u0430\u0437\u0434\u0435\u043B\u0430. \u041F\u0440\u043E\u0432\u0435\u0440\u044C: \u0435\u0441\u043B\u0438 \u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u2014 \xABX \u2014 \u044D\u0442\u043E \u0441\u043F\u0435\u0446\u0438\u0430\u043B\u0438\u0441\u0442 \u043F\u043E Y\xBB, \u043F\u0435\u0440\u0435\u043F\u0438\u0448\u0438. \u0425\u043E\u0440\u043E\u0448\u0438\u0439 \u043A\u0440\u044E\u0447\u043E\u043A: \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044C \u0445\u043E\u0447\u0435\u0442 \u0447\u0438\u0442\u0430\u0442\u044C \u0434\u0430\u043B\u044C\u0448\u0435, \u0430 \u043D\u0435 \u043F\u0440\u043E\u0441\u0442\u043E \u043F\u043E\u043D\u044F\u043B \u0442\u0435\u043C\u0443.
 6. \u0420\u0418\u0422\u041C: \u043F\u0440\u043E\u0432\u0435\u0440\u044C \u043A\u0430\u0436\u0434\u044B\u0439 H2-\u0431\u043B\u043E\u043A \u2014 \u0435\u0441\u0442\u044C \u043B\u0438 \u043A\u043E\u0440\u043E\u0442\u043A\u043E\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 (5-8 \u0441\u043B\u043E\u0432) \u043F\u043E\u0441\u043B\u0435 \u0434\u043B\u0438\u043D\u043D\u043E\u0433\u043E? \u0415\u0441\u043B\u0438 \u0432\u0441\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u043F\u0440\u0438\u043C\u0435\u0440\u043D\u043E \u043E\u0434\u0438\u043D\u0430\u043A\u043E\u0432\u043E\u0439 \u0434\u043B\u0438\u043D\u044B \u2014 \u0434\u043E\u0431\u0430\u0432\u044C \u0440\u0438\u0442\u043C\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0443\u0434\u0430\u0440.
 7. \u041F\u041E\u0417\u0418\u0426\u0418\u042F: \u0435\u0441\u0442\u044C \u043B\u0438 \u0432 \u0442\u0435\u043A\u0441\u0442\u0435 1-2 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u0433\u0434\u0435 \u0442\u0435\u043A\u0441\u0442 \u0433\u043E\u0432\u043E\u0440\u0438\u0442 \xAB\u044D\u0442\u043E \u043C\u0438\u0444\xBB \u0438\u043B\u0438 \xAB\u043D\u0430 \u0441\u0430\u043C\u043E\u043C \u0434\u0435\u043B\u0435\xBB? \u0415\u0441\u043B\u0438 \u043D\u0435\u0442 \u2014 \u0434\u043E\u0431\u0430\u0432\u044C \u0432 \u043E\u0434\u0438\u043D \u0438\u0437 \u0431\u043B\u043E\u043A\u043E\u0432.
 8. \u041A\u041E\u041D\u041A\u0420\u0415\u0422\u0418\u041A\u0410: \u043D\u0430\u0439\u0434\u0438 \u0432\u0441\u0435 \xAB\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, [\u043E\u0431\u0449\u0435\u0435 \u0441\u043B\u043E\u0432\u043E]\xBB \u0438 \u0437\u0430\u043C\u0435\u043D\u0438 \u043D\u0430 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u043E\u0435 \u0438\u043C\u044F \u043A\u043E\u043C\u043F\u0430\u043D\u0438\u0438, \u0447\u0438\u0441\u043B\u043E \u0438\u043B\u0438 \u0441\u0438\u0442\u0443\u0430\u0446\u0438\u044E. \xAB\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, IT-\u043A\u043E\u043C\u043F\u0430\u043D\u0438\u0438\xBB \u2192 \xAB\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, \u042F\u043D\u0434\u0435\u043A\u0441 \u0438\u043B\u0438 \u043D\u0435\u0431\u043E\u043B\u044C\u0448\u043E\u0439 \u043F\u0440\u043E\u0434\u0443\u043A\u0442\u043E\u0432\u044B\u0439 \u0441\u0442\u0430\u0440\u0442\u0430\u043F\xBB.
@@ -1994,8 +2100,7 @@ ${drafts[3]}
 \u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E \u0444\u0438\u043D\u0430\u043B\u044C\u043D\u044B\u0439 Markdown \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439 \u0438 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0435\u0432.`,
       "writer"
     );
-    const mdStart = compiled.indexOf("## ");
-    markdown = (mdStart !== -1 ? compiled.slice(mdStart) : compiled).trim();
+    markdown = keepLead(compiled, "\u043A\u043E\u043C\u043F\u0438\u043B\u044F\u0442\u043E\u0440");
   } else {
     const dynamicSeoInsertSingle = dynamicSeoBlock ? `
 
@@ -2016,9 +2121,8 @@ ${dynamicSeoBlock}` : "";
       const parsed = JSON.parse(articleMatch[0]);
       markdown = parsed.markdown;
     } catch {
-      const mdStart = article.indexOf("## ");
-      if (mdStart !== -1) {
-        markdown = article.slice(mdStart);
+      if (bodyStart(article) !== -1) {
+        markdown = keepLead(article, "\u043F\u0438\u0441\u0430\u0442\u0435\u043B\u044C");
       } else {
         throw new Error("Writer \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u044B\u0439 JSON \u0438 \u043D\u0435 \u043D\u0430\u0448\u043B\u043E\u0441\u044C Markdown");
       }
@@ -2046,6 +2150,7 @@ ${nudgeCatalog}
 3. \u041D\u0415 \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u0439 \u0441\u0442\u0430\u0442\u044C\u044E \u0446\u0435\u043B\u0438\u043A\u043E\u043C, \u041D\u0415 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0439 \u044F\u0432\u043D\u043E \u043C\u0430\u043D\u0438\u043F\u0443\u043B\u044F\u0442\u0438\u0432\u043D\u044B\u0445 \u043A\u0440\u044E\u0447\u043A\u043E\u0432
 4. \u0422\u0435\u043A\u0441\u0442 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u043E\u043D\u043D\u044B\u043C \u2014 \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u0443\u0441\u0438\u043B\u0438\u0432\u0430\u044E\u0442 \u043F\u043E\u0434\u0430\u0447\u0443, \u043D\u0435 \u0434\u0430\u0432\u044F\u0442 \u043D\u0430 \u0447\u0438\u0442\u0430\u0442\u0435\u043B\u044F
 5. \u0421\u043E\u0445\u0440\u0430\u043D\u044F\u0439 \u043E\u0431\u044A\u0451\u043C 2000\u20132500 \u0441\u043B\u043E\u0432 \u2014 \u041D\u0415 \u0441\u043E\u043A\u0440\u0430\u0449\u0430\u0439 \u0441\u0442\u0430\u0442\u044C\u044E, \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E\u0447\u0435\u0447\u043D\u044B\u0435 \u043F\u0440\u0430\u0432\u043A\u0438 \u0432 2-3 \u043C\u0435\u0441\u0442\u0430\u0445
+6. \u0410\u0431\u0437\u0430\u0446\u044B \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E H2 (\u043A\u0440\u044E\u0447\u043E\u043A) \u0441\u043E\u0445\u0440\u0430\u043D\u0438 \u043D\u0430 \u043C\u0435\u0441\u0442\u0435 \u2014 \u043D\u0435 \u0443\u0434\u0430\u043B\u044F\u0439 \u0438 \u043D\u0435 \u043F\u0435\u0440\u0435\u043D\u043E\u0441\u0438 \u0432 \u043F\u0435\u0440\u0432\u044B\u0439 \u0440\u0430\u0437\u0434\u0435\u043B
 
 \u0421\u0422\u0410\u0422\u042C\u042F:
 ${markdown}
@@ -2056,8 +2161,7 @@ ${markdown}
   } catch (e) {
     console.error(`[writer] Nudge-\u0440\u0435\u0432\u0438\u0437\u0438\u044F \u0441\u043E\u0440\u0432\u0430\u043B\u0430\u0441\u044C, \u0438\u0434\u0443 \u0434\u0430\u043B\u044C\u0448\u0435: ${e.message}`);
   }
-  const nudgedStart = nudged.indexOf("## ");
-  const nudgedCandidate = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim();
+  const nudgedCandidate = keepLead(nudged, "nudge", markdown);
   const originalWords = markdown.split(/\s+/).length;
   const nudgedWords = nudgedCandidate.split(/\s+/).length;
   markdown = nudgedWords >= originalWords * 0.6 ? nudgedCandidate || markdown : markdown;
@@ -2105,7 +2209,7 @@ ${markdown}
   } catch (e) {
     console.error(`[writer] SEO-\u0440\u0435\u0432\u044C\u044E \u0441\u043E\u0440\u0432\u0430\u043B\u043E\u0441\u044C, \u0438\u0434\u0443 \u0441 \u0442\u0435\u043A\u0443\u0449\u0438\u043C \u0442\u0435\u043A\u0441\u0442\u043E\u043C: ${e.message}`);
   }
-  let reviewedCandidate = reviewed.trim().startsWith("##") ? reviewed.trim() : reviewed.indexOf("## ") !== -1 ? reviewed.slice(reviewed.indexOf("## ")).trim() : markdown;
+  let reviewedCandidate = bodyStart(reviewed) !== -1 ? keepLead(reviewed, "SEO-\u0440\u0435\u0432\u044C\u044E", markdown) : markdown;
   const auditMarkers = [
     "**Title tag:**",
     "**Meta description:**",

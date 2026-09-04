@@ -3,7 +3,6 @@ import {
   field,
   parseRows,
   splitMdx,
-  stripPreamble,
   withUpdatedDate,
   selectCandidates,
   slugFromArticleUrl,
@@ -120,22 +119,6 @@ describe('поиск ключа в тексте с поправкой на яз�
 })
 
 describe('разбор ответа модели', () => {
-  it('не режет по «## » внутри H3 — преамбула не должна уехать в статью', () => {
-    const answer = 'Вот правки:\n\n### Что изменено\n- добавил таблицу\n\n## Кто это\n\nТекст.'
-    const body = stripPreamble(answer)
-    expect(body.startsWith('## Кто это')).toBe(true)
-    expect(body).not.toContain('Что изменено')
-  })
-
-  it('оставляет тело как есть, если оно сразу начинается с H2', () => {
-    const answer = '## Кто это\n\nТекст.'
-    expect(stripPreamble(answer)).toBe(answer)
-  })
-
-  it('не теряет текст, если заголовков нет вовсе', () => {
-    expect(stripPreamble('Просто текст без заголовков')).toBe('Просто текст без заголовков')
-  })
-
   it('делит MDX на frontmatter и тело', () => {
     const raw = '---\ntitle: "Т"\ndateModified: "2026-07-28"\n---\n## H2\n\nТекст.'
     const { frontmatter, body } = splitMdx(raw)

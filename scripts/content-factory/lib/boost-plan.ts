@@ -188,23 +188,6 @@ export function validateRewrite(before: string, after: string, key: string): Rew
   return v
 }
 
-/**
- * Где в ответе модели начинается тело статьи.
- *
- * Первый заход искал `indexOf('## ')`, и это ловушка: строка «### Что изменено»
- * содержит «## » со смещением 1, поэтому срез начинался с середины решётки —
- * преамбула оставалась в тексте, а её H3 повышался до H2. Ищем только начало
- * строки. -1 означает «заголовков нет вовсе», тело берётся целиком.
- */
-export function bodyStart(answer: string): number {
-  return answer.search(/^## /m)
-}
-
-export function stripPreamble(answer: string): string {
-  const start = bodyStart(answer)
-  return start > 0 ? answer.slice(start) : answer
-}
-
 /** Frontmatter и тело. Бросает, если файл не похож на статью. */
 export function splitMdx(raw: string): { frontmatter: string; body: string } {
   const m = raw.match(/^---\n([\s\S]*?)\n---\n/)

@@ -32,11 +32,11 @@ import {
   parseRows,
   selectCandidates,
   splitMdx,
-  stripPreamble,
   validateRewrite,
   withUpdatedDate,
   type BoostCandidate,
 } from './lib/boost-plan.js'
+import { keepLead } from './lib/article-body.js'
 import { checkArticleMetadata, normalizeFaqHeading } from '../../lib/article-metadata-gate'
 import { faqSchemaLine } from '../../lib/faq-schema'
 import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
@@ -128,7 +128,7 @@ async function boostOne(c: BoostCandidate, dryRun: boolean): Promise<string> {
   // содержит «## » внутри, и первый вариант резал по середине решётки.
   // Хвост приёмки («Title: …», «Скиллы: …») срезаем тем же кодом, что и на
   // публикации — первый боевой прогон приклеил его прямо в тело статьи.
-  const next = normalizeFaqHeading(stripServiceTail(stripPreamble(answer)))
+  const next = normalizeFaqHeading(stripServiceTail(keepLead(answer, 'дожим')))
 
   const problems = validateRewrite(body, next, c.key)
   const meta = checkArticleMetadata({

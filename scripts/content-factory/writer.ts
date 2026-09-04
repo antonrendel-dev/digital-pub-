@@ -17,6 +17,7 @@ import {
 import { lookupPhrases, savePhrases } from './lib/lsi-cache.js'
 import { modelFor } from './lib/model.js'
 import { stripRoleTag } from './lib/agent-role.js'
+import { bodyStart, keepLead } from './lib/article-body.js'
 import { askAgent, type AgentName } from './lib/ask-agent.js'
 import { currentRunDir, recordExchange, startRun } from './lib/agent-transcript.js'
 import {
@@ -854,20 +855,6 @@ ${task}
 
 // ─── Приёмка по ТЗ ───────────────────────────────────────────────────────────
 
-/**
- * Отрезает всё, что модель написала до первой H2.
- *
- * Круги правок — единственный шаг, который клал ответ модели в статью как есть.
- * Остальные шаги режут преамбулу по первой `## `, и на приёмке этого не было:
- * ярлык роли строкой `[WRITER]` перед текстом уезжал во frontmatter-соседи и
- * попадал на сайт. 7 статей за август вышли с этой меткой — все ровно те, где
- * лог показывает круг правок.
- */
-function stripPreamble(raw: string): string {
-  const start = raw.indexOf('## ')
-  return (start !== -1 ? raw.slice(start) : raw).trim()
-}
-
 // Круг правок — это вызов модели на 2-3 минуты. Потолок не про качество, а про то,
 // чтобы статья успела выйти утром: без него зациклившийся писатель съест всё окно.
 const REPAIR_ROUNDS = 6
@@ -938,7 +925,7 @@ ${current}
 
 Верни ТОЛЬКО исправленный Markdown статьи — без пояснений, без списка правок.`,
       'writer'
-    ).then(stripPreamble)
+    ).then((raw) => keepLead(raw, 'приёмка', current))
   }
 
   return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) }
@@ -1180,7 +1167,7 @@ ${planText}
 
 ПРАВИЛА НАПИСАНИЯ (обязательно, мастер-промпт v6.6):
 
-КРЮЧОК (открытие статьи): первые 2–3 предложения — не определение профессии, а конкретная точка входа: число, факт, наблюдение, которое удивляет читателя. Ключевое слово "${topic.keyword}" должно быть в первых 60 словах буквально — но не обязательно в первом предложении.
+КРЮЧОК (открытие статьи): первые 2–3 предложения — не определение профессии, а конкретная точка входа: число, факт, наблюдение, которое удивляет читателя. Ключевое слово "${topic.keyword}" должно быть в первых 60 словах буквально — но не обязательно в первом предложении. Крючок стоит сразу после H1 и ДО первого H2, без своего подзаголовка — это абзац, а не раздел.
 
   Примеры как НАДО:
   — «В Telegram Ads не хватает людей. Специалисты по платформе зарабатывают на 20–40% больше аналогов того же грейда во ВКонтакте — рынок не успел подготовить кадры.»
@@ -1308,10 +1295,7 @@ Markdown: ## для H2, ### для H3, **жирный**, таблицы, мар�
         askClaude(
           `${baseWriterPrompt}${dynamicSeoInsert}\n\n${dir.desc}\n\nВерни ТОЛЬКО Markdown статьи — без JSON, без пояснений.`,
           'writer'
-        ).then((raw) => {
-          const mdStart = raw.indexOf('## ')
-          return mdStart !== -1 ? raw.slice(mdStart).trim() : raw.trim()
-        })
+        ).then((raw) => keepLead(raw, 'черновик'))
       )
     )
 
@@ -1345,7 +1329,7 @@ ${drafts[3]}
    — без оценочных слов без доказательств (лучший, эффективный, уникальный)
    — каждый абзац — одна конкретная мысль
    — режь воду, добавляй фактуру взамен
-5. КРЮЧОК: первые 2–3 предложения финального текста — это конкретная точка входа (число, факт, наблюдение), а НЕ определение профессии. Проверь: если первое предложение — «X — это специалист по Y», перепиши. Хороший крючок: читатель хочет читать дальше, а не просто понял тему.
+5. КРЮЧОК: первые 2–3 предложения финального текста — это конкретная точка входа (число, факт, наблюдение), а НЕ определение профессии. Крючок остаётся отдельным абзацем до первого H2 — не переноси его внутрь первого раздела. Проверь: если первое предложение — «X — это специалист по Y», перепиши. Хороший крючок: читатель хочет читать дальше, а не просто понял тему.
 6. РИТМ: проверь каждый H2-блок — есть ли короткое предложение (5-8 слов) после длинного? Если все предложения примерно одинаковой длины — добавь ритмический удар.
 7. ПОЗИЦИЯ: есть ли в тексте 1-2 момента где текст говорит «это миф» или «на самом деле»? Если нет — добавь в один из блоков.
 8. КОНКРЕТИКА: найди все «например, [общее слово]» и замени на конкретное имя компании, число или ситуацию. «Например, IT-компании» → «например, Яндекс или небольшой продуктовый стартап».
@@ -1360,8 +1344,7 @@ ${drafts[3]}
       'writer'
     )
 
-    const mdStart = compiled.indexOf('## ')
-    markdown = (mdStart !== -1 ? compiled.slice(mdStart) : compiled).trim()
+    markdown = keepLead(compiled, 'компилятор')
   } else {
     const dynamicSeoInsertSingle = dynamicSeoBlock
       ? `\n\nДОПОЛНИТЕЛЬНЫЕ SEO-ТРЕБОВАНИЯ (от аналитика, приоритет высокий):\n${dynamicSeoBlock}`
@@ -1376,9 +1359,8 @@ ${drafts[3]}
       const parsed = JSON.parse(articleMatch[0]) as { markdown: string }
       markdown = parsed.markdown
     } catch {
-      const mdStart = article.indexOf('## ')
-      if (mdStart !== -1) {
-        markdown = article.slice(mdStart)
+      if (bodyStart(article) !== -1) {
+        markdown = keepLead(article, 'писатель')
       } else {
         throw new Error('Writer не вернул правильный JSON и не нашлось Markdown')
       }
@@ -1420,6 +1402,7 @@ ${nudgeCatalog}
 3. НЕ переписывай статью целиком, НЕ добавляй явно манипулятивных крючков
 4. Текст остаётся информационным — техники усиливают подачу, не давят на читателя
 5. Сохраняй объём 2000–2500 слов — НЕ сокращай статью, только точечные правки в 2-3 местах
+6. Абзацы до первого H2 (крючок) сохрани на месте — не удаляй и не переноси в первый раздел
 
 СТАТЬЯ:
 ${markdown}
@@ -1431,8 +1414,7 @@ ${markdown}
     console.error(`[writer] Nudge-ревизия сорвалась, иду дальше: ${(e as Error).message}`)
   }
 
-  const nudgedStart = nudged.indexOf('## ')
-  const nudgedCandidate = (nudgedStart !== -1 ? nudged.slice(nudgedStart) : nudged).trim()
+  const nudgedCandidate = keepLead(nudged, 'nudge', markdown)
   // Guard: if nudge result is less than 60% of original word count, it was truncated — keep original
   const originalWords = markdown.split(/\s+/).length
   const nudgedWords = nudgedCandidate.split(/\s+/).length
@@ -1490,11 +1472,8 @@ ${markdown}
     console.error(`[writer] SEO-ревью сорвалось, иду с текущим текстом: ${(e as Error).message}`)
   }
 
-  let reviewedCandidate = reviewed.trim().startsWith('##')
-    ? reviewed.trim()
-    : reviewed.indexOf('## ') !== -1
-      ? reviewed.slice(reviewed.indexOf('## ')).trim()
-      : markdown
+  let reviewedCandidate =
+    bodyStart(reviewed) !== -1 ? keepLead(reviewed, 'SEO-ревью', markdown) : markdown
   // Strip any SEO audit report the model may have appended after the article
   const auditMarkers = [
     '**Title tag:**',
