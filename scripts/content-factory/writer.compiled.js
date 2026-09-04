@@ -624,8 +624,8 @@ function checkArticleMetadata(meta) {
 }
 
 // ../../lib/strip-service-tail.ts
-var SERVICE_TAIL = /\n\s*-{3,}\s*\n+\s*(?:\*\*)?(?:Служебное|Скиллы:|Использован[а-яё]*\s+скилл|Готово для проверки|Мастер-промпт)[\s\S]*$/i;
-var SERVICE_MARKER = /Готово для проверки|Использован[а-яё]*\s+скилл|Служебное, вне тела|мастер-промпт v\d/i;
+var SERVICE_TAIL = /\n\s*-{3,}\s*\n+\s*(?:\*\*)?(?:Служебное|Скиллы:|Использован[а-яё]*\s+скилл|Готово для проверки|Мастер-промпт|Title:|Meta description:)[\s\S]*$/i;
+var SERVICE_MARKER = /Готово для проверки|Использован[а-яё]*\s+скилл|Служебное, вне тела|мастер-промпт v\d|^\s*\*{0,2}(?:Title|Meta description):/im;
 function stripServiceTail(markdown) {
   return markdown.replace(SERVICE_TAIL, "\n").trimEnd() + "\n";
 }
