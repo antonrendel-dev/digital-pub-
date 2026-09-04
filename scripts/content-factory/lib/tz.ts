@@ -12,7 +12,15 @@
 // Второй источник нужен ровно ради STOP-листа: если ключ уже закреплён за чужой
 // страницей, новая статья по нему конкурирует с собственным сайтом.
 
-import { boldKeyOccurrences, countPhraseForms, keyDefinitionOpener } from './keyword-match.js'
+import {
+  boldKeyOccurrences,
+  countPhraseForms,
+  hasPhraseForm,
+  keyDefinitionOpener,
+  keyStems,
+} from './keyword-match.js'
+import { compilePhrases } from './robot-score.js'
+import { ROBOT_PHRASES } from './robot-phrases.js'
 import fs from 'fs'
 import path from 'path'
 import { type LsiSelection, MAX_MAIN_KEY_USES, modifierWords, stems } from './lsi.js'
@@ -339,12 +347,17 @@ export const TEMPLATE_PHRASE_RULE = 'Шаблонная фраза'
  * Фразы, которые промпт когда-то требовал «один раз» — и модель ставила их
  * в каждую статью: «Мы разбираем тысячи вакансий…» в 13 файлах / 16 вхождений,
  * «Миф о том, что … неверен» в 8 файлах / 10 вхождений (аудит 04.09.2026,
- * срез content/articles). Первые две запрещены совсем,
- * «на самом деле» — не больше одного раза.
+ * срез content/articles). Словарь общий со скорингом роботности
+ * (robot-phrases.ts): здесь берутся только записи с полем `gate`.
  */
-const BANNED_TEMPLATES = ['мы разбираем тысячи вакансий', 'миф о том, что']
-const LIMITED_TEMPLATES: { phrase: string; max: number }[] = [{ phrase: 'на самом деле', max: 1 }]
+const BANNED_TEMPLATES = compilePhrases(ROBOT_PHRASES.filter((p) => p.gate === 'ban'))
+const LIMITED_TEMPLATES = ROBOT_PHRASES.filter((p) => typeof p.gate === 'number').map((p) => ({
+  ...compilePhrases([p])[0],
+  max: p.gate as number,
+}))
 export const DEFINITION_OPENER_RULE = 'Статья открывается определением ключа'
+export const KEY_IN_LEAD_RULE = 'Ключа нет в первых 60 словах'
+export const KEY_IN_FIRST_H2_RULE = 'Ключа нет в первом H2'
 
 /**
  * Механическая часть приёмки: то, что считается регуляркой, считается кодом, а не
@@ -381,18 +394,15 @@ export function checkTechSpec(tz: TechSpec, markdown: string): SpecViolation[] {
     }
   }
 
-  // Шаблоны ищутся с границей слова справа: «миф о том, чтобы…» — не шаблон.
-  const templateHits = (phrase: string): number[] => {
-    const re = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![а-яё])', 'g')
-    return [...lower.matchAll(re)].map((m) => m.index ?? 0)
-  }
+  // Шаблоны ищутся с границей слова с обеих сторон: «миф о том, чтобы…» — не шаблон.
+  const templateHits = (re: RegExp): number[] => [...markdown.matchAll(re)].map((m) => m.index ?? 0)
   const around = (index: number): string =>
     markdown
       .slice(Math.max(0, index - 30), index + 50)
       .replace(/\s+/g, ' ')
       .trim()
-  for (const phrase of BANNED_TEMPLATES) {
-    const hits = templateHits(phrase)
+  for (const { phrase, re } of BANNED_TEMPLATES) {
+    const hits = templateHits(re)
     if (hits.length) {
       violations.push({
         rule: TEMPLATE_PHRASE_RULE,
@@ -400,8 +410,8 @@ export function checkTechSpec(tz: TechSpec, markdown: string): SpecViolation[] {
       })
     }
   }
-  for (const { phrase, max } of LIMITED_TEMPLATES) {
-    const hits = templateHits(phrase)
+  for (const { phrase, re, max } of LIMITED_TEMPLATES) {
+    const hits = templateHits(re)
     if (hits.length > max) {
       violations.push({
         rule: TEMPLATE_PHRASE_RULE,
@@ -422,6 +432,45 @@ export function checkTechSpec(tz: TechSpec, markdown: string): SpecViolation[] {
     violations.push({
       rule: DEFINITION_OPENER_RULE,
       detail: `первое предложение начинается с «${opener}» — открой статью крючком (факт, число, наблюдение), а определение дай внутри первого H2`,
+    })
+  }
+
+  // Каналы упоминания (стандарт 3.5): ключ в первых 60 словах текста и в первом H2 —
+  // в любой форме. Правка «на живость» после SEO-ревью двигает крючок и первый
+  // раздел, и без этой проверки канал терялся бы молча.
+  const withoutFences = markdown.replace(/```[\s\S]*?```/g, '\n')
+  const bodyText = withoutFences
+    .replace(/^---\n[\s\S]*?\n---\n?/, '')
+    .replace(/^#\s.*$/m, '')
+    .replace(/^##+\s.*$/gm, '')
+    .replace(/^(?:import|export)\s.*$/gm, '')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/<[^>]*>/g, '')
+  // Слова, а не токены: тире, «**» и подписи картинок окно из 60 не съедают.
+  const first60 = bodyText
+    .split(/\s+/)
+    .filter((t) => /[\p{L}\p{N}]/u.test(t))
+    .slice(0, 60)
+    .join(' ')
+  if (!hasPhraseForm(first60, tz.mainKeyword)) {
+    violations.push({
+      rule: KEY_IN_LEAD_RULE,
+      detail: `«${tz.mainKeyword}» (в любой форме) должен стоять в первых 60 словах после H1 — вплети в крючок, не жирным и не «ключ — это»`,
+    })
+  }
+  // STOP-фраза, целиком входящая в главный ключ («вакансии таргетолог» при ключе
+  // «вакансии таргетолог»), делает требование неразрешимым: ключ в H2 тут же
+  // отклонит «Занятый ключ в заголовке». Тогда правило первого H2 не применяется.
+  const stopInsideKey = tz.stopPhrases.some((s) => containsMainKeyword(tz.mainKeyword, s.phrase))
+  const firstH2 = withoutFences.match(/^##\s+(.+)$/m)?.[1]
+  if (firstH2 && !stopInsideKey && !hasPhraseForm(firstH2, tz.mainKeyword)) {
+    const have = keyStems(firstH2)
+    const missing = keyStems(tz.mainKeyword).filter(
+      (st) => !have.some((h) => h.startsWith(st) || st.startsWith(h))
+    )
+    violations.push({
+      rule: KEY_IN_FIRST_H2_RULE,
+      detail: `первый H2 «${firstH2.trim()}» без ключа «${tz.mainKeyword}»: не хватает слов с основой ${missing.map((m) => `«${m}…»`).join(', ')} — добавь их в заголовок в любой форме, вопрос или утверждение оставь`,
     })
   }
 

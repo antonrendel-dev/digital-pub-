@@ -55,6 +55,12 @@ import {
   renderTechSpec,
 } from './lib/tz.js'
 import { fetchWordstatKeywords } from './lib/yandex.js'
+import {
+  ROBOT_SCORE_MODE,
+  type RobotScore,
+  formatViolations,
+  scoreArticle,
+} from './lib/robot-score.js'
 
 // Стандарт 2.7b: ответ FAQ короче попадает в сниппет обрывком и не берёт featured snippet.
 const FAQ_MIN_WORDS = 120
@@ -247,6 +253,8 @@ interface ArticleResult {
   wordstatKeywords: string[]
   articleEssence: string
   specWarning?: string
+  /** Нарушения скоринга роботности, оставшиеся после круга правки. Пусто — статья чистая. */
+  robotWarning?: string
 }
 
 // ─── H2-шаблоны по типу контента (programmatic-seo) ─────────────────────────
@@ -946,6 +954,153 @@ ${current}
   return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) }
 }
 
+/**
+ * Хвост-отчёт после статьи: модель, которой сказали «без списка правок»,
+ * иногда всё равно его приписывает (стандарт D7). Режется по первому маркеру.
+ */
+const AUDIT_MARKERS = [
+  '**Title tag:**',
+  '**Meta description:**',
+  '**Что исправлено',
+  '## Что исправлено',
+  'Title tag:',
+  'Meta description:',
+  'Что изменено',
+  'Сводка правок',
+  'сводка правок',
+  '# Задача',
+  '| Задача |',
+  '| Задача|',
+  'Задача  Статус',
+  '---\n|',
+]
+
+function stripAuditReport(text: string): string {
+  let out = text
+  for (const marker of AUDIT_MARKERS) {
+    const idx = out.indexOf(marker)
+    if (idx !== -1) {
+      // Маркер может встретиться и по делу («Meta description:» в статье про SEO) —
+      // срез не молчит, чтобы обрезанную статью было видно в логе.
+      console.warn(`[writer] срезан хвост после «${marker}» (${out.length - idx} симв.)`)
+      out = out.slice(0, idx).trim()
+    }
+  }
+  return out
+}
+
+/** Число H2, H3, строк таблиц и пунктов списков: правка «на живость» их трогать не должна. */
+function structureSignature(md: string): string {
+  const count = (re: RegExp) => (md.match(re) ?? []).length
+  return [/^##\s/gm, /^###\s/gm, /^\|/gm, /^\s*(?:[-*+]|\d+[.)])\s/gm].map(count).join('/')
+}
+
+export class RobotRejected extends Error {
+  constructor(public readonly score: RobotScore) {
+    super(`Статья не прошла скоринг роботности:\n${formatViolations(score.violations)}`)
+    this.name = 'RobotRejected'
+  }
+}
+
+/**
+ * ШАГ 4в: скоринг роботности (C7, 04.09.2026). Считает числа, которые
+ * выдают ритуалы завода: абзацы-афоризмы, фразы-шаблоны, все H2 вопросами,
+ * атрибуция в каждом втором предложении, статья без крючка. При нарушении —
+ * один круг правки с перечислением нарушений, потом повторный счёт.
+ *
+ * Режим ROBOT_SCORE_MODE = 'warn': остаток нарушений уходит в лог и в
+ * уведомление о публикации, статью не останавливает. В режиме 'block'
+ * остаток нарушений уровня violation роняет прогон, как SpecRejected.
+ * Стоит ДО приёмки по ТЗ: правка на живость может задеть вхождения,
+ * и приёмка это поймает; обратный порядок оставил бы правку без проверки.
+ */
+async function humanizeAgainstScore(
+  markdown: string
+): Promise<{ markdown: string; score: RobotScore; warning?: string }> {
+  console.log('[writer] Шаг 4в: Скоринг роботности...')
+  const logScore = (label: string, s: RobotScore) => {
+    const m = s.metrics
+    console.log(
+      `[writer] Роботность ${label}: афоризмы ${Math.round(m.aphorismShare * 100)} %, шаблонов ${m.templateCount}, ` +
+        `CV ${m.sentenceCv}, H2 с «?» ${Math.round(m.questionH2Share * 100)} %, атрибуций ${m.attributionsPer250}/250, ` +
+        `лид ${m.hasLead ? `${m.leadWords} слов` : 'нет'}` +
+        (s.violations.length ? `\n${formatViolations(s.violations)}` : ' — чисто ✓')
+    )
+  }
+
+  let score = scoreArticle(markdown)
+  logScore('до правки', score)
+  const hard = (s: RobotScore) => s.violations.filter((v) => v.level === 'violation')
+  let current = markdown
+
+  if (hard(score).length > 0) {
+    console.log('[writer] Роботность: круг правки 1/1...')
+    try {
+      // В промпт идут только нарушения: предупреждения (H2 вопросами, атрибуции)
+      // модель «исправляла» бы вопреки стандарту 9.3a и правилу «каждая цифра с источником».
+      const raw = await askClaude(
+        `Статья прошла SEO-ревью, но скоринг роботности нашёл признаки машинного текста.
+Исправь ровно перечисленное. Заголовки H2/H3, таблицы, списки, FAQ, ссылки, числа и вхождения ключа не трогай.
+
+${formatViolations(hard(score))}
+
+Как править:
+- абзацы-афоризмы из одного короткого предложения — слить с соседним абзацем (не с первым абзацем раздела) или развернуть в мысль; отдельной строкой оставить максимум один настоящий вывод на статью;
+- фразы-шаблоны — убрать, сказать то же своими словами без формулы;
+- «**термин** — это …» в начале абзаца — сними жирный; текст и место предложения не меняй;
+- если крючка до первого H2 нет или он короче 25 слов — напиши 2–3 предложения (25–80 слов) до первого «## »: наблюдение или факт, который уже есть в статье; ключ в них — в любой грамматической форме, не жирным, не через «— это»; в первом абзаце — актуальная дата.
+
+Строго: новых чисел, источников и фактов не добавлять — только то, что уже есть в статье. Первое предложение каждого раздела после H2 не менять.
+
+СТАТЬЯ:
+${current}
+
+Верни ТОЛЬКО исправленный Markdown статьи целиком — без пояснений, без списка правок.`,
+        'writer'
+      )
+      // Ответ без единого H2 — не статья: guard по объёму его не отличит.
+      const fixed =
+        bodyStart(raw) !== -1 ? stripAuditReport(keepLead(raw, 'роботность', current)) : ''
+      const before = current.split(/\s+/).length
+      const after = fixed.split(/\s+/).length
+      const rescored = scoreArticle(fixed)
+      const structureKept = structureSignature(fixed) === structureSignature(current)
+      if (!structureKept) {
+        console.warn(
+          `[writer] Роботность: правка изменила структуру (H2/H3/таблицы ${structureSignature(current)} → ${structureSignature(fixed)}) — откат`
+        )
+      }
+      // Правка принимается, если сняла хотя бы одно нарушение и не добавила новых правил:
+      // «два снято, одно новое» — это не улучшение, а другой набор проблем.
+      const rulesBefore = new Set(hard(score).map((v) => v.rule))
+      const noNewRules = hard(rescored).every((v) => rulesBefore.has(v.rule))
+      if (
+        structureKept &&
+        noNewRules &&
+        after >= before * 0.8 &&
+        hard(rescored).length < hard(score).length
+      ) {
+        current = fixed
+        score = rescored
+        logScore('после правки', score)
+      } else {
+        console.warn(
+          `[writer] Роботность: правка не помогла (слов ${before}→${after}, нарушений ${hard(score).length}→${hard(rescored).length}) — оставляю текст до правки`
+        )
+      }
+    } catch (e) {
+      console.error(`[writer] Роботность: круг правки сорвался: ${(e as Error).message}`)
+    }
+  }
+
+  if (ROBOT_SCORE_MODE === 'block' && hard(score).length > 0) throw new RobotRejected(score)
+  return {
+    markdown: current,
+    score,
+    warning: score.violations.length ? formatViolations(score.violations) : undefined,
+  }
+}
+
 // ─── Article generation pipeline ─────────────────────────────────────────────
 
 async function generateMdxArticle(topic: Topic): Promise<ArticleResult> {
@@ -1488,41 +1643,33 @@ ${markdown}
     console.error(`[writer] SEO-ревью сорвалось, иду с текущим текстом: ${(e as Error).message}`)
   }
 
-  let reviewedCandidate =
+  const reviewedCandidate = stripAuditReport(
     bodyStart(reviewed) !== -1 ? keepLead(reviewed, 'SEO-ревью', markdown) : markdown
-  // Strip any SEO audit report the model may have appended after the article
-  const auditMarkers = [
-    '**Title tag:**',
-    '**Meta description:**',
-    '**Что исправлено',
-    '## Что исправлено',
-    'Title tag:',
-    'Meta description:',
-    'Что изменено',
-    'Сводка правок',
-    'сводка правок',
-    '# Задача',
-    '| Задача |',
-    '| Задача|',
-    'Задача  Статус',
-    '---\n|',
-  ]
-  for (const marker of auditMarkers) {
-    const idx = reviewedCandidate.indexOf(marker)
-    if (idx !== -1) reviewedCandidate = reviewedCandidate.slice(0, idx).trim()
-  }
+  )
   const preReviewWords = markdown.split(/\s+/).length
   const reviewedWords = reviewedCandidate.split(/\s+/).length
   const reviewedFinal = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown
 
+  // ШАГ 4в: скоринг роботности — до приёмки, чтобы правка на живость прошла проверку по ТЗ
+  const humanized = await humanizeAgainstScore(reviewedFinal)
+
   // ШАГ 4б: приёмка по ТЗ
-  const accepted = await acceptAgainstSpec(tz, reviewedFinal)
+  const accepted = await acceptAgainstSpec(tz, humanized.markdown)
+  // Приёмка до REPAIR_ROUNDS раз переписывает текст моделью — в уведомление идёт
+  // счёт по тому, что публикуется, а не по промежуточной версии.
+  const finalScore = scoreArticle(accepted.markdown)
+  if (finalScore.violations.length) {
+    console.log(`[writer] Роботность после приёмки:\n${formatViolations(finalScore.violations)}`)
+  }
 
   return {
     markdown: accepted.markdown,
     specWarning: accepted.unresolved.length
       ? `Переписывали ${accepted.rounds} раз, невыполненными остались:\n` +
         accepted.unresolved.map((v) => `• ${v.rule}: ${v.detail}`).join('\n')
+      : undefined,
+    robotWarning: finalScore.violations.length
+      ? formatViolations(finalScore.violations)
       : undefined,
     metaTitle: plan.metaTitle,
     metaDesc: plan.metaDesc,
@@ -1999,12 +2146,18 @@ async function main() {
     ? `⚡ Статья уже на сервере, доступна через ~30 сек (ISR)`
     : `⏳ Деплой через CI займёт ~15 минут`
 
+  // Детали приёмки и скоринга цитируют статью — в цитатах бывают < и &, Bot API на них падает.
+  const escapeHtml = (t: string) =>
+    t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const specBlock = result.specWarning
-    ? `\n\n⚠️ <b>Принята с оговорками.</b>\n${result.specWarning}\nНужна ручная доработка.`
+    ? `\n\n⚠️ <b>Принята с оговорками.</b>\n${escapeHtml(result.specWarning)}\nНужна ручная доработка.`
     : ''
+  const robotBlock = result.robotWarning
+    ? `\n\n🤖 <b>Роботность (режим предупреждения):</b>\n${escapeHtml(result.robotWarning)}`
+    : '\n\n🤖 Роботность: чисто ✓'
 
   const successText =
-    `✅ <b>Статья опубликована!</b>${specBlock}\n\n` +
+    `✅ <b>Статья опубликована!</b>${specBlock}${robotBlock}\n\n` +
     `📌 ${topic.title}\n` +
     `${wordstatInfo}\n` +
     `${imageStatus}\n` +

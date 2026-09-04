@@ -1,0 +1,2917 @@
+{
+  "generatedAt": "2026-09-04T16:43:00.708Z",
+  "articles": {
+    "agregatory-vakansij-digital-sravnenie-ploshhadok": {
+      "metrics": {
+        "words": 912,
+        "paragraphs": 31,
+        "aphorismShare": 0,
+        "avgParagraphWords": 29.4,
+        "paragraphSd": 10,
+        "sentenceCv": 0.598,
+        "sentences": 77,
+        "avgSentenceWords": 11.8,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 5,
+        "attributionsPer250": 1.37,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "analitik-dannyh-ili-marketolog-analitik": {
+      "metrics": {
+        "words": 1373,
+        "paragraphs": 33,
+        "aphorismShare": 0,
+        "avgParagraphWords": 41.6,
+        "paragraphSd": 16.9,
+        "sentenceCv": 0.519,
+        "sentences": 85,
+        "avgSentenceWords": 16.2,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 2
+          }
+        ],
+        "templateCount": 3,
+        "h2Count": 9,
+        "questionH2Share": 0.778,
+        "attributions": 4,
+        "attributionsPer250": 0.73,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×2"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "biznes-analitik-kto-eto-otlichiya-ot-analitika-dannyh": {
+      "metrics": {
+        "words": 1501,
+        "paragraphs": 58,
+        "aphorismShare": 0.172,
+        "avgParagraphWords": 25.9,
+        "paragraphSd": 12.5,
+        "sentenceCv": 0.446,
+        "sentences": 122,
+        "avgSentenceWords": 12.3,
+        "templateHits": [
+          {
+            "phrase": "миф о том, что",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 7,
+        "questionH2Share": 1,
+        "attributions": 2,
+        "attributionsPer250": 0.33,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Абзацы-афоризмы",
+          "level": "violation",
+          "detail": "10 из 58 абзацев короче 8 слов (17 % при пороге 8 %): «Документ сам по себе ничего не меняет.», «Разница начинается с рабочего дня.», «Разница видна в конечном продукте работы.»"
+        },
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«миф о том, что» ×1, «на самом деле» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "7 из 7 H2 с «?» (100 % при пороге 85 %)"
+        }
+      ]
+    },
+    "chto-takoe-smm-professiya-obyazannosti-zarplata": {
+      "metrics": {
+        "words": 543,
+        "paragraphs": 33,
+        "aphorismShare": 0,
+        "avgParagraphWords": 16.5,
+        "paragraphSd": 11.9,
+        "sentenceCv": 0.565,
+        "sentences": 51,
+        "avgSentenceWords": 10.6,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0.143,
+        "attributions": 2,
+        "attributionsPer250": 0.92,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "frilans-digital-s-nulja": {
+      "metrics": {
+        "words": 1072,
+        "paragraphs": 37,
+        "aphorismShare": 0.027,
+        "avgParagraphWords": 29,
+        "paragraphSd": 14.6,
+        "sentenceCv": 0.583,
+        "sentences": 89,
+        "avgSentenceWords": 12,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 6,
+        "attributionsPer250": 1.4,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "frilans-ili-shtat-marketolog": {
+      "metrics": {
+        "words": 1194,
+        "paragraphs": 38,
+        "aphorismShare": 0.026,
+        "avgParagraphWords": 31.4,
+        "paragraphSd": 14.2,
+        "sentenceCv": 0.499,
+        "sentences": 102,
+        "avgSentenceWords": 11.7,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 3
+          }
+        ],
+        "templateCount": 3,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 9,
+        "attributionsPer250": 1.88,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«на самом деле» ×3"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "9 предложений с источником на 1194 слов (1.88 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "gde-iskat-rabotu-krome-avito": {
+      "metrics": {
+        "words": 1224,
+        "paragraphs": 38,
+        "aphorismShare": 0,
+        "avgParagraphWords": 32.2,
+        "paragraphSd": 14.4,
+        "sentenceCv": 0.5,
+        "sentences": 101,
+        "avgSentenceWords": 12.1,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 9,
+        "questionH2Share": 0,
+        "attributions": 6,
+        "attributionsPer250": 1.23,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "gde-iskat-rabotu-krome-hh-ru-15-ploshchadok-2026": {
+      "metrics": {
+        "words": 1063,
+        "paragraphs": 38,
+        "aphorismShare": 0,
+        "avgParagraphWords": 28,
+        "paragraphSd": 15.7,
+        "sentenceCv": 0.528,
+        "sentences": 85,
+        "avgSentenceWords": 12.5,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 2
+          }
+        ],
+        "templateCount": 3,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 10,
+        "attributionsPer250": 2.35,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×2"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "10 предложений с источником на 1063 слов (2.35 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "gde-iskat-vakansii-dizajnera-2026": {
+      "metrics": {
+        "words": 1591,
+        "paragraphs": 53,
+        "aphorismShare": 0,
+        "avgParagraphWords": 30,
+        "paragraphSd": 10.8,
+        "sentenceCv": 0.441,
+        "sentences": 142,
+        "avgSentenceWords": 11.2,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 10,
+        "questionH2Share": 0,
+        "attributions": 1,
+        "attributionsPer250": 0.16,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "gde-nayti-spetsialista-digital": {
+      "metrics": {
+        "words": 694,
+        "paragraphs": 27,
+        "aphorismShare": 0,
+        "avgParagraphWords": 25.7,
+        "paragraphSd": 14.4,
+        "sentenceCv": 0.503,
+        "sentences": 61,
+        "avgSentenceWords": 11.4,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "gde-razmeshchat-vakansii-ploshchadki-ceny-2026": {
+      "metrics": {
+        "words": 2221,
+        "paragraphs": 51,
+        "aphorismShare": 0,
+        "avgParagraphWords": 43.5,
+        "paragraphSd": 26.4,
+        "sentenceCv": 0.558,
+        "sentences": 132,
+        "avgSentenceWords": 16.8,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 4
+          }
+        ],
+        "templateCount": 5,
+        "h2Count": 8,
+        "questionH2Share": 0.625,
+        "attributions": 4,
+        "attributionsPer250": 0.45,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×4"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "hr-menedzher-digital-agentstvo-najm": {
+      "metrics": {
+        "words": 2037,
+        "paragraphs": 54,
+        "aphorismShare": 0,
+        "avgParagraphWords": 37.7,
+        "paragraphSd": 13.2,
+        "sentenceCv": 0.493,
+        "sentences": 160,
+        "avgSentenceWords": 12.7,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 9,
+        "questionH2Share": 0,
+        "attributions": 2,
+        "attributionsPer250": 0.25,
+        "hasLead": true,
+        "leadWords": 67
+      },
+      "violations": []
+    },
+    "inflyuens-marketing-zarplaty-i-put-v-professiyu": {
+      "metrics": {
+        "words": 1619,
+        "paragraphs": 55,
+        "aphorismShare": 0.109,
+        "avgParagraphWords": 29.4,
+        "paragraphSd": 12,
+        "sentenceCv": 0.483,
+        "sentences": 122,
+        "avgSentenceWords": 13.3,
+        "templateHits": [
+          {
+            "phrase": "миф о том, что",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 7,
+        "questionH2Share": 1,
+        "attributions": 1,
+        "attributionsPer250": 0.15,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Абзацы-афоризмы",
+          "level": "violation",
+          "detail": "6 из 55 абзацев короче 8 слов (11 % при пороге 8 %): «Работа сложнее, чем кажется.», «Темп здесь обычно выше.», «Высокая вилка начинается с ответственности.»"
+        },
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«миф о том, что» ×1, «на самом деле» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "7 из 7 H2 с «?» (100 % при пороге 85 %)"
+        }
+      ]
+    },
+    "ispytatelnyj-srok-novaya-rabota-digital-90-dnej": {
+      "metrics": {
+        "words": 1261,
+        "paragraphs": 40,
+        "aphorismShare": 0.025,
+        "avgParagraphWords": 31.5,
+        "paragraphSd": 12.3,
+        "sentenceCv": 0.593,
+        "sentences": 114,
+        "avgSentenceWords": 11.1,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 3
+          }
+        ],
+        "templateCount": 3,
+        "h2Count": 8,
+        "questionH2Share": 0.75,
+        "attributions": 7,
+        "attributionsPer250": 1.39,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«на самом деле» ×3"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "junior-seo-spetsialist-bez-opyta": {
+      "metrics": {
+        "words": 1160,
+        "paragraphs": 43,
+        "aphorismShare": 0,
+        "avgParagraphWords": 27,
+        "paragraphSd": 15.1,
+        "sentenceCv": 0.498,
+        "sentences": 96,
+        "avgSentenceWords": 12.1,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 7,
+        "attributionsPer250": 1.51,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "7 предложений с источником на 1160 слов (1.51 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "kak-dogovoritsya-o-povyshenii-zarplaty": {
+      "metrics": {
+        "words": 856,
+        "paragraphs": 32,
+        "aphorismShare": 0,
+        "avgParagraphWords": 26.8,
+        "paragraphSd": 19.7,
+        "sentenceCv": 0.612,
+        "sentences": 79,
+        "avgSentenceWords": 10.8,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 9,
+        "attributionsPer250": 2.63,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "9 предложений с источником на 856 слов (2.63 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "kak-nanyat-marketologa-gajd-dlya-hr": {
+      "metrics": {
+        "words": 1553,
+        "paragraphs": 56,
+        "aphorismShare": 0.018,
+        "avgParagraphWords": 27.7,
+        "paragraphSd": 16.2,
+        "sentenceCv": 0.563,
+        "sentences": 145,
+        "avgSentenceWords": 10.7,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 2
+          }
+        ],
+        "templateCount": 3,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 3,
+        "attributionsPer250": 0.48,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×2"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "kak-nanyat-smm-specialista-marketologa-dizajnera-telegram": {
+      "metrics": {
+        "words": 1330,
+        "paragraphs": 51,
+        "aphorismShare": 0,
+        "avgParagraphWords": 26.1,
+        "paragraphSd": 15,
+        "sentenceCv": 0.736,
+        "sentences": 115,
+        "avgSentenceWords": 11.6,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 6,
+        "attributionsPer250": 1.13,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "kak-napisat-vakansiyu-marketologa": {
+      "metrics": {
+        "words": 1206,
+        "paragraphs": 31,
+        "aphorismShare": 0,
+        "avgParagraphWords": 38.9,
+        "paragraphSd": 10.3,
+        "sentenceCv": 0.486,
+        "sentences": 93,
+        "avgSentenceWords": 13,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 4,
+        "attributionsPer250": 0.83,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "kak-nayti-rabotu-marketologu": {
+      "metrics": {
+        "words": 897,
+        "paragraphs": 27,
+        "aphorismShare": 0,
+        "avgParagraphWords": 33.2,
+        "paragraphSd": 10,
+        "sentenceCv": 0.496,
+        "sentences": 82,
+        "avgSentenceWords": 10.9,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 4,
+        "attributionsPer250": 1.11,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "kak-nayti-rabotu-smm-menedzheru-2026": {
+      "metrics": {
+        "words": 1153,
+        "paragraphs": 60,
+        "aphorismShare": 0,
+        "avgParagraphWords": 19.2,
+        "paragraphSd": 15.3,
+        "sentenceCv": 0.586,
+        "sentences": 124,
+        "avgSentenceWords": 9.3,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 1,
+        "attributionsPer250": 0.22,
+        "hasLead": true,
+        "leadWords": 49
+      },
+      "violations": []
+    },
+    "kak-nayti-rabotu-telegram-digital": {
+      "metrics": {
+        "words": 502,
+        "paragraphs": 31,
+        "aphorismShare": 0,
+        "avgParagraphWords": 16.2,
+        "paragraphSd": 7.9,
+        "sentenceCv": 0.496,
+        "sentences": 55,
+        "avgSentenceWords": 9.1,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 10,
+        "questionH2Share": 0,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": true,
+        "leadWords": 51
+      },
+      "violations": []
+    },
+    "kak-ocenit-portfolio-dizajnera": {
+      "metrics": {
+        "words": 1302,
+        "paragraphs": 47,
+        "aphorismShare": 0,
+        "avgParagraphWords": 27.7,
+        "paragraphSd": 13.1,
+        "sentenceCv": 0.501,
+        "sentences": 127,
+        "avgSentenceWords": 10.3,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 9,
+        "questionH2Share": 0,
+        "attributions": 9,
+        "attributionsPer250": 1.73,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "9 предложений с источником на 1302 слов (1.73 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "kak-rabotodateli-ishchut-smm-spetsialistov": {
+      "metrics": {
+        "words": 692,
+        "paragraphs": 38,
+        "aphorismShare": 0,
+        "avgParagraphWords": 18.2,
+        "paragraphSd": 12,
+        "sentenceCv": 0.615,
+        "sentences": 58,
+        "avgSentenceWords": 11.9,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "kak-stat-analitikom-dannykh-s-nulya": {
+      "metrics": {
+        "words": 565,
+        "paragraphs": 34,
+        "aphorismShare": 0,
+        "avgParagraphWords": 16.6,
+        "paragraphSd": 10.5,
+        "sentenceCv": 0.549,
+        "sentences": 57,
+        "avgSentenceWords": 9.9,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "kak-stat-testirovshchikom": {
+      "metrics": {
+        "words": 1603,
+        "paragraphs": 51,
+        "aphorismShare": 0.039,
+        "avgParagraphWords": 31.4,
+        "paragraphSd": 9,
+        "sentenceCv": 0.415,
+        "sentences": 132,
+        "avgSentenceWords": 12.1,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 1,
+        "attributions": 3,
+        "attributionsPer250": 0.47,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Ровный ритм предложений",
+          "level": "warning",
+          "detail": "CV длины предложений 0.415 при пороге 0.42 (средняя 12.1 слов)"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "7 из 7 H2 с «?» (100 % при пороге 85 %)"
+        }
+      ]
+    },
+    "karera-smm-specialista": {
+      "metrics": {
+        "words": 1264,
+        "paragraphs": 41,
+        "aphorismShare": 0,
+        "avgParagraphWords": 30.8,
+        "paragraphSd": 14.2,
+        "sentenceCv": 0.581,
+        "sentences": 111,
+        "avgSentenceWords": 11.4,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 12,
+        "attributionsPer250": 2.37,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "12 предложений с источником на 1264 слов (2.37 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "klyuchevye-navyki-v-rezyume-digital": {
+      "metrics": {
+        "words": 1863,
+        "paragraphs": 53,
+        "aphorismShare": 0.019,
+        "avgParagraphWords": 35.2,
+        "paragraphSd": 21.9,
+        "sentenceCv": 0.567,
+        "sentences": 143,
+        "avgSentenceWords": 13,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 2
+          }
+        ],
+        "templateCount": 3,
+        "h2Count": 9,
+        "questionH2Share": 0.556,
+        "attributions": 2,
+        "attributionsPer250": 0.27,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×2"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "kontent-meyker-kto-eto-otlichiya-ot-smm-specialista": {
+      "metrics": {
+        "words": 1770,
+        "paragraphs": 41,
+        "aphorismShare": 0,
+        "avgParagraphWords": 43.2,
+        "paragraphSd": 17.9,
+        "sentenceCv": 0.539,
+        "sentences": 120,
+        "avgSentenceWords": 14.8,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "миф о том, что",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 7,
+        "questionH2Share": 0.857,
+        "attributions": 2,
+        "attributionsPer250": 0.28,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «миф о том, что» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "6 из 7 H2 с «?» (86 % при пороге 85 %)"
+        }
+      ]
+    },
+    "lichnyy-brend-marketologa": {
+      "metrics": {
+        "words": 1180,
+        "paragraphs": 40,
+        "aphorismShare": 0.025,
+        "avgParagraphWords": 29.5,
+        "paragraphSd": 14.7,
+        "sentenceCv": 0.639,
+        "sentences": 111,
+        "avgSentenceWords": 10.6,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 6,
+        "attributionsPer250": 1.27,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "menedzher-marketpleysov-bez-opyta-udalenno": {
+      "metrics": {
+        "words": 1860,
+        "paragraphs": 49,
+        "aphorismShare": 0,
+        "avgParagraphWords": 38,
+        "paragraphSd": 14.9,
+        "sentenceCv": 0.499,
+        "sentences": 110,
+        "avgSentenceWords": 16.9,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0.571,
+        "attributions": 1,
+        "attributionsPer250": 0.13,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "menedzher-marketpleysov-s-nulya": {
+      "metrics": {
+        "words": 1713,
+        "paragraphs": 41,
+        "aphorismShare": 0,
+        "avgParagraphWords": 41.8,
+        "paragraphSd": 19.6,
+        "sentenceCv": 0.523,
+        "sentences": 117,
+        "avgSentenceWords": 14.6,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0.714,
+        "attributions": 8,
+        "attributionsPer250": 1.17,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "nanyat-dzhuniora-marketologa-ili-senora-startapu": {
+      "metrics": {
+        "words": 1581,
+        "paragraphs": 36,
+        "aphorismShare": 0.028,
+        "avgParagraphWords": 43.9,
+        "paragraphSd": 23.3,
+        "sentenceCv": 0.506,
+        "sentences": 102,
+        "avgSentenceWords": 15.5,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 3
+          }
+        ],
+        "templateCount": 4,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 4,
+        "attributionsPer250": 0.63,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×3"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "nejroseti-dlya-dizajnerov-ai-navyki-2026": {
+      "metrics": {
+        "words": 1454,
+        "paragraphs": 57,
+        "aphorismShare": 0.211,
+        "avgParagraphWords": 25.5,
+        "paragraphSd": 14.7,
+        "sentenceCv": 0.496,
+        "sentences": 119,
+        "avgSentenceWords": 12.2,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 1,
+        "attributions": 4,
+        "attributionsPer250": 0.69,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Абзацы-афоризмы",
+          "level": "violation",
+          "detail": "12 из 57 абзацев короче 8 слов (21 % при пороге 8 %): «Это ключевое различие.», «Разница принципиальна.», «Одинаковой матрицы нет.»"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "7 из 7 H2 с «?» (100 % при пороге 85 %)"
+        }
+      ]
+    },
+    "nejroseti-dlya-marketologa-2026": {
+      "metrics": {
+        "words": 1723,
+        "paragraphs": 54,
+        "aphorismShare": 0,
+        "avgParagraphWords": 31.9,
+        "paragraphSd": 14.7,
+        "sentenceCv": 0.476,
+        "sentences": 145,
+        "avgSentenceWords": 11.9,
+        "templateHits": [
+          {
+            "phrase": "важно понимать",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 10,
+        "questionH2Share": 0,
+        "attributions": 2,
+        "attributionsPer250": 0.29,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "oformlenie-rezyume-pervyy-ekran": {
+      "metrics": {
+        "words": 2140,
+        "paragraphs": 53,
+        "aphorismShare": 0,
+        "avgParagraphWords": 40.4,
+        "paragraphSd": 16.6,
+        "sentenceCv": 0.544,
+        "sentences": 147,
+        "avgSentenceWords": 14.6,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 8,
+        "questionH2Share": 0.5,
+        "attributions": 3,
+        "attributionsPer250": 0.35,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "portfolio-kopirajtera-s-nulya": {
+      "metrics": {
+        "words": 1301,
+        "paragraphs": 48,
+        "aphorismShare": 0,
+        "avgParagraphWords": 27.1,
+        "paragraphSd": 16.4,
+        "sentenceCv": 0.577,
+        "sentences": 130,
+        "avgSentenceWords": 10,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 5,
+        "attributionsPer250": 0.96,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "portfolio-marketologa-oshibki": {
+      "metrics": {
+        "words": 1026,
+        "paragraphs": 33,
+        "aphorismShare": 0,
+        "avgParagraphWords": 31.1,
+        "paragraphSd": 10.8,
+        "sentenceCv": 0.468,
+        "sentences": 90,
+        "avgSentenceWords": 11.4,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 2,
+        "attributionsPer250": 0.49,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Открытие «**ключ** — это»",
+          "level": "violation",
+          "detail": "«**Портфолио маркетолога** — это доказательная база компетенций, а не к…» — сними жирный, определение убери из первого предложения раздела"
+        }
+      ]
+    },
+    "portfolio-smm-spetsialista-primery-kejsov": {
+      "metrics": {
+        "words": 1401,
+        "paragraphs": 47,
+        "aphorismShare": 0.021,
+        "avgParagraphWords": 29.8,
+        "paragraphSd": 14.8,
+        "sentenceCv": 0.624,
+        "sentences": 148,
+        "avgSentenceWords": 9.5,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "миф о том, что",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 11,
+        "attributionsPer250": 1.96,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «миф о том, что» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "11 предложений с источником на 1401 слов (1.96 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "prodakt-i-prodzhekt-menedzher-vakansii-2026": {
+      "metrics": {
+        "words": 1033,
+        "paragraphs": 33,
+        "aphorismShare": 0,
+        "avgParagraphWords": 31.3,
+        "paragraphSd": 7,
+        "sentenceCv": 0.582,
+        "sentences": 85,
+        "avgSentenceWords": 12.2,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 3,
+        "attributionsPer250": 0.73,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "product-manager-kto-eto": {
+      "metrics": {
+        "words": 1220,
+        "paragraphs": 37,
+        "aphorismShare": 0.027,
+        "avgParagraphWords": 33,
+        "paragraphSd": 17.5,
+        "sentenceCv": 0.528,
+        "sentences": 81,
+        "avgSentenceWords": 15.1,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 2
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 9,
+        "questionH2Share": 0.778,
+        "attributions": 5,
+        "attributionsPer250": 1.02,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«на самом деле» ×2"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "produktovyy-marketolog-vs-prodakt-menedzher": {
+      "metrics": {
+        "words": 1558,
+        "paragraphs": 59,
+        "aphorismShare": 0.186,
+        "avgParagraphWords": 26.4,
+        "paragraphSd": 12.6,
+        "sentenceCv": 0.45,
+        "sentences": 124,
+        "avgSentenceWords": 12.6,
+        "templateHits": [
+          {
+            "phrase": "миф о том, что",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 1,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Абзацы-афоризмы",
+          "level": "violation",
+          "detail": "11 из 59 абзацев короче 8 слов (19 % при пороге 8 %): «Это основная граница роли.», «Связь между командами потеряна.», «Реклама — лишь один канал доставки сообщения.»"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "7 из 7 H2 с «?» (100 % при пороге 85 %)"
+        }
+      ]
+    },
+    "professionalnoe-vygoranie-priznaki": {
+      "metrics": {
+        "words": 1966,
+        "paragraphs": 49,
+        "aphorismShare": 0.02,
+        "avgParagraphWords": 40.1,
+        "paragraphSd": 18.5,
+        "sentenceCv": 0.532,
+        "sentences": 137,
+        "avgSentenceWords": 14.4,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 8,
+        "questionH2Share": 0.75,
+        "attributions": 2,
+        "attributionsPer250": 0.25,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "professiya-kopirajter-kontent-menedzher": {
+      "metrics": {
+        "words": 1133,
+        "paragraphs": 45,
+        "aphorismShare": 0,
+        "avgParagraphWords": 25.2,
+        "paragraphSd": 11.7,
+        "sentenceCv": 0.497,
+        "sentences": 93,
+        "avgSentenceWords": 12.2,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 11,
+        "attributionsPer250": 2.43,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "11 предложений с источником на 1133 слов (2.43 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "professiya-marketolog": {
+      "metrics": {
+        "words": 1181,
+        "paragraphs": 32,
+        "aphorismShare": 0,
+        "avgParagraphWords": 36.9,
+        "paragraphSd": 9.9,
+        "sentenceCv": 0.488,
+        "sentences": 85,
+        "avgSentenceWords": 13.9,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 6,
+        "attributionsPer250": 1.27,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Открытие «**ключ** — это»",
+          "level": "violation",
+          "detail": "«**Профессия маркетолог** — это специалист, управляющий продвижением пр…» — сними жирный, определение убери из первого предложения раздела"
+        }
+      ]
+    },
+    "professiya-targetolog": {
+      "metrics": {
+        "words": 1035,
+        "paragraphs": 28,
+        "aphorismShare": 0,
+        "avgParagraphWords": 37,
+        "paragraphSd": 10.7,
+        "sentenceCv": 0.466,
+        "sentences": 80,
+        "avgSentenceWords": 12.9,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 3,
+        "attributionsPer250": 0.72,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Открытие «**ключ** — это»",
+          "level": "violation",
+          "detail": "«**Профессия таргетолог** — это специалист по платному трафику в соцсет…» — сними жирный, определение убери из первого предложения раздела"
+        }
+      ]
+    },
+    "professiya-veb-analitik-2026": {
+      "metrics": {
+        "words": 2078,
+        "paragraphs": 55,
+        "aphorismShare": 0,
+        "avgParagraphWords": 37.8,
+        "paragraphSd": 12.3,
+        "sentenceCv": 0.399,
+        "sentences": 144,
+        "avgSentenceWords": 14.4,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 11,
+        "questionH2Share": 0.636,
+        "attributions": 3,
+        "attributionsPer250": 0.36,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Ровный ритм предложений",
+          "level": "warning",
+          "detail": "CV длины предложений 0.399 при пороге 0.42 (средняя 14.4 слов)"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "razmestit-rezyume-besplatno-gajd-dlya-digital-specialistov": {
+      "metrics": {
+        "words": 732,
+        "paragraphs": 32,
+        "aphorismShare": 0,
+        "avgParagraphWords": 22.9,
+        "paragraphSd": 16,
+        "sentenceCv": 0.505,
+        "sentences": 63,
+        "avgSentenceWords": 11.6,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 8,
+        "questionH2Share": 0.125,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "rezume-kontent-menedzhera": {
+      "metrics": {
+        "words": 1103,
+        "paragraphs": 47,
+        "aphorismShare": 0.021,
+        "avgParagraphWords": 23.5,
+        "paragraphSd": 16.4,
+        "sentenceCv": 0.657,
+        "sentences": 106,
+        "avgSentenceWords": 10.4,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 8,
+        "attributionsPer250": 1.81,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "8 предложений с источником на 1103 слов (1.81 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "rezume-marketologa": {
+      "metrics": {
+        "words": 3109,
+        "paragraphs": 120,
+        "aphorismShare": 0,
+        "avgParagraphWords": 25.9,
+        "paragraphSd": 21,
+        "sentenceCv": 0.597,
+        "sentences": 320,
+        "avgSentenceWords": 9.7,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 11,
+        "questionH2Share": 0.091,
+        "attributions": 5,
+        "attributionsPer250": 0.4,
+        "hasLead": true,
+        "leadWords": 66
+      },
+      "violations": []
+    },
+    "rezyume-analitika-dannyh-obrazec-shablon-oshibki": {
+      "metrics": {
+        "words": 1636,
+        "paragraphs": 36,
+        "aphorismShare": 0.028,
+        "avgParagraphWords": 45.4,
+        "paragraphSd": 19.4,
+        "sentenceCv": 0.555,
+        "sentences": 108,
+        "avgSentenceWords": 15.1,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 3
+          }
+        ],
+        "templateCount": 4,
+        "h2Count": 8,
+        "questionH2Share": 0.5,
+        "attributions": 9,
+        "attributionsPer250": 1.38,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×3"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "rezyume-bez-opyta-raboty-obrazec": {
+      "metrics": {
+        "words": 1607,
+        "paragraphs": 60,
+        "aphorismShare": 0.1,
+        "avgParagraphWords": 26.8,
+        "paragraphSd": 11.6,
+        "sentenceCv": 0.506,
+        "sentences": 134,
+        "avgSentenceWords": 12,
+        "templateHits": [
+          {
+            "phrase": "миф о том, что",
+            "count": 2
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          },
+          {
+            "phrase": "в материале от",
+            "count": 1
+          }
+        ],
+        "templateCount": 4,
+        "h2Count": 8,
+        "questionH2Share": 1,
+        "attributions": 3,
+        "attributionsPer250": 0.47,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Абзацы-афоризмы",
+          "level": "violation",
+          "detail": "6 из 60 абзацев короче 8 слов (10 % при пороге 8 %): «Название раздела можно менять. Содержание важнее.», «Начните с задач.», «Ссылка на результат сильнее сертификата.»"
+        },
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«миф о том, что» ×2, «на самом деле» ×1, «в материале от» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Открытие «**ключ** — это»",
+          "level": "violation",
+          "detail": "«**Резюме без опыта работы образец** — это структура документа для канд…» — сними жирный, определение убери из первого предложения раздела"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "8 из 8 H2 с «?» (100 % при пороге 85 %)"
+        }
+      ]
+    },
+    "rezyume-dizajnera": {
+      "metrics": {
+        "words": 791,
+        "paragraphs": 26,
+        "aphorismShare": 0,
+        "avgParagraphWords": 30.4,
+        "paragraphSd": 8.9,
+        "sentenceCv": 0.52,
+        "sentences": 72,
+        "avgSentenceWords": 11,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 4,
+        "attributionsPer250": 1.26,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "rezyume-kopiraytera": {
+      "metrics": {
+        "words": 1389,
+        "paragraphs": 40,
+        "aphorismShare": 0,
+        "avgParagraphWords": 34.7,
+        "paragraphSd": 22,
+        "sentenceCv": 0.535,
+        "sentences": 107,
+        "avgSentenceWords": 13,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0.25,
+        "attributions": 5,
+        "attributionsPer250": 0.9,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "rezyume-programmista-obrazec-2026": {
+      "metrics": {
+        "words": 1418,
+        "paragraphs": 63,
+        "aphorismShare": 0.111,
+        "avgParagraphWords": 22.5,
+        "paragraphSd": 11,
+        "sentenceCv": 0.5,
+        "sentences": 117,
+        "avgSentenceWords": 12.1,
+        "templateHits": [
+          {
+            "phrase": "миф о том, что",
+            "count": 2
+          },
+          {
+            "phrase": "в материале от",
+            "count": 4
+          }
+        ],
+        "templateCount": 6,
+        "h2Count": 7,
+        "questionH2Share": 1,
+        "attributions": 4,
+        "attributionsPer250": 0.71,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Абзацы-афоризмы",
+          "level": "violation",
+          "detail": "7 из 63 абзацев короче 8 слов (11 % при пороге 8 %): «Пустой GitHub ничего не доказывает.», «Фильтр работает буквально.», «Начните с вакансии.»"
+        },
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«миф о том, что» ×2, «в материале от» ×4"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "7 из 7 H2 с «?» (100 % при пороге 85 %)"
+        }
+      ]
+    },
+    "rezyume-smm-spetsialista": {
+      "metrics": {
+        "words": 2054,
+        "paragraphs": 79,
+        "aphorismShare": 0.025,
+        "avgParagraphWords": 26,
+        "paragraphSd": 20.5,
+        "sentenceCv": 0.582,
+        "sentences": 171,
+        "avgSentenceWords": 12,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 11,
+        "questionH2Share": 0.091,
+        "attributions": 1,
+        "attributionsPer250": 0.12,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "rezyume-targetologa-shablon-2026": {
+      "metrics": {
+        "words": 2144,
+        "paragraphs": 110,
+        "aphorismShare": 0.027,
+        "avgParagraphWords": 19.5,
+        "paragraphSd": 14.6,
+        "sentenceCv": 0.618,
+        "sentences": 230,
+        "avgSentenceWords": 9.3,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 12,
+        "questionH2Share": 0,
+        "attributions": 3,
+        "attributionsPer250": 0.35,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "rilsmeyker-kto-eto": {
+      "metrics": {
+        "words": 1329,
+        "paragraphs": 32,
+        "aphorismShare": 0.063,
+        "avgParagraphWords": 41.5,
+        "paragraphSd": 21,
+        "sentenceCv": 0.568,
+        "sentences": 92,
+        "avgSentenceWords": 14.4,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 3
+          }
+        ],
+        "templateCount": 4,
+        "h2Count": 7,
+        "questionH2Share": 0.857,
+        "attributions": 2,
+        "attributionsPer250": 0.38,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×1, «на самом деле» ×3"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "6 из 7 H2 с «?» (86 % при пороге 85 %)"
+        }
+      ]
+    },
+    "seo-specialist-2026-navyki-zarplata": {
+      "metrics": {
+        "words": 985,
+        "paragraphs": 51,
+        "aphorismShare": 0,
+        "avgParagraphWords": 19.3,
+        "paragraphSd": 15.7,
+        "sentenceCv": 0.567,
+        "sentences": 97,
+        "avgSentenceWords": 10.2,
+        "templateHits": [
+          {
+            "phrase": "в этой статье мы разберём",
+            "count": 1
+          },
+          {
+            "phrase": "простыми словами",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 6,
+        "questionH2Share": 0,
+        "attributions": 1,
+        "attributionsPer250": 0.25,
+        "hasLead": true,
+        "leadWords": 73
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«в этой статье мы разберём» ×1, «простыми словами» ×1"
+        }
+      ]
+    },
+    "skolko-zarabatyvaet-graficheskiy-dizayner": {
+      "metrics": {
+        "words": 912,
+        "paragraphs": 29,
+        "aphorismShare": 0.034,
+        "avgParagraphWords": 31.4,
+        "paragraphSd": 12.4,
+        "sentenceCv": 0.509,
+        "sentences": 80,
+        "avgSentenceWords": 11.4,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 6,
+        "attributionsPer250": 1.64,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "6 предложений с источником на 912 слов (1.64 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "smm-menedzher-bez-opyta": {
+      "metrics": {
+        "words": 1023,
+        "paragraphs": 32,
+        "aphorismShare": 0,
+        "avgParagraphWords": 32,
+        "paragraphSd": 9.1,
+        "sentenceCv": 0.538,
+        "sentences": 95,
+        "avgSentenceWords": 10.8,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 3,
+        "attributionsPer250": 0.73,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "smm-vs-targetolog-kogo-nanyat-malomu-biznesu": {
+      "metrics": {
+        "words": 978,
+        "paragraphs": 34,
+        "aphorismShare": 0.029,
+        "avgParagraphWords": 28.8,
+        "paragraphSd": 17.4,
+        "sentenceCv": 0.571,
+        "sentences": 88,
+        "avgSentenceWords": 11.1,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 5,
+        "attributionsPer250": 1.28,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "soft-skills-marketologa-cheklst-dlya-hr": {
+      "metrics": {
+        "words": 1353,
+        "paragraphs": 53,
+        "aphorismShare": 0.019,
+        "avgParagraphWords": 25.5,
+        "paragraphSd": 13.3,
+        "sentenceCv": 0.529,
+        "sentences": 117,
+        "avgSentenceWords": 11.6,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 6,
+        "attributionsPer250": 1.11,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "soprovoditelnoe-pismo-k-rezyume-primer": {
+      "metrics": {
+        "words": 1338,
+        "paragraphs": 42,
+        "aphorismShare": 0.071,
+        "avgParagraphWords": 31.9,
+        "paragraphSd": 15.9,
+        "sentenceCv": 0.593,
+        "sentences": 116,
+        "avgSentenceWords": 11.5,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          },
+          {
+            "phrase": "важно понимать",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 1,
+        "attributionsPer250": 0.19,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«на самом деле» ×1, «важно понимать» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "stazhirovka-v-digital-pervyj-offer": {
+      "metrics": {
+        "words": 1211,
+        "paragraphs": 43,
+        "aphorismShare": 0.023,
+        "avgParagraphWords": 28.2,
+        "paragraphSd": 18,
+        "sentenceCv": 0.504,
+        "sentences": 103,
+        "avgSentenceWords": 11.8,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 4,
+        "attributionsPer250": 0.83,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "stoimost-uslug-frilansera-digital-2026": {
+      "metrics": {
+        "words": 1192,
+        "paragraphs": 43,
+        "aphorismShare": 0,
+        "avgParagraphWords": 27.7,
+        "paragraphSd": 14.2,
+        "sentenceCv": 0.448,
+        "sentences": 104,
+        "avgSentenceWords": 11.5,
+        "templateHits": [
+          {
+            "phrase": "в этой статье мы разберём",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": true,
+        "leadWords": 114
+      },
+      "violations": []
+    },
+    "telegram-kanaly-vakansii-smm": {
+      "metrics": {
+        "words": 862,
+        "paragraphs": 27,
+        "aphorismShare": 0,
+        "avgParagraphWords": 31.9,
+        "paragraphSd": 9.4,
+        "sentenceCv": 0.464,
+        "sentences": 69,
+        "avgSentenceWords": 12.5,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 5,
+        "attributionsPer250": 1.45,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "testovoe-zadanie-dlya-smm-specialista": {
+      "metrics": {
+        "words": 597,
+        "paragraphs": 36,
+        "aphorismShare": 0,
+        "avgParagraphWords": 16.6,
+        "paragraphSd": 12,
+        "sentenceCv": 0.58,
+        "sentences": 57,
+        "avgSentenceWords": 10.5,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "udalennaya-rabota-digital-2026": {
+      "metrics": {
+        "words": 2310,
+        "paragraphs": 63,
+        "aphorismShare": 0,
+        "avgParagraphWords": 36.7,
+        "paragraphSd": 9.9,
+        "sentenceCv": 0.507,
+        "sentences": 180,
+        "avgSentenceWords": 12.8,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 13,
+        "questionH2Share": 0.077,
+        "attributions": 5,
+        "attributionsPer250": 0.54,
+        "hasLead": true,
+        "leadWords": 50
+      },
+      "violations": []
+    },
+    "udalennaya-rabota-digital-specialista-instrumenty-rezhim-dnya": {
+      "metrics": {
+        "words": 1101,
+        "paragraphs": 36,
+        "aphorismShare": 0.056,
+        "avgParagraphWords": 30.6,
+        "paragraphSd": 15.6,
+        "sentenceCv": 0.627,
+        "sentences": 93,
+        "avgSentenceWords": 11.8,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0.286,
+        "attributions": 8,
+        "attributionsPer250": 1.82,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "8 предложений с источником на 1101 слов (1.82 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "vakansii-direktolog-yandex-direct": {
+      "metrics": {
+        "words": 1216,
+        "paragraphs": 43,
+        "aphorismShare": 0,
+        "avgParagraphWords": 28.3,
+        "paragraphSd": 10.7,
+        "sentenceCv": 0.521,
+        "sentences": 115,
+        "avgSentenceWords": 10.6,
+        "templateHits": [
+          {
+            "phrase": "миф о том, что",
+            "count": 1
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 2,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 7,
+        "attributionsPer250": 1.44,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«миф о том, что» ×1, «на самом деле» ×1"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "vakansii-junior-digital-gajd-dlya-dzhuniora": {
+      "metrics": {
+        "words": 975,
+        "paragraphs": 30,
+        "aphorismShare": 0,
+        "avgParagraphWords": 32.5,
+        "paragraphSd": 12.4,
+        "sentenceCv": 0.451,
+        "sentences": 92,
+        "avgSentenceWords": 10.6,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 4,
+        "attributionsPer250": 1.03,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "vakansii-kontent-menedzher-2026": {
+      "metrics": {
+        "words": 1765,
+        "paragraphs": 37,
+        "aphorismShare": 0.081,
+        "avgParagraphWords": 47.7,
+        "paragraphSd": 39.5,
+        "sentenceCv": 0.564,
+        "sentences": 108,
+        "avgSentenceWords": 16.3,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 3
+          }
+        ],
+        "templateCount": 3,
+        "h2Count": 7,
+        "questionH2Share": 0.857,
+        "attributions": 3,
+        "attributionsPer250": 0.42,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Абзацы-афоризмы",
+          "level": "violation",
+          "detail": "3 из 37 абзацев короче 8 слов (8 % при пороге 8 %): «Формат работы — последнее, что определяет вашу зарплату.», «Портфолио бьёт стаж.», «Честный отказ дешевле выгорания через полгода.»"
+        },
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«на самом деле» ×3"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "H2 вопросами",
+          "level": "warning",
+          "detail": "6 из 7 H2 с «?» (86 % при пороге 85 %)"
+        }
+      ]
+    },
+    "vakansii-kopirajter-gde-iskat-rabotu-2026": {
+      "metrics": {
+        "words": 1052,
+        "paragraphs": 30,
+        "aphorismShare": 0,
+        "avgParagraphWords": 35.1,
+        "paragraphSd": 13.4,
+        "sentenceCv": 0.472,
+        "sentences": 76,
+        "avgSentenceWords": 13.8,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 3,
+        "attributionsPer250": 0.71,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Открытие «**ключ** — это»",
+          "level": "violation",
+          "detail": "«**Вакансии копирайтер** — это предложения о работе для специалистов, к…», «**Биржи текстов — Etxt, Text.ru, Advego** — это демпинговый рынок с ан…» — сними жирный, определение убери из первого предложения раздела"
+        }
+      ]
+    },
+    "vakansii-razrabotchik-digital": {
+      "metrics": {
+        "words": 896,
+        "paragraphs": 34,
+        "aphorismShare": 0,
+        "avgParagraphWords": 26.4,
+        "paragraphSd": 8.6,
+        "sentenceCv": 0.567,
+        "sentences": 92,
+        "avgSentenceWords": 9.7,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 4,
+        "attributionsPer250": 1.12,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "voprosy-na-sobesedovanii-marketologa": {
+      "metrics": {
+        "words": 986,
+        "paragraphs": 63,
+        "aphorismShare": 0,
+        "avgParagraphWords": 15.7,
+        "paragraphSd": 8.6,
+        "sentenceCv": 0.74,
+        "sentences": 128,
+        "avgSentenceWords": 7.7,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 5,
+        "attributionsPer250": 1.27,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Открытие «**ключ** — это»",
+          "level": "violation",
+          "detail": "«**Вопросы на собеседовании маркетолога** — это проверка трёх вещей: ум…» — сними жирный, определение убери из первого предложения раздела"
+        }
+      ]
+    },
+    "zarplata-analitika-dannykh": {
+      "metrics": {
+        "words": 1087,
+        "paragraphs": 32,
+        "aphorismShare": 0.031,
+        "avgParagraphWords": 34,
+        "paragraphSd": 16.2,
+        "sentenceCv": 0.427,
+        "sentences": 78,
+        "avgSentenceWords": 13.9,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 8,
+        "questionH2Share": 0,
+        "attributions": 7,
+        "attributionsPer250": 1.61,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "7 предложений с источником на 1087 слов (1.61 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "zarplata-dizajnera-2026-uiux-grafika-moshion": {
+      "metrics": {
+        "words": 1330,
+        "paragraphs": 41,
+        "aphorismShare": 0,
+        "avgParagraphWords": 32.4,
+        "paragraphSd": 19.4,
+        "sentenceCv": 0.49,
+        "sentences": 88,
+        "avgSentenceWords": 15.1,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 13,
+        "questionH2Share": 0.077,
+        "attributions": 3,
+        "attributionsPer250": 0.56,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "zarplata-frontend-razrabotchika-2026": {
+      "metrics": {
+        "words": 1328,
+        "paragraphs": 36,
+        "aphorismShare": 0.028,
+        "avgParagraphWords": 36.9,
+        "paragraphSd": 15.6,
+        "sentenceCv": 0.474,
+        "sentences": 94,
+        "avgSentenceWords": 14.1,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 2
+          },
+          {
+            "phrase": "на самом деле",
+            "count": 3
+          }
+        ],
+        "templateCount": 5,
+        "h2Count": 7,
+        "questionH2Share": 0.714,
+        "attributions": 5,
+        "attributionsPer250": 0.94,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Фразы-шаблоны",
+          "level": "violation",
+          "detail": "«мы разбираем тысячи вакансий» ×2, «на самом деле» ×3"
+        },
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "zarplata-kopiraytera-2026": {
+      "metrics": {
+        "words": 888,
+        "paragraphs": 30,
+        "aphorismShare": 0.033,
+        "avgParagraphWords": 29.6,
+        "paragraphSd": 17.3,
+        "sentenceCv": 0.502,
+        "sentences": 68,
+        "avgSentenceWords": 13.1,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 7,
+        "attributionsPer250": 1.97,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "7 предложений с источником на 888 слов (1.97 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "zarplata-produkt-menedzhera": {
+      "metrics": {
+        "words": 408,
+        "paragraphs": 19,
+        "aphorismShare": 0,
+        "avgParagraphWords": 21.5,
+        "paragraphSd": 15.3,
+        "sentenceCv": 0.607,
+        "sentences": 40,
+        "avgSentenceWords": 10.2,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 4,
+        "questionH2Share": 0,
+        "attributions": 4,
+        "attributionsPer250": 2.45,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "4 предложений с источником на 408 слов (2.45 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "zarplata-seo-specialista": {
+      "metrics": {
+        "words": 1310,
+        "paragraphs": 41,
+        "aphorismShare": 0.049,
+        "avgParagraphWords": 32,
+        "paragraphSd": 17.1,
+        "sentenceCv": 0.532,
+        "sentences": 106,
+        "avgSentenceWords": 12.4,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 9,
+        "attributionsPer250": 1.72,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        },
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "9 предложений с источником на 1310 слов (1.72 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "zarplata-smm-spetsialista-realnie-dannye-iz-vakansiy": {
+      "metrics": {
+        "words": 1084,
+        "paragraphs": 36,
+        "aphorismShare": 0,
+        "avgParagraphWords": 30.1,
+        "paragraphSd": 17.6,
+        "sentenceCv": 0.436,
+        "sentences": 82,
+        "avgSentenceWords": 13.2,
+        "templateHits": [],
+        "templateCount": 0,
+        "h2Count": 12,
+        "questionH2Share": 0.5,
+        "attributions": 0,
+        "attributionsPer250": 0,
+        "hasLead": true,
+        "leadWords": 63
+      },
+      "violations": []
+    },
+    "zarplata-targetologa": {
+      "metrics": {
+        "words": 1022,
+        "paragraphs": 32,
+        "aphorismShare": 0.031,
+        "avgParagraphWords": 31.9,
+        "paragraphSd": 15.5,
+        "sentenceCv": 0.512,
+        "sentences": 86,
+        "avgSentenceWords": 11.9,
+        "templateHits": [
+          {
+            "phrase": "на самом деле",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 7,
+        "questionH2Share": 0,
+        "attributions": 2,
+        "attributionsPer250": 0.49,
+        "hasLead": false,
+        "leadWords": 0
+      },
+      "violations": [
+        {
+          "rule": "Нет текста до первого H2",
+          "level": "violation",
+          "detail": "статья начинается с заголовка раздела, крючка нет"
+        }
+      ]
+    },
+    "zarplata-ux-ui-dizajnera": {
+      "metrics": {
+        "words": 1613,
+        "paragraphs": 47,
+        "aphorismShare": 0,
+        "avgParagraphWords": 34.3,
+        "paragraphSd": 14.4,
+        "sentenceCv": 0.515,
+        "sentences": 128,
+        "avgSentenceWords": 12.6,
+        "templateHits": [
+          {
+            "phrase": "мы разбираем тысячи вакансий",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 8,
+        "questionH2Share": 0.5,
+        "attributions": 12,
+        "attributionsPer250": 1.86,
+        "hasLead": true,
+        "leadWords": 65
+      },
+      "violations": [
+        {
+          "rule": "Перегруз атрибуциями",
+          "level": "warning",
+          "detail": "12 предложений с источником на 1613 слов (1.86 на 250 при пороге 1.5)"
+        }
+      ]
+    },
+    "zarplaty-digital-marketing-2026": {
+      "metrics": {
+        "words": 2031,
+        "paragraphs": 76,
+        "aphorismShare": 0,
+        "avgParagraphWords": 26.7,
+        "paragraphSd": 10.9,
+        "sentenceCv": 0.47,
+        "sentences": 160,
+        "avgSentenceWords": 12.7,
+        "templateHits": [
+          {
+            "phrase": "в этой статье мы разберём",
+            "count": 1
+          }
+        ],
+        "templateCount": 1,
+        "h2Count": 13,
+        "questionH2Share": 0,
+        "attributions": 5,
+        "attributionsPer250": 0.62,
+        "hasLead": true,
+        "leadWords": 98
+      },
+      "violations": []
+    }
+  }
+}

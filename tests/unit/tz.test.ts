@@ -172,7 +172,7 @@ describe('checkTechSpec', () => {
     'Резюме таргетолога читают восемь секунд. Разберём структуру по шагам, чтобы',
     'отклик не закрыли на первом экране, а дочитали до кейсов и метрик.',
     '',
-    '## Структура',
+    '## Структура резюме таргетолога',
     '',
     'Хорошее резюме таргетолога начинается с результатов, а не с обязанностей.',
     'Свежие предложения смотри в [подборке](https://d-pub.ru/vacancies/target).',
@@ -189,7 +189,9 @@ describe('checkTechSpec', () => {
   })
 
   it('ловит недобор обязательной фразы', () => {
-    const thin = good.replace(/Хорошее резюме таргетолога/, 'Хороший документ')
+    const thin = good
+      .replace(/Хорошее резюме таргетолога/, 'Хороший документ')
+      .replace('## Структура резюме таргетолога', '## Структура')
     const v = checkTechSpec(baseSpec(), thin)
     expect(v.map((x) => x.rule)).toContain('Недобор обязательной фразы')
   })
@@ -219,6 +221,65 @@ describe('checkTechSpec', () => {
     // «миф о том, чтобы» — не шаблон: граница слова справа.
     const chtoby = good + '\n\nЭто миф о том, чтобы бояться отказов.'
     expect(checkTechSpec(baseSpec(), chtoby).map((x) => x.rule)).not.toContain('Шаблонная фраза')
+  })
+
+  it('ключ в первых 60 словах и в первом H2 — в любой форме', () => {
+    const inflected = good
+      .replace('Резюме таргетолога читают', 'Резюме для таргетологов читают')
+      .replace('## Структура резюме таргетолога', '## Структура резюме таргетологов')
+    const r1 = checkTechSpec(baseSpec(), inflected).map((x) => x.rule)
+    expect(r1).not.toContain('Ключа нет в первых 60 словах')
+    expect(r1).not.toContain('Ключа нет в первом H2')
+
+    // Ключ только в H1 и в первом H2 — в тексте первых 60 слов его нет.
+    const noKeyLead = good
+      .replace('Резюме таргетолога читают', 'Отклик читают')
+      .replace('Хорошее резюме таргетолога', 'Хороший документ')
+    expect(checkTechSpec(baseSpec(), noKeyLead).map((x) => x.rule)).toContain(
+      'Ключа нет в первых 60 словах'
+    )
+
+    const partialH2 = good.replace('## Структура резюме таргетолога', '## Структура резюме')
+    const v = checkTechSpec(baseSpec(), partialH2).find((x) => x.rule === 'Ключа нет в первом H2')
+    expect(v?.detail).toContain('«Структура резюме»')
+    expect(v?.detail).toContain('«таргет…»')
+    expect(v?.detail).not.toContain('«резюме…»')
+
+    // STOP-фраза внутри главного ключа: ключ в H2 отклонит «Занятый ключ», поэтому
+    // правило первого H2 не применяется — иначе приёмка неразрешима.
+    const trapped = baseSpec({
+      mainKeyword: 'вакансии таргетолог',
+      exactPhrases: [],
+      stopPhrases: [
+        { phrase: 'вакансии таргетолог', ownerUrl: 'https://d-pub.ru/vacancies/target' },
+      ],
+    })
+    const trappedText = good
+      .replace('Резюме таргетолога читают', 'Вакансии таргетолога читают')
+      .replace('## Структура резюме таргетолога', '## Структура отклика')
+    expect(checkTechSpec(trapped, trappedText).map((x) => x.rule)).not.toContain(
+      'Ключа нет в первом H2'
+    )
+
+    // «## » внутри code fence — не первый H2.
+    const fenced = good.replace(
+      '## Структура резюме таргетолога',
+      '```\n## не заголовок\n```\n\n## Структура резюме таргетолога'
+    )
+    expect(checkTechSpec(baseSpec(), fenced).map((x) => x.rule)).not.toContain(
+      'Ключа нет в первом H2'
+    )
+
+    // Ключ за 60-м словом — не в лиде; alt картинки и <img> в счёт слов не идут.
+    const filler = Array.from({ length: 70 }, () => 'слово').join(' ')
+    const late = good.replace('Резюме таргетолога читают', `${filler} Резюме таргетолога читают`)
+    expect(checkTechSpec(baseSpec(), late).map((x) => x.rule)).toContain(
+      'Ключа нет в первых 60 словах'
+    )
+    const img = `<img src="/x.png" alt="${filler}" />\n\n` + good.replace(/^# .*\n\n/, '')
+    expect(checkTechSpec(baseSpec(), img).map((x) => x.rule)).not.toContain(
+      'Ключа нет в первых 60 словах'
+    )
   })
 
   it('отклоняет ключ жирным и открытие статьи определением ключа', () => {

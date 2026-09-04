@@ -952,6 +952,9 @@ function countPhraseForms(text, phrase) {
   }
   return count;
 }
+function hasPhraseForm(text, phrase) {
+  return countPhraseForms(text, phrase) > 0;
+}
 function isKeyFragment(fragment, phrase) {
   const need = [...new Set(words(phrase).map(stemStrict))];
   if (need.length === 0) return false;
@@ -975,6 +978,272 @@ function keyDefinitionOpener(markdown, phrase) {
     /^(?:\*\*|__)?([^*_\n.!?]{3,160}?)(?:\*\*|__)?\s*[—–-]\s*это(?=[\s,.:;!?]|$)/i
   );
   return m && isKeyFragment(m[1], phrase) ? m[0] : null;
+}
+
+// lib/robot-phrases.ts
+var ROBOT_PHRASES = [
+  // Формулы старого промпта — «один раз в статье», ставились в каждую.
+  {
+    phrase: "\u043C\u044B \u0440\u0430\u0437\u0431\u0438\u0440\u0430\u0435\u043C \u0442\u044B\u0441\u044F\u0447\u0438 \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439",
+    regex: "\u043C\u044B (?:\u0435\u0436\u0435\u0434\u043D\u0435\u0432\u043D\u043E |\u043A\u0430\u0436\u0434\u0443\u044E \u043D\u0435\u0434\u0435\u043B\u044E |\u043A\u0430\u0436\u0434\u044B\u0439 \u0434\u0435\u043D\u044C )?(?:\u0440\u0430\u0437\u0431\u0438\u0440\u0430\u0435\u043C|\u0430\u043D\u0430\u043B\u0438\u0437\u0438\u0440\u0443\u0435\u043C|\u043F\u0440\u043E\u0441\u043C\u0430\u0442\u0440\u0438\u0432\u0430\u0435\u043C|\u0438\u0437\u0443\u0447\u0430\u0435\u043C) (?:\u0442\u044B\u0441\u044F\u0447\u0438|\u0441\u043E\u0442\u043D\u0438|\u0434\u0435\u0441\u044F\u0442\u043A\u0438|\u043F\u043E\u0442\u043E\u043A|\u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0438)",
+    gate: "ban"
+  },
+  { phrase: "\u043C\u0438\u0444 \u043E \u0442\u043E\u043C, \u0447\u0442\u043E", gate: "ban" },
+  { phrase: "\u043D\u0430 \u0441\u0430\u043C\u043E\u043C \u0434\u0435\u043B\u0435", gate: 1 },
+  { phrase: "\u0432 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u0435 \u043E\u0442", regex: "\u0432 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u0435 \u043E\u0442 [^.\\n]{0,40}?\u0433\u043E\u0434\u0430" },
+  // Анонс вместо крючка (стандарт 9.8a).
+  {
+    phrase: "\u0432 \u044D\u0442\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0435 \u043C\u044B \u0440\u0430\u0437\u0431\u0435\u0440\u0451\u043C",
+    regex: "\u0432 (?:\u044D\u0442\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0435|\u044D\u0442\u043E\u043C \u043E\u0431\u0437\u043E\u0440\u0435|\u044D\u0442\u043E\u043C \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u0435|\u044D\u0442\u043E\u043C \u0433\u0430\u0439\u0434\u0435|\u0434\u0430\u043D\u043D\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u0435) (?:\u043C\u044B )?(?:\u0440\u0430\u0437\u0431\u0435\u0440|\u0440\u0430\u0441\u0441\u043C\u043E\u0442\u0440|\u0440\u0430\u0441\u0441\u043A\u0430\u0436|\u0441\u043E\u0431\u0440\u0430\u043B|\u043F\u043E\u043A\u0430\u0436)[\u0430-\u044F\u0451]*"
+  },
+  { phrase: "\u043F\u0440\u043E\u0441\u0442\u044B\u043C\u0438 \u0441\u043B\u043E\u0432\u0430\u043C\u0438" },
+  { phrase: "\u0432\u0430\u0436\u043D\u043E \u043F\u043E\u043D\u0438\u043C\u0430\u0442\u044C", regex: "\u0432\u0430\u0436\u043D\u043E \u043F\u043E\u043D\u0438\u043C\u0430\u0442\u044C(?:[:,]| \u0447\u0442\u043E)" },
+  // Переходы-роботы и канцелярит (стандарт 2.8b, 2.8c).
+  { phrase: "\u043F\u043E\u0434\u0432\u043E\u0434\u044F \u0438\u0442\u043E\u0433" },
+  { phrase: "\u043F\u0435\u0440\u0435\u0439\u0434\u0451\u043C \u043A", regex: "\u043F\u0435\u0440\u0435\u0439\u0434[\u0435\u0451]\u043C \u043A" },
+  { phrase: "\u043A\u0430\u043A \u0443\u0436\u0435 \u043E\u0442\u043C\u0435\u0447\u0430\u043B\u043E\u0441\u044C" },
+  { phrase: "\u0432 \u0434\u0430\u043D\u043D\u043E\u043C \u0440\u0430\u0437\u0434\u0435\u043B\u0435" },
+  { phrase: "\u0440\u0430\u0441\u0441\u043C\u043E\u0442\u0440\u0438\u043C \u043F\u043E\u0434\u0440\u043E\u0431\u043D\u0435\u0435" },
+  { phrase: "\u0441\u0442\u043E\u0438\u0442 \u043E\u0442\u043C\u0435\u0442\u0438\u0442\u044C" },
+  { phrase: "\u0441\u043B\u0435\u0434\u0443\u0435\u0442 \u043E\u0442\u043C\u0435\u0442\u0438\u0442\u044C" },
+  { phrase: "\u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E \u0443\u0447\u0438\u0442\u044B\u0432\u0430\u0442\u044C" },
+  { phrase: "\u043A\u0430\u043A \u0438\u0437\u0432\u0435\u0441\u0442\u043D\u043E" },
+  { phrase: "\u0442\u0430\u043A\u0438\u043C \u043E\u0431\u0440\u0430\u0437\u043E\u043C" },
+  { phrase: "\u043D\u0430 \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0438\u0439 \u0434\u0435\u043D\u044C" },
+  { phrase: "\u0432 \u043D\u0430\u0441\u0442\u043E\u044F\u0449\u0435\u0435 \u0432\u0440\u0435\u043C\u044F" },
+  { phrase: "\u043C\u043D\u043E\u0433\u0438\u0435 \u0437\u0430\u0434\u0430\u044E\u0442\u0441\u044F \u0432\u043E\u043F\u0440\u043E\u0441\u043E\u043C" },
+  { phrase: "\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0438 \u0438\u043D\u0442\u0435\u0440\u0435\u0441\u0443\u044E\u0442\u0441\u044F" },
+  { phrase: "\u0447\u0430\u0441\u0442\u043E \u0441\u043F\u0440\u0430\u0448\u0438\u0432\u0430\u044E\u0442" },
+  { phrase: "\u0432 \u0437\u0430\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435" }
+];
+
+// lib/robot-score.ts
+var ROBOT_SCORE_MODE = "warn";
+var APHORISM_WORDS = 7;
+var NOT_APHORISM = /:$|^(?:\*\*|__)[^*_]+(?:\*\*|__)[^а-яёa-z]*$|^(?:\*|_)[^*_]+(?:\*|_)[^а-яёa-z]*$|\[[^\]]+\]/iu;
+var THRESHOLDS = {
+  /** Нарушение: доля абзацев-афоризмов выше. Корпус 04.09: p90 = 6 %, свежие сентябрьские 10–18 %. */
+  aphorismShare: 0.08,
+  /** Нарушение: шаблонных фраз столько и больше. */
+  templateCount: 2,
+  /** Предупреждение: CV длины предложений ниже — ритм выровнен. На корпусе 04.09 CV не разделяет свежие и майские (0,40–0,74, медиана 0,53), поэтому не нарушение. */
+  sentenceCv: 0.42,
+  /**
+   * Предупреждение: доля вопросительных H2 выше. Стандарт 9.3a просит H2
+   * вопросами там, где есть хвост, а структура D4 — 5 содержательных H2 + CTA +
+   * FAQ: 71 % вопросов — норма. Предупреждение только когда вопросами всё.
+   */
+  questionH2Share: 0.85,
+  /** Предупреждение: атрибуций на 250 слов больше. Корпус 04.09: медиана 0,8, p75 1,3. */
+  attributionsPer250: 1.5
+};
+var APHORISM_RULE = "\u0410\u0431\u0437\u0430\u0446\u044B-\u0430\u0444\u043E\u0440\u0438\u0437\u043C\u044B";
+var TEMPLATE_RULE = "\u0424\u0440\u0430\u0437\u044B-\u0448\u0430\u0431\u043B\u043E\u043D\u044B";
+var RHYTHM_RULE = "\u0420\u043E\u0432\u043D\u044B\u0439 \u0440\u0438\u0442\u043C \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0439";
+var QUESTION_H2_RULE = "H2 \u0432\u043E\u043F\u0440\u043E\u0441\u0430\u043C\u0438";
+var ATTRIBUTION_RULE = "\u041F\u0435\u0440\u0435\u0433\u0440\u0443\u0437 \u0430\u0442\u0440\u0438\u0431\u0443\u0446\u0438\u044F\u043C\u0438";
+var NO_LEAD_RULE = "\u041D\u0435\u0442 \u0442\u0435\u043A\u0441\u0442\u0430 \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E H2";
+var DEFINITION_RULE = "\u041E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0436\u0438\u0440\u043D\u044B\u043C \xAB**\u0442\u0435\u0440\u043C\u0438\u043D** \u2014 \u044D\u0442\u043E\xBB";
+var LEAD_MIN_WORDS = 25;
+function compilePhrases(entries) {
+  return entries.map((p) => ({
+    phrase: p.phrase,
+    re: new RegExp(
+      `(?<![\u0430-\u044F\u0451a-z])(?:${p.regex ?? escapeRegex(p.phrase.toLowerCase())})(?![\u0430-\u044F\u0451a-z])`,
+      "giu"
+    )
+  }));
+}
+var PHRASES = compilePhrases(ROBOT_PHRASES);
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+var BOLD_DEFINITION_OPENER = /^(?:\*\*|__)[^*_\n]{3,160}?(?:\*\*|__)\s*[—–-]\s*это(?=[\s,.:;!?]|$)/u;
+var SOURCE_NAME = "hh\\.ru|superjob|\u0441\u0443\u043F\u0435\u0440\u0434\u0436\u043E\u0431|\u0440\u043E\u0441\u0441\u0442\u0430\u0442|\u0445\u0430\u0431\u0440\\s+\u043A\u0430\u0440\u044C\u0435\u0440[\u0430-\u044F\u0451]*|habr\\s+career|getmatch|\u0437\u0430\u0440\u043F\u043B\u0430\u0442[\u0430\u044B]\\.\u0440\u0443|\u043C\u0438\u043D\u0442\u0440\u0443\u0434[\u0430-\u044F\u0451]*|\u0431\u0430\u043D\u043A[\u0430-\u044F\u0451]* \u0440\u043E\u0441\u0441\u0438\u0438|\u0432\u0446\u0438\u043E\u043C|\u0440\u043E\u043C\u0438\u0440";
+var SOURCE_VERB = "(?<![\u0430-\u044F\u0451])(?:\u0441\u043E\u043E\u0431\u0449(?:\u0438\u043B|\u0430\u0435\u0442|\u0430\u044E\u0442|\u0430\u043B\u0430|\u0438\u043B\u0438)[\u0430-\u044F\u0451]*|\u0443\u043A\u0430\u0437(?:\u0430\u043B|\u0430\u043B\u0430|\u0430\u043B\u0438|\u044B\u0432\u0430\u0435\u0442|\u044B\u0432\u0430\u044E\u0442)|\u0440\u0435\u043A\u043E\u043C\u0435\u043D\u0434(?:\u0443\u0435\u0442|\u0443\u044E\u0442|\u043E\u0432\u0430\u043B|\u043E\u0432\u0430\u043B\u0430|\u043E\u0432\u0430\u043B\u0438)|\u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430(?:\u043B|\u043B\u0430|\u043B\u0438)|\u043E\u0446\u0435\u043D\u0438(?:\u043B|\u043B\u0430|\u043B\u0438|\u0432\u0430\u0435\u0442|\u0432\u0430\u044E\u0442)|\u043F\u043E\u0434\u0441\u0447\u0438\u0442\u0430(?:\u043B|\u043B\u0430|\u043B\u0438)|\u0437\u0430\u0444\u0438\u043A\u0441\u0438\u0440\u043E\u0432\u0430(?:\u043B|\u043B\u0430|\u043B\u0438)|\u043E\u0442\u043C\u0435\u0447\u0430(?:\u0435\u0442|\u044E\u0442)|\u043E\u0442\u043C\u0435\u0442\u0438(?:\u043B|\u043B\u0430|\u043B\u0438)|\u043F\u0440\u0438\u0432\u043E\u0434(?:\u0438\u0442|\u044F\u0442)|\u043F\u0440\u0438\u0432(?:\u0451\u043B|\u0435\u043B\u0430|\u0435\u043B\u0438)|\u043F\u043E\u043A\u0430\u0437\u0430(?:\u043B|\u043B\u0430|\u043B\u0438)|\u043D\u0430\u0441\u0447\u0438\u0442\u0430(?:\u043B|\u043B\u0430|\u043B\u0438)|\u0438\u0437\u0443\u0447\u0430(?:\u0435\u0442|\u044E\u0442)|\u0444\u0438\u043A\u0441\u0438\u0440\u0443(?:\u0435\u0442|\u044E\u0442)|\u043E\u0442\u0441\u043B\u0435\u0436\u0438\u0432\u0430(?:\u0435\u0442|\u044E\u0442))";
+var ATTRIBUTION = new RegExp(
+  [
+    "\u043F\u043E \u0434\u0430\u043D\u043D\u044B\u043C",
+    "\u0441\u043E\u0433\u043B\u0430\u0441\u043D\u043E (?:\u0434\u0430\u043D\u043D\u044B\u043C|\u0438\u0441\u0441\u043B\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u044E|\u043E\u0442\u0447[\u0435\u0451]\u0442\u0443|\u043E\u043F\u0440\u043E\u0441\u0443|\u043E\u0446\u0435\u043D\u043A[\u0430-\u044F\u0451]+|\u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043A\u0435|\u043E\u0431\u0437\u043E\u0440\u0443|\u043E\u0442\u0447\u0451\u0442\u043D\u043E\u0441\u0442\u0438)",
+    "\u043F\u043E \u043E\u0446\u0435\u043D\u043A[\u0430-\u044F\u0451]+",
+    "\u043F\u043E \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u0438",
+    "\u043F\u043E \u0441\u043B\u043E\u0432\u0430\u043C",
+    "\u043F\u043E \u043F\u043E\u0434\u0441\u0447[\u0435\u0451]\u0442\u0430\u043C",
+    "\u0432 \u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u0435 \u043E\u0442",
+    "\u0432 \u0438\u0441\u0441\u043B\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u0438",
+    "\u0432 \u043E\u0442\u0447[\u0435\u0451]\u0442\u0435",
+    "\u043F\u043E \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442\u0430\u043C (?:\u0438\u0441\u0441\u043B\u0435\u0434\u043E\u0432\u0430\u043D\u0438\u044F|\u043E\u043F\u0440\u043E\u0441\u0430|\u0437\u0430\u043C\u0435\u0440\u0430)",
+    // «hh.ru в обзоре от 3 марта сообщил», «Росстат опубликовал» — источник и глагол не
+    // дальше трёх слов. Обратный порядок не считается: «Показать hh.ru работодателю» — не источник.
+    // «Работодатели на hh.ru рекомендуют» — площадка как место, не источник: предлог перед именем исключает.
+    `(?<!(?:\u043D\u0430|\u0432|\u0441|\u0438\u0437|\u0447\u0435\u0440\u0435\u0437)\\s)(?:${SOURCE_NAME})(?:\\s+\\S+){0,3}?\\s+(?:${SOURCE_VERB})`,
+    `\u0434\u0430\u043D\u043D(?:\u044B\u0435|\u044B\u043C|\u044B\u0445|\u044B\u043C\u0438) (?:${SOURCE_NAME})`
+  ].join("|"),
+  "iu"
+);
+function parseArticle(markdown) {
+  let text = markdown.replace(/\r\n/g, "\n");
+  text = text.replace(/^---\n[\s\S]*?\n---\n?/, "");
+  text = text.replace(/```[\s\S]*?```/g, "\n");
+  text = text.replace(/<(?:[^<>"']|"[^"]*"|'[^']*'){0,600}>/g, " ");
+  const lines = text.split("\n");
+  const paragraphs = [];
+  const h2 = [];
+  const leadParts = [];
+  let seenH2 = false;
+  let buf = [];
+  const flush = () => {
+    if (buf.length === 0) return;
+    const p = cleanInline(buf.join(" "));
+    buf = [];
+    if (!p) return;
+    paragraphs.push(p);
+    if (!seenH2) leadParts.push(p);
+  };
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      flush();
+      continue;
+    }
+    if (/^#{1,6}\s/.test(line)) {
+      flush();
+      if (/^##\s/.test(line)) {
+        seenH2 = true;
+        h2.push(line.replace(/^##\s+/, "").trim());
+      }
+      continue;
+    }
+    const numbered = seenH2 ? /^\d{1,3}[.)]\s/ : /^\d{1,2}[.)]\s+(?=[A-ZА-ЯЁ*_[`«"])/;
+    if (numbered.test(line) || /^(\||[-*+•]\s|>|-{3,}$|\{|\}|import\s|export\s)/.test(line)) {
+      flush();
+      continue;
+    }
+    buf.push(line);
+  }
+  flush();
+  return { lead: leadParts.join("\n\n"), paragraphs, h2 };
+}
+function cleanInline(s) {
+  return s.replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/[`>]/g, "").replace(/\s+/g, " ").trim();
+}
+function words2(s) {
+  return s.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+}
+function splitSentences(paragraph) {
+  return paragraph.replace(/\*\*|__/g, "").split(
+    /(?<=[.!?…][»")]*)(?<!(?:^|\s)(?:т\. [дпе]|тыс|руб|млн|млрд|гг?|см|ул|стр)\.[»")]*)\s+(?=[А-ЯЁA-Z\d«"(])/u
+  ).map((s) => s.trim()).filter((s) => words2(s) > 0);
+}
+function mean(xs) {
+  return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+}
+function sd(xs) {
+  if (xs.length < 2) return 0;
+  const m = mean(xs);
+  return Math.sqrt(mean(xs.map((x) => (x - m) ** 2)));
+}
+function round(x, digits = 3) {
+  const k = 10 ** digits;
+  return Math.round(x * k) / k;
+}
+function scoreArticle(markdown) {
+  const { lead, paragraphs, h2 } = parseArticle(markdown);
+  const paragraphLengths = paragraphs.map(words2);
+  const totalWords = paragraphLengths.reduce((a, b) => a + b, 0);
+  const aphorismList = paragraphs.filter((p) => words2(p) <= APHORISM_WORDS && !NOT_APHORISM.test(p));
+  const aphorisms = aphorismList.length;
+  const aphorismShare = paragraphs.length ? aphorisms / paragraphs.length : 0;
+  const sentences = paragraphs.flatMap(splitSentences);
+  const sentenceLengths = sentences.map(words2);
+  const avgSentence = mean(sentenceLengths);
+  const sentenceCv = avgSentence ? sd(sentenceLengths) / avgSentence : 0;
+  const plain = paragraphs.join("\n");
+  const templateHits = [];
+  for (const { phrase, re } of PHRASES) {
+    const count = (plain.match(re) ?? []).length;
+    if (count) templateHits.push({ phrase, count });
+  }
+  const boldOpeners = paragraphs.filter((p) => BOLD_DEFINITION_OPENER.test(p));
+  const templateCount = templateHits.reduce((a, h) => a + h.count, 0);
+  const questionH2 = h2.filter((t) => t.includes("?")).length;
+  const questionH2Share = h2.length ? questionH2 / h2.length : 0;
+  const attributions = sentences.filter((s) => ATTRIBUTION.test(s)).length;
+  const attributionsPer250 = totalWords ? attributions / totalWords * 250 : 0;
+  const leadWords = words2(lead);
+  const metrics = {
+    words: totalWords,
+    paragraphs: paragraphs.length,
+    aphorismShare: round(aphorismShare),
+    avgParagraphWords: round(mean(paragraphLengths), 1),
+    paragraphSd: round(sd(paragraphLengths), 1),
+    sentenceCv: round(sentenceCv),
+    sentences: sentences.length,
+    avgSentenceWords: round(avgSentence, 1),
+    templateHits,
+    templateCount,
+    h2Count: h2.length,
+    questionH2Share: round(questionH2Share),
+    attributions,
+    attributionsPer250: round(attributionsPer250, 2),
+    hasLead: leadWords >= LEAD_MIN_WORDS && leadWords <= LEAD_MAX_WORDS,
+    leadWords
+  };
+  const violations = [];
+  const pct = (x) => `${Math.round(x * 100)} %`;
+  if (aphorismShare > THRESHOLDS.aphorismShare) {
+    violations.push({
+      rule: APHORISM_RULE,
+      level: "violation",
+      detail: `${aphorisms} \u0438\u0437 ${paragraphs.length} \u0430\u0431\u0437\u0430\u0446\u0435\u0432 \u043A\u043E\u0440\u043E\u0447\u0435 ${APHORISM_WORDS + 1} \u0441\u043B\u043E\u0432 (${pct(aphorismShare)} \u043F\u0440\u0438 \u043F\u043E\u0440\u043E\u0433\u0435 ${pct(THRESHOLDS.aphorismShare)}): ${aphorismList.slice(0, 3).map((p) => `\xAB${p}\xBB`).join(", ")}`
+    });
+  }
+  if (templateCount >= THRESHOLDS.templateCount) {
+    violations.push({
+      rule: TEMPLATE_RULE,
+      level: "violation",
+      detail: templateHits.map((h) => `\xAB${h.phrase}\xBB \xD7${h.count}`).join(", ")
+    });
+  }
+  if (sentences.length >= 20 && sentenceCv < THRESHOLDS.sentenceCv) {
+    violations.push({
+      rule: RHYTHM_RULE,
+      level: "warning",
+      detail: `CV \u0434\u043B\u0438\u043D\u044B \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0439 ${metrics.sentenceCv} \u043F\u0440\u0438 \u043F\u043E\u0440\u043E\u0433\u0435 ${THRESHOLDS.sentenceCv} (\u0441\u0440\u0435\u0434\u043D\u044F\u044F ${metrics.avgSentenceWords} \u0441\u043B\u043E\u0432)`
+    });
+  }
+  if (!metrics.hasLead) {
+    violations.push({
+      rule: NO_LEAD_RULE,
+      level: "violation",
+      detail: leadWords === 0 ? "\u0441\u0442\u0430\u0442\u044C\u044F \u043D\u0430\u0447\u0438\u043D\u0430\u0435\u0442\u0441\u044F \u0441 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0430 \u0440\u0430\u0437\u0434\u0435\u043B\u0430, \u043A\u0440\u044E\u0447\u043A\u0430 \u043D\u0435\u0442" : leadWords < LEAD_MIN_WORDS ? `\u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E H2 \u0442\u043E\u043B\u044C\u043A\u043E ${leadWords} \u0441\u043B\u043E\u0432 \u2014 \u043A\u0440\u044E\u0447\u043E\u043A \u0438\u0437 2\u20133 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0439 \u0441 \u0444\u0430\u043A\u0442\u043E\u043C, \u043D\u0435 \u043C\u0435\u043D\u044C\u0448\u0435 ${LEAD_MIN_WORDS} \u0441\u043B\u043E\u0432` : `\u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E H2 ${leadWords} \u0441\u043B\u043E\u0432 \u2014 \u044D\u0442\u043E \u043D\u0435 \u043A\u0440\u044E\u0447\u043E\u043A, \u0430 \u0440\u0430\u0441\u0441\u0443\u0436\u0434\u0435\u043D\u0438\u0435; keepLead \u043E\u0442\u0431\u0440\u043E\u0441\u0438\u0442 \u0432\u0441\u0451 \u0434\u043B\u0438\u043D\u043D\u0435\u0435 ${LEAD_MAX_WORDS}`
+    });
+  }
+  if (boldOpeners.length) {
+    violations.push({
+      rule: DEFINITION_RULE,
+      level: "violation",
+      detail: `${boldOpeners.map((p) => `\xAB${p.slice(0, 70)}\u2026\xBB`).join(", ")} \u2014 \u0441\u043D\u0438\u043C\u0438 \u0436\u0438\u0440\u043D\u044B\u0439; \u0442\u0435\u043A\u0441\u0442 \u0438 \u043C\u0435\u0441\u0442\u043E \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u043D\u0435 \u043C\u0435\u043D\u044F\u0439`
+    });
+  }
+  if (h2.length >= 4 && questionH2Share > THRESHOLDS.questionH2Share) {
+    violations.push({
+      rule: QUESTION_H2_RULE,
+      level: "warning",
+      detail: `${questionH2} \u0438\u0437 ${h2.length} H2 \u0441 \xAB?\xBB (${pct(questionH2Share)} \u043F\u0440\u0438 \u043F\u043E\u0440\u043E\u0433\u0435 ${pct(THRESHOLDS.questionH2Share)})`
+    });
+  }
+  if (attributionsPer250 > THRESHOLDS.attributionsPer250) {
+    violations.push({
+      rule: ATTRIBUTION_RULE,
+      level: "warning",
+      detail: `${attributions} \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0439 \u0441 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u043C \u043D\u0430 ${totalWords} \u0441\u043B\u043E\u0432 (${metrics.attributionsPer250} \u043D\u0430 250 \u043F\u0440\u0438 \u043F\u043E\u0440\u043E\u0433\u0435 ${THRESHOLDS.attributionsPer250})`
+    });
+  }
+  return { metrics, violations };
+}
+function formatViolations(violations) {
+  return violations.map((v) => `${v.level === "violation" ? "\u2717" : "\u25B3"} ${v.rule}: ${v.detail}`).join("\n");
 }
 
 // lib/tz.ts
@@ -1161,9 +1430,14 @@ function renderTechSpec(tz) {
 var OVERSPAM_RULE = "\u041F\u0435\u0440\u0435\u0441\u043F\u0430\u043C \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u043A\u043B\u044E\u0447\u0430";
 var BOLD_KEY_RULE = "\u041A\u043B\u044E\u0447 \u0432\u044B\u0434\u0435\u043B\u0435\u043D \u0436\u0438\u0440\u043D\u044B\u043C";
 var TEMPLATE_PHRASE_RULE = "\u0428\u0430\u0431\u043B\u043E\u043D\u043D\u0430\u044F \u0444\u0440\u0430\u0437\u0430";
-var BANNED_TEMPLATES = ["\u043C\u044B \u0440\u0430\u0437\u0431\u0438\u0440\u0430\u0435\u043C \u0442\u044B\u0441\u044F\u0447\u0438 \u0432\u0430\u043A\u0430\u043D\u0441\u0438\u0439", "\u043C\u0438\u0444 \u043E \u0442\u043E\u043C, \u0447\u0442\u043E"];
-var LIMITED_TEMPLATES = [{ phrase: "\u043D\u0430 \u0441\u0430\u043C\u043E\u043C \u0434\u0435\u043B\u0435", max: 1 }];
+var BANNED_TEMPLATES = compilePhrases(ROBOT_PHRASES.filter((p) => p.gate === "ban"));
+var LIMITED_TEMPLATES = ROBOT_PHRASES.filter((p) => typeof p.gate === "number").map((p) => ({
+  ...compilePhrases([p])[0],
+  max: p.gate
+}));
 var DEFINITION_OPENER_RULE = "\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435\u043C \u043A\u043B\u044E\u0447\u0430";
+var KEY_IN_LEAD_RULE = "\u041A\u043B\u044E\u0447\u0430 \u043D\u0435\u0442 \u0432 \u043F\u0435\u0440\u0432\u044B\u0445 60 \u0441\u043B\u043E\u0432\u0430\u0445";
+var KEY_IN_FIRST_H2_RULE = "\u041A\u043B\u044E\u0447\u0430 \u043D\u0435\u0442 \u0432 \u043F\u0435\u0440\u0432\u043E\u043C H2";
 function checkTechSpec(tz, markdown) {
   const violations = [];
   const lower = markdown.toLowerCase().replace(/ё/g, "\u0435");
@@ -1188,13 +1462,10 @@ function checkTechSpec(tz, markdown) {
       });
     }
   }
-  const templateHits = (phrase) => {
-    const re = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![\u0430-\u044F\u0451])", "g");
-    return [...lower.matchAll(re)].map((m) => m.index ?? 0);
-  };
+  const templateHits = (re) => [...markdown.matchAll(re)].map((m) => m.index ?? 0);
   const around = (index) => markdown.slice(Math.max(0, index - 30), index + 50).replace(/\s+/g, " ").trim();
-  for (const phrase of BANNED_TEMPLATES) {
-    const hits = templateHits(phrase);
+  for (const { phrase, re } of BANNED_TEMPLATES) {
+    const hits = templateHits(re);
     if (hits.length) {
       violations.push({
         rule: TEMPLATE_PHRASE_RULE,
@@ -1202,8 +1473,8 @@ function checkTechSpec(tz, markdown) {
       });
     }
   }
-  for (const { phrase, max } of LIMITED_TEMPLATES) {
-    const hits = templateHits(phrase);
+  for (const { phrase, re, max } of LIMITED_TEMPLATES) {
+    const hits = templateHits(re);
     if (hits.length > max) {
       violations.push({
         rule: TEMPLATE_PHRASE_RULE,
@@ -1225,6 +1496,27 @@ function checkTechSpec(tz, markdown) {
       detail: `\u043F\u0435\u0440\u0432\u043E\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0430\u0447\u0438\u043D\u0430\u0435\u0442\u0441\u044F \u0441 \xAB${opener}\xBB \u2014 \u043E\u0442\u043A\u0440\u043E\u0439 \u0441\u0442\u0430\u0442\u044C\u044E \u043A\u0440\u044E\u0447\u043A\u043E\u043C (\u0444\u0430\u043A\u0442, \u0447\u0438\u0441\u043B\u043E, \u043D\u0430\u0431\u043B\u044E\u0434\u0435\u043D\u0438\u0435), \u0430 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u0434\u0430\u0439 \u0432\u043D\u0443\u0442\u0440\u0438 \u043F\u0435\u0440\u0432\u043E\u0433\u043E H2`
     });
   }
+  const withoutFences = markdown.replace(/```[\s\S]*?```/g, "\n");
+  const bodyText = withoutFences.replace(/^---\n[\s\S]*?\n---\n?/, "").replace(/^#\s.*$/m, "").replace(/^##+\s.*$/gm, "").replace(/^(?:import|export)\s.*$/gm, "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/<[^>]*>/g, "");
+  const first60 = bodyText.split(/\s+/).filter((t) => /[\p{L}\p{N}]/u.test(t)).slice(0, 60).join(" ");
+  if (!hasPhraseForm(first60, tz.mainKeyword)) {
+    violations.push({
+      rule: KEY_IN_LEAD_RULE,
+      detail: `\xAB${tz.mainKeyword}\xBB (\u0432 \u043B\u044E\u0431\u043E\u0439 \u0444\u043E\u0440\u043C\u0435) \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u0442\u043E\u044F\u0442\u044C \u0432 \u043F\u0435\u0440\u0432\u044B\u0445 60 \u0441\u043B\u043E\u0432\u0430\u0445 \u043F\u043E\u0441\u043B\u0435 H1 \u2014 \u0432\u043F\u043B\u0435\u0442\u0438 \u0432 \u043A\u0440\u044E\u0447\u043E\u043A, \u043D\u0435 \u0436\u0438\u0440\u043D\u044B\u043C \u0438 \u043D\u0435 \xAB\u043A\u043B\u044E\u0447 \u2014 \u044D\u0442\u043E\xBB`
+    });
+  }
+  const stopInsideKey = tz.stopPhrases.some((s) => containsMainKeyword(tz.mainKeyword, s.phrase));
+  const firstH2 = withoutFences.match(/^##\s+(.+)$/m)?.[1];
+  if (firstH2 && !stopInsideKey && !hasPhraseForm(firstH2, tz.mainKeyword)) {
+    const have = keyStems(firstH2);
+    const missing = keyStems(tz.mainKeyword).filter(
+      (st) => !have.some((h) => h.startsWith(st) || st.startsWith(h))
+    );
+    violations.push({
+      rule: KEY_IN_FIRST_H2_RULE,
+      detail: `\u043F\u0435\u0440\u0432\u044B\u0439 H2 \xAB${firstH2.trim()}\xBB \u0431\u0435\u0437 \u043A\u043B\u044E\u0447\u0430 \xAB${tz.mainKeyword}\xBB: \u043D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0441\u043B\u043E\u0432 \u0441 \u043E\u0441\u043D\u043E\u0432\u043E\u0439 ${missing.map((m) => `\xAB${m}\u2026\xBB`).join(", ")} \u2014 \u0434\u043E\u0431\u0430\u0432\u044C \u0438\u0445 \u0432 \u0437\u0430\u0433\u043E\u043B\u043E\u0432\u043E\u043A \u0432 \u043B\u044E\u0431\u043E\u0439 \u0444\u043E\u0440\u043C\u0435, \u0432\u043E\u043F\u0440\u043E\u0441 \u0438\u043B\u0438 \u0443\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u043E\u0441\u0442\u0430\u0432\u044C`
+    });
+  }
   const headings = markdown.split("\n").filter((l) => /^#{1,3}\s/.test(l)).join("\n").toLowerCase().replace(/ё/g, "\u0435");
   for (const p of tz.stopPhrases) {
     if (headings.includes(p.phrase.toLowerCase().replace(/ё/g, "\u0435"))) {
@@ -1239,11 +1531,11 @@ function checkTechSpec(tz, markdown) {
       violations.push({ rule: "\u041D\u0435\u0442 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0441\u044B\u043B\u043A\u0438", detail: url });
     }
   }
-  const words2 = markdown.replace(/[#*`>[\]()]/g, " ").split(/\s+/).filter(Boolean).length;
-  if (words2 < tz.wordCountMin) {
+  const words3 = markdown.replace(/[#*`>[\]()]/g, " ").split(/\s+/).filter(Boolean).length;
+  if (words3 < tz.wordCountMin) {
     violations.push({
       rule: "\u041D\u0435\u0434\u043E\u0431\u043E\u0440 \u043E\u0431\u044A\u0451\u043C\u0430",
-      detail: `${words2} \u0441\u043B\u043E\u0432 \u043F\u0440\u0438 \u043C\u0438\u043D\u0438\u043C\u0443\u043C\u0435 ${tz.wordCountMin}`
+      detail: `${words3} \u0441\u043B\u043E\u0432 \u043F\u0440\u0438 \u043C\u0438\u043D\u0438\u043C\u0443\u043C\u0435 ${tz.wordCountMin}`
     });
   }
   if (tz.metaTitle.length > 60) {
@@ -1859,26 +2151,26 @@ async function acceptAgainstSpec(tz, markdown) {
   console.log("[writer] \u0428\u0430\u0433 4\u0431: \u041F\u0440\u0438\u0451\u043C\u043A\u0430 \u043F\u043E \u0422\u0417...");
   let current = markdown;
   let best = { markdown, violations: checkTechSpec(tz, markdown), round: 0 };
-  for (let round = 0; round <= REPAIR_ROUNDS; round++) {
-    const violations = round === 0 ? best.violations : checkTechSpec(tz, current);
-    if (violations.length < best.violations.length) best = { markdown: current, violations, round };
+  for (let round2 = 0; round2 <= REPAIR_ROUNDS; round2++) {
+    const violations = round2 === 0 ? best.violations : checkTechSpec(tz, current);
+    if (violations.length < best.violations.length) best = { markdown: current, violations, round: round2 };
     if (violations.length === 0) {
-      console.log(`[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round})`);
-      return { markdown: current, rounds: round, unresolved: [] };
+      console.log(`[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0440\u0438\u043D\u044F\u0442\u043E \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round2})`);
+      return { markdown: current, rounds: round2, unresolved: [] };
     }
     console.log(
       `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${violations.length} \u2014 ` + violations.map((v) => `${v.rule} (${v.detail})`).join("; ")
     );
-    if (round === REPAIR_ROUNDS) {
+    if (round2 === REPAIR_ROUNDS) {
       if (best.violations.some((v) => v.rule === OVERSPAM_RULE)) {
-        throw new SpecRejected(best.violations, round);
+        throw new SpecRejected(best.violations, round2);
       }
       console.log(
         `[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u044E \u043B\u0443\u0447\u0448\u0443\u044E \u0432\u0435\u0440\u0441\u0438\u044E \u0441 \u043A\u0440\u0443\u0433\u0430 ${best.round} \u2014 \u043D\u0435\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u0445 \u043F\u0443\u043D\u043A\u0442\u043E\u0432 ${best.violations.length}`
       );
-      return { markdown: best.markdown, rounds: round, unresolved: best.violations };
+      return { markdown: best.markdown, rounds: round2, unresolved: best.violations };
     }
-    console.log(`[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round + 1}/${REPAIR_ROUNDS}...`);
+    console.log(`[writer] \u041F\u0440\u0438\u0451\u043C\u043A\u0430: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round2 + 1}/${REPAIR_ROUNDS}...`);
     current = await askClaude(
       `\u041F\u0440\u0438\u0451\u043C\u043A\u0430 \u0441\u0442\u0430\u0442\u044C\u0438 \u0432\u044B\u044F\u0432\u0438\u043B\u0430 \u0440\u0430\u0441\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u0441 \u0422\u0417. \u0418\u0441\u043F\u0440\u0430\u0432\u044C \u0440\u043E\u0432\u043D\u043E \u0438\u0445, \u043D\u0435 \u0442\u0440\u043E\u0433\u0430\u044F \u043E\u0441\u0442\u0430\u043B\u044C\u043D\u043E\u0435:
 \u0441\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043F\u0440\u043E\u0448\u043B\u0430 \u0441\u0442\u0438\u043B\u0435\u0432\u0443\u044E \u0438 SEO-\u043F\u0440\u0430\u0432\u043A\u0443, \u043F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u0442\u044C \u0435\u0451 \u0437\u0430\u043D\u043E\u0432\u043E \u043D\u0435 \u043D\u0443\u0436\u043D\u043E.
@@ -1897,6 +2189,114 @@ ${current}
   }
   return { markdown: current, rounds: REPAIR_ROUNDS, unresolved: checkTechSpec(tz, current) };
 }
+var AUDIT_MARKERS = [
+  "**Title tag:**",
+  "**Meta description:**",
+  "**\u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E",
+  "## \u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E",
+  "Title tag:",
+  "Meta description:",
+  "\u0427\u0442\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E",
+  "\u0421\u0432\u043E\u0434\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A",
+  "\u0441\u0432\u043E\u0434\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A",
+  "# \u0417\u0430\u0434\u0430\u0447\u0430",
+  "| \u0417\u0430\u0434\u0430\u0447\u0430 |",
+  "| \u0417\u0430\u0434\u0430\u0447\u0430|",
+  "\u0417\u0430\u0434\u0430\u0447\u0430  \u0421\u0442\u0430\u0442\u0443\u0441",
+  "---\n|"
+];
+function stripAuditReport(text) {
+  let out = text;
+  for (const marker of AUDIT_MARKERS) {
+    const idx = out.indexOf(marker);
+    if (idx !== -1) {
+      console.warn(`[writer] \u0441\u0440\u0435\u0437\u0430\u043D \u0445\u0432\u043E\u0441\u0442 \u043F\u043E\u0441\u043B\u0435 \xAB${marker}\xBB (${out.length - idx} \u0441\u0438\u043C\u0432.)`);
+      out = out.slice(0, idx).trim();
+    }
+  }
+  return out;
+}
+function structureSignature(md) {
+  const count = (re) => (md.match(re) ?? []).length;
+  return [/^##\s/gm, /^###\s/gm, /^\|/gm, /^\s*(?:[-*+]|\d+[.)])\s/gm].map(count).join("/");
+}
+var RobotRejected = class extends Error {
+  constructor(score) {
+    super(`\u0421\u0442\u0430\u0442\u044C\u044F \u043D\u0435 \u043F\u0440\u043E\u0448\u043B\u0430 \u0441\u043A\u043E\u0440\u0438\u043D\u0433 \u0440\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u0438:
+${formatViolations(score.violations)}`);
+    this.score = score;
+    this.name = "RobotRejected";
+  }
+  score;
+};
+async function humanizeAgainstScore(markdown) {
+  console.log("[writer] \u0428\u0430\u0433 4\u0432: \u0421\u043A\u043E\u0440\u0438\u043D\u0433 \u0440\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u0438...");
+  const logScore = (label, s) => {
+    const m = s.metrics;
+    console.log(
+      `[writer] \u0420\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C ${label}: \u0430\u0444\u043E\u0440\u0438\u0437\u043C\u044B ${Math.round(m.aphorismShare * 100)} %, \u0448\u0430\u0431\u043B\u043E\u043D\u043E\u0432 ${m.templateCount}, CV ${m.sentenceCv}, H2 \u0441 \xAB?\xBB ${Math.round(m.questionH2Share * 100)} %, \u0430\u0442\u0440\u0438\u0431\u0443\u0446\u0438\u0439 ${m.attributionsPer250}/250, \u043B\u0438\u0434 ${m.hasLead ? `${m.leadWords} \u0441\u043B\u043E\u0432` : "\u043D\u0435\u0442"}` + (s.violations.length ? `
+${formatViolations(s.violations)}` : " \u2014 \u0447\u0438\u0441\u0442\u043E \u2713")
+    );
+  };
+  let score = scoreArticle(markdown);
+  logScore("\u0434\u043E \u043F\u0440\u0430\u0432\u043A\u0438", score);
+  const hard = (s) => s.violations.filter((v) => v.level === "violation");
+  let current = markdown;
+  if (hard(score).length > 0) {
+    console.log("[writer] \u0420\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043A\u0438 1/1...");
+    try {
+      const raw = await askClaude(
+        `\u0421\u0442\u0430\u0442\u044C\u044F \u043F\u0440\u043E\u0448\u043B\u0430 SEO-\u0440\u0435\u0432\u044C\u044E, \u043D\u043E \u0441\u043A\u043E\u0440\u0438\u043D\u0433 \u0440\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u0438 \u043D\u0430\u0448\u0451\u043B \u043F\u0440\u0438\u0437\u043D\u0430\u043A\u0438 \u043C\u0430\u0448\u0438\u043D\u043D\u043E\u0433\u043E \u0442\u0435\u043A\u0441\u0442\u0430.
+\u0418\u0441\u043F\u0440\u0430\u0432\u044C \u0440\u043E\u0432\u043D\u043E \u043F\u0435\u0440\u0435\u0447\u0438\u0441\u043B\u0435\u043D\u043D\u043E\u0435. \u0417\u0430\u0433\u043E\u043B\u043E\u0432\u043A\u0438 H2/H3, \u0442\u0430\u0431\u043B\u0438\u0446\u044B, \u0441\u043F\u0438\u0441\u043A\u0438, FAQ, \u0441\u0441\u044B\u043B\u043A\u0438, \u0447\u0438\u0441\u043B\u0430 \u0438 \u0432\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u044F \u043A\u043B\u044E\u0447\u0430 \u043D\u0435 \u0442\u0440\u043E\u0433\u0430\u0439.
+
+${formatViolations(hard(score))}
+
+\u041A\u0430\u043A \u043F\u0440\u0430\u0432\u0438\u0442\u044C:
+- \u0430\u0431\u0437\u0430\u0446\u044B-\u0430\u0444\u043E\u0440\u0438\u0437\u043C\u044B \u0438\u0437 \u043E\u0434\u043D\u043E\u0433\u043E \u043A\u043E\u0440\u043E\u0442\u043A\u043E\u0433\u043E \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u2014 \u0441\u043B\u0438\u0442\u044C \u0441 \u0441\u043E\u0441\u0435\u0434\u043D\u0438\u043C \u0430\u0431\u0437\u0430\u0446\u0435\u043C (\u043D\u0435 \u0441 \u043F\u0435\u0440\u0432\u044B\u043C \u0430\u0431\u0437\u0430\u0446\u0435\u043C \u0440\u0430\u0437\u0434\u0435\u043B\u0430) \u0438\u043B\u0438 \u0440\u0430\u0437\u0432\u0435\u0440\u043D\u0443\u0442\u044C \u0432 \u043C\u044B\u0441\u043B\u044C; \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E\u0439 \u0441\u0442\u0440\u043E\u043A\u043E\u0439 \u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043C\u0430\u043A\u0441\u0438\u043C\u0443\u043C \u043E\u0434\u0438\u043D \u043D\u0430\u0441\u0442\u043E\u044F\u0449\u0438\u0439 \u0432\u044B\u0432\u043E\u0434 \u043D\u0430 \u0441\u0442\u0430\u0442\u044C\u044E;
+- \u0444\u0440\u0430\u0437\u044B-\u0448\u0430\u0431\u043B\u043E\u043D\u044B \u2014 \u0443\u0431\u0440\u0430\u0442\u044C, \u0441\u043A\u0430\u0437\u0430\u0442\u044C \u0442\u043E \u0436\u0435 \u0441\u0432\u043E\u0438\u043C\u0438 \u0441\u043B\u043E\u0432\u0430\u043C\u0438 \u0431\u0435\u0437 \u0444\u043E\u0440\u043C\u0443\u043B\u044B;
+- \xAB**\u0442\u0435\u0440\u043C\u0438\u043D** \u2014 \u044D\u0442\u043E \u2026\xBB \u0432 \u043D\u0430\u0447\u0430\u043B\u0435 \u0430\u0431\u0437\u0430\u0446\u0430 \u2014 \u0441\u043D\u0438\u043C\u0438 \u0436\u0438\u0440\u043D\u044B\u0439; \u0442\u0435\u043A\u0441\u0442 \u0438 \u043C\u0435\u0441\u0442\u043E \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u043D\u0435 \u043C\u0435\u043D\u044F\u0439;
+- \u0435\u0441\u043B\u0438 \u043A\u0440\u044E\u0447\u043A\u0430 \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E H2 \u043D\u0435\u0442 \u0438\u043B\u0438 \u043E\u043D \u043A\u043E\u0440\u043E\u0447\u0435 25 \u0441\u043B\u043E\u0432 \u2014 \u043D\u0430\u043F\u0438\u0448\u0438 2\u20133 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F (25\u201380 \u0441\u043B\u043E\u0432) \u0434\u043E \u043F\u0435\u0440\u0432\u043E\u0433\u043E \xAB## \xBB: \u043D\u0430\u0431\u043B\u044E\u0434\u0435\u043D\u0438\u0435 \u0438\u043B\u0438 \u0444\u0430\u043A\u0442, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u0443\u0436\u0435 \u0435\u0441\u0442\u044C \u0432 \u0441\u0442\u0430\u0442\u044C\u0435; \u043A\u043B\u044E\u0447 \u0432 \u043D\u0438\u0445 \u2014 \u0432 \u043B\u044E\u0431\u043E\u0439 \u0433\u0440\u0430\u043C\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u043E\u0439 \u0444\u043E\u0440\u043C\u0435, \u043D\u0435 \u0436\u0438\u0440\u043D\u044B\u043C, \u043D\u0435 \u0447\u0435\u0440\u0435\u0437 \xAB\u2014 \u044D\u0442\u043E\xBB; \u0432 \u043F\u0435\u0440\u0432\u043E\u043C \u0430\u0431\u0437\u0430\u0446\u0435 \u2014 \u0430\u043A\u0442\u0443\u0430\u043B\u044C\u043D\u0430\u044F \u0434\u0430\u0442\u0430.
+
+\u0421\u0442\u0440\u043E\u0433\u043E: \u043D\u043E\u0432\u044B\u0445 \u0447\u0438\u0441\u0435\u043B, \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u043E\u0432 \u0438 \u0444\u0430\u043A\u0442\u043E\u0432 \u043D\u0435 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0442\u044C \u2014 \u0442\u043E\u043B\u044C\u043A\u043E \u0442\u043E, \u0447\u0442\u043E \u0443\u0436\u0435 \u0435\u0441\u0442\u044C \u0432 \u0441\u0442\u0430\u0442\u044C\u0435. \u041F\u0435\u0440\u0432\u043E\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0440\u0430\u0437\u0434\u0435\u043B\u0430 \u043F\u043E\u0441\u043B\u0435 H2 \u043D\u0435 \u043C\u0435\u043D\u044F\u0442\u044C.
+
+\u0421\u0422\u0410\u0422\u042C\u042F:
+${current}
+
+\u0412\u0435\u0440\u043D\u0438 \u0422\u041E\u041B\u042C\u041A\u041E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0439 Markdown \u0441\u0442\u0430\u0442\u044C\u0438 \u0446\u0435\u043B\u0438\u043A\u043E\u043C \u2014 \u0431\u0435\u0437 \u043F\u043E\u044F\u0441\u043D\u0435\u043D\u0438\u0439, \u0431\u0435\u0437 \u0441\u043F\u0438\u0441\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A.`,
+        "writer"
+      );
+      const fixed = bodyStart(raw) !== -1 ? stripAuditReport(keepLead(raw, "\u0440\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C", current)) : "";
+      const before = current.split(/\s+/).length;
+      const after = fixed.split(/\s+/).length;
+      const rescored = scoreArticle(fixed);
+      const structureKept = structureSignature(fixed) === structureSignature(current);
+      if (!structureKept) {
+        console.warn(
+          `[writer] \u0420\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C: \u043F\u0440\u0430\u0432\u043A\u0430 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0430 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0443 (H2/H3/\u0442\u0430\u0431\u043B\u0438\u0446\u044B ${structureSignature(current)} \u2192 ${structureSignature(fixed)}) \u2014 \u043E\u0442\u043A\u0430\u0442`
+        );
+      }
+      const rulesBefore = new Set(hard(score).map((v) => v.rule));
+      const noNewRules = hard(rescored).every((v) => rulesBefore.has(v.rule));
+      if (structureKept && noNewRules && after >= before * 0.8 && hard(rescored).length < hard(score).length) {
+        current = fixed;
+        score = rescored;
+        logScore("\u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u0430\u0432\u043A\u0438", score);
+      } else {
+        console.warn(
+          `[writer] \u0420\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C: \u043F\u0440\u0430\u0432\u043A\u0430 \u043D\u0435 \u043F\u043E\u043C\u043E\u0433\u043B\u0430 (\u0441\u043B\u043E\u0432 ${before}\u2192${after}, \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${hard(score).length}\u2192${hard(rescored).length}) \u2014 \u043E\u0441\u0442\u0430\u0432\u043B\u044F\u044E \u0442\u0435\u043A\u0441\u0442 \u0434\u043E \u043F\u0440\u0430\u0432\u043A\u0438`
+        );
+      }
+    } catch (e) {
+      console.error(`[writer] \u0420\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043A\u0438 \u0441\u043E\u0440\u0432\u0430\u043B\u0441\u044F: ${e.message}`);
+    }
+  }
+  if (ROBOT_SCORE_MODE === "block" && hard(score).length > 0) throw new RobotRejected(score);
+  return {
+    markdown: current,
+    score,
+    warning: score.violations.length ? formatViolations(score.violations) : void 0
+  };
+}
 async function generateMdxArticle(topic) {
   console.log("[writer] \u0428\u0430\u0433 1: Wordstat keyword research...");
   const cached = lookupPhrases(LSI_SOURCES, topic.keyword);
@@ -1907,11 +2307,11 @@ async function generateMdxArticle(topic) {
     wordstatRaw = await fetchWordstatKeywords(topic.keyword);
     if (wordstatRaw.length === 0) {
       const STOP = /* @__PURE__ */ new Set(["\u0438\u043B\u0438", "\u0441", "\u0432", "\u043D\u0430", "\u0434\u043B\u044F", "\u043F\u043E", "\u0438\u0437", "\u0438", "\u043A", "\u0437\u0430", "\u0431\u0435\u0437"]);
-      const words2 = topic.keyword.split(" ").filter((w) => !STOP.has(w.toLowerCase()));
+      const words3 = topic.keyword.split(" ").filter((w) => !STOP.has(w.toLowerCase()));
       const candidates = [
-        words2.slice(0, 3).join(" "),
-        words2.slice(0, 2).join(" "),
-        words2[0]
+        words3.slice(0, 3).join(" "),
+        words3.slice(0, 2).join(" "),
+        words3[0]
       ].filter((c, i, arr) => c && c !== topic.keyword && arr.indexOf(c) === i);
       for (const shortKey of candidates) {
         console.log(`[writer] Wordstat fallback: \u043F\u0440\u043E\u0431\u0443\u044E "${shortKey}"`);
@@ -2362,35 +2762,24 @@ ${markdown}
   } catch (e) {
     console.error(`[writer] SEO-\u0440\u0435\u0432\u044C\u044E \u0441\u043E\u0440\u0432\u0430\u043B\u043E\u0441\u044C, \u0438\u0434\u0443 \u0441 \u0442\u0435\u043A\u0443\u0449\u0438\u043C \u0442\u0435\u043A\u0441\u0442\u043E\u043C: ${e.message}`);
   }
-  let reviewedCandidate = bodyStart(reviewed) !== -1 ? keepLead(reviewed, "SEO-\u0440\u0435\u0432\u044C\u044E", markdown) : markdown;
-  const auditMarkers = [
-    "**Title tag:**",
-    "**Meta description:**",
-    "**\u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E",
-    "## \u0427\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u043E",
-    "Title tag:",
-    "Meta description:",
-    "\u0427\u0442\u043E \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u043E",
-    "\u0421\u0432\u043E\u0434\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A",
-    "\u0441\u0432\u043E\u0434\u043A\u0430 \u043F\u0440\u0430\u0432\u043E\u043A",
-    "# \u0417\u0430\u0434\u0430\u0447\u0430",
-    "| \u0417\u0430\u0434\u0430\u0447\u0430 |",
-    "| \u0417\u0430\u0434\u0430\u0447\u0430|",
-    "\u0417\u0430\u0434\u0430\u0447\u0430  \u0421\u0442\u0430\u0442\u0443\u0441",
-    "---\n|"
-  ];
-  for (const marker of auditMarkers) {
-    const idx = reviewedCandidate.indexOf(marker);
-    if (idx !== -1) reviewedCandidate = reviewedCandidate.slice(0, idx).trim();
-  }
+  const reviewedCandidate = stripAuditReport(
+    bodyStart(reviewed) !== -1 ? keepLead(reviewed, "SEO-\u0440\u0435\u0432\u044C\u044E", markdown) : markdown
+  );
   const preReviewWords = markdown.split(/\s+/).length;
   const reviewedWords = reviewedCandidate.split(/\s+/).length;
   const reviewedFinal = reviewedWords >= preReviewWords * 0.6 ? reviewedCandidate : markdown;
-  const accepted = await acceptAgainstSpec(tz, reviewedFinal);
+  const humanized = await humanizeAgainstScore(reviewedFinal);
+  const accepted = await acceptAgainstSpec(tz, humanized.markdown);
+  const finalScore = scoreArticle(accepted.markdown);
+  if (finalScore.violations.length) {
+    console.log(`[writer] \u0420\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C \u043F\u043E\u0441\u043B\u0435 \u043F\u0440\u0438\u0451\u043C\u043A\u0438:
+${formatViolations(finalScore.violations)}`);
+  }
   return {
     markdown: accepted.markdown,
     specWarning: accepted.unresolved.length ? `\u041F\u0435\u0440\u0435\u043F\u0438\u0441\u044B\u0432\u0430\u043B\u0438 ${accepted.rounds} \u0440\u0430\u0437, \u043D\u0435\u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u043C\u0438 \u043E\u0441\u0442\u0430\u043B\u0438\u0441\u044C:
 ` + accepted.unresolved.map((v) => `\u2022 ${v.rule}: ${v.detail}`).join("\n") : void 0,
+    robotWarning: finalScore.violations.length ? formatViolations(finalScore.violations) : void 0,
     metaTitle: plan.metaTitle,
     metaDesc: plan.metaDesc,
     slug: toSlug(plan.slug || topic.title),
@@ -2437,19 +2826,19 @@ var MetadataRejected = class extends Error {
 async function acceptMetadata(result, markdown) {
   let metaTitle = result.metaTitle;
   let metaDesc = result.metaDesc;
-  for (let round = 0; round <= META_ROUNDS; round++) {
+  for (let round2 = 0; round2 <= META_ROUNDS; round2++) {
     const violations = checkArticleMetadata({ metaTitle, metaDescription: metaDesc, markdown });
     if (violations.length === 0) {
-      if (round) console.log(`[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043F\u0440\u0438\u043D\u044F\u0442\u044B \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round})`);
-      return { metaTitle, metaDesc, rounds: round };
+      if (round2) console.log(`[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043F\u0440\u0438\u043D\u044F\u0442\u044B \u2713 (\u043A\u0440\u0443\u0433\u043E\u0432 \u043F\u0440\u0430\u0432\u043E\u043A: ${round2})`);
+      return { metaTitle, metaDesc, rounds: round2 };
     }
     console.log(
       `[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043D\u0430\u0440\u0443\u0448\u0435\u043D\u0438\u0439 ${violations.length} \u2014 ` + violations.map((v) => `${v.rule} (${v.detail})`).join("; ")
     );
-    if (violations.some((v) => v.rule === "FAQ_MISSING") || round === META_ROUNDS) {
+    if (violations.some((v) => v.rule === "FAQ_MISSING") || round2 === META_ROUNDS) {
       throw new MetadataRejected(violations);
     }
-    console.log(`[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round + 1}/${META_ROUNDS}...`);
+    console.log(`[writer] \u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435: \u043A\u0440\u0443\u0433 \u043F\u0440\u0430\u0432\u043E\u043A ${round2 + 1}/${META_ROUNDS}...`);
     const raw = await askClaude(
       `\u041C\u0435\u0442\u0430\u0434\u0430\u043D\u043D\u044B\u0435 \u0441\u0442\u0430\u0442\u044C\u0438 \u043D\u0435 \u043F\u0440\u043E\u0448\u043B\u0438 \u0447\u0435\u043A-\u043B\u0438\u0441\u0442. \u0418\u0441\u043F\u0440\u0430\u0432\u044C \u0440\u043E\u0432\u043D\u043E \u043F\u0435\u0440\u0435\u0447\u0438\u0441\u043B\u0435\u043D\u043D\u043E\u0435, \u0441\u043C\u044B\u0441\u043B \u0441\u043E\u0445\u0440\u0430\u043D\u0438.
 
@@ -2703,12 +3092,17 @@ ${e.message}`);
   const chartStatus = charts.length > 0 ? `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u2705 ${charts.length} \u0448\u0442.` : `\u{1F4CA} \u0413\u0440\u0430\u0444\u0438\u043A\u0438: \u274C`;
   const sketchStatus = sketchUrls.length > 0 ? `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u2705 ${sketchUrls.length} \u0448\u0442.` : `\u270F\uFE0F \u0421\u043A\u0435\u0442\u0447\u0438: \u274C`;
   const deployStatus = syncedToProd ? `\u26A1 \u0421\u0442\u0430\u0442\u044C\u044F \u0443\u0436\u0435 \u043D\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0435, \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0447\u0435\u0440\u0435\u0437 ~30 \u0441\u0435\u043A (ISR)` : `\u23F3 \u0414\u0435\u043F\u043B\u043E\u0439 \u0447\u0435\u0440\u0435\u0437 CI \u0437\u0430\u0439\u043C\u0451\u0442 ~15 \u043C\u0438\u043D\u0443\u0442`;
+  const escapeHtml2 = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const specBlock = result.specWarning ? `
 
 \u26A0\uFE0F <b>\u041F\u0440\u0438\u043D\u044F\u0442\u0430 \u0441 \u043E\u0433\u043E\u0432\u043E\u0440\u043A\u0430\u043C\u0438.</b>
-${result.specWarning}
+${escapeHtml2(result.specWarning)}
 \u041D\u0443\u0436\u043D\u0430 \u0440\u0443\u0447\u043D\u0430\u044F \u0434\u043E\u0440\u0430\u0431\u043E\u0442\u043A\u0430.` : "";
-  const successText = `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>${specBlock}
+  const robotBlock = result.robotWarning ? `
+
+\u{1F916} <b>\u0420\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C (\u0440\u0435\u0436\u0438\u043C \u043F\u0440\u0435\u0434\u0443\u043F\u0440\u0435\u0436\u0434\u0435\u043D\u0438\u044F):</b>
+${escapeHtml2(result.robotWarning)}` : "\n\n\u{1F916} \u0420\u043E\u0431\u043E\u0442\u043D\u043E\u0441\u0442\u044C: \u0447\u0438\u0441\u0442\u043E \u2713";
+  const successText = `\u2705 <b>\u0421\u0442\u0430\u0442\u044C\u044F \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u0430!</b>${specBlock}${robotBlock}
 
 \u{1F4CC} ${topic.title}
 ${wordstatInfo}
@@ -2765,5 +3159,6 @@ main().catch(async (e) => {
 });
 export {
   MetadataRejected,
+  RobotRejected,
   SpecRejected
 };
