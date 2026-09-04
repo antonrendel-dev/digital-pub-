@@ -20,9 +20,36 @@ const TAILS = [
 
 describe('срез служебного хвоста при публикации', () => {
   it.each(TAILS)('срезает хвост: %s', (tail) => {
+    // Сначала — что инвариант вообще срабатывает. Без этой строки половина
+    // правки не покрыта: с регуляркой, не матчащей ничего, тест оставался
+    // зелёным, и так P0 уехал в коммит (ревью 04.09.2026).
+    expect(hasServiceText(BODY + tail)).toBe(true)
     const cleaned = stripServiceTail(BODY + tail)
     expect(hasServiceText(cleaned)).toBe(false)
     expect(cleaned).toContain('Вилка 40 000–150 000 ₽')
+  })
+
+  /**
+   * Гейт писателя проверяет не тело, а весь MDX — хвост умеет заезжать
+   * внутрь faqSchema, где начала строки перед ним нет. Значит маркеры
+   * обязаны терпеть фронтматтер: поле `title:` есть у всех 85 статей.
+   */
+  const FRONTMATTER = [
+    'title: "Резюме программиста: образец и что писать в 2026"',
+    'metaTitle: "Резюме программиста: образец 2026"',
+    'metaDescription: "Как собрать резюме программиста: структура, ошибки, шаблон."',
+    'dateModified: "2026-09-04"',
+  ].join('\n')
+
+  it('не считает служебным фронтматтер обычной статьи', () => {
+    expect(hasServiceText(`---\n${FRONTMATTER}\n---\n${BODY}`)).toBe(false)
+  })
+
+  it('ловит хвост, заехавший внутрь faqSchema одной строкой', () => {
+    const line =
+      `faqSchema: '[{"question":"Сколько платят?","answer":"Вилка 40 000 ₽. ` +
+      'Скиллы: `dpub-content-standard` — правила v6.6."}]\''
+    expect(hasServiceText(`---\n${FRONTMATTER}\n${line}\n---\n${BODY}`)).toBe(true)
   })
 
   it('не трогает статью без хвоста', () => {

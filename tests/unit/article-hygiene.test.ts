@@ -1,6 +1,8 @@
 import fs from 'fs'
 import path from 'path'
 
+import { SERVICE_MARKER } from '../../lib/strip-service-tail'
+
 /**
  * Гигиена опубликованных статей.
  *
@@ -16,8 +18,10 @@ const DIR = path.join(process.cwd(), 'content', 'articles')
 const files = fs.readdirSync(DIR).filter((f) => f.endsWith('.mdx'))
 const read = (f: string) => fs.readFileSync(path.join(DIR, f), 'utf8')
 
-const SERVICE =
-  /Готово для проверки|Использован[а-яё]*\s+скилл|Скиллы:\s*`|Служебное, вне тела|мастер-промпт v\d/i
+// Список маркеров один на весь проект: третья копия здесь уже разъезжалась
+// с боевой — 04.09.2026 тест не знал формулировки «**Title:**» и пропустил
+// хвост, который срезалка тоже пропускала (ревью того же дня).
+const SERVICE = SERVICE_MARKER
 
 describe('гигиена статей', () => {
   it('статьи вообще нашлись', () => {
