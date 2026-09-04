@@ -12,6 +12,7 @@
 // Второй источник нужен ровно ради STOP-листа: если ключ уже закреплён за чужой
 // страницей, новая статья по нему конкурирует с собственным сайтом.
 
+import { boldKeyOccurrences, countPhraseForms, keyDefinitionOpener } from './keyword-match.js'
 import fs from 'fs'
 import path from 'path'
 import { type LsiSelection, MAX_MAIN_KEY_USES, modifierWords, stems } from './lsi.js'
@@ -46,7 +47,9 @@ export interface TechSpec {
   metaTitle: string
   metaDesc: string
   maxMainKeyUses: number
-  // Точные вхождения: фраза и сколько раз она обязана встретиться дословно.
+  // Обязательные фразы: сколько раз каждая обязана встретиться — в любой
+  // грамматической форме и порядке слов (с 04.09.2026; до того дословно).
+  // Имя поля осталось: оно часть JSON-контракта с агентами analyst/seo.
   exactPhrases: { phrase: string; uses: number }[]
   // Разбавленные вхождения: смысл раскрывается, дословность не требуется.
   dilutedPhrases: string[]
@@ -262,12 +265,14 @@ export function renderTechSpec(tz: TechSpec): string {
     '',
     'ВХОЖДЕНИЯ',
     `  Точная фраза "${tz.mainKeyword}" — не более ${tz.maxMainKeyUses} раз на всю статью.`,
-    '  Места обязательных вхождений: title, H1, первые 60 слов, первый H2, один ответ',
-    '  FAQ, meta description. Всё сверх — переспам.',
+    '  Дословно — только в title и description. В теле ключ склоняется и меняет',
+    '  порядок слов как в живой речи; в первых 60 словах, в первом H2 и в одном ответе',
+    '  FAQ он присутствует в любой форме. Не выделять ключ жирным. Не открывать',
+    '  статью конструкцией «<ключ> — это …».',
   ]
 
   if (tz.exactPhrases.length) {
-    lines.push('', '  Точные вхождения (дословно, с указанным числом раз):')
+    lines.push('', '  Обязательные фразы (в любой грамматической форме и порядке слов, не реже):')
     for (const p of tz.exactPhrases) lines.push(`    - "${p.phrase}" — ${p.uses} раз`)
   }
 
@@ -327,6 +332,8 @@ export interface SpecViolation {
 // Единственное нарушение, с которым статья не выходит: переспам — это риск фильтра,
 // а не косметика, и опубликованный текст с ним вредит сильнее, чем пропущенный день.
 export const OVERSPAM_RULE = 'Переспам главного ключа'
+export const BOLD_KEY_RULE = 'Ключ выделен жирным'
+export const DEFINITION_OPENER_RULE = 'Статья открывается определением ключа'
 
 /**
  * Механическая часть приёмки: то, что считается регуляркой, считается кодом, а не
@@ -350,14 +357,32 @@ export function checkTechSpec(tz: TechSpec, markdown: string): SpecViolation[] {
     })
   }
 
+  // Обязательные фразы считаются по основам: «образец резюме без опыта работы»
+  // засчитывается за «резюме без опыта работы образец». Дословный счёт заставлял
+  // писателя вставлять форму поисковой строки — и статьи читались как SEO-тексты.
   for (const p of tz.exactPhrases) {
-    const got = countOf(p.phrase)
+    const got = countPhraseForms(markdown, p.phrase)
     if (got < p.uses) {
       violations.push({
-        rule: 'Недобор точного вхождения',
-        detail: `"${p.phrase}" — ${got} из ${p.uses}`,
+        rule: 'Недобор обязательной фразы',
+        detail: `"${p.phrase}" (в любой форме) — ${got} из ${p.uses}`,
       })
     }
+  }
+
+  const bold = boldKeyOccurrences(markdown, tz.mainKeyword)
+  if (bold.length) {
+    violations.push({
+      rule: BOLD_KEY_RULE,
+      detail: `«${bold[0]}» — сними выделение, ключ жирным выдаёт SEO-текст`,
+    })
+  }
+  const opener = keyDefinitionOpener(markdown, tz.mainKeyword)
+  if (opener) {
+    violations.push({
+      rule: DEFINITION_OPENER_RULE,
+      detail: `первое предложение начинается с «${opener}» — открой статью крючком (факт, число, наблюдение), а определение дай внутри первого H2`,
+    })
   }
 
   // Заголовки проверяются отдельно: ключ из STOP-листа в теле статьи допустим и даже

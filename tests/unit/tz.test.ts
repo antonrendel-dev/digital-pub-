@@ -188,10 +188,38 @@ describe('checkTechSpec', () => {
     expect(rules).toContain('Переспам главного ключа')
   })
 
-  it('ловит недобор точного вхождения', () => {
+  it('ловит недобор обязательной фразы', () => {
     const thin = good.replace(/Хорошее резюме таргетолога/, 'Хороший документ')
     const v = checkTechSpec(baseSpec(), thin)
-    expect(v.map((x) => x.rule)).toContain('Недобор точного вхождения')
+    expect(v.map((x) => x.rule)).toContain('Недобор обязательной фразы')
+  })
+
+  it('засчитывает обязательную фразу в другой грамматической форме и порядке слов', () => {
+    const inflected = good.replace(/Хорошее резюме таргетолога/, 'Хорошее резюме для таргетологов')
+    expect(checkTechSpec(baseSpec(), inflected).map((x) => x.rule)).not.toContain(
+      'Недобор обязательной фразы'
+    )
+  })
+
+  it('отклоняет ключ жирным и открытие статьи определением ключа', () => {
+    const bold = good.replace('Резюме таргетолога читают', '**Резюме таргетолога** читают')
+    expect(checkTechSpec(baseSpec(), bold).map((x) => x.rule)).toContain('Ключ выделен жирным')
+
+    const definition = good.replace(
+      'Резюме таргетолога читают восемь секунд.',
+      'Резюме таргетолога — это документ, который читают восемь секунд.'
+    )
+    expect(checkTechSpec(baseSpec(), definition).map((x) => x.rule)).toContain(
+      'Статья открывается определением ключа'
+    )
+    // Определение внутри H2, а не первым предложением статьи — норма (правило D4).
+    const inside = good.replace(
+      'Хорошее резюме таргетолога начинается',
+      'Резюме таргетолога — это документ, который начинается'
+    )
+    expect(checkTechSpec(baseSpec(), inside).map((x) => x.rule)).not.toContain(
+      'Статья открывается определением ключа'
+    )
   })
 
   it('ловит занятый ключ в заголовке, но терпит его в теле', () => {
