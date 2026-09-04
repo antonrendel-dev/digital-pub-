@@ -336,7 +336,7 @@ export default async function ArticlePage({ params }: Props) {
         headline: article.title,
         description: article.description,
         datePublished: article.publishedAt,
-        dateModified: article.publishedAt,
+        dateModified: article.dateModified ?? article.publishedAt,
         author: { '@type': 'Organization', name: 'Диджитал Паб', url: 'https://d-pub.ru' },
         publisher: {
           '@type': 'Organization',
@@ -353,7 +353,7 @@ export default async function ArticlePage({ params }: Props) {
         headline: article.title,
         description: article.description,
         datePublished: article.publishedAt,
-        dateModified: article.publishedAt,
+        dateModified: article.dateModified ?? article.publishedAt,
         author: { '@type': 'Organization', name: 'Диджитал Паб', url: 'https://d-pub.ru' },
         publisher: {
           '@type': 'Organization',
