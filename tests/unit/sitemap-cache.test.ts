@@ -3,6 +3,22 @@ import { cachedShard, resetShardCache } from '../../lib/sitemap/cache'
 beforeEach(() => resetShardCache())
 
 describe('cachedShard', () => {
+  it('свой TTL: после него пересобирает, до него — нет', async () => {
+    jest.useFakeTimers()
+    try {
+      const build = jest.fn().mockResolvedValue(['a'])
+      await cachedShard('short', build, 60 * 1000)
+      jest.advanceTimersByTime(59 * 1000)
+      await cachedShard('short', build, 60 * 1000)
+      expect(build).toHaveBeenCalledTimes(1)
+      jest.advanceTimersByTime(2 * 1000)
+      await cachedShard('short', build, 60 * 1000)
+      expect(build).toHaveBeenCalledTimes(2)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
   it('второй вызов в пределах TTL не пересобирает', async () => {
     const build = jest.fn().mockResolvedValue(['a'])
     expect(await cachedShard('k', build)).toEqual(['a'])

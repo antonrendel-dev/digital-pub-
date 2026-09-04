@@ -52,7 +52,16 @@ async function refreshGoneSlugs(origin: string): Promise<void> {
 export async function middleware(request: NextRequest) {
   const match = VACANCY_PATH.exec(request.nextUrl.pathname)
   if (match) {
-    const slug = decodeURIComponent(match[1])
+    let slug: string
+    try {
+      slug = decodeURIComponent(match[1])
+    } catch {
+      // Битая percent-последовательность (/vacancies/smm/%E0) роняла посредника
+      // в 500 — роботы читали это как нестабильность сайта. Такого адреса нет:
+      // rewrite на несуществующий путь рендерит not-found со статусом 404 (статус
+      // из init для rewrite Next отбрасывает; NextResponse.next() дал бы 400).
+      return withPushHeader(NextResponse.rewrite(new URL('/404', request.url)))
+    }
     if (FILTER_SLUGS.has(slug)) return withPushHeader(NextResponse.next())
     await refreshGoneSlugs(request.nextUrl.origin)
     if (goneSlugs.has(slug)) {

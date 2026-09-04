@@ -23,9 +23,13 @@ interface Entry<T> {
 
 const store = new Map<string, Entry<unknown>>()
 
-export async function cachedShard<T>(key: string, build: () => Promise<T>): Promise<T> {
+export async function cachedShard<T>(
+  key: string,
+  build: () => Promise<T>,
+  ttlMs: number = TTL_MS
+): Promise<T> {
   const hit = store.get(key) as Entry<T> | undefined
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.value
+  if (hit && Date.now() - hit.at < ttlMs) return hit.value
 
   try {
     const value = await build()
@@ -35,7 +39,7 @@ export async function cachedShard<T>(key: string, build: () => Promise<T>): Prom
     // Протухшая, но настоящая выдача лучше пустой: пустой сайтмап читается как
     // «этих страниц больше нет».
     if (hit) {
-      console.warn(`[sitemap:${key}] сборка не удалась, отдаю прошлую удачную`)
+      console.warn(`[cache:${key}] сборка не удалась, отдаю прошлую удачную`)
       return hit.value
     }
     throw e

@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { listedSince } from '@/lib/vacancy-lifecycle'
+import { cachedShard } from '@/lib/sitemap/cache'
+
+/** Список меняется раз в сутки, а эндпоинт публичный: минута кэша снимает нагрузку с базы. */
+const CACHE_TTL_MS = 60 * 1000
 
 /**
  * Слаги вакансий, которым пора отдавать 410.
@@ -13,23 +17,30 @@ import { listedSince } from '@/lib/vacancy-lifecycle'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+async function loadGoneSlugs(): Promise<string[]> {
+  const payload = await getPayload({ config })
+  const result = await payload.find({
+    collection: 'posts',
+    where: {
+      status: { equals: 'published' },
+      type: { equals: 'vacancy' },
+      createdAt: { less_than: listedSince().toISOString() },
+    },
+    limit: 5000,
+    depth: 0,
+    select: { slug: true },
+  })
+  return (result.docs as unknown as { slug: string | null }[])
+    .map((doc) => doc.slug)
+    .filter((slug): slug is string => Boolean(slug))
+}
+
 export async function GET() {
   try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'posts',
-      where: {
-        status: { equals: 'published' },
-        type: { equals: 'vacancy' },
-        createdAt: { less_than: listedSince().toISOString() },
-      },
-      limit: 5000,
-      depth: 0,
-      select: { slug: true },
-    })
-    const slugs = (result.docs as unknown as { slug: string | null }[])
-      .map((doc) => doc.slug)
-      .filter((slug): slug is string => Boolean(slug))
+    // Публичный маршрут без кэша в приложении — усилитель нагрузки на Postgres:
+    // каждый хит был запросом с limit 5000. cachedShard при сбое базы отдаёт
+    // прошлый удачный список, а не пустоту.
+    const slugs = await cachedShard('gone-vacancies', loadGoneSlugs, CACHE_TTL_MS)
 
     return NextResponse.json(
       { slugs },

@@ -20,16 +20,24 @@ if (!payloadSecret || payloadSecret.length < 32) {
   )
 }
 
+// Origin без пути и без слэша на конце: Payload сравнивает заголовок Origin с
+// этим списком через includes, «https://d-pub.ru/» не совпал бы никогда.
+const TRUSTED_ORIGINS = [
+  'https://d-pub.ru',
+  'https://staging.d-pub.ru',
+  ...(process.env.NEXT_PUBLIC_SERVER_URL ? [process.env.NEXT_PUBLIC_SERVER_URL] : []),
+].map((o) => o.replace(/\/+$/, ''))
+
 export default buildConfig({
   serverURL:
     process.env.NEXT_PUBLIC_SERVER_URL ||
     (process.env.PAYLOAD_PUSH_DB === 'true' ? 'https://staging.d-pub.ru' : 'https://d-pub.ru'),
   secret: payloadSecret,
-  cors: [
-    'https://d-pub.ru',
-    'https://staging.d-pub.ru',
-    ...(process.env.NEXT_PUBLIC_SERVER_URL ? [process.env.NEXT_PUBLIC_SERVER_URL] : []),
-  ],
+  cors: TRUSTED_ORIGINS,
+  // csrf намеренно не задан: Payload сам кладёт в него serverURL (config/sanitize.js),
+  // и cookie-токен админки принимается только с боевого Origin. Добавить сюда
+  // staging.d-pub.ru значило бы пустить боевую cookie (SameSite=Lax, один site)
+  // с запросом со staging-страницы — аудит 04.09.2026, ревью S20.
   editor: lexicalEditor({}),
   db: postgresAdapter({
     pool: {

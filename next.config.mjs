@@ -5,6 +5,8 @@ const nextConfig = {
   distDir: process.env.NEXT_BUILD_DIR || '.next',
   trailingSlash: false,
   compress: true,
+  // «x-powered-by: Next.js, Payload» в каждом ответе — подсказка сканерам, пользы нет.
+  poweredByHeader: false,
   experimental: {
     optimizePackageImports: ['sanitize-html', 'next-mdx-remote'],
     staleTimes: {

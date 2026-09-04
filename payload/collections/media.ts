@@ -9,8 +9,10 @@ export const Media: CollectionConfig = {
   upload: {
     // Files stored in public/uploads — served as /uploads/<filename> by Next.js static file handling
     staticDir: 'public/uploads',
-    // Files are served at /uploads/<filename> via Next.js public directory static serving
-    mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'],
+    // Files are served at /uploads/<filename> via Next.js public directory static serving.
+    // SVG не принимается: он отдаётся с домена под общим CSP с unsafe-inline,
+    // то есть скрипт внутри картинки — это XSS на d-pub.ru. В uploads ни одного svg нет.
+    mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
   },
   access: {
     read: () => true,
