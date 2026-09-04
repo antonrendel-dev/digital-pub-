@@ -2309,7 +2309,9 @@ async function waitForPage(url, timeoutMs = 12 * 6e4) {
     try {
       const res = await fetch(url, { redirect: "follow" });
       if (res.ok) {
-        console.log(`[writer] \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}, ${Math.round((Date.now() - started) / 1e3)} \u0441)`);
+        console.log(
+          `[writer] \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}, ${Math.round((Date.now() - started) / 1e3)} \u0441)`
+        );
         return true;
       }
     } catch {
@@ -2428,7 +2430,8 @@ ${e.message}`);
   let announced;
   try {
     const live = await waitForPage(articleUrl);
-    if (!live) console.warn("[writer] \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043D\u0435 \u043F\u043E\u0434\u043D\u044F\u043B\u0430\u0441\u044C \u0437\u0430 \u043E\u0442\u0432\u0435\u0434\u0451\u043D\u043D\u043E\u0435 \u0432\u0440\u0435\u043C\u044F, \u0430\u043D\u043E\u043D\u0441\u0438\u0440\u0443\u044E \u043A\u0430\u043A \u0435\u0441\u0442\u044C");
+    if (!live)
+      console.warn("[writer] \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043D\u0435 \u043F\u043E\u0434\u043D\u044F\u043B\u0430\u0441\u044C \u0437\u0430 \u043E\u0442\u0432\u0435\u0434\u0451\u043D\u043D\u043E\u0435 \u0432\u0440\u0435\u043C\u044F, \u0430\u043D\u043E\u043D\u0441\u0438\u0440\u0443\u044E \u043A\u0430\u043A \u0435\u0441\u0442\u044C");
     const heroPath = imageUrl ? path8.join(process.cwd(), "public", imageUrl.replace(/^\//, "")) : void 0;
     await announceToChannel(articleUrl, heroPath);
     announced = "\u{1F4E3} \u0410\u043D\u043E\u043D\u0441 \u0432 \u043A\u0430\u043D\u0430\u043B\u0435: \u2705";

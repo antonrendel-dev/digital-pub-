@@ -1,3 +1,7 @@
+// lib/telegram.ts
+import fs from "fs";
+import path from "path";
+
 // lib/announce.ts
 var ANNOUNCE_CHANNEL = "@web_vacancy";
 function announceText(url) {
@@ -13,7 +17,14 @@ if (!BOT_TOKEN) throw new Error("BOT_TOKEN not set");
 if (!CHAT_ID) throw new Error("SEO_LAB_CHAT_ID not set");
 var API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 var CHANNEL = process.env.CONTENT_CHANNEL || ANNOUNCE_CHANNEL;
-async function announceToChannel(url) {
+async function announceToChannel(url, imagePath) {
+  if (imagePath && fs.existsSync(imagePath)) {
+    try {
+      return await announceWithPhoto(url, imagePath);
+    } catch (e) {
+      console.warn(`    \u26A0 \u0430\u043D\u043E\u043D\u0441 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u043E\u0439 \u043D\u0435 \u0443\u0448\u0451\u043B (${e.message}), \u0448\u043B\u044E \u0441\u0441\u044B\u043B\u043A\u043E\u0439`);
+    }
+  }
   const text = announceText(url);
   const res = await fetch(`${API}/sendMessage`, {
     method: "POST",
@@ -26,6 +37,16 @@ async function announceToChannel(url) {
   });
   const data = await res.json();
   if (!data.ok) throw new Error(`Telegram (\u043A\u0430\u043D\u0430\u043B): ${data.description}`);
+  return data.result.message_id;
+}
+async function announceWithPhoto(url, imagePath) {
+  const form = new FormData();
+  form.append("chat_id", CHANNEL);
+  form.append("caption", announceText(url));
+  form.append("photo", new Blob([fs.readFileSync(imagePath)]), path.basename(imagePath));
+  const res = await fetch(`${API}/sendPhoto`, { method: "POST", body: form });
+  const data = await res.json();
+  if (!data.ok) throw new Error(`Telegram (\u043A\u0430\u043D\u0430\u043B, \u0444\u043E\u0442\u043E): ${data.description}`);
   return data.result.message_id;
 }
 async function sendMessage(text, extra = {}) {
