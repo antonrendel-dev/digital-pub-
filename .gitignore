@@ -65,3 +65,6 @@ generated/prisma/
 # Local files / backups (never commit)
 _files/
 scripts/topvisor-positions.ts
+
+# Лок бота завода (S9): живёт только во время запуска скрипта
+scripts/content-factory/data/.bot-script.lock

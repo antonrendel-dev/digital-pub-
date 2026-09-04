@@ -81,6 +81,13 @@ function stripRoleTag(text) {
   return text.replace(ROLE_TAG_RE, "");
 }
 
+// lib/bot-guard.ts
+var SLUG_RE = /^[a-z0-9-]{3,120}$/;
+function isValidSlug(slug2) {
+  return SLUG_RE.test(slug2);
+}
+var LOCK_TTL_MS = 3 * 60 * 60 * 1e3;
+
 // regen.ts
 var SCRIPTS_DIR = path2.dirname(new URL(import.meta.url).pathname);
 var PROJECT_ROOT = path2.resolve(SCRIPTS_DIR, "../..");
@@ -112,6 +119,10 @@ var slug = process.argv[2];
 var customPrompt = process.argv.slice(3).join(" ").trim() || null;
 if (!slug) {
   console.error("\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: node regen.compiled.js <slug> [\u043F\u043E\u0436\u0435\u043B\u0430\u043D\u0438\u044F \u043A \u0441\u0446\u0435\u043D\u0435]");
+  process.exit(1);
+}
+if (!isValidSlug(slug)) {
+  console.error(`[regen] \u043D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 slug: ${JSON.stringify(slug)} \u2014 \u0442\u043E\u043B\u044C\u043A\u043E [a-z0-9-], 3\u2013120 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432`);
   process.exit(1);
 }
 function convertToWebP(srcPng, destWebp) {

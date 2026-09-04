@@ -15,6 +15,7 @@
 import { spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import { type LockInfo, ScriptLock, escapeHtml, isValidSlug } from './lib/bot-guard.js'
 
 const BOT_TOKEN = process.env.CONTENT_BOT_TOKEN
 const ALLOWED_USER_IDS = (process.env.ALLOWED_USER_IDS || '')
@@ -28,6 +29,11 @@ if (!BOT_TOKEN) throw new Error('CONTENT_BOT_TOKEN не задан')
 const API = `https://api.telegram.org/bot${BOT_TOKEN}`
 const SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
 const DATA_DIR = path.join(SCRIPTS_DIR, 'data')
+// Один активный процесс завода на бота: второй запрос получает «уже идёт задача».
+const scriptLock = new ScriptLock(path.join(DATA_DIR, '.bot-script.lock'))
+if (ALLOWED_USER_IDS.length === 0) {
+  console.warn('[content-bot] ALLOWED_USER_IDS пуст — команды не принимаются ни от кого')
+}
 
 interface Topic {
   id: number
@@ -48,7 +54,11 @@ async function tgPost(method: string, body: Record<string, unknown>): Promise<un
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  return res.json()
+  const data = (await res.json()) as { ok?: boolean; description?: string }
+  // Отказ Bot API (чаще всего «can't parse entities») раньше терялся молча:
+  // бот выглядел живым, а ответы не доходили.
+  if (data.ok === false) console.error(`[content-bot] ${method}: ${data.description ?? 'ok=false'}`)
+  return data
 }
 
 async function reply(chatId: number, threadId: number | undefined, text: string): Promise<void> {
@@ -110,8 +120,9 @@ function getQueueSummary(topicsFile: string): string {
     return `📭 Одобренных тем нет. Опубликовано: ${published.length}. Ожидают одобрения: ${pending.length}.`
   }
 
+  // Название и ключ пишет аналитик (модель): «&» или «<» в теме ломали разметку всего ответа.
   const lines = approvedNotPublished.map(
-    (t, i) => `${i + 1}. #${t.id} <b>${t.title}</b>\n   🔑 ${t.keyword}`
+    (t, i) => `${i + 1}. #${t.id} <b>${escapeHtml(t.title)}</b>\n   🔑 ${escapeHtml(t.keyword)}`
   )
   return (
     `📋 <b>Очередь публикаций (${approvedNotPublished.length} тем):</b>\n\n` +
@@ -122,7 +133,7 @@ function getQueueSummary(topicsFile: string): string {
 
 // ─── Script runner ──────────────────────────────────────────────────────────
 
-function runScript(script: string, args: string[]): Promise<void> {
+function runScript(script: string, args: string[], onSpawn?: (pid: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(SCRIPTS_DIR, `${script}.compiled.js`)
     const child = spawn('node', [scriptPath, ...args], {
@@ -130,11 +141,67 @@ function runScript(script: string, args: string[]): Promise<void> {
       env: process.env,
       stdio: 'inherit',
     })
+    if (child.pid && onSpawn) onSpawn(child.pid)
     child.on('close', (code) => {
       if (code === 0) resolve()
       else reject(new Error(`${script} вышел с кодом ${code}`))
     })
     child.on('error', reject)
+  })
+}
+
+async function replyBusy(chatId: number, threadId: number | undefined, busy: LockInfo) {
+  const started = Date.parse(busy.startedAt)
+  const since = Number.isFinite(started)
+    ? ` (с ${new Date(started).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit' })} МСК)`
+    : ''
+  await reply(
+    chatId,
+    threadId,
+    `⏳ Уже идёт задача <b>${escapeHtml(busy.label)}</b>${since}. Дождитесь её завершения.`
+  )
+}
+
+/** Проверка до сообщения «Запускаю…»: занято — отвечаем и не запускаем. */
+async function refuseIfBusy(chatId: number, threadId: number | undefined): Promise<boolean> {
+  const busy = scriptLock.holder()
+  if (!busy) return false
+  await replyBusy(chatId, threadId, busy)
+  return true
+}
+
+/**
+ * Запуск под локом: пока один скрипт работает, второй не стартует, а бот
+ * отвечает, что именно идёт. Ответ «занято» — через reply, чтобы форма
+ * сообщений команд не менялась.
+ */
+async function runLocked(
+  chatId: number,
+  threadId: number | undefined,
+  label: string,
+  script: string,
+  args: string[]
+): Promise<boolean> {
+  const busy = scriptLock.acquire(label)
+  if (busy) {
+    await replyBusy(chatId, threadId, busy)
+    return false
+  }
+  try {
+    // В файле лока — pid ребёнка: он и должен пережить рестарт бота, а не сам бот.
+    await runScript(script, args, (pid) => scriptLock.attachPid(pid))
+  } finally {
+    scriptLock.release()
+  }
+  return true
+}
+
+// systemctl restart шлёт SIGTERM: finally не выполнится, файл лока остался бы
+// с pid убитого ребёнка. Снимаем сами и выходим.
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    scriptLock.release()
+    process.exit(0)
   })
 }
 
@@ -154,9 +221,10 @@ async function handleMessage(msg: {
 
   if (!text.startsWith('/')) return
 
-  // Auth check
-  if (ALLOWED_USER_IDS.length > 0 && userId && !ALLOWED_USER_IDS.includes(userId)) {
-    await reply(chatId, threadId, '❌ Нет доступа.')
+  // Auth check: апдейт без отправителя или не из списка — молча мимо.
+  // Пустой список означает «никому», а не «всем».
+  if (!userId || !ALLOWED_USER_IDS.includes(userId)) {
+    if (userId) await reply(chatId, threadId, '❌ Нет доступа.')
     return
   }
 
@@ -183,9 +251,10 @@ async function handleMessage(msg: {
   }
 
   if (command === '/content_plan') {
+    if (await refuseIfBusy(chatId, threadId)) return
     await reply(chatId, threadId, '📊 Запускаю аналитика...\n\nЭто займёт ~30 секунд.')
-    runScript('analyst', []).catch(async (e) => {
-      await reply(chatId, threadId, `❌ Ошибка аналитика:\n${e.message}`)
+    runLocked(chatId, threadId, 'аналитик', 'analyst', []).catch(async (e) => {
+      await reply(chatId, threadId, `❌ Ошибка аналитика:\n${escapeHtml(e.message)}`)
     })
     return
   }
@@ -245,9 +314,10 @@ async function handleMessage(msg: {
       await reply(chatId, threadId, 'Использование: <code>/content_write 5</code>')
       return
     }
+    if (await refuseIfBusy(chatId, threadId)) return
     await reply(chatId, threadId, `⚡ Запускаю немедленную генерацию темы #${num}...`)
-    runScript('writer', [num]).catch(async (e) => {
-      await reply(chatId, threadId, `❌ Ошибка writer для темы #${num}:\n${e.message}`)
+    runLocked(chatId, threadId, `статья #${num}`, 'writer', [num]).catch(async (e) => {
+      await reply(chatId, threadId, `❌ Ошибка writer для темы #${num}:\n${escapeHtml(e.message)}`)
     })
     return
   }
@@ -265,19 +335,40 @@ async function handleMessage(msg: {
       )
       return
     }
+    if (!isValidSlug(slug)) {
+      await reply(
+        chatId,
+        threadId,
+        `❌ Неверный slug: <code>${escapeHtml(slug)}</code>. Только строчные латинские буквы, цифры и дефис.`
+      )
+      return
+    }
     const customScene = args.slice(1).join(' ').trim()
-    const hint = customScene ? `\nСцена: <i>${customScene}</i>` : ''
+    const hint = customScene ? `\nСцена: <i>${escapeHtml(customScene)}</i>` : ''
+    if (await refuseIfBusy(chatId, threadId)) return
     await reply(
       chatId,
       threadId,
       `🎨 Перегенерирую картинку для <code>${slug}</code>...${hint}\n\nЭто займёт ~3 минуты.`
     )
-    runScript('regen', customScene ? [slug, customScene] : [slug])
-      .then(async () => {
-        await reply(chatId, threadId, `✅ Картинка обновлена!\n\nhttps://d-pub.ru/articles/${slug}`)
+    runLocked(
+      chatId,
+      threadId,
+      `картинка ${slug}`,
+      'regen',
+      customScene ? [slug, customScene] : [slug]
+    )
+      .then(async (started) => {
+        if (started) {
+          await reply(
+            chatId,
+            threadId,
+            `✅ Картинка обновлена!\n\nhttps://d-pub.ru/articles/${slug}`
+          )
+        }
       })
       .catch(async (e) => {
-        await reply(chatId, threadId, `❌ Ошибка:\n${e.message}`)
+        await reply(chatId, threadId, `❌ Ошибка:\n${escapeHtml(e.message)}`)
       })
     return
   }

@@ -1,20 +1,102 @@
 // content-bot.ts
 import { spawn } from "child_process";
-import fs from "fs";
+import fs2 from "fs";
 import path from "path";
+
+// lib/bot-guard.ts
+import fs from "fs";
+var SLUG_RE = /^[a-z0-9-]{3,120}$/;
+function isValidSlug(slug) {
+  return SLUG_RE.test(slug);
+}
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+var LOCK_TTL_MS = 3 * 60 * 60 * 1e3;
+var ScriptLock = class {
+  constructor(lockFile, isAlive = defaultIsAlive) {
+    this.lockFile = lockFile;
+    this.isAlive = isAlive;
+  }
+  lockFile;
+  isAlive;
+  current = null;
+  /** Кто держит лок, если он занят; null — свободно. */
+  holder(now = Date.now()) {
+    if (this.current) return this.current;
+    const onDisk = this.readFile();
+    if (!onDisk || !this.isAlive(onDisk.pid)) return null;
+    const age = now - Date.parse(onDisk.startedAt);
+    if (!Number.isFinite(age) || age > LOCK_TTL_MS) return null;
+    return onDisk;
+  }
+  /** Записать pid ребёнка: после рестарта бота лок должен пережить именно его. */
+  attachPid(pid) {
+    if (!this.current) return;
+    this.current = { ...this.current, pid };
+    this.writeFile(this.current);
+  }
+  /** Захватить лок. Возвращает держателя, если занято, иначе null. */
+  acquire(label, pid = process.pid) {
+    const busy = this.holder();
+    if (busy) return busy;
+    const info = { label, pid, startedAt: (/* @__PURE__ */ new Date()).toISOString() };
+    this.current = info;
+    this.writeFile(info);
+    return null;
+  }
+  writeFile(info) {
+    try {
+      fs.writeFileSync(this.lockFile, JSON.stringify(info));
+    } catch {
+    }
+  }
+  release() {
+    this.current = null;
+    try {
+      fs.unlinkSync(this.lockFile);
+    } catch {
+    }
+  }
+  readFile() {
+    try {
+      const raw = JSON.parse(fs.readFileSync(this.lockFile, "utf8"));
+      if (typeof raw.pid !== "number" || typeof raw.label !== "string") return null;
+      return { label: raw.label, pid: raw.pid, startedAt: raw.startedAt ?? "" };
+    } catch {
+      return null;
+    }
+  }
+};
+function defaultIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// content-bot.ts
 var BOT_TOKEN = process.env.CONTENT_BOT_TOKEN;
 var ALLOWED_USER_IDS = (process.env.ALLOWED_USER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean).map(Number);
 if (!BOT_TOKEN) throw new Error("CONTENT_BOT_TOKEN \u043D\u0435 \u0437\u0430\u0434\u0430\u043D");
 var API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 var SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname);
 var DATA_DIR = path.join(SCRIPTS_DIR, "data");
+var scriptLock = new ScriptLock(path.join(DATA_DIR, ".bot-script.lock"));
+if (ALLOWED_USER_IDS.length === 0) {
+  console.warn("[content-bot] ALLOWED_USER_IDS \u043F\u0443\u0441\u0442 \u2014 \u043A\u043E\u043C\u0430\u043D\u0434\u044B \u043D\u0435 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u044E\u0442\u0441\u044F \u043D\u0438 \u043E\u0442 \u043A\u043E\u0433\u043E");
+}
 async function tgPost(method, body) {
   const res = await fetch(`${API}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
-  return res.json();
+  const data = await res.json();
+  if (data.ok === false) console.error(`[content-bot] ${method}: ${data.description ?? "ok=false"}`);
+  return data;
 }
 async function reply(chatId, threadId, text) {
   const body = {
@@ -27,12 +109,12 @@ async function reply(chatId, threadId, text) {
   await tgPost("sendMessage", body);
 }
 function getLatestTopicsFile() {
-  if (!fs.existsSync(DATA_DIR)) return null;
-  const files = fs.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).sort().reverse();
+  if (!fs2.existsSync(DATA_DIR)) return null;
+  const files = fs2.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).sort().reverse();
   return files.length ? path.join(DATA_DIR, files[0]) : null;
 }
 function approveTopics(topicsFile, ids) {
-  const raw = JSON.parse(fs.readFileSync(topicsFile, "utf-8"));
+  const raw = JSON.parse(fs2.readFileSync(topicsFile, "utf-8"));
   const approved = [];
   const notFound = [];
   for (const id of ids) {
@@ -44,11 +126,11 @@ function approveTopics(topicsFile, ids) {
       notFound.push(id);
     }
   }
-  fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2));
+  fs2.writeFileSync(topicsFile, JSON.stringify(raw, null, 2));
   return { approved, notFound };
 }
 function getQueueSummary(topicsFile) {
-  const { topics } = JSON.parse(fs.readFileSync(topicsFile, "utf-8"));
+  const { topics } = JSON.parse(fs2.readFileSync(topicsFile, "utf-8"));
   const approvedNotPublished = topics.filter((t) => t.approved && !t.published);
   const published = topics.filter((t) => t.published);
   const pending = topics.filter((t) => !t.approved && !t.published);
@@ -56,8 +138,8 @@ function getQueueSummary(topicsFile) {
     return `\u{1F4ED} \u041E\u0434\u043E\u0431\u0440\u0435\u043D\u043D\u044B\u0445 \u0442\u0435\u043C \u043D\u0435\u0442. \u041E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043E: ${published.length}. \u041E\u0436\u0438\u0434\u0430\u044E\u0442 \u043E\u0434\u043E\u0431\u0440\u0435\u043D\u0438\u044F: ${pending.length}.`;
   }
   const lines = approvedNotPublished.map(
-    (t, i) => `${i + 1}. #${t.id} <b>${t.title}</b>
-   \u{1F511} ${t.keyword}`
+    (t, i) => `${i + 1}. #${t.id} <b>${escapeHtml(t.title)}</b>
+   \u{1F511} ${escapeHtml(t.keyword)}`
   );
   return `\u{1F4CB} <b>\u041E\u0447\u0435\u0440\u0435\u0434\u044C \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u0439 (${approvedNotPublished.length} \u0442\u0435\u043C):</b>
 
@@ -65,7 +147,7 @@ function getQueueSummary(topicsFile) {
 
 \u23F0 \u041F\u0443\u0431\u043B\u0438\u043A\u0443\u0435\u0442\u0441\u044F \u043F\u043D/\u0441\u0440/\u043F\u0442 \u0432 09:00 \u041C\u0421\u041A`;
 }
-function runScript(script, args) {
+function runScript(script, args, onSpawn) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(SCRIPTS_DIR, `${script}.compiled.js`);
     const child = spawn("node", [scriptPath, ...args], {
@@ -73,11 +155,46 @@ function runScript(script, args) {
       env: process.env,
       stdio: "inherit"
     });
+    if (child.pid && onSpawn) onSpawn(child.pid);
     child.on("close", (code) => {
       if (code === 0) resolve();
       else reject(new Error(`${script} \u0432\u044B\u0448\u0435\u043B \u0441 \u043A\u043E\u0434\u043E\u043C ${code}`));
     });
     child.on("error", reject);
+  });
+}
+async function replyBusy(chatId, threadId, busy) {
+  const started = Date.parse(busy.startedAt);
+  const since = Number.isFinite(started) ? ` (\u0441 ${new Date(started).toLocaleTimeString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" })} \u041C\u0421\u041A)` : "";
+  await reply(
+    chatId,
+    threadId,
+    `\u23F3 \u0423\u0436\u0435 \u0438\u0434\u0451\u0442 \u0437\u0430\u0434\u0430\u0447\u0430 <b>${escapeHtml(busy.label)}</b>${since}. \u0414\u043E\u0436\u0434\u0438\u0442\u0435\u0441\u044C \u0435\u0451 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F.`
+  );
+}
+async function refuseIfBusy(chatId, threadId) {
+  const busy = scriptLock.holder();
+  if (!busy) return false;
+  await replyBusy(chatId, threadId, busy);
+  return true;
+}
+async function runLocked(chatId, threadId, label, script, args) {
+  const busy = scriptLock.acquire(label);
+  if (busy) {
+    await replyBusy(chatId, threadId, busy);
+    return false;
+  }
+  try {
+    await runScript(script, args, (pid) => scriptLock.attachPid(pid));
+  } finally {
+    scriptLock.release();
+  }
+  return true;
+}
+for (const signal of ["SIGTERM", "SIGINT"]) {
+  process.on(signal, () => {
+    scriptLock.release();
+    process.exit(0);
   });
 }
 async function handleMessage(msg) {
@@ -86,8 +203,8 @@ async function handleMessage(msg) {
   const threadId = msg.message_thread_id;
   const text = (msg.text || "").trim();
   if (!text.startsWith("/")) return;
-  if (ALLOWED_USER_IDS.length > 0 && userId && !ALLOWED_USER_IDS.includes(userId)) {
-    await reply(chatId, threadId, "\u274C \u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430.");
+  if (!userId || !ALLOWED_USER_IDS.includes(userId)) {
+    if (userId) await reply(chatId, threadId, "\u274C \u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430.");
     return;
   }
   const [cmd, ...args] = text.split(/\s+/);
@@ -113,10 +230,11 @@ async function handleMessage(msg) {
     return;
   }
   if (command === "/content_plan") {
+    if (await refuseIfBusy(chatId, threadId)) return;
     await reply(chatId, threadId, "\u{1F4CA} \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430...\n\n\u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~30 \u0441\u0435\u043A\u0443\u043D\u0434.");
-    runScript("analyst", []).catch(async (e) => {
+    runLocked(chatId, threadId, "\u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A", "analyst", []).catch(async (e) => {
       await reply(chatId, threadId, `\u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A\u0430:
-${e.message}`);
+${escapeHtml(e.message)}`);
     });
     return;
   }
@@ -150,10 +268,10 @@ ${e.message}`);
       await reply(chatId, threadId, "\u274C \u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0417\u0430\u043F\u0443\u0441\u0442\u0438 <code>/content_plan</code>");
       return;
     }
-    const raw = JSON.parse(fs.readFileSync(topicsFile, "utf-8"));
+    const raw = JSON.parse(fs2.readFileSync(topicsFile, "utf-8"));
     const pending = raw.topics.filter((t) => !t.published);
     pending.forEach((t) => t.approved = true);
-    fs.writeFileSync(topicsFile, JSON.stringify(raw, null, 2));
+    fs2.writeFileSync(topicsFile, JSON.stringify(raw, null, 2));
     await reply(
       chatId,
       threadId,
@@ -171,10 +289,11 @@ ${e.message}`);
       await reply(chatId, threadId, "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u0438\u0435: <code>/content_write 5</code>");
       return;
     }
+    if (await refuseIfBusy(chatId, threadId)) return;
     await reply(chatId, threadId, `\u26A1 \u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E \u043D\u0435\u043C\u0435\u0434\u043B\u0435\u043D\u043D\u0443\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u0442\u0435\u043C\u044B #${num}...`);
-    runScript("writer", [num]).catch(async (e) => {
+    runLocked(chatId, threadId, `\u0441\u0442\u0430\u0442\u044C\u044F #${num}`, "writer", [num]).catch(async (e) => {
       await reply(chatId, threadId, `\u274C \u041E\u0448\u0438\u0431\u043A\u0430 writer \u0434\u043B\u044F \u0442\u0435\u043C\u044B #${num}:
-${e.message}`);
+${escapeHtml(e.message)}`);
     });
     return;
   }
@@ -188,9 +307,18 @@ ${e.message}`);
       );
       return;
     }
+    if (!isValidSlug(slug)) {
+      await reply(
+        chatId,
+        threadId,
+        `\u274C \u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 slug: <code>${escapeHtml(slug)}</code>. \u0422\u043E\u043B\u044C\u043A\u043E \u0441\u0442\u0440\u043E\u0447\u043D\u044B\u0435 \u043B\u0430\u0442\u0438\u043D\u0441\u043A\u0438\u0435 \u0431\u0443\u043A\u0432\u044B, \u0446\u0438\u0444\u0440\u044B \u0438 \u0434\u0435\u0444\u0438\u0441.`
+      );
+      return;
+    }
     const customScene = args.slice(1).join(" ").trim();
     const hint = customScene ? `
-\u0421\u0446\u0435\u043D\u0430: <i>${customScene}</i>` : "";
+\u0421\u0446\u0435\u043D\u0430: <i>${escapeHtml(customScene)}</i>` : "";
+    if (await refuseIfBusy(chatId, threadId)) return;
     await reply(
       chatId,
       threadId,
@@ -198,13 +326,25 @@ ${e.message}`);
 
 \u042D\u0442\u043E \u0437\u0430\u0439\u043C\u0451\u0442 ~3 \u043C\u0438\u043D\u0443\u0442\u044B.`
     );
-    runScript("regen", customScene ? [slug, customScene] : [slug]).then(async () => {
-      await reply(chatId, threadId, `\u2705 \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0430!
+    runLocked(
+      chatId,
+      threadId,
+      `\u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 ${slug}`,
+      "regen",
+      customScene ? [slug, customScene] : [slug]
+    ).then(async (started) => {
+      if (started) {
+        await reply(
+          chatId,
+          threadId,
+          `\u2705 \u041A\u0430\u0440\u0442\u0438\u043D\u043A\u0430 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u0430!
 
-https://d-pub.ru/articles/${slug}`);
+https://d-pub.ru/articles/${slug}`
+        );
+      }
     }).catch(async (e) => {
       await reply(chatId, threadId, `\u274C \u041E\u0448\u0438\u0431\u043A\u0430:
-${e.message}`);
+${escapeHtml(e.message)}`);
     });
     return;
   }

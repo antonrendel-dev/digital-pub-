@@ -10,6 +10,7 @@ import path from 'path'
 import { FACTORY_MODEL } from './lib/model.js'
 import { buildAgentCommand } from './lib/agent-cli.js'
 import { stripRoleTag } from './lib/agent-role.js'
+import { isValidSlug } from './lib/bot-guard.js'
 
 const SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
 const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '../..')
@@ -44,6 +45,12 @@ const customPrompt = process.argv.slice(3).join(' ').trim() || null
 
 if (!slug) {
   console.error('Использование: node regen.compiled.js <slug> [пожелания к сцене]')
+  process.exit(1)
+}
+// Слаг уходит в path.join и дальше в git push: «../x» писал бы файл вне
+// content/articles. Проверка стоит и в боте, и здесь — скрипт зовут и руками.
+if (!isValidSlug(slug)) {
+  console.error(`[regen] неверный slug: ${JSON.stringify(slug)} — только [a-z0-9-], 3–120 символов`)
   process.exit(1)
 }
 
