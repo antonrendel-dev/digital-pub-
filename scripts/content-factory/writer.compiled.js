@@ -1,8 +1,8 @@
 // writer.ts
 import { execSync, spawn as spawn2 } from "child_process";
-import fs7 from "fs";
+import fs8 from "fs";
 import os4 from "os";
-import path7 from "path";
+import path8 from "path";
 
 // lib/lsi.ts
 var MAX_MAIN_KEY_USES = 6;
@@ -472,6 +472,8 @@ ${rows}`;
 }
 
 // lib/telegram.js
+import fs5 from "fs";
+import path6 from "path";
 var ANNOUNCE_CHANNEL = "@web_vacancy";
 function announceText(url) {
   return `\u0427\u0438\u0442\u0430\u0439\u0442\u0435 \u043D\u043E\u0432\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E \u043D\u0430 \u043D\u0430\u0448\u0435\u043C \u0441\u0430\u0439\u0442\u0435 \u{1F447}\u{1F3FB}
@@ -484,7 +486,14 @@ if (!BOT_TOKEN) throw new Error("BOT_TOKEN not set");
 if (!CHAT_ID) throw new Error("SEO_LAB_CHAT_ID not set");
 var API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 var CHANNEL = process.env.CONTENT_CHANNEL || ANNOUNCE_CHANNEL;
-async function announceToChannel(url) {
+async function announceToChannel(url, imagePath) {
+  if (imagePath && fs5.existsSync(imagePath)) {
+    try {
+      return await announceWithPhoto(url, imagePath);
+    } catch (e) {
+      console.warn(`    \u26A0 \u0430\u043D\u043E\u043D\u0441 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u043E\u0439 \u043D\u0435 \u0443\u0448\u0451\u043B (${e.message}), \u0448\u043B\u044E \u0441\u0441\u044B\u043B\u043A\u043E\u0439`);
+    }
+  }
   const text = announceText(url);
   const res = await fetch(`${API}/sendMessage`, {
     method: "POST",
@@ -497,6 +506,16 @@ async function announceToChannel(url) {
   });
   const data = await res.json();
   if (!data.ok) throw new Error(`Telegram (\u043A\u0430\u043D\u0430\u043B): ${data.description}`);
+  return data.result.message_id;
+}
+async function announceWithPhoto(url, imagePath) {
+  const form = new FormData();
+  form.append("chat_id", CHANNEL);
+  form.append("caption", announceText(url));
+  form.append("photo", new Blob([fs5.readFileSync(imagePath)]), path6.basename(imagePath));
+  const res = await fetch(`${API}/sendPhoto`, { method: "POST", body: form });
+  const data = await res.json();
+  if (!data.ok) throw new Error(`Telegram (\u043A\u0430\u043D\u0430\u043B, \u0444\u043E\u0442\u043E): ${data.description}`);
   return data.result.message_id;
 }
 async function sendMessage(text, extra = {}) {
@@ -648,12 +667,12 @@ function loadToken() {
     return null;
   }
 }
-async function call(token, path8, method = "GET") {
-  const res = await fetch(API2 + path8, {
+async function call(token, path9, method = "GET") {
+  const res = await fetch(API2 + path9, {
     method,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
   });
-  if (!res.ok) throw new Error(`Todoist HTTP ${res.status} \u043D\u0430 ${path8}`);
+  if (!res.ok) throw new Error(`Todoist HTTP ${res.status} \u043D\u0430 ${path9}`);
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 }
@@ -686,7 +705,7 @@ async function closeTopicSubtask(topicId) {
 }
 
 // lib/alert.ts
-import fs5 from "fs";
+import fs6 from "fs";
 var FACTORY_DIR = "/home/claude/projects/digital-pub-/scripts/content-factory";
 var LOG_PATH = "/home/claude/projects/digital-pub-/logs/content-factory.log";
 var FLAG_PATH = `${FACTORY_DIR}/data/.alert-sent`;
@@ -696,7 +715,7 @@ function escapeHtml(s) {
 }
 function readLogTail(lines = 10, logPath = LOG_PATH) {
   try {
-    const all = fs5.readFileSync(logPath, "utf-8").split("\n");
+    const all = fs6.readFileSync(logPath, "utf-8").split("\n");
     return all.slice(-lines - 1).join("\n").trim();
   } catch {
     return "";
@@ -704,7 +723,7 @@ function readLogTail(lines = 10, logPath = LOG_PATH) {
 }
 function markAlertSent() {
   try {
-    fs5.writeFileSync(FLAG_PATH, String(Date.now()));
+    fs6.writeFileSync(FLAG_PATH, String(Date.now()));
   } catch {
   }
 }
@@ -744,9 +763,9 @@ async function sendFailureAlert(p) {
 }
 
 // lib/tz.ts
-import fs6 from "fs";
-import path6 from "path";
-var SEMANTICS_RELATIVE_PATH = path6.join("data", "topvisor-semantics.json");
+import fs7 from "fs";
+import path7 from "path";
+var SEMANTICS_RELATIVE_PATH = path7.join("data", "topvisor-semantics.json");
 var VOLUMES_FILE = "semantics-volumes.json";
 var INTENT_STEMS = new Set(
   [
@@ -772,20 +791,20 @@ var INTENT_STEMS = new Set(
   ].map((w) => w.slice(0, 5))
 );
 function loadTopvisorSemantics(file) {
-  if (!fs6.existsSync(file)) {
+  if (!fs7.existsSync(file)) {
     console.warn(`[tz] \u0411\u0430\u043D\u043A \u0441\u0435\u043C\u0430\u043D\u0442\u0438\u043A\u0438 \u0422\u043E\u043F\u0432\u0438\u0437\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D: ${file}. STOP-\u043B\u0438\u0441\u0442 \u0431\u0443\u0434\u0435\u0442 \u043F\u0443\u0441\u0442\u044B\u043C.`);
     return { keywords: [], snapshotDate: "" };
   }
-  const raw = JSON.parse(fs6.readFileSync(file, "utf-8"));
-  const volumes = loadVolumes(path6.join(path6.dirname(file), VOLUMES_FILE));
+  const raw = JSON.parse(fs7.readFileSync(file, "utf-8"));
+  const volumes = loadVolumes(path7.join(path7.dirname(file), VOLUMES_FILE));
   return {
     keywords: (raw.keywords ?? []).map((k) => ({ ...k, volume: volumes.get(k.keyword) ?? null })),
     snapshotDate: raw.snapshotDate ?? ""
   };
 }
 function loadVolumes(file) {
-  if (!fs6.existsSync(file)) return /* @__PURE__ */ new Map();
-  const raw = JSON.parse(fs6.readFileSync(file, "utf-8"));
+  if (!fs7.existsSync(file)) return /* @__PURE__ */ new Map();
+  const raw = JSON.parse(fs7.readFileSync(file, "utf-8"));
   const out = /* @__PURE__ */ new Map();
   for (const [keyword, data] of Object.entries(raw.seeds ?? {})) {
     if (typeof data.volume === "number") out.set(keyword, data.volume);
@@ -1024,20 +1043,20 @@ async function fetchWordstatKeywords(keyword, numPhrases = 20) {
 
 // writer.ts
 var FAQ_MIN_WORDS = 120;
-var DATA_DIR = path7.join(import.meta.dirname, "data");
-var LSI_CACHE_FILE = path7.join(DATA_DIR, "lsi-cache.json");
+var DATA_DIR = path8.join(import.meta.dirname, "data");
+var LSI_CACHE_FILE = path8.join(DATA_DIR, "lsi-cache.json");
 var LSI_SOURCES = [
   LSI_CACHE_FILE,
-  path7.join(DATA_DIR, "topic-pool.json"),
-  path7.join(DATA_DIR, "semantics-volumes.json")
+  path8.join(DATA_DIR, "topic-pool.json"),
+  path8.join(DATA_DIR, "semantics-volumes.json")
 ];
-var PROJECT_ROOT = path7.resolve(import.meta.dirname, "..", "..");
-var ARTICLES_DIR = path7.join(PROJECT_ROOT, "content", "articles");
-var IMAGES_DIR = path7.join(PROJECT_ROOT, "public", "images", "posts");
+var PROJECT_ROOT = path8.resolve(import.meta.dirname, "..", "..");
+var ARTICLES_DIR = path8.join(PROJECT_ROOT, "content", "articles");
+var IMAGES_DIR = path8.join(PROJECT_ROOT, "public", "images", "posts");
 var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "https://d-pub.ru";
-var CODEX_BIN = path7.join(os4.homedir(), ".npm-global", "bin", "codex");
-var CODEX_HOME = path7.join(os4.homedir(), ".codex");
-var REFERENCE_IMAGE = path7.join(import.meta.dirname, "reference.webp");
+var CODEX_BIN = path8.join(os4.homedir(), ".npm-global", "bin", "codex");
+var CODEX_HOME = path8.join(os4.homedir(), ".codex");
+var REFERENCE_IMAGE = path8.join(import.meta.dirname, "reference.webp");
 var PERSPECTIVES = [
   "face-on front view, character faces the viewer directly",
   "3/4 front-left angle, character turned slightly away to the left",
@@ -1152,15 +1171,15 @@ console.log = (...args) => {
   baseConsoleLog(...args);
 };
 function snapshotGeneratedImages() {
-  const generatedDir = path7.join(CODEX_HOME, "generated_images");
+  const generatedDir = path8.join(CODEX_HOME, "generated_images");
   const images = /* @__PURE__ */ new Set();
-  if (!fs7.existsSync(generatedDir)) return images;
-  for (const session of fs7.readdirSync(generatedDir)) {
-    const sessionDir = path7.join(generatedDir, session);
+  if (!fs8.existsSync(generatedDir)) return images;
+  for (const session of fs8.readdirSync(generatedDir)) {
+    const sessionDir = path8.join(generatedDir, session);
     try {
-      for (const file of fs7.readdirSync(sessionDir)) {
+      for (const file of fs8.readdirSync(sessionDir)) {
         if (file.endsWith(".png") || file.endsWith(".webp") || file.endsWith(".jpg")) {
-          images.add(path7.join(sessionDir, file));
+          images.add(path8.join(sessionDir, file));
         }
       }
     } catch {
@@ -1177,7 +1196,7 @@ function findNewImage(before) {
 }
 function convertToWebP(srcPng, destWebp) {
   const script = `
-    import('${path7.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
+    import('${path8.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -1191,7 +1210,7 @@ function convertToWebP(srcPng, destWebp) {
 }
 function convertSketchToWebP(srcPng, destWebp) {
   const script = `
-    import('${path7.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
+    import('${path8.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
       .then(m => m.default('${srcPng}').resize({width: 900, withoutEnlargement: true}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -1204,7 +1223,7 @@ function convertSketchToWebP(srcPng, destWebp) {
   });
 }
 async function generateImageWithCodex(imagePrompt, slug, topic) {
-  if (!fs7.existsSync(CODEX_BIN)) {
+  if (!fs8.existsSync(CODEX_BIN)) {
     console.log("[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0433\u0435\u043D\u0435\u0440\u0430\u0446\u0438\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438");
     return null;
   }
@@ -1215,7 +1234,7 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
   const gender = GENDERS[genderIdx];
   const setting = detectSetting(topic.keyword, topic.title, topic.id);
   const fullPrompt = `Match the pixel art style of the attached reference image exactly: ultra-fine dense pixel grain (NOT blocky large pixels), bright warm cozy atmosphere (NOT dark, NOT muddy, NOT desaturated), rich amber, golden and soft cream tones throughout \u2014 warm inviting palette, single clear light source creating volumetric depth: bright highlights on lit surfaces and well-defined soft shadows for 3D volume, rich surface textures, smooth gradients via fine dithering, high pixel density giving a near-painterly look, calm lofi RPG mood, no watermark, no photorealism. MANDATORY CHARACTER GENDER: ${gender}. This is non-negotiable \u2014 do NOT change the gender. MANDATORY: include exactly 1 human person prominently in the foreground. CHARACTER ANGLE: ${perspective}. SETTING: ${setting}. BACKGROUND: rich with many objects and environmental details filling the scene \u2014 NO text or letters anywhere. REALISM: candid photo feel \u2014 natural relaxed poses, objects placed as in real life. LAPTOP RULE: the person works at a laptop. The laptop sits naturally on the desk. The screen faces the person (not the camera) and glows softly with indistinct ambient light \u2014 no readable text, no charts, no UI elements, just a warm or cool glow suggesting active use. Think: professional stock photo where the screen is implied but never the focus. FORBIDDEN: any specific content (charts, dashboards, text) on any screen surface, including the outside back of the lid. SCENE CONTEXT (activity and mood only \u2014 gender, setting, and laptop rule already fixed above): ${imagePrompt}. Generate this pixel art image now.`;
-  const refArg = fs7.existsSync(REFERENCE_IMAGE) ? ["-i", REFERENCE_IMAGE] : [];
+  const refArg = fs8.existsSync(REFERENCE_IMAGE) ? ["-i", REFERENCE_IMAGE] : [];
   const runCodex = () => new Promise((resolve) => {
     const child = spawn2(
       CODEX_BIN,
@@ -1249,16 +1268,16 @@ async function generateImageWithCodex(imagePrompt, slug, topic) {
     return null;
   }
   console.log(`[writer] \u041D\u043E\u0432\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: ${newImage}`);
-  fs7.mkdirSync(IMAGES_DIR, { recursive: true });
-  const destWebp = path7.join(IMAGES_DIR, `${slug}.webp`);
+  fs8.mkdirSync(IMAGES_DIR, { recursive: true });
+  const destWebp = path8.join(IMAGES_DIR, `${slug}.webp`);
   try {
     convertToWebP(newImage, destWebp);
     console.log(`[writer] WebP \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${destWebp}`);
     return `/images/posts/${slug}.webp`;
   } catch (e) {
     console.warn("[writer] \u041A\u043E\u043D\u0432\u0435\u0440\u0442\u0430\u0446\u0438\u044F \u0432 WebP \u043D\u0435 \u0443\u0434\u0430\u043B\u0430\u0441\u044C, \u043A\u043E\u043F\u0438\u0440\u0443\u044E PNG:", e.message);
-    const destPng = path7.join(IMAGES_DIR, `${slug}.png`);
-    fs7.copyFileSync(newImage, destPng);
+    const destPng = path8.join(IMAGES_DIR, `${slug}.png`);
+    fs8.copyFileSync(newImage, destPng);
     return `/images/posts/${slug}.png`;
   }
 }
@@ -1318,7 +1337,7 @@ ${h2List}
   for (let i = 0; i < Math.min(spec.charts?.length ?? 0, 2); i++) {
     const chart = spec.charts[i];
     const filename = `${slug}-chart${i + 1}.png`;
-    const localPath = path7.join(IMAGES_DIR, filename);
+    const localPath = path8.join(IMAGES_DIR, filename);
     const webPath = `/images/posts/${filename}`;
     try {
       const response = await fetch("https://quickchart.io/chart", {
@@ -1337,8 +1356,8 @@ ${h2List}
         continue;
       }
       const buffer = Buffer.from(await response.arrayBuffer());
-      fs7.mkdirSync(IMAGES_DIR, { recursive: true });
-      fs7.writeFileSync(localPath, buffer);
+      fs8.mkdirSync(IMAGES_DIR, { recursive: true });
+      fs8.writeFileSync(localPath, buffer);
       console.log(`[writer] QuickChart \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`);
       results.push({ webPath, alt: stripRoleTag(chart.alt) });
     } catch (e) {
@@ -1348,7 +1367,7 @@ ${h2List}
   return results;
 }
 async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structure, markdown) {
-  if (!fs7.existsSync(CODEX_BIN)) {
+  if (!fs8.existsSync(CODEX_BIN)) {
     console.log("[writer] Codex CLI \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D, \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u0430\u044E \u0441\u043A\u0435\u0442\u0447\u0438");
     return [];
   }
@@ -1381,17 +1400,17 @@ async function generateSketchesWithCodex(topic, slug, articleEssence, h2Structur
       console.log(`[writer] Codex \u0441\u043A\u0435\u0442\u0447 ${i + 1} \u043D\u0435 \u0441\u043E\u0437\u0434\u0430\u043D`);
       continue;
     }
-    fs7.mkdirSync(IMAGES_DIR, { recursive: true });
+    fs8.mkdirSync(IMAGES_DIR, { recursive: true });
     const suffix = i === 0 ? "-sketch" : `-sketch${i + 1}`;
-    const destWebp = path7.join(IMAGES_DIR, `${slug}${suffix}.webp`);
+    const destWebp = path8.join(IMAGES_DIR, `${slug}${suffix}.webp`);
     try {
       convertSketchToWebP(newImage, destWebp);
       const webPath = `/images/posts/${slug}${suffix}.webp`;
       console.log(`[writer] \u0421\u043A\u0435\u0442\u0447 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D: ${webPath}`);
       results.push(webPath);
     } catch {
-      const destPng = path7.join(IMAGES_DIR, `${slug}${suffix}.png`);
-      fs7.copyFileSync(newImage, destPng);
+      const destPng = path8.join(IMAGES_DIR, `${slug}${suffix}.png`);
+      fs8.copyFileSync(newImage, destPng);
       results.push(`/images/posts/${slug}${suffix}.png`);
     }
   }
@@ -1428,7 +1447,7 @@ function injectImagesIntoMarkdown(markdown, charts, sketchPaths) {
   }
   return lines.join("\n");
 }
-var SEMANTICS_FILE = path7.join(import.meta.dirname, SEMANTICS_RELATIVE_PATH);
+var SEMANTICS_FILE = path8.join(import.meta.dirname, SEMANTICS_RELATIVE_PATH);
 function parseJsonObject(raw, who) {
   const m = raw.match(/\{[\s\S]*\}/);
   if (!m) throw new Error(`${who} \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B JSON`);
@@ -2008,7 +2027,7 @@ ${dynamicSeoBlock}` : "";
   }
   console.log("[writer] \u0428\u0430\u0433 3\u0432: Nudge-\u0440\u0435\u0432\u0438\u0437\u0438\u044F...");
   const nudgeBiasIds = /* @__PURE__ */ new Set([44, 34, 166, 202, 210, 208, 108, 40, 32, 100, 96, 36, 206, 172, 78]);
-  const allBiases = JSON.parse(fs7.readFileSync(path7.join(DATA_DIR, "nudge-biases.json"), "utf-8")).biases;
+  const allBiases = JSON.parse(fs8.readFileSync(path8.join(DATA_DIR, "nudge-biases.json"), "utf-8")).biases;
   const nudgeCatalog = allBiases.filter((b) => nudgeBiasIds.has(b.id)).map((b) => `\u2022 ${b.title}: ${b.description.slice(0, 130)} \u2192 ${b.usage.slice(0, 130)}`).join("\n");
   let nudged = "";
   try {
@@ -2226,32 +2245,32 @@ tags: ${tags}${imageLine}${faqLine}${schemaLine}
 `;
 }
 function getLatestTopicsFile() {
-  const files = fs7.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).sort().reverse();
+  const files = fs8.readdirSync(DATA_DIR).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).sort().reverse();
   if (!files.length) throw new Error("\u041D\u0435\u0442 \u0444\u0430\u0439\u043B\u043E\u0432 \u0441 \u0442\u0435\u043C\u0430\u043C\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u0443\u0441\u0442\u0438 analyst.js");
-  return path7.join(DATA_DIR, files[0]);
+  return path8.join(DATA_DIR, files[0]);
 }
 function markTopicPublished(topicsFile, topicId) {
-  const dir = path7.dirname(topicsFile);
-  const source = JSON.parse(fs7.readFileSync(topicsFile, "utf-8"));
+  const dir = path8.dirname(topicsFile);
+  const source = JSON.parse(fs8.readFileSync(topicsFile, "utf-8"));
   const target = source.topics.find((t) => t.id === topicId);
   if (!target) {
-    console.warn(`[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${path7.basename(topicsFile)}`);
+    console.warn(`[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${path8.basename(topicsFile)}`);
     return;
   }
-  const files = fs7.readdirSync(dir).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).map((f) => path7.join(dir, f));
+  const files = fs8.readdirSync(dir).filter((f) => f.startsWith("topics_") && f.endsWith(".json")).map((f) => path8.join(dir, f));
   const touched = [];
   for (const file of files) {
-    const raw = JSON.parse(fs7.readFileSync(file, "utf-8"));
+    const raw = JSON.parse(fs8.readFileSync(file, "utf-8"));
     const hit = raw.topics.find((t) => t.id === topicId && t.title === target.title);
     if (!hit || hit.published) continue;
     hit.published = true;
-    fs7.writeFileSync(file, JSON.stringify(raw, null, 2));
-    touched.push(path7.basename(file));
+    fs8.writeFileSync(file, JSON.stringify(raw, null, 2));
+    touched.push(path8.basename(file));
   }
   console.log(`[writer] \u0422\u0435\u043C\u0430 #${topicId} \u043E\u0442\u043C\u0435\u0447\u0435\u043D\u0430 \u043E\u043F\u0443\u0431\u043B\u0438\u043A\u043E\u0432\u0430\u043D\u043D\u043E\u0439 \u0432: ${touched.join(", ")}`);
 }
 function gitCommitAndPush(slug, title, hasImage) {
-  const mdxPath = path7.join("content", "articles", `${slug}.mdx`);
+  const mdxPath = path8.join("content", "articles", `${slug}.mdx`);
   execSync(`git add "${mdxPath}"`, { cwd: PROJECT_ROOT, stdio: "inherit" });
   if (hasImage) {
     execSync(`git add public/images/posts/${slug}* 2>/dev/null || true`, {
@@ -2264,7 +2283,7 @@ function gitCommitAndPush(slug, title, hasImage) {
   execSync("git push", { cwd: PROJECT_ROOT, stdio: "inherit" });
 }
 function syncToProduction(slug, hasImage) {
-  const SSH_KEY = path7.join(os4.homedir(), ".ssh", "github_actions_deploy");
+  const SSH_KEY = path8.join(os4.homedir(), ".ssh", "github_actions_deploy");
   const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`;
   const PROD = "c48127@91.201.52.231:~/d-pub.ru/app";
   execSync(
@@ -2282,6 +2301,23 @@ function syncToProduction(slug, hasImage) {
     shell: "/bin/bash"
   });
 }
+async function waitForPage(url, timeoutMs = 12 * 6e4) {
+  const started = Date.now();
+  let attempt = 0;
+  while (Date.now() - started < timeoutMs) {
+    attempt++;
+    try {
+      const res = await fetch(url, { redirect: "follow" });
+      if (res.ok) {
+        console.log(`[writer] \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 (\u043F\u043E\u043F\u044B\u0442\u043A\u0430 ${attempt}, ${Math.round((Date.now() - started) / 1e3)} \u0441)`);
+        return true;
+      }
+    } catch {
+    }
+    await new Promise((r) => setTimeout(r, 2e4));
+  }
+  return false;
+}
 async function main() {
   const runStartedAt = Date.now();
   const channelProblem = await checkChannelAccess();
@@ -2292,7 +2328,7 @@ async function main() {
     process.exit(1);
   }
   const topicsFile = getLatestTopicsFile();
-  const { topics } = JSON.parse(fs7.readFileSync(topicsFile, "utf8"));
+  const { topics } = JSON.parse(fs8.readFileSync(topicsFile, "utf8"));
   const topic = topics.find((t) => t.id === topicNum);
   if (!topic) throw new Error(`\u0422\u0435\u043C\u0430 #${topicNum} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 ${topicsFile}`);
   currentTopic = { id: topic.id, title: topic.title };
@@ -2317,8 +2353,8 @@ async function main() {
   result.metaTitle = meta.metaTitle;
   result.metaDesc = meta.metaDesc;
   console.log(`[writer] \u0421\u0442\u0430\u0442\u044C\u044F \u0433\u043E\u0442\u043E\u0432\u0430, slug: ${result.slug}`);
-  const mdxPath = path7.join(ARTICLES_DIR, `${result.slug}.mdx`);
-  if (fs7.existsSync(mdxPath)) {
+  const mdxPath = path8.join(ARTICLES_DIR, `${result.slug}.mdx`);
+  if (fs8.existsSync(mdxPath)) {
     result.slug = `${result.slug}-${Date.now().toString(36)}`;
     console.log(`[writer] Slug \u0441\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D: ${result.slug}`);
   }
@@ -2364,8 +2400,8 @@ async function main() {
       "[writer] \u0412 \u0433\u043E\u0442\u043E\u0432\u043E\u043C MDX \u043E\u0441\u0442\u0430\u043B\u0441\u044F \u0441\u043B\u0443\u0436\u0435\u0431\u043D\u044B\u0439 \u0442\u0435\u043A\u0441\u0442 \u043F\u0440\u0438\u0451\u043C\u043A\u0438 \u2014 \u043F\u0443\u0431\u043B\u0438\u043A\u0430\u0446\u0438\u044F \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0430. \u041F\u0440\u043E\u0432\u0435\u0440\u044C lib/strip-service-tail.ts: \u0444\u043E\u0440\u043C\u0443\u043B\u0438\u0440\u043E\u0432\u043A\u0430 \u0445\u0432\u043E\u0441\u0442\u0430, \u0432\u0438\u0434\u0438\u043C\u043E, \u043D\u043E\u0432\u0430\u044F."
     );
   }
-  fs7.mkdirSync(ARTICLES_DIR, { recursive: true });
-  fs7.writeFileSync(path7.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent);
+  fs8.mkdirSync(ARTICLES_DIR, { recursive: true });
+  fs8.writeFileSync(path8.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent);
   console.log(`[writer] \u0424\u0430\u0439\u043B \u0441\u043E\u0437\u0434\u0430\u043D: content/articles/${result.slug}.mdx`);
   const hasAnyImage = imageUrl !== null || charts.length > 0 || sketchUrls.length > 0;
   try {
@@ -2391,7 +2427,10 @@ ${e.message}`);
   const articleUrl = `${SITE_URL}/articles/${result.slug}`;
   let announced;
   try {
-    await announceToChannel(articleUrl);
+    const live = await waitForPage(articleUrl);
+    if (!live) console.warn("[writer] \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043D\u0435 \u043F\u043E\u0434\u043D\u044F\u043B\u0430\u0441\u044C \u0437\u0430 \u043E\u0442\u0432\u0435\u0434\u0451\u043D\u043D\u043E\u0435 \u0432\u0440\u0435\u043C\u044F, \u0430\u043D\u043E\u043D\u0441\u0438\u0440\u0443\u044E \u043A\u0430\u043A \u0435\u0441\u0442\u044C");
+    const heroPath = imageUrl ? path8.join(process.cwd(), "public", imageUrl.replace(/^\//, "")) : void 0;
+    await announceToChannel(articleUrl, heroPath);
     announced = "\u{1F4E3} \u0410\u043D\u043E\u043D\u0441 \u0432 \u043A\u0430\u043D\u0430\u043B\u0435: \u2705";
     console.log("[writer] \u0410\u043D\u043E\u043D\u0441 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u0432 \u043A\u0430\u043D\u0430\u043B");
   } catch (e) {

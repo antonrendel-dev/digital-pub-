@@ -1777,6 +1777,34 @@ function syncToProduction(slug: string, hasImage: boolean): void {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Ждёт, пока страница ответит 200. Возвращает false, если не дождались.
+ *
+ * Между `git push` и живой страницей стоит деплой CI: 03.09 он занял три
+ * минуты, 04.09 — шесть. Анонс уходил раньше, и Telegram запрашивал превью
+ * у страницы, которой ещё нет.
+ */
+async function waitForPage(url: string, timeoutMs = 12 * 60_000): Promise<boolean> {
+  const started = Date.now()
+  let attempt = 0
+  while (Date.now() - started < timeoutMs) {
+    attempt++
+    try {
+      const res = await fetch(url, { redirect: 'follow' })
+      if (res.ok) {
+        console.log(
+          `[writer] Страница доступна (попытка ${attempt}, ${Math.round((Date.now() - started) / 1000)} с)`
+        )
+        return true
+      }
+    } catch {
+      // сеть моргнула — это не повод сдаваться, следующая попытка через паузу
+    }
+    await new Promise((r) => setTimeout(r, 20_000))
+  }
+  return false
+}
+
 async function main() {
   const runStartedAt = Date.now()
 
@@ -1943,7 +1971,20 @@ async function main() {
   // уже на сайте, поэтому падать нельзя, но и молчать не станем.
   let announced: string
   try {
-    await announceToChannel(articleUrl)
+    // Ждём, пока страница реально откроется. Анонс уходит сразу после git push,
+    // а прод поднимается деплоем CI — 3–6 минут. Telegram забирает превью один
+    // раз, в момент отправки: попал на 404 — превью не будет уже никогда,
+    // повторная отправка того же URL берётся из его кэша. Ровно так вышло
+    // 03.09 и 04.09.2026: первые два анонса с превью, следующие два без.
+    const live = await waitForPage(articleUrl)
+    if (!live)
+      console.warn('[writer] Страница не поднялась за отведённое время, анонсирую как есть')
+    // Обложка уходит файлом: путь считаем от imageUrl, который уже лежит
+    // во фронтматтере. Нет картинки — announceToChannel сам отправит ссылкой.
+    const heroPath = imageUrl
+      ? path.join(process.cwd(), 'public', imageUrl.replace(/^\//, ''))
+      : undefined
+    await announceToChannel(articleUrl, heroPath)
     announced = '📣 Анонс в канале: ✅'
     console.log('[writer] Анонс отправлен в канал')
   } catch (e) {
