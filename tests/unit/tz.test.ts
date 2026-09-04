@@ -201,6 +201,26 @@ describe('checkTechSpec', () => {
     )
   })
 
+  it('отклоняет фразы-шаблоны старого промпта', () => {
+    const templated =
+      good +
+      '\n\nМы разбираем тысячи вакансий каждую неделю и замечаем: кейсы важнее стажа.' +
+      '\n\nМиф о том, что диплом обязателен, неверен.'
+    const v = checkTechSpec(baseSpec(), templated).filter((x) => x.rule === 'Шаблонная фраза')
+    expect(v).toHaveLength(2)
+
+    const once = good + '\n\nНа самом деле кейсы важнее стажа.'
+    expect(checkTechSpec(baseSpec(), once).map((x) => x.rule)).not.toContain('Шаблонная фраза')
+    const twice = once + ' На самом деле и портфолио тоже.'
+    const v2 = checkTechSpec(baseSpec(), twice).filter((x) => x.rule === 'Шаблонная фраза')
+    expect(v2).toHaveLength(1)
+    expect(v2[0].detail).toContain('лишнее: …')
+
+    // «миф о том, чтобы» — не шаблон: граница слова справа.
+    const chtoby = good + '\n\nЭто миф о том, чтобы бояться отказов.'
+    expect(checkTechSpec(baseSpec(), chtoby).map((x) => x.rule)).not.toContain('Шаблонная фраза')
+  })
+
   it('отклоняет ключ жирным и открытие статьи определением ключа', () => {
     const bold = good.replace('Резюме таргетолога читают', '**Резюме таргетолога** читают')
     expect(checkTechSpec(baseSpec(), bold).map((x) => x.rule)).toContain('Ключ выделен жирным')

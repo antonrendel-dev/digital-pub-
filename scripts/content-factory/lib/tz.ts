@@ -333,6 +333,17 @@ export interface SpecViolation {
 // а не косметика, и опубликованный текст с ним вредит сильнее, чем пропущенный день.
 export const OVERSPAM_RULE = 'Переспам главного ключа'
 export const BOLD_KEY_RULE = 'Ключ выделен жирным'
+export const TEMPLATE_PHRASE_RULE = 'Шаблонная фраза'
+
+/**
+ * Фразы, которые промпт когда-то требовал «один раз» — и модель ставила их
+ * в каждую статью: «Мы разбираем тысячи вакансий…» в 13 файлах / 16 вхождений,
+ * «Миф о том, что … неверен» в 8 файлах / 10 вхождений (аудит 04.09.2026,
+ * срез content/articles). Первые две запрещены совсем,
+ * «на самом деле» — не больше одного раза.
+ */
+const BANNED_TEMPLATES = ['мы разбираем тысячи вакансий', 'миф о том, что']
+const LIMITED_TEMPLATES: { phrase: string; max: number }[] = [{ phrase: 'на самом деле', max: 1 }]
 export const DEFINITION_OPENER_RULE = 'Статья открывается определением ключа'
 
 /**
@@ -366,6 +377,35 @@ export function checkTechSpec(tz: TechSpec, markdown: string): SpecViolation[] {
       violations.push({
         rule: 'Недобор обязательной фразы',
         detail: `"${p.phrase}" (в любой форме) — ${got} из ${p.uses}`,
+      })
+    }
+  }
+
+  // Шаблоны ищутся с границей слова справа: «миф о том, чтобы…» — не шаблон.
+  const templateHits = (phrase: string): number[] => {
+    const re = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![а-яё])', 'g')
+    return [...lower.matchAll(re)].map((m) => m.index ?? 0)
+  }
+  const around = (index: number): string =>
+    markdown
+      .slice(Math.max(0, index - 30), index + 50)
+      .replace(/\s+/g, ' ')
+      .trim()
+  for (const phrase of BANNED_TEMPLATES) {
+    const hits = templateHits(phrase)
+    if (hits.length) {
+      violations.push({
+        rule: TEMPLATE_PHRASE_RULE,
+        detail: `«${phrase}» — ${hits.length} раз (…${around(hits[0])}…); перепиши своими словами, это фраза-шаблон из старого промпта`,
+      })
+    }
+  }
+  for (const { phrase, max } of LIMITED_TEMPLATES) {
+    const hits = templateHits(phrase)
+    if (hits.length > max) {
+      violations.push({
+        rule: TEMPLATE_PHRASE_RULE,
+        detail: `«${phrase}» — ${hits.length} раз при лимите ${max}; лишнее: …${around(hits[max])}…`,
       })
     }
   }
