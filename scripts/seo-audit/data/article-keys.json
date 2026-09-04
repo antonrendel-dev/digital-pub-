@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-02",
+  "generatedAt": "2026-09-04",
   "threshold": 150,
   "corridor": [300, 2000],
-  "note": "Порог 150 согласован для уже существующих статей; коридор 300–2000 — для новых тем контент-завода. volume=null у двух записей 8588ef4: ключ назван в коммите без частотности.",
+  "note": "Порог 150 согласован для уже существующих статей; коридор 300–2000 — для новых тем контент-завода. volume=null у двух записей 8588ef4: ключ назван в коммите без частотности. Обновлено 04.09.2026: четыре статьи переведены с null на подтверждённые ключи после дожима.",
   "articles": {
     "agregatory-vakansij-digital-sravnenie-ploshhadok": {
       "key": "вакансии не на hh.ru",
@@ -83,10 +83,11 @@
       "checkedAt": "2026-09-01"
     },
     "ispytatelnyj-srok-novaya-rabota-digital-90-dnej": {
-      "key": null,
-      "volume": null,
-      "reason": "«как пройти испытательный срок» 1310 — вложенные про увольнение не прошедшего, интент кадрово-юридический",
-      "checkedAt": "2026-09-02"
+      "key": "адаптация на новой работе",
+      "volume": 917,
+      "reason": "дожат под ключ 04.09.2026, приёмка seo пройдена (734f9c9)",
+      "checkedAt": "2026-09-04",
+      "source": "wordstat"
     },
     "junior-seo-spetsialist-bez-opyta": {
       "key": null,
@@ -281,10 +282,11 @@
       "checkedAt": "2026-09-01"
     },
     "professiya-veb-analitik-2026": {
-      "key": null,
-      "volume": null,
-      "reason": "«веб аналитик» 2091 — вложенные про сервисы и Яндекс.Метрику, интент инструментальный",
-      "checkedAt": "2026-09-02"
+      "key": "работа веб аналитиком",
+      "volume": 123,
+      "reason": "дожат под ключ 04.09.2026, приёмка seo пройдена (734f9c9); кластер с «веб аналитик вакансии» 99/мес, вместе ~220",
+      "checkedAt": "2026-09-04",
+      "source": "wordstat"
     },
     "razmestit-rezyume-besplatno-gajd-dlya-digital-specialistov": {
       "key": "где разместить резюме",
@@ -365,10 +367,11 @@
       "checkedAt": "2026-09-01"
     },
     "soft-skills-marketologa-cheklst-dlya-hr": {
-      "key": null,
-      "volume": null,
-      "reason": "«софт скиллы» 1570 — интент определения и списков, статья про методику проверки на интервью",
-      "checkedAt": "2026-09-02"
+      "key": "софт скиллы",
+      "volume": 1614,
+      "reason": "дожат под ключ 04.09.2026, приёмка seo пройдена (734f9c9)",
+      "checkedAt": "2026-09-04",
+      "source": "wordstat"
     },
     "soprovoditelnoe-pismo-k-rezyume-primer": {
       "key": "сопроводительное письмо к резюме пример",
@@ -401,10 +404,11 @@
       "checkedAt": "2026-09-02"
     },
     "udalennaya-rabota-digital-2026": {
-      "key": null,
-      "volume": null,
-      "reason": "«удаленная работа маркетологом» 271 — вакансионный интент, ключ принадлежит листингу",
-      "checkedAt": "2026-09-02"
+      "key": "как найти удаленную работу",
+      "volume": 2829,
+      "reason": "дожат под ключ 04.09.2026, приёмка seo пройдена (734f9c9)",
+      "checkedAt": "2026-09-04",
+      "source": "wordstat"
     },
     "udalennaya-rabota-digital-specialista-instrumenty-rezhim-dnya": {
       "key": "как работать удаленно",
