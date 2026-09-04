@@ -57,29 +57,51 @@ export async function middleware(request: NextRequest) {
       slug = decodeURIComponent(match[1])
     } catch {
       // Битая percent-последовательность (/vacancies/smm/%E0) роняла посредника
-      // в 500 — роботы читали это как нестабильность сайта. Такого адреса нет:
-      // rewrite на несуществующий путь рендерит not-found со статусом 404 (статус
-      // из init для rewrite Next отбрасывает; NextResponse.next() дал бы 400).
-      return withPushHeader(NextResponse.rewrite(new URL('/404', request.url)))
+      // в 500 — роботы читали это как нестабильность сайта. Ответ собирается
+      // здесь же, как и 410. Rewrite на /404 локально давал 404, а на проде
+      // (NetAngels, 04.09.2026) — 500: NextURL подменяет 127.x.x.x на localhost,
+      // origin rewrite не совпадает с initUrl роутера (контейнер слушает
+      // 127.0.4.150), rewrite считается внешним и уходит в proxyRequest на
+      // https://localhost — который падает. То же ждёт любой rewrite/redirect,
+      // собранный от request.url на этом хостинге; страж — в vacancy-gone-410.test.
+      return withPushHeader(
+        new NextResponse(
+          `<!doctype html><html lang="ru"><head><meta charset="utf-8">` +
+            `<meta name="robots" content="noindex, follow">` +
+            `<title>Страница не найдена — Диджитал Паб</title></head>` +
+            `<body><h1>Страница не найдена</h1>` +
+            `<p>Такого адреса нет. <a href="/vacancies">Смотреть вакансии</a>.</p></body></html>`,
+          {
+            status: 404,
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+              'X-Robots-Tag': 'noindex, follow',
+              'Cache-Control': 'public, max-age=3600',
+            },
+          }
+        )
+      )
     }
     if (FILTER_SLUGS.has(slug)) return withPushHeader(NextResponse.next())
     await refreshGoneSlugs(request.nextUrl.origin)
     if (goneSlugs.has(slug)) {
-      return new NextResponse(
-        `<!doctype html><html lang="ru"><head><meta charset="utf-8">` +
-          `<meta name="robots" content="noindex, follow">` +
-          `<title>Вакансия снята с публикации — Диджитал Паб</title></head>` +
-          `<body><h1>Вакансия снята с публикации</h1>` +
-          `<p>Объявление старше трёх месяцев и больше не актуально. ` +
-          `<a href="/vacancies">Смотреть свежие вакансии</a>.</p></body></html>`,
-        {
-          status: 410,
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            'X-Robots-Tag': 'noindex, follow',
-            'Cache-Control': 'public, max-age=3600',
-          },
-        }
+      return withPushHeader(
+        new NextResponse(
+          `<!doctype html><html lang="ru"><head><meta charset="utf-8">` +
+            `<meta name="robots" content="noindex, follow">` +
+            `<title>Вакансия снята с публикации — Диджитал Паб</title></head>` +
+            `<body><h1>Вакансия снята с публикации</h1>` +
+            `<p>Объявление старше трёх месяцев и больше не актуально. ` +
+            `<a href="/vacancies">Смотреть свежие вакансии</a>.</p></body></html>`,
+          {
+            status: 410,
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+              'X-Robots-Tag': 'noindex, follow',
+              'Cache-Control': 'public, max-age=3600',
+            },
+          }
+        )
       )
     }
   }

@@ -63,8 +63,31 @@ describe('мелкие правки безопасности (аудит 04.09.2
   it('битый percent-encoding в слаге даёт 404, а не 500', () => {
     // GET /vacancies/smm/%E0 ронял decodeURIComponent без try/catch — подтверждено живьём.
     expect(middleware).toMatch(/try \{\s*slug = decodeURIComponent\(match\[1\]\)\s*\} catch \{/)
-    // Статус даёт not-found-маршрут: rewrite на путь, которого нет в app/.
-    expect(middleware).toMatch(/NextResponse\.rewrite\(new URL\('\/404', request\.url\)\)/)
+    const decodeAt = middleware.indexOf('decodeURIComponent(match[1])')
+    const catchBlock = middleware.slice(
+      middleware.indexOf('} catch {', decodeAt),
+      middleware.indexOf('if (FILTER_SLUGS')
+    )
+    expect(catchBlock).toMatch(/status: 404/)
+    expect(catchBlock).toMatch(/noindex, follow/)
+  })
+
+  it('поведение: битый слаг с адреса контейнера — 404 из посредника, без rewrite', async () => {
+    // Прод слушает 127.0.4.150: NextURL подменяет 127.x на localhost, и rewrite,
+    // собранный от request.url, уходит во внешний proxy → 500 (инцидент 04.09.2026).
+    const { NextRequest } = await import('next/server')
+    const { middleware: run } = await import('../../middleware')
+    const res = await run(new NextRequest('https://127.0.4.150:59375/vacancies/smm/%E0'))
+    expect(res.status).toBe(404)
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull()
+    expect(res.headers.get('location')).toBeNull()
+    expect(res.headers.get('x-robots-tag')).toBe('noindex, follow')
+    expect(await res.text()).toContain('Страница не найдена')
+  })
+
+  it('страж: посредник не собирает rewrite/redirect от request.url — на этом хостинге они ломаются', () => {
+    expect(middleware).not.toMatch(/NextResponse\.rewrite\(/)
+    expect(middleware).not.toMatch(/NextResponse\.redirect\(/)
   })
 
   it('эндпоинт списка кэшируется в памяти, а не бьёт в базу каждым хитом', () => {
