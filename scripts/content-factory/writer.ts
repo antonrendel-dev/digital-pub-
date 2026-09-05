@@ -40,6 +40,7 @@ import {
   type MetadataViolation,
 } from '../../lib/article-metadata-gate'
 import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
+import { assertSafeMdx } from '../../lib/mdx-safety'
 import { closeTopicSubtask } from './lib/todoist.js'
 import { sendFailureAlert } from './lib/alert.js'
 import {
@@ -1997,6 +1998,11 @@ async function main() {
   result.metaDesc = meta.metaDesc
   console.log(`[writer] Статья готова, slug: ${result.slug}`)
 
+  // Текст модели проверяется до генерации картинок: отказ после них оставлял бы
+  // untracked-обложки и графики, которые следующий прогон темы закоммитил бы
+  // через git add public/images/posts/<slug>*. Финальный MDX проверяется ещё раз.
+  assertSafeMdx(result.markdown, `writer ${result.slug} (текст)`, { frontmatter: false })
+
   // Проверяем что slug не занят
   const mdxPath = path.join(ARTICLES_DIR, `${result.slug}.mdx`)
   if (fs.existsSync(mdxPath)) {
@@ -2073,6 +2079,11 @@ async function main() {
         'Проверь lib/strip-service-tail.ts: формулировка хвоста, видимо, новая.'
     )
   }
+
+  // Выражения {…}, import/export и опасные теги в MDX исполняются при рендере:
+  // это единственный путь от чужого текста в выдаче до кода на проде без
+  // человека. Бросает — main().catch шлёт отбойник, файл не пишется, пуша нет.
+  assertSafeMdx(mdxContent, `writer ${result.slug}`)
 
   fs.mkdirSync(ARTICLES_DIR, { recursive: true })
   fs.writeFileSync(path.join(ARTICLES_DIR, `${result.slug}.mdx`), mdxContent)

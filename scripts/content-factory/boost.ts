@@ -40,6 +40,7 @@ import { keepLead } from './lib/article-body.js'
 import { checkArticleMetadata, normalizeFaqHeading } from '../../lib/article-metadata-gate'
 import { faqSchemaLine } from '../../lib/faq-schema'
 import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
+import { assertSafeMdx, findUnsafeMdx } from '../../lib/mdx-safety'
 
 // Каталог статей можно переопределить: страж собирает бандл во временную
 // папку, и путь «два уровня вверх от файла» там указывает в никуда. Заодно это
@@ -142,6 +143,10 @@ async function boostOne(c: BoostCandidate, dryRun: boolean): Promise<string> {
   if (hasServiceText(next)) {
     all.push({ rule: 'SERVICE_TEXT', detail: 'в теле остался служебный хвост приёмки' })
   }
+  // Небезопасная разметка — тот же отказ с дампом, а не исключение без дела.
+  for (const i of findUnsafeMdx(next, { frontmatter: false })) {
+    all.push({ rule: 'MDX_UNSAFE', detail: `строка ${i.line}, ${i.rule}: ${i.detail}` })
+  }
   if (all.length) {
     // Отклонённый текст сохраняем: без него «не принято» — это приговор без
     // дела. Разобрать, ошиблась модель или придирается проверка, можно только
@@ -166,7 +171,10 @@ async function boostOne(c: BoostCandidate, dryRun: boolean): Promise<string> {
   // сообщала бы поиску старую дату — то есть дожим гасил бы ровно тот сигнал,
   // ради которого существует.
   const today = new Date().toISOString().slice(0, 10)
-  fs.writeFileSync(file, `---\n${withUpdatedDate(fmWithoutFaq, today)}\n${line}\n---\n${next}`)
+  const updated = `---\n${withUpdatedDate(fmWithoutFaq, today)}\n${line}\n---\n${next}`
+  // Дожим переписывает тело моделью — та же проверка, что у writer перед пушем.
+  assertSafeMdx(updated, `boost ${path.basename(file)}`)
+  fs.writeFileSync(file, updated)
 
   const wBefore = body.split(/\s+/).filter(Boolean).length
   const wAfter = next.split(/\s+/).filter(Boolean).length

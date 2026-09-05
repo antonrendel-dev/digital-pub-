@@ -11,6 +11,7 @@ import { FACTORY_MODEL } from './lib/model.js'
 import { buildAgentCommand } from './lib/agent-cli.js'
 import { stripRoleTag } from './lib/agent-role.js'
 import { isValidSlug } from './lib/bot-guard.js'
+import { assertSafeMdx } from '../../lib/mdx-safety'
 
 const SCRIPTS_DIR = path.dirname(new URL(import.meta.url).pathname)
 const PROJECT_ROOT = path.resolve(SCRIPTS_DIR, '../..')
@@ -181,6 +182,8 @@ async function main() {
   }
 
   const mdxContent = fs.readFileSync(mdxPath, 'utf-8')
+  // До генерации обложки: отказ после неё оставлял бы перезаписанный webp без MDX.
+  assertSafeMdx(mdxContent, `regen ${slug} (исходник)`)
   const fm = parseFrontmatter(mdxContent)
   const title = fm.title || slug
   const description = fm.description || ''
@@ -231,6 +234,8 @@ async function main() {
   // Обновляем imageUrl в MDX
   const newImageUrl = `/images/posts/${destFilename}`
   const updatedMdx = mdxContent.replace(/imageUrl:\s*"[^"]*"/, `imageUrl: "${newImageUrl}"`)
+  // Меняется только imageUrl, но дальше git push в main — проверяем файл целиком.
+  assertSafeMdx(updatedMdx, `regen ${slug}`)
   fs.writeFileSync(mdxPath, updatedMdx)
 
   // Git add + commit + push
