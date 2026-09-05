@@ -20,6 +20,8 @@ jobs:
       - name: Read runit log + env check + bot status
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+            echo '=== glibc / node / uname (S13: sharp 0.35 требует glibc >= 2.28) ==='
+            ldd --version 2>/dev/null | head -1; uname -mr; ls ~/.nvm/versions/node/ 2>/dev/null
             echo '=== Last 50 lines of runit log ==='
             tail -50 ~/d-pub.ru/log/node-runlog/current 2>/dev/null || echo 'log not found'
             echo '=== .env keys (no values) ==='

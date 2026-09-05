@@ -68,3 +68,5 @@ scripts/topvisor-positions.ts
 
 # Лок бота завода (S9): живёт только во время запуска скрипта
 scripts/content-factory/data/.bot-script.lock
+# Локальная копия сборки (ревью S13: /.next-*/ её не покрывал)
+/.next.backup/
