@@ -32,12 +32,18 @@ async function sendMessage(text, extra = {}) {
 // publisher.ts
 var DATA_DIR = path.join(import.meta.dirname, "data");
 var PAYLOAD_URL = process.env.NEXT_PUBLIC_SERVER_URL || "https://d-pub.ru";
+var FACTORY_API_KEY = process.env.PAYLOAD_FACTORY_API_KEY;
 var ADMIN_EMAIL = process.env.PAYLOAD_ADMIN_EMAIL || process.env.ADMIN_EMAIL;
 var ADMIN_PASSWORD = process.env.PAYLOAD_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
 var SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "https://d-pub.ru";
-async function getPayloadToken() {
+async function getAuthorization() {
+  if (FACTORY_API_KEY) return `users API-Key ${FACTORY_API_KEY}`;
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD)
-    throw new Error("PAYLOAD_ADMIN_EMAIL / PAYLOAD_ADMIN_PASSWORD \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B");
+    throw new Error("PAYLOAD_FACTORY_API_KEY \u043D\u0435 \u0437\u0430\u0434\u0430\u043D (\u0438 \u043D\u0435\u0442 \u0437\u0430\u043F\u0430\u0441\u043D\u044B\u0445 PAYLOAD_ADMIN_*)");
+  const legacy = "\u26A0\uFE0F publisher \u043F\u0443\u0431\u043B\u0438\u043A\u0443\u0435\u0442 \u043F\u0430\u0440\u043E\u043B\u0435\u043C \u0430\u0434\u043C\u0438\u043D\u0430 \u2014 \u0443\u0441\u0442\u0430\u0440\u0435\u043B\u043E (S21): \u0437\u0430\u0432\u0435\u0434\u0438\u0442\u0435 PAYLOAD_FACTORY_API_KEY \u0438 \u0443\u0431\u0435\u0440\u0438\u0442\u0435 PAYLOAD_ADMIN_* \u0438\u0437 .env \u0437\u0430\u0432\u043E\u0434\u0430";
+  console.warn(`[publisher] ${legacy}`);
+  await sendMessage(legacy).catch(() => {
+  });
   const res = await fetch(`${PAYLOAD_URL}/api/users/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -45,22 +51,22 @@ async function getPayloadToken() {
   });
   const data = await res.json();
   if (!data.token) throw new Error(`Payload login failed: ${data.message}`);
-  return data.token;
+  return `Bearer ${data.token}`;
 }
-async function getArticle(id, token) {
+async function getArticle(id, authorization) {
   const res = await fetch(`${PAYLOAD_URL}/api/articles/${id}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: authorization }
   });
   const data = await res.json();
   if (!data.title) throw new Error(`\u0421\u0442\u0430\u0442\u044C\u044F ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430: ${JSON.stringify(data)}`);
   return { title: data.title, slug: data.slug || "", status: data.status || "" };
 }
-async function publishArticle(id, token) {
+async function publishArticle(id, authorization) {
   const res = await fetch(`${PAYLOAD_URL}/api/articles/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
+      Authorization: authorization
     },
     body: JSON.stringify({ status: "published" })
   });
@@ -74,7 +80,7 @@ async function main() {
     process.exit(1);
   }
   console.log(`[publisher] \u041F\u0443\u0431\u043B\u0438\u043A\u0443\u044E \u0441\u0442\u0430\u0442\u044C\u044E ID=${articleId}...`);
-  const token = await getPayloadToken();
+  const token = await getAuthorization();
   const article = await getArticle(articleId, token);
   if (article.status === "published") {
     await sendMessage(

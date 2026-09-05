@@ -16,6 +16,19 @@ import type { Access, CollectionConfig, FieldAccess } from 'payload'
  * с overrideAccess, так что вход по ключу от этого не зависит.
  */
 const isAdmin: Access = ({ req }) => req.user?.role === 'admin'
+const isAdminField: FieldAccess = ({ req }) => req.user?.role === 'admin'
+
+/**
+ * Право публиковать статьи без прав админа (S21, аудит 04.09.2026). Завод
+ * держал пароль админа ради одного поля status; теперь у него свой пользователь
+ * роли agent с canPublish, а флаг ставит только админ.
+ */
+export function canPublish(user: unknown): boolean {
+  // unknown, а не User: в tsconfig скриптов req.user — UntypedUser без общих полей.
+  if (!user || typeof user !== 'object') return false
+  const u = user as { role?: unknown; canPublish?: unknown }
+  return u.role === 'admin' || (u.role === 'agent' && u.canPublish === true)
+}
 
 const selfOrAdmin: Access = ({ req }) => {
   if (!req.user) return false
@@ -53,6 +66,14 @@ export const Users: CollectionConfig = {
       options: ['admin', 'agent', 'sync'],
       defaultValue: 'agent',
       saveToJWT: true,
+    },
+    {
+      name: 'canPublish',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Может публиковать статьи',
+      admin: { description: 'Для роли agent: право менять status статей. Ставит только админ.' },
+      access: { create: isAdminField, update: isAdminField },
     },
     // Одноимённое поле сливается с базовым полем auth (mergeBaseFields):
     // тип и хуки шифрования остаются от Payload, access — наш.

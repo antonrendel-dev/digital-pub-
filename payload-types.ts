@@ -257,6 +257,7 @@ export interface Media {
 export interface User {
   id: number
   role?: ('admin' | 'agent' | 'sync') | null
+  canPublish?: boolean | null
   updatedAt: string
   createdAt: string
   enableAPIKey?: boolean | null
@@ -439,6 +440,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   role?: T
+  canPublish?: T
   updatedAt?: T
   createdAt?: T
   enableAPIKey?: T

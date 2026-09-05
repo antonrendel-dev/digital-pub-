@@ -1,6 +1,9 @@
+import fs from 'fs'
+import path from 'path'
 import { Posts } from '../../payload/collections/posts'
 import { Users } from '../../payload/collections/users'
 import { Articles } from '../../payload/collections/articles'
+import { canPublish } from '../../payload/collections/users'
 
 /**
  * Страж на права чтения коллекций.
@@ -69,5 +72,75 @@ describe('Права чтения коллекций Payload', () => {
     const read = Articles.access?.read as (args: never) => unknown
     expect(read(anon)).toEqual({ status: { equals: 'published' } })
     expect(read(admin)).toBe(true)
+  })
+})
+
+// S21: завод публикует без пароля админа — агент с флагом canPublish, который ставит только админ.
+describe('Публикация статей без прав админа (S21)', () => {
+  const agentNo = { req: { user: { id: 7, role: 'agent', canPublish: false } } } as never
+  const agentYes = { req: { user: { id: 7, role: 'agent', canPublish: true } } } as never
+  const syncYes = { req: { user: { id: 8, role: 'sync', canPublish: true } } } as never
+
+  it('articles.update и поле status: агент без canPublish — нет, с canPublish — да, sync — никогда', () => {
+    const update = Articles.access?.update as (args: never) => unknown
+    const status = Articles.fields.find((f) => 'name' in f && f.name === 'status') as {
+      access?: { update?: (args: never) => unknown; create?: (args: never) => unknown }
+    }
+    for (const fn of [update, status.access!.update!, status.access!.create!]) {
+      expect(fn(agentNo)).toBe(false)
+      expect(fn(agentYes)).toBe(true)
+      expect(fn(syncYes)).toBe(false)
+      expect(fn(admin)).toBe(true)
+      expect(fn(anon)).toBe(false)
+    }
+  })
+
+  it('articles.read: агент с canPublish видит черновики (publisher читает статью до PATCH), без флага — только опубликованные', () => {
+    const read = Articles.access?.read as (args: never) => unknown
+    expect(read(agentYes)).toBe(true)
+    expect(read(agentNo)).toEqual({ status: { equals: 'published' } })
+    expect(read(anon)).toEqual({ status: { equals: 'published' } })
+  })
+
+  it('содержательные поля статьи агент с canPublish менять не может — только status', () => {
+    for (const f of Articles.fields as {
+      name?: string
+      access?: { update?: (a: never) => unknown }
+    }[]) {
+      if (!f.name || f.name === 'status') continue
+      expect(f.access?.update).toBeDefined()
+      expect(f.access!.update!(agentYes)).toBe(false)
+      expect(f.access!.update!(admin)).toBe(true)
+    }
+  })
+
+  it('флаг canPublish ставит и меняет только админ', () => {
+    const field = Users.fields.find((f) => 'name' in f && f.name === 'canPublish') as {
+      access?: { update?: (args: never) => unknown; create?: (args: never) => unknown }
+    }
+    expect(field.access!.update!(admin)).toBe(true)
+    expect(field.access!.update!(agentYes)).toBe(false)
+    expect(field.access!.create!(agentYes)).toBe(false)
+  })
+
+  it('canPublish(): нет пользователя — нет права', () => {
+    expect(canPublish(null)).toBe(false)
+    expect(canPublish({ role: 'agent', canPublish: null })).toBe(false)
+  })
+
+  it('publisher авторизуется API-ключом завода, логин админом только как запасной путь с предупреждением', () => {
+    const src = fs.readFileSync(
+      path.join(process.cwd(), 'scripts/content-factory/publisher.ts'),
+      'utf8'
+    )
+    expect(src).toMatch(/users API-Key \$\{FACTORY_API_KEY\}/)
+    expect(src.indexOf('FACTORY_API_KEY) return')).toBeLessThan(src.indexOf('/api/users/login'))
+    expect(src).toMatch(/паролем админа/)
+    expect(src).toMatch(/await sendMessage\(legacy\)/)
+  })
+
+  it('миграция can_publish зарегистрирована', () => {
+    const idx = fs.readFileSync(path.join(process.cwd(), 'payload-migrations/index.ts'), 'utf8')
+    expect(idx).toMatch(/name: '20260905_users_can_publish'/)
   })
 })

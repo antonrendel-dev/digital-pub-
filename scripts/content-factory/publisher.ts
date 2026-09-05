@@ -11,13 +11,24 @@ import { sendMessage } from './lib/telegram.js'
 
 const DATA_DIR = path.join(import.meta.dirname, 'data')
 const PAYLOAD_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
+// S21: публикация от пользователя завода с правом canPublish по API-ключу,
+// а не паролем админа. Логин админом оставлен запасным путём до переезда
+// секретов в .env завода (файл root:claude, правит Тони) и пишет в лог, что устарел.
+const FACTORY_API_KEY = process.env.PAYLOAD_FACTORY_API_KEY
 const ADMIN_EMAIL = process.env.PAYLOAD_ADMIN_EMAIL || process.env.ADMIN_EMAIL
 const ADMIN_PASSWORD = process.env.PAYLOAD_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru'
 
-async function getPayloadToken(): Promise<string> {
+/** Значение заголовка Authorization: API-ключ завода, иначе JWT админа. */
+async function getAuthorization(): Promise<string> {
+  if (FACTORY_API_KEY) return `users API-Key ${FACTORY_API_KEY}`
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD)
-    throw new Error('PAYLOAD_ADMIN_EMAIL / PAYLOAD_ADMIN_PASSWORD не заданы')
+    throw new Error('PAYLOAD_FACTORY_API_KEY не задан (и нет запасных PAYLOAD_ADMIN_*)')
+  const legacy =
+    '⚠️ publisher публикует паролем админа — устарело (S21): заведите PAYLOAD_FACTORY_API_KEY и уберите PAYLOAD_ADMIN_* из .env завода'
+  console.warn(`[publisher] ${legacy}`)
+  // stdout бота никто не читает — предупреждение уходит и в рабочий топик.
+  await sendMessage(legacy).catch(() => {})
   const res = await fetch(`${PAYLOAD_URL}/api/users/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -25,15 +36,15 @@ async function getPayloadToken(): Promise<string> {
   })
   const data = (await res.json()) as { token?: string; message?: string }
   if (!data.token) throw new Error(`Payload login failed: ${data.message}`)
-  return data.token
+  return `Bearer ${data.token}`
 }
 
 async function getArticle(
   id: string,
-  token: string
+  authorization: string
 ): Promise<{ title: string; slug: string; status: string }> {
   const res = await fetch(`${PAYLOAD_URL}/api/articles/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: authorization },
   })
   const data = (await res.json()) as {
     title?: string
@@ -45,12 +56,12 @@ async function getArticle(
   return { title: data.title, slug: data.slug || '', status: data.status || '' }
 }
 
-async function publishArticle(id: string, token: string): Promise<void> {
+async function publishArticle(id: string, authorization: string): Promise<void> {
   const res = await fetch(`${PAYLOAD_URL}/api/articles/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: authorization,
     },
     body: JSON.stringify({ status: 'published' }),
   })
@@ -67,7 +78,7 @@ async function main() {
 
   console.log(`[publisher] Публикую статью ID=${articleId}...`)
 
-  const token = await getPayloadToken()
+  const token = await getAuthorization()
   const article = await getArticle(articleId, token)
 
   if (article.status === 'published') {

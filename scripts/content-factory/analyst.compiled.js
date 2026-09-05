@@ -145,7 +145,7 @@ function stripRoleTag(text) {
 // lib/agent-transcript.ts
 import fs2 from "fs";
 import path3 from "path";
-var RUNS_ROOT = path3.join(process.cwd(), "logs", "factory-runs");
+var RUNS_ROOT = "/home/claude/projects/digital-pub-/logs/factory-runs";
 var KEEP_DAYS = 30;
 var runDirectory = null;
 var counter = 0;
