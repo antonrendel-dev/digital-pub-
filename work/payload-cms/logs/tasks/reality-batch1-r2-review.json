@@ -7,7 +7,7 @@
     "Task 1 TDD Anchor path corrected: now uses `tests/unit/async-params.test.ts` (was `tests/routes/`)",
     "Task 3 db adapter: now uses `url: process.env.DB_CONNECTION_STRING` consistently in What to do step 5",
     "Task 3 NEXT_PUBLIC_SITE_URL replaced with NEXT_PUBLIC_BASE_URL (still factually wrong — see finding below)",
-    "Task 2 hardcoded prod server values (c48127@91.201.52.231) removed from Details section"
+    "Task 2 hardcoded prod server values (<prod-ssh-target>) removed from Details section"
   ],
   "findings": [
     {
@@ -35,7 +35,7 @@
       "severity": "minor",
       "category": "feasibility",
       "task": 2,
-      "issue": "Task 2 uses secret name `STAGING_DEPLOY_SSH_KEY` throughout (step 3 and Details section). However, `deployment.md` (the project's authoritative deployment reference) documents this secret as `STAGING_SSH_KEY` (line 96: 'GitHub Secrets: STAGING_HOST=144.31.204.181, STAGING_USER=claude, STAGING_SSH_KEY'). These are different secret names. If Toni has already created `STAGING_SSH_KEY` in GitHub Secrets based on the deployment.md docs, the deploy-staging.yml using `STAGING_DEPLOY_SSH_KEY` will fail with a secret-not-found error.",
+      "issue": "Task 2 uses secret name `STAGING_DEPLOY_SSH_KEY` throughout (step 3 and Details section). However, `deployment.md` (the project's authoritative deployment reference) documents this secret as `STAGING_SSH_KEY` (line 96: 'GitHub Secrets: STAGING_HOST=<proxy-host>, STAGING_USER=claude, STAGING_SSH_KEY'). These are different secret names. If Toni has already created `STAGING_SSH_KEY` in GitHub Secrets based on the deployment.md docs, the deploy-staging.yml using `STAGING_DEPLOY_SSH_KEY` will fail with a secret-not-found error.",
       "fix": "Align with deployment.md: use `STAGING_SSH_KEY` instead of `STAGING_DEPLOY_SSH_KEY` in both step 3 and the Details section. If intentionally renaming the secret, add an explicit note that the old secret must be renamed in GitHub Settings and deployment.md must be updated."
     }
   ],

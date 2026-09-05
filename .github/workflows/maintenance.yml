@@ -30,33 +30,39 @@ jobs:
 
       - name: Seed articles into Payload CMS
         if: ${{ inputs.task == 'seed-articles' || inputs.task == 'all' }}
+        # Учётка админа уходит через stdin построчно (KEY=value) и экспортируется через read -r:
+        # ни argv ssh, ни временного файла, ни source (S15).
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         run: |
-          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
-          if [ -z "$ADMIN_PASSWORD" ]; then echo "ADMIN_PASSWORD not set"; exit 1; fi
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru/app && \
-              ADMIN_EMAIL='in-ekb@mail.ru' \
-              ADMIN_PASSWORD='$ADMIN_PASSWORD' \
-              PAYLOAD_BASE_URL='https://d-pub.ru' \
-              node scripts/seed-articles.compiled.js 2>&1 | tail -20
-          "
+          if [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then echo "ADMIN_EMAIL / ADMIN_PASSWORD not set"; exit 1; fi
+          printf 'ADMIN_EMAIL=%s\nADMIN_PASSWORD=%s\nPAYLOAD_BASE_URL=https://d-pub.ru\n' "$ADMIN_EMAIL" "$ADMIN_PASSWORD" \
+          | ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
+            set -e
+            while IFS= read -r line; do export "${line%%=*}=${line#*=}"; done
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            cd ~/d-pub.ru/app && node scripts/seed-articles.compiled.js 2>&1 | tail -20
+          '
 
       - name: Seed tags with SEO data
         if: ${{ inputs.task == 'seed-tags' || inputs.task == 'all' }}
+        # Учётка админа уходит через stdin построчно (KEY=value) и экспортируется через read -r:
+        # ни argv ssh, ни временного файла, ни source (S15).
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         run: |
-          ADMIN_PASSWORD='${{ secrets.ADMIN_PASSWORD }}'
-          if [ -z "$ADMIN_PASSWORD" ]; then echo "ADMIN_PASSWORD not set"; exit 1; fi
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            cd ~/d-pub.ru/app && \
-              ADMIN_EMAIL='in-ekb@mail.ru' \
-              ADMIN_PASSWORD='$ADMIN_PASSWORD' \
-              PAYLOAD_BASE_URL='https://d-pub.ru' \
-              node scripts/seed-tags.compiled.js 2>&1 | tail -30
-          "
+          if [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then echo "ADMIN_EMAIL / ADMIN_PASSWORD not set"; exit 1; fi
+          printf 'ADMIN_EMAIL=%s\nADMIN_PASSWORD=%s\nPAYLOAD_BASE_URL=https://d-pub.ru\n' "$ADMIN_EMAIL" "$ADMIN_PASSWORD" \
+          | ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
+            set -e
+            while IFS= read -r line; do export "${line%%=*}=${line#*=}"; done
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            cd ~/d-pub.ru/app && node scripts/seed-tags.compiled.js 2>&1 | tail -30
+          '
 
       - name: Retag all posts
         if: ${{ inputs.task == 'retag-all-posts' || inputs.task == 'all' }}
@@ -69,14 +75,16 @@ jobs:
 
       - name: Telegram sync
         if: ${{ inputs.task == 'telegram-sync' || inputs.task == 'all' }}
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ADMIN_ID: ${{ secrets.ADMIN_ID }}
         run: |
-          BOT_TOKEN='${{ secrets.BOT_TOKEN }}'
-          ADMIN_ID='${{ secrets.ADMIN_ID }}'
           if [ -z "$BOT_TOKEN" ]; then echo "BOT_TOKEN not set"; exit 1; fi
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-            export BOT_TOKEN='$BOT_TOKEN'
-            export ADMIN_ID='$ADMIN_ID'
+          printf 'BOT_TOKEN=%s\nADMIN_ID=%s\n' "$BOT_TOKEN" "$ADMIN_ID" \
+          | ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
+            set -e
+            while IFS= read -r line; do export "${line%%=*}=${line#*=}"; done
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
             cd ~/d-pub.ru/app && node scripts/sync-telegram.compiled.js 2>&1 | tail -40
-          "
+          '

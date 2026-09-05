@@ -20,7 +20,8 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Commit:** see git log
 **Agent:** dev
 **Summary:** `tailwind.config.ts` сконфигурирован с `darkMode: ['selector', '[data-theme="dark"]']`, CSS-переменные подключены к Tailwind theme. Security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`) добавлены в `next.config.mjs`. `X-Robots-Tag: noindex, nofollow` добавлен **намеренно** для скрытия проекта от индексации до явного запуска (см. deployment.md, коммит 680e9a5).
-**Deviations:** 
+**Deviations:**
+
 - Decision 1 (Tailwind `dark:` modifier): конфиг включён, но `dark:` классы в JSX **не используются** — тема работает через CSS-переменные. Функционально корректно, но Decision 1 как defense-in-depth не выполнен. **Reason:** на момент миграции CSS-переменных хватало, явного `dark:` рефакторинга не понадобилось. **Follow-up:** либо убрать `darkMode` из конфига, либо мигрировать hardcoded цвета (`bg-purple-100`, `bg-green-100` в JobCard/PostDetail) на `dark:` варианты.
 
 ---
@@ -32,6 +33,7 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Agent:** dev
 **Summary:** `next-mdx-remote@5.0.0` + `gray-matter` подключены. Создан `lib/articles.ts` с парсингом frontmatter, валидацией slug через zod (`/^[a-z0-9-]+$/`), cross-check filename allowlist через `fs.readdirSync` (path-traversal защита). Юнит-тесты на frontmatter parsing и slug validation добавлены.
 **Deviations:**
+
 - Decision 5 (MDX component allowlist): `MDX_ALLOWED_ELEMENTS` экспортирован из `lib/articles.ts`, но при рендере через `<MDXRemote>` параметр `components` **не передаётся**. **Reason:** MDX-файлы пишутся только агентами из репозитория (trusted source), реальной XSS-уязвимости нет — security-audit подтвердил. Defense-in-depth по Decision 5 формально не активирован. **Follow-up:** при включении user-submitted MDX в будущем — обязательно передавать allowlist в `components` prop.
 
 ---
@@ -43,6 +45,7 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Agent:** dev
 **Summary:** Все основные компоненты (Navbar, Feed, JobCard, TileCard, LeftSidebar, RightSidebar, Footer, PostDetail, HomePage, ListingPage, PageShell) мигрированы с custom CSS на Tailwind utility classes. Mobile-first responsive: burger menu ниже `md:`, no horizontal scroll на 320px. `globals.css` сокращён до 121 строки (с 1300+).
 **Deviations:**
+
 - Acceptance criterion «globals.css <100 lines» **не выполнен формально** (121 строк, +20%). **Reason:** в `globals.css` остались `:root` CSS-переменные (≈60 строк, по Decision 2), плюс legacy custom-классы (`.tile-card`, `.s-lbl`, `.tag-blue/green/orange`, `.mobile-menu`, `.descriptor-bar`, `.chip-active`, `.logo-brand`) — используются в 8+ компонентах. Полная Tailwind-миграция требует ~1-2 часов работы.
 - Acceptance criterion «no custom CSS class selectors in JSX» **не выполнен** по той же причине. **Follow-up:** мигрировать оставшиеся классы (особенно `.tag-*` → Tailwind компоненты) в итерации 2.
 
@@ -65,6 +68,7 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Agent:** dev
 **Summary:** SEO-страницы тегов реализованы как `app/vacancies/[category]/page.tsx` (vacancies) + `app/resumes/tag/[tagSlug]/page.tsx` (resumes). Filter chips в `Feed.tsx` — tag-based, поиск (по title/description/company) и пагинация («Показать ещё», 10 per page) сохранены. Sidebar статистика — реальная из БД (`getStats`).
 **Deviations:**
+
 - **Decision 6 нарушен** для vacancies-маршрутов: реализовано `app/vacancies/[category]/page.tsx` вместо обещанного `app/vacancies/tag/[tagSlug]/page.tsx`. **Reason:** реальные post-detail страницы лежат глубже (`app/vacancies/[category]/[slug]/page.tsx`), коллизии с tag-slug не возникает на практике, URL короче и читаемее для SEO. **Risk:** если sync создаст post со slug, совпадающим с tag-slug (например, post-slug=`smm`) — он попадёт в category-namespace и перекроет SEO-страницу. **Mitigation:** в `[category]/page.tsx` сначала проверяется `getTagBySlug` — если не найден, рендерится 404. Sync генерирует post-slug по транслиту title (всегда с числовым суффиксом типа `menedzher_392`), поэтому коллизия маловероятна.
 - Для resumes Decision 6 соблюдён (`/resumes/tag/{tagSlug}`).
 
@@ -77,6 +81,7 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Agent:** dev + content team
 **Summary:** Созданы `/articles` (listing) и `/articles/[slug]` (detail) с MDX-рендером через `next-mdx-remote/rsc` + `remark-gfm` (для таблиц). Sample.mdx **удалён** в коммите 57334f9 и заменён 10 реальными статьями от writer-агента (kak-nayti-rabotu-smm-menedzheru-2026, seo-specialist-2026, zarplaty-digital-marketing-2026 и др.). Navbar/Footer почищены от dead-links (Отзывы, Курсы, Полезное). «+ Разместить» ведёт на `t.me/resume_vac_bot`. Созданы `/privacy`, `/terms`, `/app/sitemap.ts`. ISR `revalidate=300` на главных страницах.
 **Deviations:**
+
 - Sample.mdx удалён за ненадобностью. Тесты, ссылающиеся на него — **требуют обновления** (известная проблема, в test-audit P0).
 - Hydration crash на article pages (markdown-таблицы рендерились на сервере иначе чем на клиенте) исправлен в коммите `038afbb` добавлением `remark-gfm`. **Регресс-тест отсутствует** (test-audit P0).
 
@@ -89,6 +94,7 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Agent:** dev
 **Summary:** Playwright настроен. Созданы E2E на critical-path, responsive (375px), articles flow, theme toggle. Integration на sitemap. 35+ юнит-тестов.
 **Deviations:**
+
 - `tests/integration/sync-tags.test.ts` **отсутствует** (tech-spec явно требовал). Tag-assignment не имеет регрессионной защиты.
 - `sitemap.test.ts` ассерты ждут URL `/vacancies/tag/...` (несоответствие с Decision 6 deviation в Task 7) — тест падает.
 - 10 unit/E2E-кейсов ссылаются на удалённый `sample.mdx` — падают.
@@ -105,11 +111,13 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Commits:** см. `work/digital-pub-mvp/audit-report.md`, `security-audit.md`, `test-audit.md`
 **Agent:** review (code), security-auditor skill, test-master skill
 **Summary:** Запущены три параллельных аудита перед финализацией. Найдено:
+
 - Code: Pass with concerns — 2 P0 (один — robots-противоречие, задумано; второй — кажущиеся 404 vacancy URLs — на проде работают, агент не нашёл вложенный `[slug]/page.tsx` через task-list), 8 P1, 10 P2, 10 P3.
 - Security: Medium risk — 0 P0, 2 P1 (JSON-LD injection P1-1, BOT_TOKEN leak P1-2), 2 P2, 5 P3.
 - Tests: NOT READY — 4 P0 (см. Task 9 deviations), 5 P1.
 
 **Resolution:**
+
 - P0 robots-противоречие → задокументирован как намеренный (sites is closed via `X-Robots-Tag` until launch).
 - P0 vacancy 404 → ложная тревога, маршруты работают.
 - Security P1-2 (BOT_TOKEN) → исправлен (см. ниже).
@@ -126,6 +134,7 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Commits:** см. свежие fix/refactor/perf коммиты на main после audit-wave.
 **Agent:** dev (под orchestration от cto)
 **Summary:**
+
 - `fix(security): sanitize errors in downloadImageLocally to prevent BOT_TOKEN leak in logs` — `sync-telegram.ts:154` `console.error` теперь использует `sanitizeError(e)`. Других утечек в файле нет (проверено).
 - `refactor: extract shared utilities to lib/postUtils.ts (P1-3)` — `cleanDescription`, `formatDate`, `getTagColorClass` + `FORMAT_TAGS`/`LEVEL_TAGS` вынесены в `lib/postUtils.ts`. Удалены дубли из JobCard, TileCard, PostDetail, sitemap. Используется существующий `getPrimaryCategorySlug` из `lib/posts.ts`.
 - `refactor: query tag slugs from DB in sitemap instead of hardcoded array (P1-6)` — `app/sitemap.ts` теперь тянет slug'и тегов через `prisma.tag.findMany`.
@@ -141,6 +150,7 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Commits:** см. свежие test fix коммиты.
 **Agent:** dev (под orchestration от cto)
 **Summary:**
+
 - `sitemap.test.ts` — ассерты обновлены под фактический `/vacancies/{slug}` namespace (без `/tag/` префикса для vacancies).
 - Удалены/переписаны 10 тестов, ссылавшихся на `sample.mdx`. Замена — проверки на ≥10 реальных статей в `content/articles/`.
 - Создан регресс-тест на hydration crash: рендер MDX с markdown-таблицей не должен падать ни на сервере, ни на клиенте.
@@ -167,6 +177,7 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 **Agent:** Anton (manually)
 **Summary:** Сайт работает на https://d-pub.ru, закрыт от индексации через `X-Robots-Tag: noindex, nofollow` (намеренно). Sitemap.xml валиден, страницы тегов/вакансий/статей открываются.
 **Deviations:**
+
 - Полное снятие `noindex` — отложено до явной команды (см. `deployment.md`).
 
 ---
@@ -176,22 +187,26 @@ Agent reports on completed tasks. Each entry is written by the agent that execut
 ### KI-1: Local `npm run build` падает на prerender с `useContext` null
 
 **Симптом:** На dev-машине `NODE_ENV=development npm run build` падает на prerender всех статических страниц (`/`, `/404`, `/500`, `/_not-found`, `/articles`, `/privacy`, `/resumes`, `/terms`, `/vacancies`) с ошибкой:
+
 ```
 TypeError: Cannot read properties of null (reading 'useContext')
 ```
 
 **Контекст:**
+
 - Прод (`d-pub.ru`) на старом коде **работает** (smoke 8/8 endpoint'ов = 200 OK).
 - Build на старом коде (`8b3f6fa`) **также падает** локально (на TS-ошибках в `_files/v1/`, не на `useContext`). Это означает, что `useContext`-баг существует давно — просто раньше build падал ещё раньше, до prerender'а.
 - NetAngels build, видимо, успешен — отсюда работающий прод. Гипотеза: другая Node-версия, другой `NODE_ENV` runtime, либо prerender отключён на сервере.
 
 **Не блокирует:**
+
 - `npx tsc --noEmit` — зелёный (после `_files/` в exclude).
 - `npm test` (jest) — 76 passed, 4 todo, 0 failed.
 - Прод работает.
 
 **Дальнейшие шаги:**
-- При следующем деплое: запустить `npm run build` на NetAngels (`c48127@91.201.52.231:~/d-pub.ru/app/`) — посмотреть, проходит ли там.
+
+- При следующем деплое: запустить `npm run build` на NetAngels (`<prod-ssh-target>:~/d-pub.ru/app/`) — посмотреть, проходит ли там.
 - Если на сервере тоже падает — копать (искать client-component с `useContext` в server-tree, проверять Navbar/JsonLd/PageShell).
 - Если на сервере проходит — задокументировать разницу окружений (Node version, env vars) и закрыть как «локальный dev-баг».
 

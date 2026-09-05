@@ -6,8 +6,8 @@
 
 **Platform:** NetAngels (shared hosting с поддержкой Node.js), Node 22
 
-**App host:** `c48127@91.201.52.231` — приложение в `~/d-pub.ru/app/`
-**Front proxy:** `root@144.31.204.181` (красный сервер) — внешний прокси перед NetAngels
+**App host:** `<prod-ssh-target>` — приложение в `~/d-pub.ru/app/`
+**Front proxy:** `<proxy-ssh-target>` (красный сервер) — внешний прокси перед NetAngels
 **Restart:** `touch ~/d-pub.ru/reload` — штатный механизм NetAngels, без `pm2`/`systemd`
 
 **Index status:** сайт **открыт для индексации**. `X-Robots-Tag: noindex` в `next.config.mjs` больше нет.
@@ -22,10 +22,10 @@
 
 ## Access Information
 
-**App server (NetAngels):** `ssh c48127@91.201.52.231`
+**App server (NetAngels):** `ssh <prod-ssh-target>`
 Корень: `~/d-pub.ru/`, приложение: `~/d-pub.ru/app/`. Git-репозитория на сервере **нет** — код доставляется rsync'ом из CI.
 
-**Front proxy:** `ssh root@144.31.204.181`
+**Front proxy:** `ssh <proxy-ssh-target>`
 
 **Database:** PostgreSQL. Строка подключения дублируется в двух переменных — `DB_CONNECTION_STRING` и `DATABASE_URL` (обе пишет CI).
 
@@ -101,7 +101,7 @@ Prisma осталась только в разовых скриптах `scripts
 
 **Production:** https://d-pub.ru — ветка `main`, NetAngels, рестарт через `touch reload`.
 
-**Staging:** https://staging.d-pub.ru — ветка `dev`, красный сервер `144.31.204.181`.
+**Staging:** https://staging.d-pub.ru — ветка `dev`, красный сервер `<proxy-host>`.
 
 - Приложение в `~/staging/d-pub/`, процесс `d-pub-staging` под **root'овым** pm2 (`sudo pm2 list`)
 - Секреты: `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_KEY`, `STAGING_DB_CONNECTION_STRING`, `STAGING_PAYLOAD_SECRET`

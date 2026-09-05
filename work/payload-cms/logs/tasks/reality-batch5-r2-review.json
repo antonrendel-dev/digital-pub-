@@ -44,14 +44,14 @@
       "category": "feasibility",
       "task": 15,
       "issue": "Task 15 Step 10 uses 'pm2 logs staging-dpub' to check getPayload() singleton behavior. Per deployment.md, staging runs Next.js directly on port 3002 on the red server — the process manager is NOT documented. deployment.md explicitly states touch reload is the mechanism (NetAngels/Passenger-style), NOT pm2. The 'pm2 list' check in the edge cases section will return 'command not found' or empty on staging if pm2 is not installed. The service name 'staging-dpub' is invented with no reference in project knowledge.",
-      "fix": "Replace pm2-based log checks with: 'ssh claude@144.31.204.181 \"journalctl -f --since -1m 2>/dev/null || tail -f ~/staging.d-pub.ru/app/logs/app.log 2>/dev/null\"'. Remove pm2 references. The staging server runs Next.js standalone via a process manager that is not pm2 — use a more agnostic log discovery approach."
+      "fix": "Replace pm2-based log checks with: 'ssh claude@<proxy-host> \"journalctl -f --since -1m 2>/dev/null || tail -f ~/staging.d-pub.ru/app/logs/app.log 2>/dev/null\"'. Remove pm2 references. The staging server runs Next.js standalone via a process manager that is not pm2 — use a more agnostic log discovery approach."
     },
     {
       "severity": "major",
       "category": "feasibility",
       "task": 15,
-      "issue": "Task 15 Step 9 runs sync script via 'ssh root@144.31.204.181 \"cd /opt/bots/telegram-bot-vac && npx ts-node scripts/sync-telegram.ts\"'. After Task 11 rewrites scripts/sync-telegram.ts to use Payload REST API, this path assumes the rewritten script is deployed to /opt/bots/telegram-bot-vac/ on the red server. But Task 11 only rewrites the file in the project repo (scripts/sync-telegram.ts). There is no deploy step that copies the new sync script to the red server. The red server path /opt/bots/telegram-bot-vac/ still has the old Prisma-based version.",
-      "fix": "Task 15 Step 9 should reference the staging-deployed version of the script or add a step to deploy scripts/ to the red server. Alternatively, Task 11 must include a deploy step for the sync script to /opt/bots/ — or Task 15 should run the script from the staging app directory: 'ssh claude@144.31.204.181 \"cd ~/staging.d-pub.ru/app && npx ts-node scripts/sync-telegram.ts\"'."
+      "issue": "Task 15 Step 9 runs sync script via 'ssh <proxy-ssh-target> \"cd /opt/bots/telegram-bot-vac && npx ts-node scripts/sync-telegram.ts\"'. After Task 11 rewrites scripts/sync-telegram.ts to use Payload REST API, this path assumes the rewritten script is deployed to /opt/bots/telegram-bot-vac/ on the red server. But Task 11 only rewrites the file in the project repo (scripts/sync-telegram.ts). There is no deploy step that copies the new sync script to the red server. The red server path /opt/bots/telegram-bot-vac/ still has the old Prisma-based version.",
+      "fix": "Task 15 Step 9 should reference the staging-deployed version of the script or add a step to deploy scripts/ to the red server. Alternatively, Task 11 must include a deploy step for the sync script to /opt/bots/ — or Task 15 should run the script from the staging app directory: 'ssh claude@<proxy-host> \"cd ~/staging.d-pub.ru/app && npx ts-node scripts/sync-telegram.ts\"'."
     },
     {
       "severity": "major",
@@ -72,7 +72,7 @@
       "category": "feasibility",
       "task": 15,
       "issue": "Task 15 Steps 3, 4, and 8 use undeclared variables AGENT_API_KEY, ADMIN_API_KEY, and SYNC_API_KEY in bash scripts. Edge cases section mentions 'получить из ENV на staging (grep API_KEY ~/staging.d-pub.ru/app/.env)', but this is listed as an edge case — not as a prerequisite setup step at the start of the QA task. An agent executing the task sequentially would hit an unset variable error before reaching the edge cases section.",
-      "fix": "Add a 'Prerequisites' section at the top of What to do listing: '0. Obtain API keys from staging: ssh claude@144.31.204.181 \"grep -E \\\"PAYLOAD.*KEY|API_KEY\\\" ~/staging.d-pub.ru/app/.env\" and export as ADMIN_API_KEY, AGENT_API_KEY, SYNC_API_KEY before running any curl commands.'"
+      "fix": "Add a 'Prerequisites' section at the top of What to do listing: '0. Obtain API keys from staging: ssh claude@<proxy-host> \"grep -E \\\"PAYLOAD.*KEY|API_KEY\\\" ~/staging.d-pub.ru/app/.env\" and export as ADMIN_API_KEY, AGENT_API_KEY, SYNC_API_KEY before running any curl commands.'"
     },
     {
       "severity": "minor",

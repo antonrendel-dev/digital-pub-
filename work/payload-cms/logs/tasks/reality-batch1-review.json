@@ -28,8 +28,8 @@
       "severity": "minor",
       "category": "feasibility",
       "task": 2,
-      "issue": "Task 2 Details section states the prod server is `c48127@91.201.52.231` hardcoded. However, the actual deploy.yml uses GitHub Secrets `${{ secrets.DEPLOY_USER }}` and `${{ secrets.DEPLOY_HOST }}` — the actual credentials are not exposed in code. The hardcoded values in the Details section are documentation-only but create a risk if someone copy-pastes them into the actual YAML instead of using the secrets references.",
-      "fix": "Clarify in the Details section that `c48127@91.201.52.231` is provided for reference only and the actual YAML must use `${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}` — which is already the pattern in the existing deploy.yml."
+      "issue": "Task 2 Details section states the prod server is `<prod-ssh-target>` hardcoded. However, the actual deploy.yml uses GitHub Secrets `${{ secrets.DEPLOY_USER }}` and `${{ secrets.DEPLOY_HOST }}` — the actual credentials are not exposed in code. The hardcoded values in the Details section are documentation-only but create a risk if someone copy-pastes them into the actual YAML instead of using the secrets references.",
+      "fix": "Clarify in the Details section that `<prod-ssh-target>` is provided for reference only and the actual YAML must use `${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}` — which is already the pattern in the existing deploy.yml."
     },
     {
       "severity": "minor",

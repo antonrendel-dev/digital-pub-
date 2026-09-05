@@ -8,16 +8,16 @@
       "category": "content",
       "task": 16,
       "section": "What to do",
-      "issue": "Steps 1 and 8 instruct to SSH to NetAngels (c48127@91.201.52.231) to disable/re-enable Telegram sync cron. But tech-spec Architecture, Decision 4, and the Data Migration section all state that the sync cron runs on the red server (root@144.31.204.181, /opt/bots/telegram-bot-vac/). Task 16 Description says 'Sync запускается на app-сервере NetAngels' — this directly contradicts tech-spec. Executing these steps on the wrong server would leave the prod cron running during the migration window.",
-      "fix": "Change Steps 1 and 8 to SSH to the red server (root@144.31.204.181) and reference /opt/bots/telegram-bot-vac/ crontab. Update the Description to state that sync cron is on the red server. Also update Verification Step 9 (which also incorrectly references NetAngels for the sync check)."
+      "issue": "Steps 1 and 8 instruct to SSH to NetAngels (<prod-ssh-target>) to disable/re-enable Telegram sync cron. But tech-spec Architecture, Decision 4, and the Data Migration section all state that the sync cron runs on the red server (<proxy-ssh-target>, /opt/bots/telegram-bot-vac/). Task 16 Description says 'Sync запускается на app-сервере NetAngels' — this directly contradicts tech-spec. Executing these steps on the wrong server would leave the prod cron running during the migration window.",
+      "fix": "Change Steps 1 and 8 to SSH to the red server (<proxy-ssh-target>) and reference /opt/bots/telegram-bot-vac/ crontab. Update the Description to state that sync cron is on the red server. Also update Verification Step 9 (which also incorrectly references NetAngels for the sync check)."
     },
     {
       "severity": "critical",
       "category": "content",
       "task": 17,
       "section": "Verification Steps",
-      "issue": "Sync verification step (SSH на NetAngels) instructs 'ssh c48127@91.201.52.231 \"bash /home/c48127/d-pub.ru/app/scripts/auto-sync.sh\"', but the same task's Details section states 'Red server (proxy + sync cron): root@144.31.204.181' and 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts'. Internal inconsistency within task 17: the Verification Steps reference NetAngels, while Details correctly identify the red server as the sync host.",
-      "fix": "Change the sync verification SSH target to root@144.31.204.181 and the script path to /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts (or npx tsx /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts). Keep the Details section as-is — it is correct."
+      "issue": "Sync verification step (SSH на NetAngels) instructs 'ssh <prod-ssh-target> \"bash /home/<prod-user>/d-pub.ru/app/scripts/auto-sync.sh\"', but the same task's Details section states 'Red server (proxy + sync cron): <proxy-ssh-target>' and 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts'. Internal inconsistency within task 17: the Verification Steps reference NetAngels, while Details correctly identify the red server as the sync host.",
+      "fix": "Change the sync verification SSH target to <proxy-ssh-target> and the script path to /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts (or npx tsx /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts). Keep the Details section as-is — it is correct."
     },
     {
       "severity": "critical",
@@ -88,16 +88,16 @@
       "category": "content",
       "task": 17,
       "section": "What to do",
-      "issue": "Step 6 says 'Запустить sync на красном сервере через SSH'. But the Acceptance Criteria (line 49) and Verification Steps (Sync verification section) reference running sync on NetAngels (c48127@91.201.52.231) — contradicting this step's description. The inconsistency between 'красный сервер' in What to do and NetAngels SSH target in Verification Steps creates ambiguity about which server to use.",
-      "fix": "Resolve server reference: change Verification Steps to use root@144.31.204.181 (red server) with the correct script path, making it consistent with What to do step 6 and the Details section."
+      "issue": "Step 6 says 'Запустить sync на красном сервере через SSH'. But the Acceptance Criteria (line 49) and Verification Steps (Sync verification section) reference running sync on NetAngels (<prod-ssh-target>) — contradicting this step's description. The inconsistency between 'красный сервер' in What to do and NetAngels SSH target in Verification Steps creates ambiguity about which server to use.",
+      "fix": "Resolve server reference: change Verification Steps to use <proxy-ssh-target> (red server) with the correct script path, making it consistent with What to do step 6 and the Details section."
     },
     {
       "severity": "minor",
       "category": "content",
       "task": 17,
       "section": "Acceptance Criteria",
-      "issue": "AC item 'SSH на NetAngels (c48127@91.201.52.231) → запуск /home/c48127/d-pub.ru/app/scripts/auto-sync.sh → count(Post) в Payload вырос' references NetAngels as the sync server, which contradicts both the task's own Details section and the tech-spec. This AC will be satisfied on the wrong server.",
-      "fix": "Update AC to: 'SSH на красный сервер (root@144.31.204.181) → запуск /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts → count(Post) в Payload вырос'."
+      "issue": "AC item 'SSH на NetAngels (<prod-ssh-target>) → запуск /home/<prod-user>/d-pub.ru/app/scripts/auto-sync.sh → count(Post) в Payload вырос' references NetAngels as the sync server, which contradicts both the task's own Details section and the tech-spec. This AC will be satisfied on the wrong server.",
+      "fix": "Update AC to: 'SSH на красный сервер (<proxy-ssh-target>) → запуск /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts → count(Post) в Payload вырос'."
     }
   ],
   "stats": {

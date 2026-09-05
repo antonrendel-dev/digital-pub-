@@ -63,7 +63,7 @@
       "severity": "major",
       "category": "feasibility",
       "task": 15,
-      "issue": "Task 15 Step 9 (Sync dedup end-to-end) runs sync script from `ssh root@144.31.204.181 'cd /opt/bots/telegram-bot-vac && npx ts-node scripts/sync-telegram.ts'`. After Task 11 rewrites `scripts/sync-telegram.ts` to use Payload REST API, the script lives in the project repo — but Task 15 assumes it's at `/opt/bots/telegram-bot-vac/`. The sync script location on the red server vs. the project repo is not reconciled in Task 11's scope.",
+      "issue": "Task 15 Step 9 (Sync dedup end-to-end) runs sync script from `ssh <proxy-ssh-target> 'cd /opt/bots/telegram-bot-vac && npx ts-node scripts/sync-telegram.ts'`. After Task 11 rewrites `scripts/sync-telegram.ts` to use Payload REST API, the script lives in the project repo — but Task 15 assumes it's at `/opt/bots/telegram-bot-vac/`. The sync script location on the red server vs. the project repo is not reconciled in Task 11's scope.",
       "fix": "Task 11 description says it rewrites `scripts/sync-telegram.ts` in the project repo, but Task 15 assumes the red server runs it from `/opt/bots/telegram-bot-vac/`. Clarify whether the rewritten script is deployed to the red server separately or replaces the existing bot. The path in Task 15 Step 9 may be incorrect post-migration."
     },
     {
@@ -77,7 +77,7 @@
       "severity": "minor",
       "category": "tdd",
       "task": 14,
-      "issue": "Task 14 instructs to run `npm test` on staging server (`ssh claude@144.31.204.181 'cd ~/staging.d-pub.ru/app && npm test'`). Running unit tests on a production-like staging server is unusual — unit tests should be local. Installing devDependencies on staging may not be configured (CI typically runs `npm ci --production` or equivalent).",
+      "issue": "Task 14 instructs to run `npm test` on staging server (`ssh claude@<proxy-host> 'cd ~/staging.d-pub.ru/app && npm test'`). Running unit tests on a production-like staging server is unusual — unit tests should be local. Installing devDependencies on staging may not be configured (CI typically runs `npm ci --production` or equivalent).",
       "fix": "Prefer running `npm test` locally on the agent's machine where devDependencies are available. Staging test execution is acceptable as a fallback but should not be primary."
     },
     {

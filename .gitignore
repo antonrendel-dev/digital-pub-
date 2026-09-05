@@ -70,4 +70,5 @@ scripts/topvisor-positions.ts
 scripts/content-factory/data/.bot-script.lock
 # Локальная копия сборки (ревью S13: /.next-*/ её не покрывал)
 /.next.backup/
-
+# Логи кронов содержат цель прода и пути — в репо им не место (S15)
+logs/*.log

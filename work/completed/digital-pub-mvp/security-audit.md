@@ -89,10 +89,7 @@ embed.
 **File:** `components/JsonLd.tsx:9`
 
 ```tsx
-<script
-  type="application/ld+json"
-  dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-/>
+<script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
 ```
 
 **Issue:** `JSON.stringify` корректно экранирует JSON-спецсимволы (`"`, `\`),
@@ -252,7 +249,7 @@ Referrer-Policy. То есть в коде всё так, как написан�
 
 ```ts
 const connectionString =
-  process.env.DATABASE_URL ?? 'postgresql://antonrendel@localhost:5432/digital_pub'
+  process.env.DATABASE_URL ?? 'postgresql://<db-user>@localhost:5432/digital_pub'
 ```
 
 Fallback **без пароля** на локальный сокет — это не утечка секрета (там
@@ -269,13 +266,13 @@ Fallback **без пароля** на локальный сокет — это �
 
 **`npm audit`:** 13 vulnerabilities (5 moderate, 8 high).
 
-| Package | Sev | Direct? | Used in prod? | Severity → нас |
-|---|---|---|---|---|
-| **next-mdx-remote@5.0.0** | high | yes (direct) | **YES — runtime** | **P2** |
-| postcss < 8.5.10 | moderate | no | build-time only | P3 |
-| playwright < 1.55.1 | high | dev | dev-only | P3 |
-| fast-uri ≤ 3.1.1 | high | transitive | dev-only | P3 |
-| @hono/node-server, hono | moderate | transitive via @prisma/dev | dev-only | P3 |
+| Package                   | Sev      | Direct?                    | Used in prod?     | Severity → нас |
+| ------------------------- | -------- | -------------------------- | ----------------- | -------------- |
+| **next-mdx-remote@5.0.0** | high     | yes (direct)               | **YES — runtime** | **P2**         |
+| postcss < 8.5.10          | moderate | no                         | build-time only   | P3             |
+| playwright < 1.55.1       | high     | dev                        | dev-only          | P3             |
+| fast-uri ≤ 3.1.1          | high     | transitive                 | dev-only          | P3             |
+| @hono/node-server, hono   | moderate | transitive via @prisma/dev | dev-only          | P3             |
 
 #### F-07 [P2 — Medium] next-mdx-remote@5.0.0 CVE GHSA-g4xw-jxrg-5f6m
 
@@ -410,10 +407,7 @@ fetch'ей с user-controlled URL. Никаких proxy-endpoint'ов в `app/ap
 `app/articles/[slug]/page.tsx:133-137`:
 
 ```tsx
-<MDXRemote
-  source={article.content}
-  options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
-/>
+<MDXRemote source={article.content} options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }} />
 ```
 
 **Note:** `components` prop **не передаётся**, что в next-mdx-remote
@@ -435,30 +429,30 @@ trusted (из репо). Дополнительная защита: можно �
 
 ## 5. Secrets Management — Summary
 
-| Item | Status |
-|---|---|
-| `.env` не закоммичен | ✓ только `.env.example` |
-| `.env.example` без реальных секретов | ✓ placeholders |
-| `next.config.mjs` без hardcoded secrets | ✓ |
-| `lib/prisma.ts` без hardcoded creds | ✓ (fallback без пароля — F-06) |
-| `scripts/sync-telegram.ts` без hardcoded BOT_TOKEN | ✓ читает из bot's .env |
-| `sanitizeError` для logging | ⚠ применяется не везде — F-08 |
+| Item                                               | Status                         |
+| -------------------------------------------------- | ------------------------------ |
+| `.env` не закоммичен                               | ✓ только `.env.example`        |
+| `.env.example` без реальных секретов               | ✓ placeholders                 |
+| `next.config.mjs` без hardcoded secrets            | ✓                              |
+| `lib/prisma.ts` без hardcoded creds                | ✓ (fallback без пароля — F-06) |
+| `scripts/sync-telegram.ts` без hardcoded BOT_TOKEN | ✓ читает из bot's .env         |
+| `sanitizeError` для logging                        | ⚠ применяется не везде — F-08  |
 
 ---
 
 ## 6. Findings Summary Table
 
-| ID | Severity | OWASP | File | Status |
-|---|---|---|---|---|
-| F-01 | **P1** | A03 (Injection) | `components/JsonLd.tsx` | open |
-| F-02 | P3 | A03 | `app/layout.tsx` | open |
-| F-03 | P3 | A04 | `app/vacancies/[category]/page.tsx` и др. | mitigated by lib-layer |
-| F-04 | P2 | A04 | `scripts/sync-telegram.ts` | intentional (Decision 12) |
-| F-05 | P3 | A05 | `app/layout.tsx` robots | needs deploy-docs clarification |
-| F-06 | P3 | A05 | `lib/prisma.ts` | open |
-| F-07 | P2 | A06 | `package.json` next-mdx-remote | open, iter 2 |
-| F-08 | **P1** | A09 | `scripts/sync-telegram.ts:154` | open |
-| F-09 | — | A09 | `scripts/sync-telegram.ts:490` | clean |
+| ID   | Severity | OWASP           | File                                      | Status                          |
+| ---- | -------- | --------------- | ----------------------------------------- | ------------------------------- |
+| F-01 | **P1**   | A03 (Injection) | `components/JsonLd.tsx`                   | open                            |
+| F-02 | P3       | A03             | `app/layout.tsx`                          | open                            |
+| F-03 | P3       | A04             | `app/vacancies/[category]/page.tsx` и др. | mitigated by lib-layer          |
+| F-04 | P2       | A04             | `scripts/sync-telegram.ts`                | intentional (Decision 12)       |
+| F-05 | P3       | A05             | `app/layout.tsx` robots                   | needs deploy-docs clarification |
+| F-06 | P3       | A05             | `lib/prisma.ts`                           | open                            |
+| F-07 | P2       | A06             | `package.json` next-mdx-remote            | open, iter 2                    |
+| F-08 | **P1**   | A09             | `scripts/sync-telegram.ts:154`            | open                            |
+| F-09 | —        | A09             | `scripts/sync-telegram.ts:490`            | clean                           |
 
 P0: **0** · P1: **2** · P2: **2** · P3: **5**.
 
@@ -475,7 +469,8 @@ P0: **0** · P1: **2** · P2: **2** · P3: **5**.
 снижен.
 
 ### Рекомендуемые блокеры до **снятия noindex** (или до публичного
-   анонса):
+
+анонса):
 
 1. **F-01** — добавить `.replace(/</g, '\\u003c')` в `JsonLd.tsx` (одна
    строка). 2 минуты работы. Закроет реальный stored-XSS-вектор через

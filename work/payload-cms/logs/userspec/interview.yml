@@ -188,7 +188,7 @@ phase2_user_experience:
       - Разработка на feature-ветке → merge в dev → автодеплой на staging.d-pub.ru (red server port 3002)
       - Тестирование на staging → merge в main → автодеплой на d-pub.ru (NetAngels)
       - deploy.yml: добавить `payload migrate` перед запуском и `--exclude=public/uploads/` в rsync
-      - staging deploy.yml: SSH на 144.31.204.181, user=claude, port 3002
+      - staging deploy.yml: SSH на <proxy-host>, user=claude, port 3002
     gaps: ""
     required: false
 

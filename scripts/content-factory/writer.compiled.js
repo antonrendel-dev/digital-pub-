@@ -35374,10 +35374,19 @@ function gitCommitAndPush(slug, title, hasImage) {
   execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: PROJECT_ROOT, stdio: "inherit" });
   execSync("git push", { cwd: PROJECT_ROOT, stdio: "inherit" });
 }
+function prodSshTarget() {
+  const file = path9.join(os4.homedir(), ".config", "d-pub", "prod-ssh-target");
+  const target = fs8.existsSync(file) ? fs8.readFileSync(file, "utf8").trim() : "";
+  if (!/^[a-z0-9_.-]+@[a-z0-9.-]+$/i.test(target)) {
+    throw new Error(`[writer] \u043D\u0435\u0442 SSH-\u0446\u0435\u043B\u0438 \u043F\u0440\u043E\u0434\u0430: \u043F\u043E\u043B\u043E\u0436\u0438 user@host \u0432 ${file}`);
+  }
+  return target;
+}
 function syncToProduction(slug, hasImage) {
   const SSH_KEY = path9.join(os4.homedir(), ".ssh", "github_actions_deploy");
   const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`;
-  const PROD = "c48127@91.201.52.231:~/d-pub.ru/app";
+  const TARGET = prodSshTarget();
+  const PROD = `${TARGET}:~/d-pub.ru/app`;
   execSync(
     `rsync -az -e "ssh ${SSH_OPTS}" content/articles/${slug}.mdx ${PROD}/content/articles/`,
     { cwd: PROJECT_ROOT, stdio: "inherit", shell: "/bin/bash" }
@@ -35388,7 +35397,7 @@ function syncToProduction(slug, hasImage) {
       { cwd: PROJECT_ROOT, stdio: "inherit", shell: "/bin/bash" }
     );
   }
-  execSync(`ssh ${SSH_OPTS} c48127@91.201.52.231 'touch ~/d-pub.ru/reload' || true`, {
+  execSync(`ssh ${SSH_OPTS} ${TARGET} 'touch ~/d-pub.ru/reload' || true`, {
     stdio: "inherit",
     shell: "/bin/bash"
   });
@@ -35608,5 +35617,6 @@ main().catch(async (e) => {
 export {
   MetadataRejected,
   RobotRejected,
-  SpecRejected
+  SpecRejected,
+  prodSshTarget
 };

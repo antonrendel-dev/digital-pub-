@@ -7,22 +7,22 @@
       "severity": "critical",
       "category": "feasibility",
       "task": 16,
-      "issue": "Step 3 (run migrate-tags.ts and migrate-posts.ts on app server) is ordered BEFORE Step 4 (CI deploy). The migration scripts do not exist on the app server (c48127@91.201.52.231) until after the CI rsync deploys them. Running `ls scripts/migrate-tags.ts` and `npx tsx scripts/migrate-tags.ts` in Step 3 will fail because the scripts are in the dev branch which hasn't been deployed yet. The same ordering problem appears in tech-spec line 332: 'run migration scripts, deploy Payload code' — migration must come AFTER deploy.",
+      "issue": "Step 3 (run migrate-tags.ts and migrate-posts.ts on app server) is ordered BEFORE Step 4 (CI deploy). The migration scripts do not exist on the app server (<prod-ssh-target>) until after the CI rsync deploys them. Running `ls scripts/migrate-tags.ts` and `npx tsx scripts/migrate-tags.ts` in Step 3 will fail because the scripts are in the dev branch which hasn't been deployed yet. The same ordering problem appears in tech-spec line 332: 'run migration scripts, deploy Payload code' — migration must come AFTER deploy.",
       "fix": "Move Step 3 (data migration scripts) to AFTER Step 4 (CI deploy completes successfully). Correct order: pg_dump → disable sync → merge+push → CI deploys Payload code → npx payload migrate (via CI) → run migrate-tags.ts → run migrate-posts.ts → touch reload → smoke verify → re-enable sync. Alternatively: CI should run migration scripts as part of the SSH step before payload migrate."
     },
     {
       "severity": "critical",
       "category": "hallucination",
       "task": 16,
-      "issue": "Steps 1 and 8 instruct to disable/enable Telegram sync on the RED SERVER (144.31.204.181) via crontab or systemd. But per project memory (session 2026-05-20), the sync was MOVED to the NetAngels app server (c48127@91.201.52.231) during the migration. The cron runs via NetAngels panel: `*/30 * * * * /home/c48127/d-pub.ru/app/scripts/auto-sync.sh` using tsx. There is no sync cron or systemd timer on root@144.31.204.181.",
-      "fix": "Replace Steps 1 and 8 to disable/enable sync on the NETANGELS server (c48127@91.201.52.231). Method: either comment the cron in NetAngels control panel, or stop the process manually. The auto-sync.sh script is at /home/c48127/d-pub.ru/app/scripts/auto-sync.sh and uses tsx, not ts-node."
+      "issue": "Steps 1 and 8 instruct to disable/enable Telegram sync on the RED SERVER (<proxy-host>) via crontab or systemd. But per project memory (session 2026-05-20), the sync was MOVED to the NetAngels app server (<prod-ssh-target>) during the migration. The cron runs via NetAngels panel: `*/30 * * * * /home/<prod-user>/d-pub.ru/app/scripts/auto-sync.sh` using tsx. There is no sync cron or systemd timer on <proxy-ssh-target>.",
+      "fix": "Replace Steps 1 and 8 to disable/enable sync on the NETANGELS server (<prod-ssh-target>). Method: either comment the cron in NetAngels control panel, or stop the process manually. The auto-sync.sh script is at /home/<prod-user>/d-pub.ru/app/scripts/auto-sync.sh and uses tsx, not ts-node."
     },
     {
       "severity": "critical",
       "category": "hallucination",
       "task": 17,
-      "issue": "Acceptance Criteria line 49 and Verification Step line 122 instruct to trigger sync by SSHing to the RED SERVER (root@144.31.204.181) and running `/opt/bots/telegram-bot-vac/scripts/sync-telegram.ts` with `npx ts-node`. Reality: sync runs on the NetAngels app server (c48127@91.201.52.231) at /home/c48127/d-pub.ru/app/scripts/auto-sync.sh using tsx. The path /opt/bots/telegram-bot-vac/ does not exist on the current infrastructure.",
-      "fix": "Replace the sync trigger with: `ssh c48127@91.201.52.231 'cd ~/d-pub.ru/app && node_modules/.bin/tsx scripts/sync-telegram.ts'` or invoke auto-sync.sh: `ssh c48127@91.201.52.231 '~/d-pub.ru/app/scripts/auto-sync.sh'`. Update AC line 49 accordingly."
+      "issue": "Acceptance Criteria line 49 and Verification Step line 122 instruct to trigger sync by SSHing to the RED SERVER (<proxy-ssh-target>) and running `/opt/bots/telegram-bot-vac/scripts/sync-telegram.ts` with `npx ts-node`. Reality: sync runs on the NetAngels app server (<prod-ssh-target>) at /home/<prod-user>/d-pub.ru/app/scripts/auto-sync.sh using tsx. The path /opt/bots/telegram-bot-vac/ does not exist on the current infrastructure.",
+      "fix": "Replace the sync trigger with: `ssh <prod-ssh-target> 'cd ~/d-pub.ru/app && node_modules/.bin/tsx scripts/sync-telegram.ts'` or invoke auto-sync.sh: `ssh <prod-ssh-target> '~/d-pub.ru/app/scripts/auto-sync.sh'`. Update AC line 49 accordingly."
     },
     {
       "severity": "major",

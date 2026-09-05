@@ -4,7 +4,7 @@
   "iteration": 2,
   "status": "changes_required",
   "fixed_since_r1": [
-    "Task 16 Step 1/8: sync disable/enable now correctly targets NetAngels (c48127@91.201.52.231), not red server",
+    "Task 16 Step 1/8: sync disable/enable now correctly targets NetAngels (<prod-ssh-target>), not red server",
     "Task 16 Step 2: pg_dump now sources ~/d-pub.ru/app/.env (not ~/.env)",
     "Task 16 Step 3/5: migration scripts now run AFTER CI deploy completes (correct order)",
     "Task 17 AC line 49: sync trigger now correctly uses auto-sync.sh on NetAngels",
@@ -22,8 +22,8 @@
       "severity": "major",
       "category": "hallucination",
       "task": 17,
-      "issue": "Details section line 151 states 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts'. This directly contradicts the correct Verification Steps section which uses NetAngels (c48127@91.201.52.231) and auto-sync.sh. The Details section still contains the pre-r1-fix stale information. An agent reading Details for context may attempt to SSH root@144.31.204.181 and run a non-existent script path instead of following Verification Steps.",
-      "fix": "Update Details section 'Серверная топология': change 'Red server (proxy + sync cron): root@144.31.204.181' and 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts' to accurately reflect that sync runs on NetAngels via /home/c48127/d-pub.ru/app/scripts/auto-sync.sh. Red server is proxy only."
+      "issue": "Details section line 151 states 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts'. This directly contradicts the correct Verification Steps section which uses NetAngels (<prod-ssh-target>) and auto-sync.sh. The Details section still contains the pre-r1-fix stale information. An agent reading Details for context may attempt to SSH <proxy-ssh-target> and run a non-existent script path instead of following Verification Steps.",
+      "fix": "Update Details section 'Серверная топология': change 'Red server (proxy + sync cron): <proxy-ssh-target>' and 'Sync script на red server: /opt/bots/telegram-bot-vac/scripts/sync-telegram.ts' to accurately reflect that sync runs on NetAngels via /home/<prod-user>/d-pub.ru/app/scripts/auto-sync.sh. Red server is proxy only."
     },
     {
       "severity": "major",

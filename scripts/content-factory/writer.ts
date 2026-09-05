@@ -1894,10 +1894,24 @@ function gitCommitAndPush(slug: string, title: string, hasImage: boolean): void 
   execSync('git push', { cwd: PROJECT_ROOT, stdio: 'inherit' })
 }
 
+/**
+ * SSH-цель прода (user@host) — из ~/.config/d-pub/prod-ssh-target, не из
+ * репозитория: репо публичное, логин с IP — цель для брутфорса (S15).
+ */
+export function prodSshTarget(): string {
+  const file = path.join(os.homedir(), '.config', 'd-pub', 'prod-ssh-target')
+  const target = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').trim() : ''
+  if (!/^[a-z0-9_.-]+@[a-z0-9.-]+$/i.test(target)) {
+    throw new Error(`[writer] нет SSH-цели прода: положи user@host в ${file}`)
+  }
+  return target
+}
+
 function syncToProduction(slug: string, hasImage: boolean): void {
   const SSH_KEY = path.join(os.homedir(), '.ssh', 'github_actions_deploy')
   const SSH_OPTS = `-i ${SSH_KEY} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10`
-  const PROD = 'c48127@91.201.52.231:~/d-pub.ru/app'
+  const TARGET = prodSshTarget()
+  const PROD = `${TARGET}:~/d-pub.ru/app`
 
   // Sync MDX file
   execSync(
@@ -1915,7 +1929,7 @@ function syncToProduction(slug: string, hasImage: boolean): void {
 
   // Рестарт Next: без него оптимизатор /_next/image не видит файлы,
   // доехавшие в public/ после старта процесса (манифест статики строится на боте)
-  execSync(`ssh ${SSH_OPTS} c48127@91.201.52.231 'touch ~/d-pub.ru/reload' || true`, {
+  execSync(`ssh ${SSH_OPTS} ${TARGET} 'touch ~/d-pub.ru/reload' || true`, {
     stdio: 'inherit',
     shell: '/bin/bash',
   })

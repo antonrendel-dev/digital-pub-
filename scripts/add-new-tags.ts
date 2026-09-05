@@ -22,7 +22,8 @@ const NEW_TAGS = [
 ]
 
 async function addTags() {
-  const adminEmail = process.env.ADMIN_EMAIL ?? 'in-ekb@mail.ru'
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (!adminEmail) throw new Error('ADMIN_EMAIL не задан')
   const adminPassword = process.env.ADMIN_PASSWORD
   if (!adminPassword) throw new Error('ADMIN_PASSWORD not set')
 

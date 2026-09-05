@@ -7,7 +7,8 @@ const PAYLOAD_BASE_URL = process.env.PAYLOAD_BASE_URL ?? 'https://d-pub.ru'
 const ARTICLES_DIR = path.join(process.cwd(), 'content', 'articles')
 
 async function seedArticles() {
-  const adminEmail = process.env.ADMIN_EMAIL ?? 'in-ekb@mail.ru'
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (!adminEmail) throw new Error('ADMIN_EMAIL не задан')
   const adminPassword = process.env.ADMIN_PASSWORD
   if (!adminPassword) throw new Error('ADMIN_PASSWORD not set')
 

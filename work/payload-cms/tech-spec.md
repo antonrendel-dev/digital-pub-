@@ -119,7 +119,7 @@ Affects: 5 dynamic route files + generateMetadata in each
 ### Decision 4: Sync script calls Payload REST API over HTTP
 
 **Decision:** `scripts/sync-telegram.ts` on red server replaces Prisma with HTTP calls to `https://d-pub.ru/api/posts` (Payload REST endpoint). Pre-loads tag slug→id map via `GET /api/tags?limit=200` once per sync run.  
-**Rationale:** Sync runs on red server (144.31.204.181), separate from the NetAngels process — Local API unavailable. REST API is the clean integration layer. Supports user-spec "sync stays on red server, only ORM changes". `setImmediate` on Passenger avoided.  
+**Rationale:** Sync runs on red server (<proxy-host>), separate from the NetAngels process — Local API unavailable. REST API is the clean integration layer. Supports user-spec "sync stays on red server, only ORM changes". `setImmediate` on Passenger avoided.  
 **Alternatives considered:** Direct `pg` Pool writes to Payload tables — bypasses Payload validation and hooks, brittle against Payload schema changes.
 
 ### Decision 5: Dedup via HTTP 409 on unique constraint
@@ -491,7 +491,7 @@ Phase 2 (Payload integration): agent uses curl to verify each API endpoint and p
 
 #### Task 2: Deploy Pipeline Updates
 
-- **Description:** Update `deploy.yml` and create `deploy-staging.yml` for Payload-aware deployments. Both files: remove Prisma steps, add `--exclude=public/uploads/` to rsync, add `payload-migrations/` rsync with `--ignore-missing-args`, add SSH step running `npx payload migrate` before `touch reload`. Staging uses separate GitHub Secrets: `STAGING_PAYLOAD_SECRET`, `STAGING_DB_CONNECTION_STRING` (targeting `144.31.204.181:3002`) — never sharing prod values.
+- **Description:** Update `deploy.yml` and create `deploy-staging.yml` for Payload-aware deployments. Both files: remove Prisma steps, add `--exclude=public/uploads/` to rsync, add `payload-migrations/` rsync with `--ignore-missing-args`, add SSH step running `npx payload migrate` before `touch reload`. Staging uses separate GitHub Secrets: `STAGING_PAYLOAD_SECRET`, `STAGING_DB_CONNECTION_STRING` (targeting `<proxy-host>:3002`) — never sharing prod values.
 - **Skill:** code-writing
 - **Reviewers:** code-reviewing
 - **Files to modify:** `.github/workflows/deploy.yml`
