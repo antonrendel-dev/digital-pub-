@@ -66,7 +66,6 @@ export interface TechSpec {
   h2Requirements: string[]
   wordCountMin: number
   wordCountMax: number
-  faqMinWords: number
   factualAnchors: string[]
   antifakeMarkers: string[]
   agreedBy: string[]
@@ -316,7 +315,7 @@ export function renderTechSpec(tz: TechSpec): string {
     '',
     'ОБЪЁМ',
     `  Тело статьи: ${tz.wordCountMin}-${tz.wordCountMax} слов.`,
-    `  Каждый ответ FAQ: не менее ${tz.faqMinWords} слов.`
+    '  Ответ FAQ: 2-3 предложения (стандарт 2.5).'
   )
 
   if (tz.factualAnchors.length) {
@@ -358,6 +357,21 @@ const LIMITED_TEMPLATES = ROBOT_PHRASES.filter((p) => typeof p.gate === 'number'
 export const DEFINITION_OPENER_RULE = 'Статья открывается определением ключа'
 export const KEY_IN_LEAD_RULE = 'Ключа нет в первых 60 словах'
 export const KEY_IN_FIRST_H2_RULE = 'Ключа нет в первом H2'
+export const TABLE_COUNT_RULE = 'Число таблиц вне нормы'
+
+// Стандарт 2.4: таблица на каждые 1500 слов, но не свалка из таблиц вместо текста.
+// До 05.09.2026 таблицы не считались вовсе: промпт требовал «ровно одну», статья
+// сухого прогона отдала пять, и приёмка прошла молча.
+const MIN_TABLES = 1
+const MAX_TABLES = 2
+
+// Таблицу опознаём по строке-разделителю под шапкой: «| --- | :--: |». Считать
+// строки с «|» нельзя — их даёт и обычный текст с вертикальной чертой.
+const TABLE_SEPARATOR = /^\s*\|?[\s:|-]*-{3,}[\s:|-]*\|?\s*$/
+
+function countTables(markdown: string): number {
+  return markdown.split('\n').filter((l) => l.includes('|') && TABLE_SEPARATOR.test(l)).length
+}
 
 /**
  * Механическая часть приёмки: то, что считается регуляркой, считается кодом, а не
@@ -471,6 +485,18 @@ export function checkTechSpec(tz: TechSpec, markdown: string): SpecViolation[] {
     violations.push({
       rule: KEY_IN_FIRST_H2_RULE,
       detail: `первый H2 «${firstH2.trim()}» без ключа «${tz.mainKeyword}»: не хватает слов с основой ${missing.map((m) => `«${m}…»`).join(', ')} — добавь их в заголовок в любой форме, вопрос или утверждение оставь`,
+    })
+  }
+
+  const tables = countTables(withoutFences)
+  if (tables < MIN_TABLES || tables > MAX_TABLES) {
+    violations.push({
+      rule: TABLE_COUNT_RULE,
+      detail:
+        `таблиц ${tables} при норме ${MIN_TABLES}-${MAX_TABLES}: ` +
+        (tables < MIN_TABLES
+          ? 'добавь одну в раздел, где есть что сравнивать по строкам и столбцам'
+          : 'лишние разверни в текст, таблица нужна там, где данные сравнивают'),
     })
   }
 

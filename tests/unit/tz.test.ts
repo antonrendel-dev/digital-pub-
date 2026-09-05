@@ -3,6 +3,7 @@ import {
   type TechSpec,
   buildSourceDataBlock,
   buildTopvisorContext,
+  TABLE_COUNT_RULE,
   checkTechSpec,
   containsMainKeyword,
   isBrandKeyword,
@@ -42,7 +43,6 @@ const baseSpec = (over: Partial<TechSpec> = {}): TechSpec => ({
   h2Requirements: ['структура резюме', 'ошибки'],
   wordCountMin: 20,
   wordCountMax: 3000,
-  faqMinWords: 120,
   factualAnchors: [],
   antifakeMarkers: [],
   agreedBy: ['analyst', 'seo'],
@@ -176,10 +176,38 @@ describe('checkTechSpec', () => {
     '',
     'Хорошее резюме таргетолога начинается с результатов, а не с обязанностей.',
     'Свежие предложения смотри в [подборке](https://d-pub.ru/vacancies/target).',
+    '',
+    '| Блок | Что писать |',
+    '| --- | --- |',
+    '| Опыт | Запуски и цифры |',
   ].join('\n')
 
   it('на статье по ТЗ не находит нарушений', () => {
     expect(checkTechSpec(baseSpec(), good)).toEqual([])
+  })
+
+  it('считает таблицы: одна обязательна, больше двух — уже свалка', () => {
+    // Стандарт 2.4 требует таблицу на каждые 1500 слов, потолок — две на статью.
+    // Прогон 220 выдал пять таблиц, и приёмка этого не заметила: счётчика не было.
+    const withoutTable = good
+      .split('\n| Блок')
+      .join('\n<!-- ')
+      .replace(/\n\| .*/g, '')
+    expect(checkTechSpec(baseSpec(), withoutTable).map((v) => v.rule)).toContain(TABLE_COUNT_RULE)
+
+    const table = ['', '| A | B |', '| --- | --- |', '| 1 | 2 |'].join('\n')
+    expect(checkTechSpec(baseSpec(), good + table).map((v) => v.rule)).not.toContain(
+      TABLE_COUNT_RULE
+    )
+    expect(checkTechSpec(baseSpec(), good + table + table).map((v) => v.rule)).toContain(
+      TABLE_COUNT_RULE
+    )
+  })
+
+  it('не считает таблицей markdown внутри блока кода', () => {
+    // В примерах кода бывают псевдотаблицы; они не структурируют данные для читателя.
+    const fenced = good + ['', '```', '| A | B |', '| --- | --- |', '| 1 | 2 |', '```'].join('\n')
+    expect(checkTechSpec(baseSpec(), fenced).map((v) => v.rule)).not.toContain(TABLE_COUNT_RULE)
   })
 
   it('ловит переспам главного ключа', () => {

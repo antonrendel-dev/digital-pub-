@@ -1,4 +1,4 @@
-import { hasServiceText, stripServiceTail } from '../../lib/strip-service-tail'
+import { hasServiceText, stripHtmlComments, stripServiceTail } from '../../lib/strip-service-tail'
 
 /**
  * Формулировки хвоста взяты из семи статей, где он реально нашёлся 01.09.2026.
@@ -59,5 +59,56 @@ describe('срез служебного хвоста при публикации
   it('не режет обычный горизонтальный разделитель в тексте', () => {
     const withRule = BODY + '\n---\n\n## Как войти в профессию\n\nЗа 1–3 месяца.\n'
     expect(stripServiceTail(withRule)).toContain('Как войти в профессию')
+  })
+})
+
+/**
+ * Тело круга 2 прогона 220 (05.09.2026). Приёмка по ТЗ вернула статью, начинающуюся
+ * с двух HTML-комментариев, и прогон упал на assertSafeMdx:
+ * «Unexpected character '!' (U+0021) before name» — MDX их не компилирует.
+ * Живой путь роняет ровно так же: в 09:00 статья не вышла бы после ~18 минут работы.
+ */
+const RUN_220_HEAD = [
+  '<!-- title: CRM маркетолог: зарплата, навыки и 3 шага к работе -->',
+  '<!-- description: CRM маркетолог: задачи, навыки, инструменты и зарплата по грейдам. -->',
+  '',
+  'На сентябрь 2026 года в вакансиях hh.ru встречаются предложения без опыта.',
+  '',
+  '## Кто такой CRM-маркетолог',
+  '',
+  'Специалист по CRM-коммуникациям.',
+].join('\n')
+
+describe('срез HTML-комментариев', () => {
+  it('снимает комментарии из шапки статьи, тело оставляет', () => {
+    const out = stripHtmlComments(RUN_220_HEAD)
+
+    expect(out).not.toContain('<!--')
+    expect(out).not.toContain('-->')
+    expect(out.startsWith('На сентябрь 2026 года')).toBe(true)
+    expect(out).toContain('## Кто такой CRM-маркетолог')
+    expect(out).toContain('Специалист по CRM-коммуникациям.')
+  })
+
+  it('снимает многострочный комментарий', () => {
+    const multiline = ['<!--', 'title: X', 'description: Y', '-->', '', 'Текст.'].join('\n')
+    expect(stripHtmlComments(multiline).trim()).toBe('Текст.')
+  })
+
+  it('комментарий в середине текста не склеивает абзацы', () => {
+    const middle = ['Первый абзац.', '', '<!-- заметка редактора -->', '', 'Второй абзац.'].join(
+      '\n'
+    )
+    expect(stripHtmlComments(middle)).toBe('Первый абзац.\n\nВторой абзац.')
+  })
+
+  it('текст без комментариев не меняет', () => {
+    expect(stripHtmlComments(BODY)).toBe(BODY)
+  })
+
+  it('срез хвоста снимает комментарии заодно — путей публикации несколько', () => {
+    // stripServiceTail стоит на каждом пути к MDX: писатель, дожим, сухой прогон.
+    // Отдельный вызов на каждом из них однажды забудут добавить.
+    expect(stripServiceTail(RUN_220_HEAD)).not.toContain('<!--')
   })
 })

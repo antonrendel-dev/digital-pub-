@@ -34,8 +34,40 @@ export const SERVICE_TAIL =
 export const SERVICE_MARKER =
   /Готово для проверки|Использован[а-яё]*\s+скилл|Скиллы:\s*`|Служебное, вне тела|мастер-промпт v\d|^\s*\*\*(?:Title|Meta description):/im
 
+/**
+ * HTML-комментарии. MDX их не компилирует: сборка падает на
+ * «Unexpected character '!' (U+0021) before name», и статья не выходит вовсе.
+ *
+ * 05.09.2026 приёмка по ТЗ вернула статью, начинающуюся с двух строк
+ * `<!-- title: … -->` и `<!-- description: … -->`. В круге 1 того же прогона
+ * их не было: поведение модели плавает, поэтому запрет в промпте тут не
+ * помощник — комментарии вырезаются перед записью MDX.
+ *
+ * Комментарий внутри блока кода тоже уедет. Это осознанно: в статьях завода
+ * блоков кода не бывает, а MDX на таком комментарии всё равно споткнётся.
+ */
+const HTML_COMMENT = /<!--[\s\S]*?-->/g
+// Отдельная копия без флага g: у глобальной регулярки .test() двигает lastIndex,
+// и следующий вызов начал бы поиск с середины строки.
+const HAS_HTML_COMMENT = /<!--[\s\S]*?-->/
+
+/** Снять HTML-комментарии, не склеивая соседние абзацы. */
+export function stripHtmlComments(markdown: string): string {
+  // Чистый текст возвращаем как есть: чистка ниже схлопывает пустые строки,
+  // а переформатировать статью, в которой комментариев нет, незачем.
+  if (!HAS_HTML_COMMENT.test(markdown)) return markdown
+  return markdown
+    .replace(HTML_COMMENT, '')
+    .replace(/[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^\n+/, '')
+}
+
 export function stripServiceTail(markdown: string): string {
-  return markdown.replace(SERVICE_TAIL, '\n').trimEnd() + '\n'
+  // Комментарии снимаются здесь же: к MDX ведут три пути (писатель, дожим,
+  // сухой прогон), и на каждом стоит этот срез. Отдельный вызов на каждом
+  // однажды забудут добавить.
+  return stripHtmlComments(markdown.replace(SERVICE_TAIL, '\n')).trimEnd() + '\n'
 }
 
 export function hasServiceText(text: string): boolean {

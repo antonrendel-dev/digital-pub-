@@ -7058,8 +7058,14 @@ dateModified: "${isoDate}"`;
 // ../../lib/strip-service-tail.ts
 var SERVICE_TAIL = /\n\s*-{3,}\s*(?:(?:\*\*)?(?:Служебное|Скиллы:|Использован[а-яё]*\s+скилл|Готово для проверки|Мастер-промпт)|\*\*(?:Title|Meta description):)[\s\S]*$/i;
 var SERVICE_MARKER = /Готово для проверки|Использован[а-яё]*\s+скилл|Скиллы:\s*`|Служебное, вне тела|мастер-промпт v\d|^\s*\*\*(?:Title|Meta description):/im;
+var HTML_COMMENT = /<!--[\s\S]*?-->/g;
+var HAS_HTML_COMMENT = /<!--[\s\S]*?-->/;
+function stripHtmlComments(markdown) {
+  if (!HAS_HTML_COMMENT.test(markdown)) return markdown;
+  return markdown.replace(HTML_COMMENT, "").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").replace(/^\n+/, "");
+}
 function stripServiceTail(markdown) {
-  return markdown.replace(SERVICE_TAIL, "\n").trimEnd() + "\n";
+  return stripHtmlComments(markdown.replace(SERVICE_TAIL, "\n")).trimEnd() + "\n";
 }
 function hasServiceText(text7) {
   return SERVICE_MARKER.test(text7);
