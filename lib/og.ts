@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 
@@ -97,6 +98,70 @@ export function ruPlural(n: number, forms: [string, string, string]): string {
 }
 
 /**
+ * Подпись параметров картинки (аудит 04.09.2026, S19). Без неё /api/og рисовал
+ * нашу карточку с любым текстом из query — чужой заголовок под брендом d-pub.ru
+ * одной ссылкой.
+ *
+ * Секрет обязан быть одним и тем же при сборке и в рантайме: подписи попадают
+ * в пререндеренные страницы (generateStaticParams у статей, профессий,
+ * инструментов), а проверяет их сервер. На проде это так: deploy.yml кладёт
+ * один PAYLOAD_SECRET и в окружение next build, и в etc/environment. Отсюда два
+ * правила: OG_SIGNING_SECRET, если заводить, ставить в обоих местах сразу;
+ * ротация секрета требует пересборки — до неё пререндеренные подписи не
+ * сойдутся и картинки будут 404 до ближайшей ревалидации страницы.
+ * Ключ HMAC выводится из секрета, а не равен ему: секрет Payload нужен для
+ * JWT и шифрования, подписи картинок — другое назначение.
+ * Без секрета (локальная сборка без .env) подписи нет — и роут отвечает 404.
+ */
+const OG_SIG_RE = /^[0-9a-f]{32}$/
+
+let cachedKey: { secret: string; key: Buffer } | null = null
+
+function ogKey(): Buffer | null {
+  const secret = process.env.OG_SIGNING_SECRET || process.env.PAYLOAD_SECRET
+  if (!secret) return null
+  if (cachedKey?.secret !== secret) {
+    cachedKey = {
+      secret,
+      key: crypto.createHmac('sha256', secret).update('d-pub og-image v1').digest(),
+    }
+  }
+  return cachedKey.key
+}
+
+export function ogSignature(params: {
+  title: string
+  kind?: string
+  subtitle?: string
+}): string | null {
+  const key = ogKey()
+  if (!key) return null
+  // JSON-массив вместо склейки через разделитель: поля с переносом строки
+  // не перетекают друг в друга (ревью S19).
+  return crypto
+    .createHmac('sha256', key)
+    .update(JSON.stringify([params.kind ?? '', params.title, params.subtitle ?? '']))
+    .digest('hex')
+    .slice(0, 32)
+}
+
+/** Проверка в роуте: подпись обязана быть в формате 32 hex и совпадать по константному времени. */
+export function verifyOgSignature(
+  params: { title: string; kind?: string; subtitle?: string },
+  sig: string | null
+): boolean {
+  if (!sig || !OG_SIG_RE.test(sig)) return false
+  const expected = ogSignature(params)
+  if (!expected) return false
+  return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))
+}
+
+/** База адреса картинки: на staging — staging, иначе og:image вёл бы на прод с чужой подписью. */
+function ogBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_SERVER_URL || 'https://d-pub.ru').replace(/\/+$/, '')
+}
+
+/**
  * Адрес динамической картинки. Ставится там, где раньше подставлялся общий
  * og-image.png: у вакансии без своего изображения и у статьи без обложки.
  * Свою картинку не вытесняет — обложка статьи всегда лучше сгенерированной.
@@ -109,5 +174,7 @@ export function ogImageUrl(params: {
   const q = new URLSearchParams({ title: params.title })
   if (params.kind) q.set('kind', params.kind)
   if (params.subtitle) q.set('subtitle', params.subtitle)
-  return `https://d-pub.ru/api/og?${q.toString()}`
+  const sig = ogSignature(params)
+  if (sig) q.set('sig', sig)
+  return `${ogBaseUrl()}/api/og?${q.toString()}`
 }

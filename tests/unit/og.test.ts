@@ -8,8 +8,10 @@ import {
   loadOgFonts,
   ogImageUrl,
   ogKindLabel,
+  ogSignature,
   ogTitleFontSize,
   ruPlural,
+  verifyOgSignature,
 } from '../../lib/og'
 
 describe('clampOgTitle', () => {
@@ -193,5 +195,119 @@ describe('страницы-списки не откатываются на об�
     const src = fs.readFileSync(path.join(process.cwd(), rel), 'utf8')
     expect(src).toContain('ogImageUrl(')
     expect(src).not.toContain('og-image.png')
+  })
+})
+
+describe('подпись OG-картинки (S19)', () => {
+  const params = {
+    title: 'Резюме таргетолога: шаблон 2026',
+    kind: 'article',
+    subtitle: 'Статьи по теме',
+  }
+  const saved = {
+    p: process.env.PAYLOAD_SECRET,
+    o: process.env.OG_SIGNING_SECRET,
+    u: process.env.NEXT_PUBLIC_SERVER_URL,
+  }
+  beforeEach(() => {
+    process.env.PAYLOAD_SECRET = 'test-secret-test-secret-test-secret-01'
+    delete process.env.OG_SIGNING_SECRET
+    delete process.env.NEXT_PUBLIC_SERVER_URL
+  })
+  afterAll(() => {
+    const restore: [string, string | undefined][] = [
+      ['PAYLOAD_SECRET', saved.p],
+      ['OG_SIGNING_SECRET', saved.o],
+      ['NEXT_PUBLIC_SERVER_URL', saved.u],
+    ]
+    for (const [k, v] of restore) {
+      if (v === undefined) delete process.env[k]
+      else process.env[k] = v
+    }
+  })
+
+  it('ogImageUrl подписывает параметры, роут принимает свою подпись', () => {
+    const url = new URL(ogImageUrl({ ...params, kind: 'article' }))
+    const sig = url.searchParams.get('sig')
+    expect(sig).toMatch(/^[0-9a-f]{32}$/)
+    const back = {
+      title: url.searchParams.get('title') ?? '',
+      kind: url.searchParams.get('kind') ?? undefined,
+      subtitle: url.searchParams.get('subtitle') ?? undefined,
+    }
+    expect(verifyOgSignature(back, sig)).toBe(true)
+  })
+
+  it('чужой текст, чужой раздел, чужая подпись, мусор, отсутствие подписи — отказ без исключений', () => {
+    const sig = ogSignature(params)!
+    expect(verifyOgSignature({ ...params, title: 'Купите наш курс' }, sig)).toBe(false)
+    expect(verifyOgSignature({ ...params, kind: 'vacancy' }, sig)).toBe(false)
+    expect(verifyOgSignature({ ...params, subtitle: 'другое' }, sig)).toBe(false)
+    expect(
+      verifyOgSignature(
+        params,
+        sig.replace(/^./, (c) => (c === 'a' ? 'b' : 'a'))
+      )
+    ).toBe(false)
+    expect(verifyOgSignature(params, null)).toBe(false)
+    expect(verifyOgSignature(params, '')).toBe(false)
+    // 32 мультибайтных символа: раньше проходили проверку длины и роняли timingSafeEqual.
+    expect(verifyOgSignature(params, 'é'.repeat(32))).toBe(false)
+    expect(verifyOgSignature(params, 'x'.repeat(32))).toBe(false)
+    expect(verifyOgSignature(params, `${sig}a`)).toBe(false)
+  })
+
+  it('перенос строки внутри поля не переносит текст в соседнее поле', () => {
+    expect(ogSignature({ title: 'A\nB\nC' })).not.toBe(
+      ogSignature({ title: 'A', subtitle: 'B\nC\n' })
+    )
+  })
+
+  it('без секрета подписи нет, и проверка не проходит', () => {
+    delete process.env.PAYLOAD_SECRET
+    expect(ogSignature(params)).toBeNull()
+    expect(new URL(ogImageUrl({ ...params, kind: 'article' })).searchParams.get('sig')).toBeNull()
+    expect(verifyOgSignature(params, 'a'.repeat(32))).toBe(false)
+  })
+
+  it('база адреса берётся из NEXT_PUBLIC_SERVER_URL: staging подписывает для staging', () => {
+    process.env.NEXT_PUBLIC_SERVER_URL = 'https://staging.d-pub.ru/'
+    expect(ogImageUrl({ title: 'x' }).startsWith('https://staging.d-pub.ru/api/og?')).toBe(true)
+  })
+})
+
+describe('роут /api/og', () => {
+  beforeEach(() => {
+    process.env.PAYLOAD_SECRET = 'test-secret-test-secret-test-secret-01'
+    delete process.env.NEXT_PUBLIC_SERVER_URL
+  })
+
+  it('без подписи, с чужой и с мусорной подписью — 404 и no-store, рендер не вызывается', async () => {
+    jest.resetModules()
+    const rendered = jest.fn()
+    jest.doMock('next/og', () => ({
+      ImageResponse: class {
+        constructor() {
+          rendered()
+          return new Response('png', { status: 200 })
+        }
+      },
+    }))
+    const { GET } = await import('../../app/api/og/route')
+    for (const q of [
+      'title=Купите+курс',
+      `title=x&sig=${'a'.repeat(32)}`,
+      `title=x&sig=${'é'.repeat(32)}`,
+    ]) {
+      const res = await GET(new Request(`https://d-pub.ru/api/og?${q}`))
+      expect(res.status).toBe(404)
+      expect(res.headers.get('cache-control')).toBe('no-store')
+    }
+    expect(rendered).not.toHaveBeenCalled()
+
+    const own = new URL(ogImageUrl({ title: 'Статья', kind: 'article' }))
+    const ok = await GET(new Request(own.toString()))
+    expect(ok.status).toBe(200)
+    expect(rendered).toHaveBeenCalledTimes(1)
   })
 })

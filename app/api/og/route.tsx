@@ -1,13 +1,19 @@
 import { ImageResponse } from 'next/og'
-import { OG_SIZE, clampOgTitle, loadOgFonts, ogKindLabel, ogTitleFontSize } from '@/lib/og'
+import {
+  OG_SIZE,
+  clampOgTitle,
+  loadOgFonts,
+  ogKindLabel,
+  ogTitleFontSize,
+  verifyOgSignature,
+} from '@/lib/og'
 
 // Node, а не edge: шрифты читаются с диска через fs.
 export const runtime = 'nodejs'
 
-// Картинка зависит только от query, поэтому её можно держать в кэше долго.
-// Заголовок статьи меняется редко, а генерация satori стоит заметно дороже
-// отдачи готового PNG.
-export const revalidate = 86400
+// Роут читает request.url и потому динамический; кэш даёт сам ImageResponse
+// заголовком Cache-Control: public, immutable, max-age=31536000 — подпись в
+// URL делает картинку неизменяемой для этого адреса.
 
 const BG = '#060e24'
 const CARD = '#0f1c3a'
@@ -17,9 +23,20 @@ const MUTED = '#8b93a7'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const title = clampOgTitle(searchParams.get('title'))
-  const kind = ogKindLabel(searchParams.get('kind'))
-  const subtitle = (searchParams.get('subtitle') ?? '').replace(/\s+/g, ' ').trim().slice(0, 80)
+  // Рисуем только то, что подписал сам сайт: текст в query без подписи или с
+  // чужой подписью — 404, иначе любой мог бы выпустить нашу карточку со своим
+  // заголовком (S19). Подпись считается по сырым параметрам, как в ogImageUrl.
+  const raw = {
+    title: searchParams.get('title') ?? '',
+    kind: searchParams.get('kind') ?? undefined,
+    subtitle: searchParams.get('subtitle') ?? undefined,
+  }
+  if (!verifyOgSignature(raw, searchParams.get('sig'))) {
+    return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } })
+  }
+  const title = clampOgTitle(raw.title)
+  const kind = ogKindLabel(raw.kind ?? null)
+  const subtitle = (raw.subtitle ?? '').replace(/\s+/g, ' ').trim().slice(0, 80)
 
   return new ImageResponse(
     <div
