@@ -35,6 +35,9 @@ const CHANNEL = process.env.CONTENT_CHANNEL || ANNOUNCE_CHANNEL
  * Для писателя это некритично — статья к тому моменту уже опубликована.
  */
 export async function announceToChannel(url: string, imagePath?: string): Promise<number> {
+  if (imagePath && !fs.existsSync(imagePath)) {
+    console.warn(`    ⚠ обложка для анонса не найдена: ${imagePath} — шлю ссылкой`)
+  }
   if (imagePath && fs.existsSync(imagePath)) {
     try {
       return await announceWithPhoto(url, imagePath)

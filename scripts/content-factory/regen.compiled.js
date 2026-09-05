@@ -32570,7 +32570,7 @@ if (!isValidSlug(slug)) {
 }
 function convertToWebP(srcPng, destWebp) {
   const script = `
-    import('${path3.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
+    import('sharp') // \u043F\u043E \u0438\u043C\u0435\u043D\u0438 \u043F\u0430\u043A\u0435\u0442\u0430 \u043E\u0442 cwd = PROJECT_ROOT: \u0432 sharp 0.35 \u043D\u0435\u0442 lib/index.js
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })

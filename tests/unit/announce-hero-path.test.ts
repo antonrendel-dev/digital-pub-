@@ -23,8 +23,32 @@ describe('путь к обложке для анонса', () => {
     expect(block).not.toMatch(/process\.cwd\(\)/)
   })
 
-  it('отсутствие файла не молчит', () => {
-    expect(block).toMatch(/existsSync\(heroPath\)/)
-    expect(block).toMatch(/console\.warn\(.*обложка для анонса не найдена/)
+  it('отсутствие файла не молчит — предупреждение в announceToChannel', () => {
+    const telegram = fs.readFileSync(
+      path.join(process.cwd(), 'scripts/content-factory/lib/telegram.ts'),
+      'utf8'
+    )
+    expect(telegram).toMatch(/imagePath && !fs\.existsSync\(imagePath\)[\s\S]{0,80}console\.warn/)
+  })
+
+  it('стенограммы агентов пишутся от корня проекта, не от cwd', () => {
+    const t = fs.readFileSync(
+      path.join(process.cwd(), 'scripts/content-factory/lib/agent-transcript.ts'),
+      'utf8'
+    )
+    expect(t).toMatch(
+      /const RUNS_ROOT = '\/home\/claude\/projects\/digital-pub-\/logs\/factory-runs'/
+    )
+    expect(t).not.toMatch(/RUNS_ROOT = path\.join\(process\.cwd\(\)/)
+  })
+})
+
+describe('sharp в скриптах завода', () => {
+  it('импортируется по имени пакета: путь node_modules/sharp/lib исчез в sharp 0.35', () => {
+    for (const f of ['writer.ts', 'regen.ts']) {
+      const src = fs.readFileSync(path.join(process.cwd(), 'scripts/content-factory', f), 'utf8')
+      expect(src).not.toMatch(/node_modules', 'sharp'/)
+      expect(src).toMatch(/import\('sharp'\)/)
+    }
   })
 })

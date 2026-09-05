@@ -7208,7 +7208,7 @@ async function askAgent(prompt, opts) {
 // lib/agent-transcript.ts
 import fs3 from "fs";
 import path4 from "path";
-var RUNS_ROOT = path4.join(process.cwd(), "logs", "factory-runs");
+var RUNS_ROOT = "/home/claude/projects/digital-pub-/logs/factory-runs";
 var KEEP_DAYS = 30;
 var runDirectory = null;
 var counter = 0;
@@ -7321,6 +7321,9 @@ if (!CHAT_ID) throw new Error("SEO_LAB_CHAT_ID not set");
 var API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 var CHANNEL = process.env.CONTENT_CHANNEL || ANNOUNCE_CHANNEL;
 async function announceToChannel(url, imagePath) {
+  if (imagePath && !fs5.existsSync(imagePath)) {
+    console.warn(`    \u26A0 \u043E\u0431\u043B\u043E\u0436\u043A\u0430 \u0434\u043B\u044F \u0430\u043D\u043E\u043D\u0441\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430: ${imagePath} \u2014 \u0448\u043B\u044E \u0441\u0441\u044B\u043B\u043A\u043E\u0439`);
+  }
   if (imagePath && fs5.existsSync(imagePath)) {
     try {
       return await announceWithPhoto(url, imagePath);
@@ -34199,7 +34202,7 @@ function findNewImage(before) {
 }
 function convertToWebP(srcPng, destWebp) {
   const script = `
-    import('${path9.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
+    import('sharp')
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -34213,7 +34216,7 @@ function convertToWebP(srcPng, destWebp) {
 }
 function convertSketchToWebP(srcPng, destWebp) {
   const script = `
-    import('${path9.join(PROJECT_ROOT, "node_modules", "sharp", "lib", "index.js")}')
+    import('sharp')
       .then(m => m.default('${srcPng}').resize({width: 900, withoutEnlargement: true}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -35524,9 +35527,6 @@ ${e.message}`);
     if (!live)
       console.warn("[writer] \u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 \u043D\u0435 \u043F\u043E\u0434\u043D\u044F\u043B\u0430\u0441\u044C \u0437\u0430 \u043E\u0442\u0432\u0435\u0434\u0451\u043D\u043D\u043E\u0435 \u0432\u0440\u0435\u043C\u044F, \u0430\u043D\u043E\u043D\u0441\u0438\u0440\u0443\u044E \u043A\u0430\u043A \u0435\u0441\u0442\u044C");
     const heroPath = imageUrl ? path9.join(PROJECT_ROOT, "public", imageUrl.replace(/^\//, "")) : void 0;
-    if (heroPath && !fs8.existsSync(heroPath)) {
-      console.warn(`[writer] \u26A0\uFE0F \u043E\u0431\u043B\u043E\u0436\u043A\u0430 \u0434\u043B\u044F \u0430\u043D\u043E\u043D\u0441\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430: ${heroPath} \u2014 \u0430\u043D\u043E\u043D\u0441 \u0443\u0439\u0434\u0451\u0442 \u0441\u0441\u044B\u043B\u043A\u043E\u0439`);
-    }
     await announceToChannel(articleUrl, heroPath);
     announced = "\u{1F4E3} \u0410\u043D\u043E\u043D\u0441 \u0432 \u043A\u0430\u043D\u0430\u043B\u0435: \u2705";
     console.log("[writer] \u0410\u043D\u043E\u043D\u0441 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u0432 \u043A\u0430\u043D\u0430\u043B");

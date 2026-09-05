@@ -57,7 +57,7 @@ if (!isValidSlug(slug)) {
 
 function convertToWebP(srcPng: string, destWebp: string): void {
   const script = `
-    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('sharp') // по имени пакета от cwd = PROJECT_ROOT: в sharp 0.35 нет lib/index.js
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })

@@ -18,6 +18,9 @@ if (!CHAT_ID) throw new Error("SEO_LAB_CHAT_ID not set");
 var API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 var CHANNEL = process.env.CONTENT_CHANNEL || ANNOUNCE_CHANNEL;
 async function announceToChannel(url, imagePath) {
+  if (imagePath && !fs.existsSync(imagePath)) {
+    console.warn(`    \u26A0 \u043E\u0431\u043B\u043E\u0436\u043A\u0430 \u0434\u043B\u044F \u0430\u043D\u043E\u043D\u0441\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430: ${imagePath} \u2014 \u0448\u043B\u044E \u0441\u0441\u044B\u043B\u043A\u043E\u0439`);
+  }
   if (imagePath && fs.existsSync(imagePath)) {
     try {
       return await announceWithPhoto(url, imagePath);

@@ -333,9 +333,12 @@ function findNewImage(before: Set<string>): string | null {
   return null
 }
 
+// sharp импортируется по имени пакета из cwd = PROJECT_ROOT: захардкоженный
+// node_modules/sharp/lib/index.js исчез в sharp 0.35 (точка входа переехала в
+// dist/), и 05.09.2026 обложка и три скетча ушли PNG вместо WebP.
 function convertToWebP(srcPng: string, destWebp: string): void {
   const script = `
-    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('sharp')
       .then(m => m.default('${srcPng}').resize(900, 450, {fit:'cover'}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -350,7 +353,7 @@ function convertToWebP(srcPng: string, destWebp: string): void {
 
 function convertSketchToWebP(srcPng: string, destWebp: string): void {
   const script = `
-    import('${path.join(PROJECT_ROOT, 'node_modules', 'sharp', 'lib', 'index.js')}')
+    import('sharp')
       .then(m => m.default('${srcPng}').resize({width: 900, withoutEnlargement: true}).webp({quality:85}).toFile('${destWebp}'))
       .then(() => process.exit(0))
       .catch(e => { console.error(e.message); process.exit(1); })
@@ -2139,9 +2142,7 @@ async function main() {
     const heroPath = imageUrl
       ? path.join(PROJECT_ROOT, 'public', imageUrl.replace(/^\//, ''))
       : undefined
-    if (heroPath && !fs.existsSync(heroPath)) {
-      console.warn(`[writer] ⚠️ обложка для анонса не найдена: ${heroPath} — анонс уйдёт ссылкой`)
-    }
+    // Отсутствие файла announceToChannel сам пишет в лог.
     await announceToChannel(articleUrl, heroPath)
     announced = '📣 Анонс в канале: ✅'
     console.log('[writer] Анонс отправлен в канал')

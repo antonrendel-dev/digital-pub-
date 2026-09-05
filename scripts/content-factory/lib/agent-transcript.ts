@@ -17,7 +17,11 @@ import path from 'path'
  * Запись никогда не роняет прогон: статья важнее своей стенограммы.
  */
 
-const RUNS_ROOT = path.join(process.cwd(), 'logs', 'factory-runs')
+// От корня проекта, не от process.cwd(): планировщик и бот запускают writer из
+// scripts/content-factory, и с 03.09.2026 стенограммы уезжали в
+// scripts/content-factory/logs/. Абсолютный путь, как в alert.ts: модуль едет
+// в ESM-бандл (нет __dirname) и в ts-jest как CJS (нет import.meta).
+const RUNS_ROOT = '/home/claude/projects/digital-pub-/logs/factory-runs'
 
 // Месяц — компромисс между «разобрать позавчерашнюю жалобу» и размером:
 // прогон весит 100–300 КБ, тридцать штук укладываются в единицы мегабайт.
