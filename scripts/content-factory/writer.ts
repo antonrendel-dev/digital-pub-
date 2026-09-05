@@ -2132,11 +2132,16 @@ async function main() {
     const live = await waitForPage(articleUrl)
     if (!live)
       console.warn('[writer] Страница не поднялась за отведённое время, анонсирую как есть')
-    // Обложка уходит файлом: путь считаем от imageUrl, который уже лежит
-    // во фронтматтере. Нет картинки — announceToChannel сам отправит ссылкой.
+    // Обложка уходит файлом: путь считаем от imageUrl во фронтматтере и от
+    // корня проекта, а не от process.cwd() — планировщик и бот запускают writer
+    // из scripts/content-factory, и 05.09.2026 файл «не нашёлся»: анонс молча
+    // ушёл ссылкой, хотя обложка лежала в public/images/posts.
     const heroPath = imageUrl
-      ? path.join(process.cwd(), 'public', imageUrl.replace(/^\//, ''))
+      ? path.join(PROJECT_ROOT, 'public', imageUrl.replace(/^\//, ''))
       : undefined
+    if (heroPath && !fs.existsSync(heroPath)) {
+      console.warn(`[writer] ⚠️ обложка для анонса не найдена: ${heroPath} — анонс уйдёт ссылкой`)
+    }
     await announceToChannel(articleUrl, heroPath)
     announced = '📣 Анонс в канале: ✅'
     console.log('[writer] Анонс отправлен в канал')
