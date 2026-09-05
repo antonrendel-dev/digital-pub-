@@ -92,9 +92,10 @@ beforeAll(() => {
     ],
     { cwd: ROOT, encoding: 'utf8', timeout: 120_000 }
   )
-  const raw = execFileSync('node', [bundle], {
+  const inputFile = path.join(tmp, 'input.json')
+  fs.writeFileSync(inputFile, JSON.stringify(input))
+  const raw = execFileSync('node', [bundle, inputFile], {
     cwd: ROOT,
-    input: JSON.stringify(input),
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
     timeout: 180_000,

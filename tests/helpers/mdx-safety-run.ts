@@ -42,7 +42,9 @@ function executable(body: string): boolean {
   return found
 }
 
-const input = JSON.parse(fs.readFileSync(0, 'utf8')) as {
+// Вход — файл, не stdin: readFileSync(0) на пайпе под нагрузкой падает с EAGAIN
+// (полный jest 05.09.2026 параллельно с next build).
+const input = JSON.parse(fs.readFileSync(process.argv[2], 'utf8')) as {
   name: string
   mdx: string
   body?: string
