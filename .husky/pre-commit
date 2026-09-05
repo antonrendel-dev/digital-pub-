@@ -39,3 +39,23 @@ if [ $? -ne 0 ]; then
   echo "❌ tsc(scripts): типы не сходятся — commit blocked"
   exit 1
 fi
+
+# 4. Новые статьи — только под ключ из ядра (аудит 04.09.2026, O11). Завод пишет
+# файлы через fs и коммитит git-ом, PostToolUse-хук Claude его не видит — поэтому
+# проверка здесь. Пока ядра scripts/content-factory/data/core-*.json нет (O1),
+# печатается напоминание без блокировки.
+NEW_MDX=$(git diff --cached --name-only --diff-filter=A -- 'content/articles/*.mdx')
+if [ -n "$NEW_MDX" ]; then
+  CORE=$(ls scripts/content-factory/data/core-*.json 2>/dev/null | tail -1)
+  if [ -z "$CORE" ]; then
+    echo "ℹ️  Новые статьи в коммите ($(echo "$NEW_MDX" | wc -l)); ядра core-*.json пока нет (O1) — проверка ключа пропущена"
+  else
+    for f in $NEW_MDX; do
+      KEY=$(grep -oE '"keywords":"[^,"]+' "$f" | head -1 | sed 's/"keywords":"//')
+      if [ -z "$KEY" ] || ! jq -e --arg k "$KEY" '.. | strings | select(test("^" + $k + "$"; "i"))' "$CORE" >/dev/null 2>&1; then
+        echo "❌ $f: ключ «$KEY» не из ядра $(basename "$CORE") — commit blocked (стоп-лист O11)"
+        exit 1
+      fi
+    done
+  fi
+fi

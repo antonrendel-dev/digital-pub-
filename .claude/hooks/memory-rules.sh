@@ -78,6 +78,53 @@ case "$FILE" in
     ;;
 esac
 
+# Правило 5 (control-группа эксперимента переписки) снято на приёмке O11
+# 05.09.2026: эксперимент свёрнут решением Тони 01.09, статьи разблокированы
+# (память project_rewrite_experiment). Номер оставлен, чтобы ссылки не поехали.
+ROOT=$(git -C "$(dirname "$FILE")" rev-parse --show-toplevel 2>/dev/null || echo "")
+
+# ── Правило 6. Программные страницы «× город/регион» не создаём ─────────────
+# Повод: аудит 04.09.2026 (O11): 1 100 тонких URL в индексе, решение «регион
+# Россия» уже принято; геостраницы умножают тонкий индекс, а не трафик.
+case "$FILE" in
+  */app/*\[city\]*|*/app/*\[gorod\]*|*/app/*\[region\]*|*/app/*/city/*|*/app/*/gorod/*|*/app/*/goroda/*)
+    WARN="${WARN}
+• Это похоже на программную страницу «специализация × город/регион».
+  Решение проекта: регион только Россия, геостраниц не делаем — они
+  добавляют тонкие URL в индекс (1 100 уже там), а не трафик.
+  Память: project_audit_2026_09_04_tasks (O11)"
+    ;;
+esac
+
+# ── Правило 7. Новая статья — только под ключ из ядра ────────────────────────
+# Повод: аудит 04.09.2026: 62 % статей без органического входа (Метрика
+# 109131123, 90 дн., 54 из 86), 18 из 63 ордеров переписки отклонены как «чужой
+# интент» (scripts/seo-audit/data/rewrite-orders.json). Ядро (O1) появится файлом
+# scripts/content-factory/data/core-*.json; пока его нет — только напоминание.
+# Это правило видит только правки агентов через Write/Edit: завод пишет файлы
+# через fs и коммитит git-ом мимо хука, его покрывает шаг в .husky/pre-commit.
+case "$FILE" in
+  */content/articles/*.mdx)
+    if [ -n "$ROOT" ] && ! git -C "$ROOT" ls-files --error-unmatch "$FILE" >/dev/null 2>&1; then
+      CORE=$(ls "$ROOT"/scripts/content-factory/data/core-*.json 2>/dev/null | tail -1)
+      if [ -n "$CORE" ]; then
+        KEY=$(grep -oE '"keywords":"[^,"]+' "$FILE" | head -1 | sed 's/"keywords":"//')
+        if [ -z "$KEY" ]; then
+          WARN="${WARN}
+• Новая статья без главного ключа в schemaJsonLd.keywords — не с чем сверить ядро $(basename "$CORE").
+  Темы берутся только из ядра с пометкой «нужна страница» (O1/O11)."
+        elif ! jq -e --arg k "$KEY" '.. | strings | select(test("^" + $k + "$"; "i"))' "$CORE" >/dev/null 2>&1; then
+          WARN="${WARN}
+• Новая статья под ключ «$KEY», которого нет в ядре $(basename "$CORE").
+  Темы берутся только из ядра с пометкой «нужна страница» (O1/O11)."
+        fi
+      else
+        echo "ℹ️  Новая статья: ядра scripts/content-factory/data/core-*.json пока нет (O1), проверка ключа пропущена." >&2
+      fi
+    fi
+    ;;
+esac
+
 if [ -n "$WARN" ]; then
   echo "⚠️  Правила проекта — $(basename "$FILE"):${WARN}" >&2
   exit 2
